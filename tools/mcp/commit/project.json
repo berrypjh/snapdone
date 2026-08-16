@@ -1,0 +1,28 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "commit-mcp",
+  "projectType": "application",
+  "sourceRoot": "tools/mcp/commit/src",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["default"],
+      "outputs": ["{projectRoot}/dist"],
+      "options": {
+        "cwd": "tools/mcp/commit",
+        "command": "tsc -p tsconfig.build.json"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["default"],
+      "options": {
+        "cwd": "tools/mcp/commit",
+        "command": "tsc -p tsconfig.build.json --noEmit"
+      }
+    }
+  }
+}

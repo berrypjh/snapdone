@@ -1,0 +1,55 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "api",
+  "projectType": "application",
+  "sourceRoot": "apps/api",
+  "tags": [],
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "continuous": true,
+      "cache": false,
+      "options": {
+        "cwd": "apps/api",
+        "command": "go run ./cmd/server"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["default"],
+      "outputs": ["{workspaceRoot}/dist/apps/api"],
+      "options": {
+        "cwd": "apps/api",
+        "command": "go build -o ../../dist/apps/api/api ./cmd/server"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["default"],
+      "options": {
+        "cwd": "apps/api",
+        "command": "go test ./..."
+      }
+    },
+    "vet": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["default"],
+      "options": {
+        "cwd": "apps/api",
+        "command": "go vet ./..."
+      }
+    },
+    "fmt": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["default"],
+      "options": {
+        "cwd": "apps/api",
+        "command": "unformatted=$(gofmt -l .); if [ -n \"$unformatted\" ]; then echo 'gofmt required for:'; echo \"$unformatted\"; exit 1; fi"
+      }
+    }
+  }
+}

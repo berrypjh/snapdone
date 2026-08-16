@@ -1,0 +1,84 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens.
+ *
+ * These values are mirrored in apps/mobile/src/theme/tokens.ts.
+ * docs/design/foundation.md is the source of truth for both — change it there
+ * first, then update both platforms.
+ *
+ * Default Tailwind palettes, type sizes, radii and shadows are reset to
+ * `initial` on purpose: a screen should reach for a role (`bg-surface-muted`),
+ * never for a raw value (`bg-blue-500`).
+ */
+@theme {
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-white: #ffffff;
+
+  --color-background: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f6f7f9;
+
+  --color-text-primary: #17191c;
+  --color-text-secondary: #4a4f57;
+  --color-text-muted: #868c96;
+
+  --color-border: #e4e7ec;
+
+  --color-primary: #1b64da;
+  --color-primary-hover: #1857c0;
+  --color-primary-pressed: #14489e;
+  --color-on-primary: #ffffff;
+
+  --color-success: #0f7b4f;
+  --color-warning: #b26b00;
+  --color-danger: #c7362f;
+
+  --color-focus: #1b64da;
+
+  /* Korean-first scale. Line heights are generous because Hangul needs it. */
+  --text-*: initial;
+  --text-page-title: 1.5rem;
+  --text-page-title--line-height: 1.4;
+  --text-section-title: 1.125rem;
+  --text-section-title--line-height: 1.5;
+  --text-card-title: 1rem;
+  --text-card-title--line-height: 1.5;
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.7;
+  --text-body-sm: 0.875rem;
+  --text-body-sm--line-height: 1.7;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.6;
+  --text-button: 0.9375rem;
+  --text-button--line-height: 1.2;
+
+  --radius-*: initial;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  --shadow-*: initial;
+  --shadow-card: 0 1px 2px rgb(23 25 28 / 0.06);
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic',
+    system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  /* Hangul breaks by 어절, not by character. Without this, Korean wraps mid-word. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* One focus treatment for every focusable element, not per component. */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}

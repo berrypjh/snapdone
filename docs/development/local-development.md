@@ -1,0 +1,217 @@
+# Local Development
+
+이 문서의 명령은 전부 실제 `package.json` script와 Nx target에 대응한다. 동작하지 않는 명령은 적지 않는다.
+
+## Requirements
+
+| 도구 | 버전    | 확인                                     |
+| ---- | ------- | ---------------------------------------- |
+| Node | 24.14.0 | `.nvmrc`로 고정. `nvm use`               |
+| pnpm | 10.30.3 | `package.json`의 `packageManager`로 고정 |
+| Go   | 1.26.6  | `go version`                             |
+
+모바일을 **기기/시뮬레이터에서 직접 실행**할 때만 추가로 필요하다.
+
+| 대상               | 필요한 것                                                  |
+| ------------------ | ---------------------------------------------------------- |
+| iOS 시뮬레이터     | full Xcode **26.4 이상** (Command Line Tools만으로는 불가) |
+| Android 에뮬레이터 | JDK, Android SDK, `ANDROID_HOME`                           |
+
+Expo Go 앱으로 실기기에서 볼 때는 둘 다 필요 없다.
+
+## Install
+
+```bash
+nvm use
+pnpm install
+```
+
+`pnpm install`은 Node·pnpm 버전이 고정값과 다르면 경고한다. Go 의존성은 없다 (`go.mod`에 `require` 없음).
+
+## 실행
+
+각 앱은 별도 터미널에서 띄운다.
+
+```bash
+pnpm dev:web      # Next.js  → http://localhost:3000
+pnpm dev:api      # Go API   → http://127.0.0.1:8080
+pnpm dev:mobile   # Expo (Metro 개발 서버)
+```
+
+`pnpm dev` 하나로 **web과 api를 함께** 띄울 수도 있다.
+
+```bash
+pnpm dev
+```
+
+**mobile은 여기에 포함되지 않는다.** Metro 개발 서버는 QR 코드를 출력하고 `r`(리로드) 같은 키 입력을 받는 대화형 프로세스라, 다른 서버 로그와 한 터미널에 섞이면 쓰기 어렵다. 자기 터미널에서 `pnpm dev:mobile`로 띄운다.
+
+동작 확인:
+
+```bash
+curl -i http://127.0.0.1:8080/health
+# HTTP/1.1 200 OK
+# Content-Type: application/json
+# {"status":"ok"}
+```
+
+## 검사
+
+```bash
+pnpm lint        # eslint(web, mobile) + go vet + gofmt 검사
+pnpm typecheck   # tsc (web, mobile)
+pnpm test        # go test (현재 test를 가진 프로젝트는 api뿐)
+pnpm build       # next build + go build
+pnpm format      # prettier 적용 (TS/JS/JSON/MD)
+pnpm format:check
+```
+
+각 명령이 실제로 무엇을 도는지:
+
+| script           | 실행되는 것                                                              |
+| ---------------- | ------------------------------------------------------------------------ |
+| `pnpm lint`      | `nx run-many -t lint,vet,fmt` — web·mobile은 `lint`, api는 `vet`과 `fmt` |
+| `pnpm typecheck` | `nx run-many -t typecheck` — web·mobile                                  |
+| `pnpm test`      | `nx run-many -t test` — api                                              |
+| `pnpm build`     | `nx run-many -t build --projects=web,api`                                |
+
+### `pnpm build`에 mobile이 없는 이유
+
+`mobile`의 `build` target은 로컬 빌드가 아니라 **EAS 클라우드 빌드**(`eas build`)다. Expo 계정과 자격 증명이 필요하고 원격에서 돈다. 로컬 검사 명령에 섞이면 안 되므로 제외했다.
+
+모바일 번들을 로컬에서 만들려면:
+
+```bash
+pnpm exec nx export mobile   # apps/mobile/dist 에 JS 번들 생성
+```
+
+## Project graph
+
+```bash
+pnpm graph                      # 브라우저로 그래프 열기
+pnpm exec nx show projects      # ["mobile","api","web"]
+pnpm exec nx show project api   # 특정 프로젝트의 실제 target 확인
+```
+
+target 이름이 헷갈리면 문서를 믿지 말고 `nx show project <name>`으로 확인한다.
+
+## 환경변수
+
+앱마다 자기 디렉터리에서 읽는다. 루트에 공용 `.env`는 두지 않는다.
+
+| 앱     | 템플릿                     | 실제 파일             | 로딩 주체                       |
+| ------ | -------------------------- | --------------------- | ------------------------------- |
+| web    | `apps/web/.env.example`    | `apps/web/.env.local` | Next.js가 자동 로드             |
+| mobile | `apps/mobile/.env.example` | `apps/mobile/.env`    | Expo CLI가 자동 로드            |
+| api    | `apps/api/.env.example`    | 없음                  | **자동 로드 안 함** — 아래 참조 |
+
+```bash
+cp apps/web/.env.example apps/web/.env.local
+cp apps/mobile/.env.example apps/mobile/.env
+```
+
+`.env`, `.env.local`, `.env.*.local`은 git에서 제외된다. `.env.example`은 추적된다. **secret을 `.env.example`에 넣지 않는다.**
+
+### public 접두사
+
+- Next: `NEXT_PUBLIC_*` — 브라우저 번들에 인라인된다
+- Expo: `EXPO_PUBLIC_*` — 앱 번들에 인라인된다
+
+**접두사가 붙은 값은 공개된 값이다.** 접두사만 떼면 감춰지는 게 아니라, 서버에서만 읽히는 값이 된다. 모바일 앱에는 서버가 없으므로 앱이 아는 값은 전부 공개값이다.
+
+### Go API는 `.env`를 읽지 않는다
+
+`.env` 파서 의존성을 넣지 않았다. 프로세스 환경변수만 본다.
+
+```bash
+API_PORT=9000 pnpm dev:api
+```
+
+기본값은 `API_HOST=127.0.0.1`, `API_PORT=8080`, `API_ENV=development`다.
+
+## 실기기에서 API 주소 잡기
+
+**시뮬레이터/에뮬레이터가 아닌 실제 폰에서는 `localhost`가 개발 PC가 아니라 폰 자신을 가리킨다.** 이 상태로는 API 호출이 전부 실패한다.
+
+주소는 코드에 박지 않는다. `EXPO_PUBLIC_API_BASE_URL` 하나만 바꾸면 된다.
+
+1. 개발 PC의 LAN 주소 확인
+
+   ```bash
+   ipconfig getifaddr en0
+   ```
+
+2. `apps/mobile/.env` 수정
+
+   ```
+   EXPO_PUBLIC_API_BASE_URL=http://192.168.0.10:8080
+   ```
+
+3. Go 서버를 LAN에 노출 (기본값 `127.0.0.1`은 외부에서 접근 불가)
+
+   ```bash
+   API_HOST=0.0.0.0 pnpm dev:api
+   ```
+
+4. Metro 재시작 — `EXPO_PUBLIC_*`는 번들에 인라인되므로 서버만 다시 띄워서는 반영되지 않는다
+
+   ```bash
+   pnpm exec nx start mobile --clear
+   ```
+
+폰과 PC가 **같은 Wi-Fi**에 있어야 한다. 회사·카페 네트워크는 기기 간 통신을 막는 경우가 많다.
+
+Android 에뮬레이터는 `10.0.2.2`가 호스트를 가리키지만, **이 값을 소스에 넣지 않는다.** 필요하면 `.env`에서 지정한다.
+
+## 자주 겪는 환경 차이
+
+**pnpm store 불일치**
+
+```
+ERR_PNPM_UNEXPECTED_STORE  Unexpected store location
+```
+
+`node_modules`가 링크된 store와 pnpm이 쓰려는 store가 다를 때 난다. 다른 셸/환경에서 설치했을 때 발생한다.
+
+```bash
+rm -rf node_modules .pnpm-store
+pnpm install
+```
+
+**포트 충돌**
+
+Next는 3000, Go API는 8080, Metro는 8081을 쓴다. 점유 중이면:
+
+```bash
+lsof -nP -iTCP:8080 -sTCP:LISTEN
+API_PORT=9000 pnpm dev:api
+```
+
+**Xcode가 Command Line Tools만 설치된 경우**
+
+```
+xcode-select: error: tool 'xcodebuild' requires Xcode
+```
+
+`nx run-ios mobile`은 full Xcode(26.4+)가 필요하다. 없으면 Expo Go로 실기기 확인을 대신한다.
+
+**Android 도구 없음**
+
+`java`, `adb`, `ANDROID_HOME`이 없으면 `nx run-android mobile`은 실행되지 않는다. Expo Go로 대신한다.
+
+**Nx 캐시 때문에 결과가 이상할 때**
+
+```bash
+pnpm exec nx reset
+pnpm lint --skip-nx-cache
+```
+
+**Expo SDK 버전 고정**
+
+이 저장소는 Expo **SDK 56**에 고정되어 있다. `@nx/expo`가 아직 SDK 57을 지원하지 않는다. mobile에 패키지를 추가할 때는 버전을 임의로 고르지 말고 SDK가 지정한 값을 쓴다.
+
+```bash
+node -e "console.log(require('expo/bundledNativeModules.json')['패키지명'])"
+```
+
+그리고 **루트 `package.json`에 실제 버전을, `apps/mobile/package.json`에는 `"*"`를** 적는다. 루트에 빠뜨리면 `"*"`가 레지스트리 최신 버전으로 해석되어 SDK와 어긋난 패키지가 들어온다.
