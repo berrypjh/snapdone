@@ -4,6 +4,7 @@
 dist
 tmp
 out-tsc
+*.tsbuildinfo
 
 # dependencies
 node_modules
@@ -53,6 +54,7 @@ out
 
 # Expo / React Native
 .expo
+expo-env.d.ts
 web-build
 *.orig.*
 *.jks

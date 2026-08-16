@@ -64,6 +64,15 @@ pnpm test        # go test (현재 test를 가진 프로젝트는 api뿐)
 pnpm build       # next build + go build
 pnpm format      # prettier 적용 (TS/JS/JSON/MD)
 pnpm format:check
+pnpm health      # 개발자용 API 연결 확인 (제품 화면 아님)
+```
+
+`pnpm health`는 설정된 주소로 `/health`를 호출해서 200과 `{"status":"ok"}`를 확인한다. 주소를 바꿔서 확인할 수도 있다.
+
+```bash
+pnpm health                                # http://localhost:8080
+pnpm health http://192.168.0.10:8080       # 실기기에서 쓸 주소 확인
+API_BASE_URL=http://localhost:9000 pnpm health
 ```
 
 각 명령이 실제로 무엇을 도는지:
@@ -118,6 +127,15 @@ cp apps/mobile/.env.example apps/mobile/.env
 - Expo: `EXPO_PUBLIC_*` — 앱 번들에 인라인된다
 
 **접두사가 붙은 값은 공개된 값이다.** 접두사만 떼면 감춰지는 게 아니라, 서버에서만 읽히는 값이 된다. 모바일 앱에는 서버가 없으므로 앱이 아는 값은 전부 공개값이다.
+
+지금 API 주소는 앱마다 이름이 다르다.
+
+| 앱     | 변수                       | 이유                                                                |
+| ------ | -------------------------- | ------------------------------------------------------------------- |
+| web    | `API_BASE_URL`             | Server Component에서만 호출한다. 브라우저 번들에 들어갈 이유가 없다 |
+| mobile | `EXPO_PUBLIC_API_BASE_URL` | 앱에 서버가 없어 기기에서 직접 호출한다                             |
+
+자세한 배경은 [data-access.md](../architecture/data-access.md).
 
 ### Go API는 `.env`를 읽지 않는다
 
