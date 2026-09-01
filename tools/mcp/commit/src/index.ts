@@ -9,7 +9,7 @@ import type { CommitExecutionResult, ScopeDetails, ScopeSummary } from './types.
 
 const server = new McpServer(
   {
-    name: 'ai-commit',
+    name: 'commit-mcp',
     version: '0.1.0',
   },
   {

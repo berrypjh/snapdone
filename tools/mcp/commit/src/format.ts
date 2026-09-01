@@ -36,7 +36,7 @@ export const formatFileStatuses = (files: FileStatus[]): FormattedFileStatus[] =
 
 export const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-// .claude/skills/ai-commit/examples/commit-message-rules.md의 type 목록과 동기화 유지 필요
+// .claude/skills/commit-scope/examples/commit-message-rules.md의 type 목록과 동기화 유지 필요
 export const ALLOWED_COMMIT_TYPES = [
   'feat',
   'fix',
