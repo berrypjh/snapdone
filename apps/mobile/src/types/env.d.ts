@@ -1,9 +1,9 @@
 /**
- * Expo inlines EXPO_PUBLIC_ variables into the bundle at build time, so the app
- * reads them off `process.env` even though React Native does not run on Node.
+ * Expo는 빌드 시 EXPO_PUBLIC_ 환경변수를 번들에 인라인하므로
+ * React Native 환경에서도 process.env를 통해 접근할 수 있다.
  *
- * Only the variables this app actually reads are declared. Pulling in the whole
- * @types/node surface would suggest Node APIs are available here; they are not.
+ * Node.js API를 사용하는 것은 아니므로 @types/node 대신
+ * 앱에서 실제로 사용하는 환경변수만 최소한으로 선언한다.
  */
 declare const process: {
   env: {

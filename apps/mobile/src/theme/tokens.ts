@@ -1,11 +1,3 @@
-/**
- * Design tokens for the mobile app.
- *
- * These values mirror the `@theme` block in apps/web/src/app/global.css.
- * docs/design/foundation.md is the source of truth for both — change it there
- * first, then update both platforms.
- */
-
 import type { TextStyle } from 'react-native';
 
 export const color = {
@@ -31,7 +23,6 @@ export const color = {
   focus: '#1b64da',
 } as const;
 
-/** 4px scale. Web uses the same steps as Tailwind's 1/2/3/4/5/6/8. */
 export const space = {
   1: 4,
   2: 8,
@@ -48,10 +39,6 @@ export const radius = {
   lg: 14,
 } as const;
 
-/**
- * Korean-first hierarchy. React Native needs absolute line heights, so these
- * are the web ratios resolved against each size.
- */
 export const typography = {
   pageTitle: { fontSize: 24, lineHeight: 34, fontWeight: '600' },
   sectionTitle: { fontSize: 18, lineHeight: 27, fontWeight: '600' },
@@ -62,5 +49,4 @@ export const typography = {
   button: { fontSize: 15, lineHeight: 18, fontWeight: '600' },
 } as const satisfies Record<string, TextStyle>;
 
-/** Smallest tappable height, matching the web button. */
 export const minTouchTarget = 44;

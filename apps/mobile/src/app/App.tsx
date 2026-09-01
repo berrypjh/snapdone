@@ -1,6 +1,8 @@
-import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text } from 'react-native';
+
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 import { AppShell } from '../components/AppShell';
 import { Surface } from '../components/Surface';
 import { color, typography } from '../theme/tokens';
@@ -15,9 +17,7 @@ export const App = () => (
       </Text>
 
       <Surface>
-        <Text style={styles.status}>
-          초기 설정 중입니다. 화면은 아직 준비되지 않았습니다.
-        </Text>
+        <Text style={styles.status}>초기 설정 중입니다. 화면은 아직 준비되지 않았습니다.</Text>
       </Surface>
     </AppShell>
   </SafeAreaProvider>
