@@ -1,4 +1,3 @@
-// Package httpserver builds the API routes and HTTP server.
 package httpserver
 
 import (
@@ -9,8 +8,7 @@ import (
 	"snapdone/api/internal/config"
 )
 
-// New returns an HTTP server bound to the configured address with timeouts
-// that keep a misbehaving client from holding a connection open.
+// 설정된 주소와 기본 timeout을 적용한 HTTP 서버를 생성한다.
 func New(cfg config.Config) *http.Server {
 	return &http.Server{
 		Addr:              cfg.Addr(),
@@ -22,14 +20,12 @@ func New(cfg config.Config) *http.Server {
 	}
 }
 
-// NewHandler returns the API router.
 func NewHandler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", health)
 	return mux
 }
 
-// health reports that the server is up.
 func health(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }

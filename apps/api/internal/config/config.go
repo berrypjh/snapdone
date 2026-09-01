@@ -1,4 +1,3 @@
-// Package config loads API server settings from the environment.
 package config
 
 import (
@@ -6,15 +5,13 @@ import (
 	"os"
 )
 
-// Config holds the runtime settings of the API server.
 type Config struct {
 	Host        string
 	Port        string
 	Environment string
 }
 
-// Load reads settings from environment variables, falling back to local
-// development defaults when a variable is unset or empty.
+// 환경 변수에서 설정을 읽고, 값이 없으면 로컬 개발 환경을 위한 기본값을 사용한다.
 func Load() Config {
 	return Config{
 		Host:        env("API_HOST", "127.0.0.1"),
@@ -23,7 +20,7 @@ func Load() Config {
 	}
 }
 
-// Addr returns the address the HTTP server listens on.
+// HTTP 서버가 사용할 host:port 형식의 주소를 반환한다.
 func (c Config) Addr() string {
 	return net.JoinHostPort(c.Host, c.Port)
 }

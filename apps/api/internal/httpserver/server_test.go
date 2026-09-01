@@ -30,8 +30,6 @@ func TestHealthReturnsOKJSON(t *testing.T) {
 	}
 }
 
-// The health route is registered for GET only, so other methods must not
-// reach the handler.
 func TestHealthRejectsNonGET(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	NewHandler().ServeHTTP(recorder, httptest.NewRequest(http.MethodPost, "/health", nil))
