@@ -6,7 +6,6 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
 };
 
-/** min-h-11 keeps the hit area at 44px even when the label is short. */
 const base =
   'inline-flex min-h-11 items-center justify-center rounded-md px-4 text-button font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45';
 
@@ -17,19 +16,8 @@ const byVariant: Record<ButtonVariant, string> = {
     'border border-border bg-surface text-text-primary hover:bg-surface-muted active:bg-surface-muted disabled:hover:bg-surface',
 };
 
-/**
- * The only button in the web app. Focus styling comes from the global
- * `:focus-visible` rule in global.css.
- */
-export function Button({
-  variant = 'primary',
-  type = 'button',
-  className,
-  ...props
-}: ButtonProps) {
-  const classes = [base, byVariant[variant], className]
-    .filter(Boolean)
-    .join(' ');
+export function Button({ variant = 'primary', type = 'button', className, ...props }: ButtonProps) {
+  const classes = [base, byVariant[variant], className].filter(Boolean).join(' ');
 
   return <button type={type} className={classes} {...props} />;
 }

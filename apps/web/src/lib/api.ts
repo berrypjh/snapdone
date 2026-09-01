@@ -1,12 +1,3 @@
-/**
- * The one place the web app learns where the API is.
- *
- * There is no NEXT_PUBLIC_ prefix on purpose: nothing in the browser bundle
- * calls the Go API today, so the value stays server-side. Adding a browser
- * call means adding CORS on the Go side — read docs/architecture/data-access.md
- * before doing that.
- */
-
 export type Health = {
   status: string;
 };
@@ -28,7 +19,6 @@ const isHealth = (value: unknown): value is Health =>
   value !== null &&
   typeof (value as Record<string, unknown>).status === 'string';
 
-/** Calls the API health endpoint. Server-side only. */
 export const fetchHealth = async (): Promise<Health> => {
   const response = await fetch(`${getApiBaseUrl()}/health`, {
     cache: 'no-store',
