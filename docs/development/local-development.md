@@ -21,12 +21,20 @@ Expo Go 앱으로 실기기에서 볼 때는 둘 다 필요 없다.
 
 ## Install
 
+lint · format · tsconfig · commitlint 설정은 `@berrypjh/*` 공유 패키지에서 온다. 이 패키지들은 **GitHub Packages**에 있어서 설치 전에 토큰이 필요하다.
+
+```bash
+export GITHUB_TOKEN=<read:packages 권한이 있는 PAT>
+```
+
+`.npmrc`가 `@berrypjh` 스코프를 `npm.pkg.github.com`으로 보내고 이 변수를 읽는다. 토큰이 없으면 `pnpm install`이 401로 실패한다.
+
 ```bash
 nvm use
 pnpm install
 ```
 
-`pnpm install`은 Node·pnpm 버전이 고정값과 다르면 경고한다. Go 의존성은 없다 (`go.mod`에 `require` 없음).
+`pnpm install`은 Node·pnpm 버전이 고정값과 다르면 경고한다. `prepare` 스크립트가 husky를 설치해 `.husky/`의 훅이 활성화된다. Go 의존성은 없다 (`go.mod`에 `require` 없음).
 
 ## 실행
 
@@ -58,14 +66,31 @@ curl -i http://127.0.0.1:8080/health
 ## 검사
 
 ```bash
-pnpm lint        # eslint(web, mobile) + go vet + gofmt 검사
-pnpm typecheck   # tsc (web, mobile)
-pnpm test        # go test (현재 test를 가진 프로젝트는 api뿐)
-pnpm build       # next build + go build
+pnpm verify      # format:check -> lint -> typecheck -> test -> test:hooks -> build 를 순서대로
+pnpm lint        # eslint(web, mobile, commit-mcp, web-e2e) + go vet + gofmt 검사
+pnpm typecheck   # tsc (web, mobile, commit-mcp, web-e2e)
+pnpm test        # go test(api) + Vitest(web, mobile) — 한 번 돌고 끝남
+pnpm test:hooks  # .claude/hooks/ 회귀 테스트 (Nx 프로젝트가 아니라 별도)
+pnpm e2e         # Playwright (web-e2e) — verify에 포함되지 않음
+pnpm build       # next build + go build + commit-mcp
 pnpm format      # prettier 적용 (TS/JS/JSON/MD)
 pnpm format:check
 pnpm health      # 개발자용 API 연결 확인 (제품 화면 아님)
 ```
+
+단위 테스트를 watch로 돌리려면 앱 디렉터리에서 직접 띄운다. `pnpm test`는 CI/게이트용이라 한 번만 돈다.
+
+```bash
+cd apps/web && pnpm exec vitest
+```
+
+`pnpm e2e`는 브라우저 바이너리와 dev 서버가 필요하다. 처음 한 번은 브라우저를 받아야 한다.
+
+```bash
+pnpm exec playwright install chromium firefox webkit
+```
+
+dev 서버는 Playwright가 알아서 띄운다(`reuseExistingServer: true`라 이미 `pnpm dev:web`이 떠 있으면 그걸 쓴다).
 
 `pnpm health`는 설정된 주소로 `/health`를 호출해서 200과 `{"status":"ok"}`를 확인한다. 주소를 바꿔서 확인할 수도 있다.
 
@@ -77,12 +102,14 @@ API_BASE_URL=http://localhost:9000 pnpm health
 
 각 명령이 실제로 무엇을 도는지:
 
-| script           | 실행되는 것                                                              |
-| ---------------- | ------------------------------------------------------------------------ |
-| `pnpm lint`      | `nx run-many -t lint,vet,fmt` — web·mobile은 `lint`, api는 `vet`과 `fmt` |
-| `pnpm typecheck` | `nx run-many -t typecheck` — web·mobile                                  |
-| `pnpm test`      | `nx run-many -t test` — api                                              |
-| `pnpm build`     | `nx run-many -t build --projects=web,api`                                |
+| script           | 실행되는 것                                                                  |
+| ---------------- | ---------------------------------------------------------------------------- |
+| `pnpm lint`      | `nx run-many -t lint,vet,fmt` — `lint`가 있는 프로젝트와 api의 `vet` · `fmt` |
+| `pnpm typecheck` | `nx run-many -t typecheck`                                                   |
+| `pnpm test`      | `nx run-many -t test`                                                        |
+| `pnpm build`     | `nx run-many -t build --exclude=mobile`                                      |
+
+`nx run-many`는 해당 target이 없는 프로젝트를 조용히 건너뛴다. **어느 프로젝트에 어떤 target이 있는지는 이 표가 아니라 `nx show project <name>`이 기준이다.**
 
 ### `pnpm build`에 mobile이 없는 이유
 
@@ -98,7 +125,7 @@ pnpm exec nx export mobile   # apps/mobile/dist 에 JS 번들 생성
 
 ```bash
 pnpm graph                      # 브라우저로 그래프 열기
-pnpm exec nx show projects      # ["mobile","api","web"]
+pnpm exec nx show projects      # 현재 프로젝트 목록
 pnpm exec nx show project api   # 특정 프로젝트의 실제 target 확인
 ```
 

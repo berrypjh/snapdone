@@ -4,6 +4,7 @@
 dist
 tmp
 out-tsc
+test-output
 *.tsbuildinfo
 
 # dependencies
@@ -44,6 +45,8 @@ Thumbs.db
 .nx/migrate-runs
 .claude/worktrees
 .claude/settings.local.json
+# Claude Code write-tracking scratch dirs, created next to any working directory
+**/.claude/.cc-writes/
 
 # pnpm
 .pnpm-store
@@ -92,3 +95,4 @@ npm-debug.*
 web-build/
 cache/
 
+vitest.config.*.timestamp*

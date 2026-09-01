@@ -13,21 +13,49 @@ Nx Workspace (repository root)
 
 ## 현재 상태
 
-| 영역          | 상태                                                   |
-| ------------- | ------------------------------------------------------ |
-| Nx workspace  | Nx 23.1.1, integrated, pnpm workspaces                 |
-| `apps/web`    | Next.js 16.1.7 / React 19.2.8                          |
-| `apps/mobile` | Expo SDK 56.0.19 / React Native 0.85.3                 |
-| `apps/api`    | Go 1.26.6, module `snapdone/api`, `GET /health`만 존재 |
-| `libs/`       | 비어 있음 (의도된 상태)                                |
-| `docs/`       | 제품 원칙 · 목표 아키텍처 · 로컬 개발                  |
+| 영역          | 상태                                        |
+| ------------- | ------------------------------------------- |
+| Nx workspace  | integrated, pnpm workspaces                 |
+| `apps/web`    | Next.js App Router. 부트스트랩 화면 하나    |
+| `apps/mobile` | Expo. 부트스트랩 화면 하나                  |
+| `apps/api`    | module `snapdone/api`, `GET /health`만 존재 |
+| `libs/`       | 비어 있음 (의도된 상태)                     |
+| `docs/`       | 제품 · 아키텍처 · 디자인 · 개발 · 품질      |
 
-```
-$ nx show projects
-["mobile","api","web"]
-```
+버전은 아래 [버전 정책](#버전-정책)에 한 곳으로 모아 두었다.
 
-세 앱 모두 골격만 있고 제품 기능은 없다. 실행·검증 명령은 [docs/development/local-development.md](../development/local-development.md).
+프로젝트 목록과 각 프로젝트의 실제 target은 `nx show projects` · `nx show project <이름>`이 기준이다. 이 문서에 목록을 박아두지 않는다.
+
+실행·검증 명령은 [docs/development/local-development.md](../development/local-development.md).
+
+### 무엇이 있고 무엇이 없는가
+
+**지금 있는 것은 인프라와 부트스트랩뿐이다.** 제품 기능은 하나도 구현되지 않았다.
+
+구현된 것:
+
+- Nx monorepo와 세 앱의 골격
+- 앱별 부트스트랩 화면 (서비스명 + 소개 문구 + 상태 문구)
+- 디자인 토큰과 App Shell
+- Go `GET /health` 하나
+- 검증 명령과 문서
+
+아직 구현하지 않은 것:
+
+- 인증
+- 실제 이미지 업로드
+- AI 분석
+- 장소
+- 캘린더
+- 영수증
+- 번역
+- 자동화
+- DB
+- production 배포
+
+**이 목록은 "예정"이 아니라 "없음"이다.** 위 기능과 관련된 코드는 저장소에 존재하지 않는다.
+
+다음 단계는 공통 앱 셸과 디자인 시스템 위에 실제 화면을 기획서 순서대로 하나씩 올리는 것이다. 테스트가 어디까지 덮고 있는지는 [quality-gates.md](../engineering/quality-gates.md).
 
 ## 각 영역의 책임
 
@@ -52,6 +80,8 @@ $ nx show projects
 - Safe Area, 키보드, 접근성
 
 담지 않는 것: web과 동일한 화면 구조를 억지로 맞추는 일. 결과는 같고 구현은 각자에 맞게 한다.
+
+**네비게이션은 아직 없다.** 지금은 단일 `src/app/App.tsx`다. 화면이 여러 개가 되는 시점에 bottom navigation을 넣을지 판단한다. 가짜 탭을 미리 만들지 않는다 ([foundation.md](../design/foundation.md)의 Mobile Shell).
 
 ### `apps/api` — Go
 
@@ -137,16 +167,36 @@ apps/mobile ─→ apps/web     (금지)
 ## Nx가 담당하는 것
 
 - project graph와 의존 관계 파악
-- 영향 범위 기반 실행 (`nx affected`)
 - 태스크 캐싱
 - 세 앱에 걸친 `build` · `test` · `lint` 일관 실행
+
+`nx affected`는 아직 쓰지 않는다. CI가 없어 기준 커밋을 잡을 곳이 없고, 스크립트는 전부 `nx run-many`다. CI가 생기면 base SHA를 "main의 마지막 성공 커밋"으로 두고 도입한다.
 
 Nx는 orchestration 계층이다. 각 플랫폼의 빌드 도구(Next.js, Expo, Go toolchain)를 대체하지 않는다.
 
 ## 버전 정책
 
-`nx`와 모든 `@nx/*` 플러그인은 **정확히 같은 버전**이어야 한다 (현재 23.1.1). 플러그인 dependency가 exact pin이라 하나만 어긋나면 중복 설치와 그래프 오류가 난다.
+아래는 전부 실제 설치된 것을 읽은 값이다.
+
+| 항목         | 버전                              |
+| ------------ | --------------------------------- |
+| Node         | 24.14.0                           |
+| pnpm         | 10.30.3                           |
+| Nx           | 23.1.1 (`nx`와 모든 `@nx/*` 동일) |
+| Next.js      | 16.1.7                            |
+| React        | 19.2.8                            |
+| Expo SDK     | 56.0.19                           |
+| React Native | 0.85.3                            |
+| Go           | 1.26.6                            |
+| TypeScript   | 6.0.3                             |
+| Tailwind CSS | 4.3.3                             |
+| ESLint       | 9.39.5                            |
+| Prettier     | 3.9.6                             |
+| Vitest       | 4.1.10                            |
+| Playwright   | 1.62.1                            |
+
+`nx`와 모든 `@nx/*` 플러그인은 **정확히 같은 버전**이어야 한다. 플러그인 dependency가 exact pin이라 하나만 어긋나면 중복 설치와 그래프 오류가 난다.
+
+**Expo는 SDK 56에 고정한다.** `@nx/expo`가 아직 SDK 57을 생성·마이그레이션하지 못한다 (nrwl/nx#36443 open).
 
 버전 변경은 `nx migrate`로만 한다. 개별 `pnpm add`로 올리지 않는다.
-
-고정 버전 표는 [CLAUDE.md](../../CLAUDE.md#version-matrix-고정)에 있다.

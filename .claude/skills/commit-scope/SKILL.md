@@ -1,18 +1,18 @@
 ---
-name: ai-commit
+name: commit-scope
 description: staged 변경을 scope별로 분석하고 Conventional Commits 형식의 한국어 커밋 메시지를 제안한 뒤, 승인 후 scope별로 커밋한다.
 when_to_use: Use when the user wants to create commit messages for staged git changes, especially when multiple apps/libs scopes are staged together.
 argument-hint: [optional-scope]
 disable-model-invocation: true
 ---
 
-# AI Commit
+# Commit Scope
 
-이 skill은 현재 프로젝트에 연결된 `ai-commit` MCP 서버를 사용한다.
+이 skill은 현재 프로젝트에 연결된 `commit-mcp` MCP 서버를 사용한다.
 
 참고 기준 문서:
 
-- `.claude/skills/ai-commit/examples/commit-message-rules.md`
+- `.claude/skills/commit-scope/examples/commit-message-rules.md`
 
 ## 목적
 
@@ -27,8 +27,8 @@ disable-model-invocation: true
 
 - `$ARGUMENTS`가 비어 있으면: 모든 staged scope를 처리한다.
 - `$ARGUMENTS`에 scope가 있으면: 해당 scope만 처리한다.
-  - 예: `/ai-commit web`
-  - 예: `/ai-commit mobile`
+  - 예: `/commit-scope web`
+  - 예: `/commit-scope mobile`
 
 ## 반드시 지킬 절차
 

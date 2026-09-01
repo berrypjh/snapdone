@@ -8,17 +8,69 @@
 pnpm verify
 ```
 
-`lint → typecheck → test → build` 순으로 돌고, 하나라도 실패하면 거기서 멈춘다. 하나씩 돌리려면 아래를 쓴다.
+`format:check → lint → typecheck → test → test:hooks → build` 순으로 돌고, 하나라도 실패하면 거기서 멈춘다. 하나씩 돌리려면 아래를 쓴다.
 
-| 명령                | 실제로 도는 것                          | 대상                                                            |
-| ------------------- | --------------------------------------- | --------------------------------------------------------------- |
-| `pnpm lint`         | `nx run-many -t lint,vet,fmt`           | web · mobile · commit-mcp는 eslint, api는 `go vet` + gofmt 검사 |
-| `pnpm typecheck`    | `nx run-many -t typecheck`              | web · mobile · commit-mcp                                       |
-| `pnpm test`         | `nx run-many -t test`                   | **api만** — 아래 참조                                           |
-| `pnpm build`        | `nx run-many -t build --exclude=mobile` | web · api · commit-mcp                                          |
-| `pnpm format:check` | `nx format:check`                       | prettier (TS/JS/JSON/MD)                                        |
+| 명령                | 실제로 도는 것                          | 대상                                                                      |
+| ------------------- | --------------------------------------- | ------------------------------------------------------------------------- |
+| `pnpm format:check` | `prettier --check .`                    | 저장소 전체 (`.prettierignore` 제외)                                      |
+| `pnpm lint`         | `nx run-many -t lint,vet,fmt`           | web · mobile · commit-mcp · web-e2e는 eslint, api는 `go vet` + gofmt 검사 |
+| `pnpm typecheck`    | `nx run-many -t typecheck`              | web · mobile · commit-mcp · web-e2e                                       |
+| `pnpm test`         | `nx run-many -t test`                   | api는 `go test`, web · mobile은 Vitest                                    |
+| `pnpm test:hooks`   | `node --test tools/scripts/*.test.mjs`  | `.claude/hooks/` — Nx 프로젝트가 아니라 별도 명령이다                     |
+| `pnpm build`        | `nx run-many -t build --exclude=mobile` | web · api · commit-mcp                                                    |
+| `pnpm e2e`          | `nx run-many -t e2e`                    | web-e2e — **`verify`에 포함되지 않는다**                                  |
+
+`test:hooks`는 Node 24 내장 러너를 쓴다. 의존성이 없다.
 
 `nx run-many`는 해당 target이 없는 프로젝트를 조용히 건너뛴다. 없는 target 때문에 실패하지 않는다.
+
+### 공유 설정 패키지
+
+lint · format · tsconfig는 직접 정의하지 않고 `@berrypjh/*` 공유 패키지를 상속한다. GitHub Packages에 있어 `.npmrc`와 `GITHUB_TOKEN`이 필요하다.
+
+| 패키지                        | 연결 지점                      | 주는 것                                                                 |
+| ----------------------------- | ------------------------------ | ----------------------------------------------------------------------- |
+| `@berrypjh/eslint-config`     | `eslint.config.mjs`            | `base`(import 정렬 · unused-imports · no-explicit-any) · `nx` · `react` |
+| `@berrypjh/prettier-config`   | `package.json`의 `prettier` 키 | `printWidth: 100` · `singleQuote` · md/yaml override                    |
+| `@berrypjh/tsconfig`          | `tsconfig.base.json`           | `next.json`(앱) · `library.json`(`commit-mcp`)                          |
+| `@berrypjh/commitlint-config` | `commitlint.config.js`         | type 11종 · `!:` 금지                                                   |
+
+**`.prettierrc`는 없다.** 저자 규약대로 `package.json`의 `"prettier"` 키로 지정한다.
+
+#### 이 저장소에서 다르게 한 것
+
+`jsx-a11y`는 **web에만** 붙인다. `apps/web/eslint.config.mjs`가 `@berrypjh/eslint-config/react`를 쓰고 `apps/mobile`은 쓰지 않는다. React Native에는 DOM이 없어 `no-autofocus` 같은 규칙이 오탐이 된다.
+
+`flat/react-typescript`는 TS 규칙만 얹고 플러그인을 등록하지 않는다. 그래서 web에는 `react-hooks`와 `jsx-a11y`가 **원래 하나도 걸려 있지 않았다.** `/react`가 둘 다 채운다.
+
+`lint-staged`의 `*.go` → `gofmt -w`도 이 저장소 고유다. `api`에 `lint` 타겟이 없어서다.
+
+### `format`이 `nx format`이 아닌 이유
+
+`nx format:check`는 **base 대비 변경된 파일만** 검사한다. 한 번 포맷이 어긋난 채 들어온 파일은 이후 손대지 않는 한 영원히 검사되지 않는다. 실제로 `tools/mcp/commit/`의 5개 파일이 그 상태로 방치돼 있었다. `prettier --check .`는 저장소 전체를 본다.
+
+### 커밋 시점 게이트
+
+`pnpm verify`는 사람이 기억해서 돌려야 하지만, 커밋에는 자동으로 걸리는 것이 있다.
+
+| 훅                  | 하는 일                                                      |
+| ------------------- | ------------------------------------------------------------ |
+| `.husky/pre-commit` | `lint-staged` — staged 파일에 eslint · prettier · gofmt 적용 |
+| `.husky/commit-msg` | `commitlint` — 커밋 메시지 형식 강제                         |
+
+`git commit --no-verify`로 건너뛸 수 있다. 처음 clone하면 `pnpm install`이 `prepare` 스크립트로 husky를 설치한다.
+
+### `verify`가 e2e를 빼는 이유
+
+`pnpm e2e`는 브라우저 바이너리(약 500MB)와 실행 중인 dev 서버를 요구한다. 로컬에서 매번 돌리기엔 무겁고, 없으면 실패하므로 기본 게이트에 넣지 않았다. CI에서는 별도 잡으로 돌린다.
+
+브라우저를 아직 받지 않았다면 한 번 받아야 한다.
+
+```bash
+pnpm exec playwright install chromium firefox webkit
+```
+
+CI에서는 파일 단위로 병렬화된 `e2e-ci` target을 쓸 수 있다. `@nx/playwright/plugin`이 spec 파일마다 `e2e-ci--src/<file>` target을 자동 생성한다.
 
 ### `build`가 mobile을 빼는 이유
 
@@ -32,18 +84,44 @@ pnpm exec nx export mobile
 
 ## 테스트 현황 — 솔직하게
 
-| 프로젝트   | 테스트          | 상태            |
-| ---------- | --------------- | --------------- |
-| api        | `go test ./...` | 6개 통과        |
-| web        | 없음            | **러너 미설치** |
-| mobile     | 없음            | **러너 미설치** |
-| commit-mcp | 없음            | **러너 미설치** |
+| 프로젝트   | 종류 | 명령        | 상태             |
+| ---------- | ---- | ----------- | ---------------- |
+| api        | 단위 | `pnpm test` | Go 6개           |
+| web        | 단위 | `pnpm test` | Vitest 6개       |
+| mobile     | 단위 | `pnpm test` | Vitest 6개       |
+| web-e2e    | E2E  | `pnpm e2e`  | 5개 × 3 브라우저 |
+| commit-mcp | 단위 | 없음        | **러너 미설치**  |
 
-`pnpm test`가 초록불이어도 **web과 mobile은 테스트되지 않은 것이다.** 지금은 부트스트랩 화면뿐이라 테스트할 동작이 없어서 러너를 넣지 않았다.
+지금 덮인 것은 **`apps/*/src/lib/api.ts`뿐이다.** 화면 컴포넌트, 디자인 토큰, App Shell에는 단위 테스트가 없다. web의 셸 동작은 E2E가 대신 잡는다.
 
-첫 번째로 테스트가 필요해지는 대상은 `apps/*/src/lib/api.ts`다. 환경변수 누락 처리와 응답 형식 가드는 지금 수동으로만 확인했다. 화면 로직이 생기는 시점에 러너를 도입하고 이 표를 갱신한다.
+`commit-mcp`는 아직 비어 있다. `scope.ts`의 경로→scope 판정은 이 저장소에 맞춰 손으로 고친 부분이라(`packages` → `libs`) 테스트로 고정할 값어치가 있다.
 
-E2E(Playwright / Cypress / Detox)는 **실제 기능 flow가 생긴 뒤에** 판단한다. 검증할 사용자 흐름이 없는 상태에서 E2E 하네스부터 만들지 않는다.
+### 단위 테스트 실행 방식
+
+`nx.json`의 `@nx/vitest` 플러그인이 `testMode: "run"`이라 `nx test`는 **한 번 돌고 끝난다**(`vitest run`). 기본값인 `"watch"`로 두면 터미널에서 `pnpm verify`가 watch 모드에 걸려 멈춘다.
+
+개발 중 watch가 필요하면 앱 디렉터리에서 직접 띄운다.
+
+```bash
+cd apps/web && pnpm exec vitest
+```
+
+`vitest.config.ts`는 `environment: 'node'`다. `lib/api.ts`가 순수 TS라 DOM이 필요 없다. **React 컴포넌트를 단위 테스트하게 되면** `jsdom`, `@testing-library/react`, `@vitejs/plugin-react`를 그때 함께 추가한다. 지금 넣으면 쓰지 않는 의존성이 된다.
+
+spec 파일도 `pnpm typecheck`가 검사한다. 생성기가 넣어둔 `*.spec.ts` exclude를 두 앱의 tsconfig에서 제거했다. 그대로 두면 vitest가 타입을 벗겨내기만 해서 스펙이 전혀 타입 검사되지 않는다.
+
+### E2E 범위
+
+`apps/web-e2e`는 부트스트랩 화면과 **반응형 셸 계약**을 고정한다. 유틸리티 클래스 하나만 잘못 고쳐도 잡히는 것들이다.
+
+- `<html lang="ko">`, `<h1>` 텍스트, 상태 문구
+- 1280px에서 사이드바(`complementary` 랜드마크) 노출
+- 767px에서 사이드바 사라지고 헤더(`banner`)가 제품명을 대신 표시
+- 320px에서 가로 스크롤 없음 — 한국어 텍스트가 길어 실제로 터질 수 있는 지점
+
+역할 기반 선택자를 쓰므로 시맨틱 랜드마크까지 함께 검증된다. 자세한 계약은 [design/foundation.md](../design/foundation.md).
+
+**mobile에는 E2E가 없다.** Detox는 시뮬레이터/에뮬레이터가 필요한데 이 환경에 없고(full Xcode·Android SDK 미설치), 검증할 사용자 흐름도 아직 없다. 실제 화면이 생기고 실행 환경이 갖춰지면 그때 판단한다.
 
 ## Go
 
@@ -133,6 +211,12 @@ node -e "console.log(require('expo/bundledNativeModules.json')['패키지명'])"
 
 - `tools/scripts/check-api-health.mjs` — 검사 결과 출력
 - `tools/mcp/commit/src/index.ts` — STDIO MCP 서버라 **stdout을 쓰면 프로토콜이 깨진다.** stderr로만 남긴다
+
+### 자동 실행되는 코드
+
+`.claude/hooks/` · `.husky/` · `commitlint.config.js` · `package.json`의 `prepare`/`lint-staged`는 **아무도 실행을 지시하지 않아도 돈다.** 이 파일들을 건드리는 변경은 일반 코드와 다르게 리뷰한다. 무엇이 언제 도는지와 리뷰 절차는 [.claude/README.md의 신뢰 표면](../../.claude/README.md#신뢰-표면).
+
+lint · format · tsconfig · commitlint 설정은 **npm 공식 레지스트리가 아니라** GitHub Packages(`@berrypjh/*`)에서 온다.
 
 ## TypeScript
 

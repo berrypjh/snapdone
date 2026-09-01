@@ -11,14 +11,6 @@
 
 ## Design Principles
 
-제품은 AI를 쓰지만 **AI 서비스처럼 보이지 않는다.** 생활형 생산성 도구처럼 보여야 한다.
-
-**금지**
-
-purple/blue gradient 남발 · neon glow · glassmorphism · sparkle · robot · AI badge 남발 · SF dashboard
-
-**지향**
-
 - 흰색/중립 배경, 색은 의미가 있을 때만
 - 명확한 hierarchy — 크기보다 굵기와 색으로 구분
 - accent는 하나. primary 파랑 외에 장식용 색을 추가하지 않는다
@@ -50,8 +42,6 @@ purple/blue gradient 남발 · neon glow · glassmorphism · sparkle · robot ·
 | `focus`           | `#1b64da` | 포커스 링                   |
 
 `success` / `warning` / `danger`는 아직 화면에서 쓰이지 않는다. 이름을 미리 고정해 둔 것이며, 각 상태가 실제로 생길 때 이 값을 쓴다.
-
-**gradient는 정의하지 않는다.** 필요하다고 느껴지면 그 화면 설계를 다시 본다.
 
 ## Typography
 

@@ -1,4 +1,4 @@
-# ai-commit message rules
+# commit-scope message rules
 
 ## 기본 형식
 

@@ -1,5 +1,58 @@
 {
-  "enabledPlugins": {
-    "code-review@claude-plugins-official": true
+  "permissions": {
+    "deny": [
+      "Read(.env)",
+      "Read(.env.local)",
+      "Read(.env.*.local)",
+      "Read(*.key)",
+      "Read(*.p8)",
+      "Read(*.p12)",
+      "Read(*.jks)",
+      "Read(*.mobileprovision)",
+      "Bash(*nx submit*)",
+      "Bash(*mobile:submit*)",
+      "Bash(*eas submit*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)"
+    ],
+    "ask": [
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(git merge*)",
+      "Bash(git rebase*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean*)",
+      "Bash(git checkout -- *)",
+      "Bash(git restore*)",
+      "Bash(git stash*)",
+      "Bash(git branch -d*)",
+      "Bash(git branch -D*)",
+      "Bash(git tag*)",
+      "Bash(*nx build mobile*)",
+      "Bash(*eas build*)",
+      "Bash(pnpm add*)",
+      "Bash(pnpm install*)",
+      "Bash(pnpm remove*)",
+      "Bash(pnpm update*)",
+      "Bash(*nx add*)",
+      "Bash(*nx migrate*)",
+      "Bash(go get*)",
+      "Bash(go mod*)"
+    ]
+  },
+  "enabledMcpjsonServers": ["commit-mcp"],
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-bash.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }

@@ -34,7 +34,7 @@ HTTP 클라이언트 라이브러리는 없다. Node 24와 React Native 0.85 모
 - **CORS 설정이 필요 없다.** 서버 대 서버 요청에는 origin 검사가 없다
 - 프록시 route(`app/api/*`)도 만들지 않았다. Server Component가 직접 부르면 되는 일에 중간 계층을 두지 않는다
 
-이 선택은 CLAUDE.md의 "Server Component를 기본으로 생각하고, browser interaction이 필요한 부분만 Client Component로 내린다"를 그대로 따른 것이다.
+이 선택은 AGENTS.md의 "Server Component를 기본으로 생각하고, browser interaction이 필요한 부분만 Client Component로 내린다"를 그대로 따른 것이다.
 
 ### 언제 이 결정을 다시 볼 것인가
 

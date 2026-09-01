@@ -18,7 +18,11 @@ Nx가 작업 orchestration을 담당한다.
 
 필요한 것: Node 24.14.0 (`.nvmrc`), pnpm 10.30.3, Go 1.26.6
 
+lint · format · tsconfig 설정은 GitHub Packages의 `@berrypjh/*` 패키지에서 온다. **토큰이 없으면 `pnpm install`이 401로 실패한다.**
+
 ```bash
+export GITHUB_TOKEN=<read:packages 권한이 있는 PAT>
+
 nvm use
 pnpm install
 
@@ -39,26 +43,19 @@ pnpm dev:mobile   # Expo (Metro)
 ## 검증
 
 ```bash
-pnpm verify   # lint -> typecheck -> test -> build
+pnpm verify   # format:check -> lint -> typecheck -> test -> test:hooks -> build
 ```
 
 개별 실행은 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
 
 ```bash
+pnpm e2e      # Playwright (브라우저 필요, verify에 미포함)
 pnpm health   # API 연결 확인 (개발자용)
 pnpm graph    # Nx project graph
 ```
 
-## 문서
+E2E를 처음 돌리기 전에 브라우저를 한 번 받아야 한다.
 
-| 문서                                                               | 내용                           |
-| ------------------------------------------------------------------ | ------------------------------ |
-| [product-principles.md](docs/product/product-principles.md)        | 제품 판단 기준                 |
-| [target-architecture.md](docs/architecture/target-architecture.md) | 구조와 경계                    |
-| [data-access.md](docs/architecture/data-access.md)                 | API 호출 규칙, CORS 판단       |
-| [foundation.md](docs/design/foundation.md)                         | 디자인 토큰, App Shell         |
-| [local-development.md](docs/development/local-development.md)      | 실행 · 환경변수 · 트러블슈팅   |
-| [quality-gates.md](docs/engineering/quality-gates.md)              | PR 전 검증, 의존성 · 보안 원칙 |
-| [bootstrap-result.md](docs/architecture/bootstrap-result.md)       | 부트스트랩 결과와 현재 범위    |
-
-작업 규칙은 [CLAUDE.md](CLAUDE.md)에 있다.
+```bash
+pnpm exec playwright install chromium firefox webkit
+```
