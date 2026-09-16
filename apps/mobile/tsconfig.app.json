@@ -17,5 +17,10 @@
     "eslint.config.cjs",
     "eslint.config.mjs"
   ],
-  "include": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+  "include": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  "references": [
+    {
+      "path": "../../libs/webview-bridge/tsconfig.lib.json"
+    }
+  ]
 }

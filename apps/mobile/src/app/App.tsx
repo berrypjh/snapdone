@@ -1,37 +1,51 @@
-import { StyleSheet, Text } from 'react-native';
+import { useColorScheme } from 'react-native';
 
+import { ThemeProvider, useTheme } from '@berrypjh/react-native-ui';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { AppShell } from '../components/AppShell';
-import { Surface } from '../components/Surface';
-import { color, typography } from '../theme/tokens';
+import { HomeScreen } from '../screens/HomeScreen';
+import { WebContentScreen } from '../screens/WebContentScreen';
+import { navigationTheme } from '../theme/navigationTheme';
 
-export const App = () => (
-  <SafeAreaProvider>
-    <StatusBar />
-    <AppShell title="이미지 액션 라우터">
-      <Text style={styles.tagline}>
-        사진이나 스크린샷에서 필요한 정보를 찾고,{'\n'}
-        해야 할 일까지 자연스럽게 이어줍니다.
-      </Text>
+import type { RootStackParamList } from './navigation';
 
-      <Surface>
-        <Text style={styles.status}>초기 설정 중입니다. 화면은 아직 준비되지 않았습니다.</Text>
-      </Surface>
-    </AppShell>
-  </SafeAreaProvider>
-);
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
-const styles = StyleSheet.create({
-  tagline: {
-    ...typography.body,
-    color: color.textSecondary,
-  },
-  status: {
-    ...typography.caption,
-    color: color.textMuted,
-  },
-});
+const AppNavigator = () => {
+  const theme = useTheme();
+
+  return (
+    <NavigationContainer theme={navigationTheme(theme)}>
+      <Stack.Navigator>
+        <Stack.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{ title: '이미지 액션 라우터' }}
+        />
+        <Stack.Screen
+          name="WebContent"
+          component={WebContentScreen}
+          options={({ route }) => ({ title: route.params.title })}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+};
+
+export const App = () => {
+  const mode = useColorScheme() === 'dark' ? 'dark' : 'light';
+
+  return (
+    <SafeAreaProvider>
+      <ThemeProvider mode={mode}>
+        <StatusBar />
+        <AppNavigator />
+      </ThemeProvider>
+    </SafeAreaProvider>
+  );
+};
 
 export default App;

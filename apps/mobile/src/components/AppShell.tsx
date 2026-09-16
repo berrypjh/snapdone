@@ -1,56 +1,35 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 
+import { getColor, Stack, useTheme } from '@berrypjh/react-native-ui';
 import type { ReactNode } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { color, space, typography } from '../theme/tokens';
+export const AppShell = ({ children }: { children: ReactNode }) => {
+  const theme = useTheme();
+  const { spacing } = theme.tokens;
 
-type AppShellProps = {
-  title: string;
-  children: ReactNode;
+  return (
+    <SafeAreaView
+      style={[styles.fill, { backgroundColor: getColor(theme, 'background.surface') }]}
+      edges={['left', 'right']}
+    >
+      <ScrollView
+        style={styles.fill}
+        contentContainerStyle={{
+          paddingHorizontal: spacing.lg,
+          paddingTop: spacing.xl,
+          paddingBottom: spacing['2xl'],
+        }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Stack gap="xl">{children}</Stack>
+      </ScrollView>
+    </SafeAreaView>
+  );
 };
 
-export const AppShell = ({ title, children }: AppShellProps) => (
-  <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-    <View style={styles.header}>
-      <Text style={styles.headerTitle} accessibilityRole="header" numberOfLines={1}>
-        {title}
-      </Text>
-    </View>
-
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
-      {children}
-    </ScrollView>
-  </SafeAreaView>
-);
-
 const styles = StyleSheet.create({
-  safeArea: {
+  fill: {
     flex: 1,
-    backgroundColor: color.background,
-  },
-  header: {
-    height: 56,
-    justifyContent: 'center',
-    paddingHorizontal: space[5],
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: color.border,
-  },
-  headerTitle: {
-    ...typography.cardTitle,
-    color: color.textPrimary,
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: space[5],
-    paddingTop: space[6],
-    paddingBottom: space[8],
-    gap: space[6],
   },
 });

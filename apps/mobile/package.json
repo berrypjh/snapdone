@@ -6,20 +6,34 @@
     "eas-build-post-install": "cd ../../ && node tools/scripts/eas-build-post-install.mjs . apps/mobile"
   },
   "nx": {
-    "name": "mobile"
+    "name": "mobile",
+    "projectType": "application",
+    "tags": [
+      "type:app"
+    ],
+    "targets": {
+      "start": {
+        "continuous": false
+      }
+    }
   },
   "dependencies": {
-    "@expo/vector-icons": "*",
+    "@berrypjh/react-native-ui": "1.1.2",
     "@expo/metro": "*",
+    "@react-navigation/native": "*",
+    "@react-navigation/native-stack": "*",
+    "@snapdone/webview-bridge": "workspace:*",
     "expo": "*",
     "expo-splash-screen": "*",
     "expo-status-bar": "*",
     "expo-system-ui": "*",
-    "react": "*",
+    "react": "19.2.3",
     "react-native": "*",
     "react-native-safe-area-context": "*",
-    "react-native-svg": "*",
+    "react-native-screens": "*",
+    "react-native-svg": "15.15.4",
     "react-native-svg-transformer": "*",
-    "react-native-web": "*"
+    "react-native-web": "*",
+    "react-native-webview": "*"
   }
 }
