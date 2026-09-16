@@ -2,8 +2,19 @@ import { workspaceRoot } from '@nx/devkit';
 import { nxE2EPreset } from '@nx/playwright/preset';
 import { defineConfig, devices } from '@playwright/test';
 
-// For CI, you may want to set BASE_URL to the deployed application.
-const baseURL = process.env['BASE_URL'] || 'http://localhost:3000';
+/**
+ * `BASE_URL` selects external-server mode: the suite tests a server that is already
+ * running (for example `nx start web`) and does not launch `nx dev web` itself.
+ * Only loopback hosts are accepted so the suite never runs against a public site.
+ */
+const externalBaseURL = process.env['BASE_URL'];
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+if (externalBaseURL && !LOOPBACK_HOSTS.has(new URL(externalBaseURL).hostname)) {
+  throw new Error(`BASE_URL must point to a local server, got ${externalBaseURL}`);
+}
+
+const baseURL = externalBaseURL ?? 'http://localhost:3000';
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -20,14 +31,16 @@ export default defineConfig({
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
   },
-  /* Run the web app before starting the tests */
-  webServer: {
-    command: 'pnpm exec nx dev web',
-    url: 'http://localhost:3000',
-    reuseExistingServer: true,
-    cwd: workspaceRoot,
-    timeout: 120_000,
-  },
+  /* Run the dev server unless an external server was given */
+  webServer: externalBaseURL
+    ? undefined
+    : {
+        command: 'pnpm exec nx dev web',
+        url: 'http://localhost:3000',
+        reuseExistingServer: true,
+        cwd: workspaceRoot,
+        timeout: 120_000,
+      },
   projects: [
     {
       name: 'chromium',

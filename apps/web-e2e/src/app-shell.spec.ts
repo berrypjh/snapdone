@@ -14,6 +14,13 @@ test('keeps the sidebar on desktop widths', async ({ page }) => {
   await expect(page.getByRole('complementary')).toBeVisible();
 });
 
+test('shows the sidebar exactly at the md breakpoint', async ({ page }) => {
+  await page.setViewportSize({ width: MD_BREAKPOINT, height: 800 });
+  await page.goto('/');
+
+  await expect(page.getByRole('complementary')).toBeVisible();
+});
+
 test('drops the sidebar below the md breakpoint', async ({ page }) => {
   await page.setViewportSize({ width: MD_BREAKPOINT - 1, height: 800 });
   await page.goto('/');
@@ -31,4 +38,28 @@ test('does not let the page scroll sideways on a narrow screen', async ({ page }
   );
 
   expect(overflows).toBe(false);
+});
+
+/** WebKit on macOS skips links on plain Tab, so link focus needs Alt+Tab there. */
+const linkTabKey = (browserName: string) => (browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
+
+/**
+ * The skip link is the first keyboard stop. It stays visually hidden until focused,
+ * and following it must move focus into <main>, not just scroll there.
+ */
+test('moves keyboard focus into the main content through the skip link', async ({
+  page,
+  browserName,
+}) => {
+  await page.goto('/');
+
+  const skipLink = page.getByRole('link', { name: '본문으로 건너뛰기' });
+  await page.keyboard.press(linkTabKey(browserName));
+  await expect(skipLink).toBeFocused();
+
+  const revealed = await skipLink.boundingBox();
+  expect(revealed?.width ?? 0).toBeGreaterThan(1);
+
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('main')).toBeFocused();
 });
