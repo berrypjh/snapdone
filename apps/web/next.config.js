@@ -2,8 +2,8 @@
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Next.js options go here
-  // See: https://nextjs.org/docs/app/api-reference/config/next-config-js
+  /** Workspace libs ship TypeScript source; Next compiles them like app code. */
+  transpilePackages: ['@snapdone/webview-bridge'],
 };
 
 module.exports = nextConfig;

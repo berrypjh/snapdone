@@ -1,69 +1,63 @@
 @import 'tailwindcss';
+@config '../../tailwind.config.mjs';
 
 @theme {
   --color-*: initial;
-  --color-transparent: transparent;
-  --color-current: currentColor;
-  --color-white: #ffffff;
-
-  --color-background: #ffffff;
-  --color-surface: #ffffff;
-  --color-surface-muted: #f6f7f9;
-
-  --color-text-primary: #17191c;
-  --color-text-secondary: #4a4f57;
-  --color-text-muted: #868c96;
-
-  --color-border: #e4e7ec;
-
-  --color-primary: #1b64da;
-  --color-primary-hover: #1857c0;
-  --color-primary-pressed: #14489e;
-  --color-on-primary: #ffffff;
-
-  --color-success: #0f7b4f;
-  --color-warning: #b26b00;
-  --color-danger: #c7362f;
-
-  --color-focus: #1b64da;
-
   --text-*: initial;
-  --text-page-title: 1.5rem;
-  --text-page-title--line-height: 1.4;
-  --text-section-title: 1.125rem;
-  --text-section-title--line-height: 1.5;
-  --text-card-title: 1rem;
-  --text-card-title--line-height: 1.5;
-  --text-body: 0.9375rem;
-  --text-body--line-height: 1.7;
-  --text-body-sm: 0.875rem;
-  --text-body-sm--line-height: 1.7;
-  --text-caption: 0.8125rem;
-  --text-caption--line-height: 1.6;
-  --text-button: 0.9375rem;
-  --text-button--line-height: 1.2;
-
   --radius-*: initial;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-
   --shadow-*: initial;
-  --shadow-card: 0 1px 2px rgb(23 25 28 / 0.06);
+}
 
-  --font-sans:
-    -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+@utility typo-heading-h4 {
+  font-family: var(--ds-heading-h4-font-family);
+  font-size: var(--ds-heading-h4-font-size);
+  font-weight: var(--ds-heading-h4-font-weight);
+  line-height: var(--ds-heading-h4-line-height);
+  letter-spacing: var(--ds-heading-h4-letter-spacing);
+}
+
+@utility typo-body-medium-strong {
+  font-family: var(--ds-body-medium-strong-font-family);
+  font-size: var(--ds-body-medium-strong-font-size);
+  font-weight: var(--ds-body-medium-strong-font-weight);
+  line-height: var(--ds-body-medium-strong-line-height);
+  letter-spacing: var(--ds-body-medium-strong-letter-spacing);
+}
+
+@utility typo-paragraph-default {
+  font-family: var(--ds-paragraph-default-font-family);
+  font-size: var(--ds-paragraph-default-font-size);
+  font-weight: var(--ds-paragraph-default-font-weight);
+  line-height: var(--ds-paragraph-default-line-height);
+  letter-spacing: var(--ds-paragraph-default-letter-spacing);
+}
+
+@utility typo-caption-default {
+  font-family: var(--ds-caption-default-font-family);
+  font-size: var(--ds-caption-default-font-size);
+  font-weight: var(--ds-caption-default-font-weight);
+  line-height: var(--ds-caption-default-line-height);
+  letter-spacing: var(--ds-caption-default-letter-spacing);
 }
 
 body {
-  background-color: var(--color-background);
-  color: var(--color-text-primary);
-  font-family: var(--font-sans);
+  background-color: var(--ds-background-surface);
+  color: var(--ds-text-default);
+  font-family: var(--ds-paragraph-default-font-family);
   word-break: keep-all;
   overflow-wrap: break-word;
 }
 
+/* Native scrollbars and form controls follow the active theme. */
+:root {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
 :focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: var(--ds-semantic-border-default) solid var(--ds-stroke-primary);
   outline-offset: 2px;
 }

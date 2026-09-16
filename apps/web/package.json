@@ -4,6 +4,10 @@
   "private": true,
   "nx": {
     "name": "web",
+    "projectType": "application",
+    "tags": [
+      "type:app"
+    ],
     "targets": {
       "typecheck": {
         "executor": "nx:run-commands",
@@ -22,8 +26,10 @@
     }
   },
   "dependencies": {
+    "@berrypjh/react-ui": "^1.1.2",
+    "@snapdone/webview-bridge": "workspace:*",
     "next": "~16.1.6",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
   }
 }
