@@ -1,6 +1,0 @@
-{
-  "extends": "@berrypjh/tsconfig/library.json",
-  "files": [],
-  "include": [],
-  "references": [{ "path": "./tsconfig.build.json" }]
-}
