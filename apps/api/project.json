@@ -3,7 +3,7 @@
   "name": "api",
   "projectType": "application",
   "sourceRoot": "apps/api",
-  "tags": [],
+  "tags": ["type:app"],
   "targets": {
     "dev": {
       "executor": "nx:run-commands",
