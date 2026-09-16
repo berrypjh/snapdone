@@ -63,15 +63,15 @@ web은 `word-break: keep-all`이 어절을 보호하므로 **긴 단어 하나�
 
 ## 토큰 밖의 값
 
-[foundation.md](../../../../docs/design/foundation.md)가 토큰 값의 유일한 기준이다. 거기에 없는 값이 들어왔는지 훑는다.
+web 값은 설치된 `@berrypjh/react-ui`, mobile 값은 설치된 `@berrypjh/react-native-ui` 테마 토큰이 출처다 ([foundation.md](../../../../docs/design/foundation.md)). 출처 밖의 값이 들어왔는지 훑는다.
 
 ```bash
-# 정의 파일(global.css · tokens.ts) 자신은 제외한다
-grep -rnE '#[0-9a-fA-F]{3,8}\b' apps/web/src apps/mobile/src --exclude=global.css --exclude=tokens.ts
-grep -rn 'shadow-' apps/web/src --include='*.tsx' | grep -v 'shadow-card'
+# web · mobile 모두 raw 색이 0이어야 한다
+grep -rnE '#[0-9a-fA-F]{3,8}\b' apps/web/src apps/mobile/src
+grep -rn 'shadow-' apps/web/src --include='*.tsx' | grep -v 'shadow-xs'
 ```
 
-나온 것마다 **왜 토큰으로 안 되는지** 묻는다. 답하지 못하면 토큰을 쓰거나, foundation.md에 값을 추가하고 두 플랫폼 파일을 함께 고친다.
+나온 것마다 **왜 토큰으로 안 되는지** 묻는다. web에서 공용 토큰에 값이 없으면 로컬에 만들지 말고 `pnpm --dir apps/web exec berry-react-ui token <prefix>`로 다시 찾고, 그래도 없으면 upstream 요청으로 올린다.
 
 ## loading · empty · error · confirmation
 

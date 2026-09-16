@@ -40,7 +40,18 @@
       "Bash(go mod*)"
     ]
   },
-  "enabledMcpjsonServers": ["commit-mcp"],
+  "extraKnownMarketplaces": {
+    "berrypjh": {
+      "source": {
+        "source": "github",
+        "repo": "berrypjh/shared-stack"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "code-review@claude-plugins-official": true,
+    "berry-commit@berrypjh": true
+  },
   "hooks": {
     "PreToolUse": [
       {

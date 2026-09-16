@@ -17,17 +17,13 @@ argument-hint: '<dir|files> (생략 시 git 변경분의 web·mobile 화면)'
 
 ### 1. 재사용 — 새로 만들기 전에 있는 것을 썼는가
 
-지금 있는 primitive는 이게 전부다.
+- **web**: 로컬 primitive 없음. 공용 `@berrypjh/react-ui`(`Box` · `Stack` · `SkipLink` · `Switch` …)를 조합하고 제품 셸 `AppShell`만 앱이 소유한다
+- **mobile**: 로컬 primitive 없음. 공용 `@berrypjh/react-native-ui`(`Box` · `Stack` · `Button` · `ThemeProvider` …)를 조합하고 `AppShell`과 화면만 앱이 소유한다
 
-| web                            | mobile                            |
-| ------------------------------ | --------------------------------- |
-| `Button` (primary / secondary) | `AppButton` (primary / secondary) |
-| `Surface` (기본 / muted)       | `Surface` (기본 / muted)          |
-| `AppShell`                     | `AppShell`                        |
-
-- 새로 만든 컴포넌트가 위 중 하나로 되는 일을 다시 하고 있지 않은가
-- 두 번째 화면에서도 쓸 것이 확실해진 것만 primitive로 올린다. 한 번 쓰는 것은 화면 안에 둔다
-- **Modal · Sheet · Toast · Tabs · Input · Skeleton은 아직 없다.** 처음 만드는 사람이 형태를 정하게 되므로 `foundation.md`에 값을 함께 기록한다
+- 새 컴포넌트를 만들기 전에 **설치된 공용 패키지에 이미 있는지 CLI로 조회했는가** — web `pnpm --dir apps/web exec berry-react-ui find <query>`, mobile `pnpm --dir apps/mobile exec berry-react-native-ui find <query>` → `api <Symbol>` (순서는 `.claude/rules/web.md` · `mobile.md`의 "공용 UI API 조회")
+- 조회 결과가 없다고 공용 source를 복사하거나 로컬 generic primitive(`Surface` 같은 별칭)를 다시 만들지 않았는가. 제품 조합(셸 · 화면)만 앱에 둔다
+- `main` · `aside` · `header` 같은 랜드마크를 `Box`로 바꾸지 않았는가
+- mobile 버튼 · 카드를 `Pressable` · `View`로 다시 만들지 않았는가. 공용 `Button` · `Box`로 된다
 
 ### 2. 플랫폼 — 맞는 쪽에 맞는 방식으로 만들었는가
 
@@ -59,9 +55,11 @@ argument-hint: '<dir|files> (생략 시 git 변경분의 web·mobile 화면)'
 
 ### 6. 토큰 — 정의된 값을 쓰는가
 
-토큰 값의 기준은 [foundation.md](../../../docs/design/foundation.md) 하나다. 여기서는 **거기에 없는 값이 들어왔는지 실제로 훑는다.**
+- **web**: 값의 출처는 설치된 `@berrypjh/react-ui`(preset class · `--ds-*` 변수)다. 로컬 raw 값을 새로 두지 않는다. 토큰 경로는 `pnpm --dir apps/web exec berry-react-ui token <path>`로 확인한다
+- **mobile**: 값의 출처는 설치된 `@berrypjh/react-native-ui` 테마 토큰(`useTheme` · `getColor` · `theme.tokens.*`)이다. 로컬 raw 값을 두지 않는다. 토큰 경로는 `pnpm --dir apps/mobile exec berry-react-native-ui token <path>`로 확인한다
+- 조합 방식의 기준은 [foundation.md](../../../docs/design/foundation.md)
 
-[references/product-ux.md](references/product-ux.md)의 grep 두 개를 돌리고, 걸린 것마다 **왜 토큰으로 안 되는지** 묻는다. 답하지 못하면 토큰을 쓴다. 새 값이 정말 필요하면 foundation.md에 추가하고 web·mobile 두 파일을 함께 고친다.
+[references/product-ux.md](references/product-ux.md)의 grep 두 개를 돌리고, 걸린 것마다 **왜 토큰으로 안 되는지** 묻는다. 공용 토큰에 필요한 값이 정말 없으면 로컬에 만들지 말고 upstream 요청으로 올린다.
 
 ### 7. 접근성
 
@@ -92,4 +90,4 @@ argument-hint: '<dir|files> (생략 시 git 변경분의 web·mobile 화면)'
 
 ## 기준 문서
 
-값과 원칙의 원문은 [foundation.md](../../../docs/design/foundation.md)와 [product-principles.md](../../../docs/product/product-principles.md)다. 토큰 값을 바꾸게 되면 `foundation.md`를 먼저 고치고 두 플랫폼 파일을 함께 고친다.
+조합 방식과 원칙의 원문은 [foundation.md](../../../docs/design/foundation.md)와 [product-principles.md](../../../docs/product/product-principles.md)다. web 토큰 **값**은 공용 라이브러리가 소유하므로 snapdone에서 바꾸지 않는다.

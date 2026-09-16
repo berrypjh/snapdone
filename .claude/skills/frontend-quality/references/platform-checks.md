@@ -14,7 +14,7 @@
 grep -rn "'use client'" apps/web/src
 ```
 
-- 현재 저장소에는 **하나도 없다.** 새로 생겼다면 그 컴포넌트에 실제로 브라우저 상호작용(이벤트 핸들러 · `useState` · `useEffect` · 브라우저 API)이 있는지 확인한다
+- 현재는 **`components/theme-switch.tsx` 하나다** (change 핸들러 · `useSyncExternalStore` · `localStorage`). 새로 생겼다면 그 컴포넌트에 실제로 브라우저 상호작용(이벤트 핸들러 · `useState` · `useEffect` · 브라우저 API)이 있는지 확인한다
 - **`layout.tsx`와 `page.tsx`에는 붙이지 않는다.** 필요한 leaf 컴포넌트로 내린다
 - Client Component에서 `process.env.API_BASE_URL`을 읽고 있지 않은가 — 서버 전용 값이라 브라우저에서 `undefined`가 된다
 
@@ -48,13 +48,14 @@ grep -rnE 'outline-none|focus:outline-none|outline: *none' apps/web/src
 
 확인할 폭:
 
-| 폭        | 확인할 것                                                     |
-| --------- | ------------------------------------------------------------- |
-| 1280px    | 사이드바가 보이고 본문이 `max-w-3xl`로 묶이는가               |
-| 767px     | 사이드바가 사라지고 헤더가 제품명을 대신 표시하는가           |
-| **320px** | **가로 스크롤이 생기지 않는가** — 한국어가 길어 실제로 터진다 |
+| 폭        | 확인할 것                                                            |
+| --------- | -------------------------------------------------------------------- |
+| 1280px    | 사이드바가 보이고 본문이 `max-w-(--container-3xl)`(48rem)로 묶이는가 |
+| 768px     | 경계에서 사이드바가 보이는가                                         |
+| 767px     | 사이드바가 사라지고 헤더가 제품명을 대신 표시하는가                  |
+| **320px** | **가로 스크롤이 생기지 않는가** — 한국어가 길어 실제로 터진다        |
 
-`apps/web-e2e/src/app-shell.spec.ts`가 이 세 가지를 고정한다. 셸을 바꿨으면 **실행이 필요하다**(`pnpm e2e` — 사용자에게 요청).
+`apps/web-e2e/src/app-shell.spec.ts`가 이 폭들과 SkipLink 키보드 이동을 고정한다. `max-w-3xl`은 공용 preset spacing 이름에 가려 2.5rem이 되므로 쓰지 않는다. 셸을 바꿨으면 **실행이 필요하다**(`pnpm e2e` — 사용자에게 요청).
 
 고정 폭(`w-[380px]` 같은 것)을 새로 넣지 않았는가 확인한다. 320px에서 넘친다.
 
@@ -85,7 +86,7 @@ grep -rn 'console\.' apps/web/src
 ## Status Bar
 
 - `<StatusBar />`는 `App.tsx`에 하나만 있다. 화면마다 추가하지 않는다
-- 배경이 밝으므로 어두운 아이콘이 맞다. `userInterfaceStyle`은 `light` 고정이다
+- `<StatusBar />`는 기본 `auto`라 라이트/다크 배경에 맞는 아이콘 색을 고른다. `userInterfaceStyle`은 `automatic`이다 — `light`로 되돌리면 다크 theme이 켜지지 않는다
 
 ## 터치 타깃
 

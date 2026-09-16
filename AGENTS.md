@@ -10,15 +10,16 @@
 
 Nx integrated monorepo. package manager는 **pnpm**(`package.json`의 `packageManager`로 고정). 기본 locale은 `ko-KR`.
 
-| project      | 위치               | 스택                 | 역할                        |
-| ------------ | ------------------ | -------------------- | --------------------------- |
-| `web`        | `apps/web`         | Next.js + TypeScript | 브라우저 제품 경험          |
-| `mobile`     | `apps/mobile`      | Expo + React Native  | 모바일 제품 경험            |
-| `api`        | `apps/api`         | Go                   | 서버 로직 · 외부 연동       |
-| `web-e2e`    | `apps/web-e2e`     | Playwright           | web E2E                     |
-| `commit-mcp` | `tools/mcp/commit` | TypeScript           | 커밋 메시지 MCP (개발 도구) |
+| project   | 위치           | 스택                 | 역할                                                   |
+| --------- | -------------- | -------------------- | ------------------------------------------------------ |
+| `web`     | `apps/web`     | Next.js + TypeScript | 브라우저 단독 서비스 · 앱 WebView 콘텐츠 화면          |
+| `mobile`  | `apps/mobile`  | Expo + React Native  | **주 제품** — 네이티브 셸 · 핵심 흐름 · WebView 호스트 |
+| `api`     | `apps/api`     | Go                   | 서버 로직 · 외부 연동                                  |
+| `web-e2e` | `apps/web-e2e` | Playwright           | web E2E                                                |
 
-`libs/`는 비어 있다. `docs/`는 제품 · 아키텍처 문서다.
+`libs/`에는 `webview-bridge`(앱 ↔ WebView 계약) 하나가 있다. 경계는 tag(`type:app` · `type:lib` · `type:e2e`)와 루트 `eslint.config.mjs`가 강제한다. `docs/`는 제품 · 아키텍처 문서다.
+
+**제품 구성은 네이티브 셸 + 웹 콘텐츠다.** Capture → Act 핵심 흐름과 네비게이션 · 로그인 · 권한은 mobile 네이티브, 결과 상세 · 기록 · 공지 · 설정 같은 콘텐츠 화면은 web 한 벌을 브라우저와 앱 WebView에서 함께 쓴다. 둘은 코드로 참조하지 않고 URL과 `libs/`의 메시지 계약으로만 이어진다 ([target-architecture.md](docs/architecture/target-architecture.md#제품-구성--네이티브-셸--웹-콘텐츠)).
 
 **target 이름은 프로젝트마다 다르다. 문서를 믿지 말고 `nx show project <이름>`으로 확인한다.** `api`에는 `lint`가 없고 `vet`과 `fmt`를 쓴다. `mobile`의 `build`는 로컬 빌드가 아니라 EAS 클라우드 빌드다.
 
@@ -42,6 +43,7 @@ Web · React Native · Go는 각자의 정상 architecture를 유지한다. **Nx
 - **frontend 작업에서 `apps/api`를 고치지 않는다.** 두 세계의 계약 접점은 `{ status: string }` 하나뿐이다
 - 공유는 `libs/`로만 한다. DOM component · RN component · CSS · platform API는 공유하지 않는다
 - 새 Nx library는 **두 번째 사용처가 실제로 나타났을 때** 만든다. 미리 만들지 않는다
+- 공용 UI 컴포넌트 · 토큰은 **설치된 패키지의 공개 CLI로 조회한다**(`berry-react-ui`). shared-stack source를 읽거나 복사하지 않는다. 순서는 web · mobile rule에 있다
 
 경로별 상세 규칙은 `.claude/rules/`에 있고 해당 파일을 열 때 적용된다.
 
@@ -77,7 +79,7 @@ Web · React Native · Go는 각자의 정상 architecture를 유지한다. **Nx
 - **`nx submit mobile`**(스토어 제출)과 **`nx build mobile`**(EAS 클라우드 빌드)
 - `git reset --hard` · `git checkout --` · `git stash` — 사용자 변경을 지운다
 
-커밋은 `/commit-scope`로 한다. scope별로 사용자 승인을 받은 뒤에만 커밋한다.
+커밋은 공용 plugin `berry-commit`의 `/berry-commit:commit-scope`로 한다(`.claude/settings.json`의 `enabledPlugins`). scope별로 사용자 승인을 받은 뒤에만 커밋한다.
 
 ## Memory
 

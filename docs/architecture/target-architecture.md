@@ -13,14 +13,14 @@ Nx Workspace (repository root)
 
 ## 현재 상태
 
-| 영역          | 상태                                        |
-| ------------- | ------------------------------------------- |
-| Nx workspace  | integrated, pnpm workspaces                 |
-| `apps/web`    | Next.js App Router. 부트스트랩 화면 하나    |
-| `apps/mobile` | Expo. 부트스트랩 화면 하나                  |
-| `apps/api`    | module `snapdone/api`, `GET /health`만 존재 |
-| `libs/`       | 비어 있음 (의도된 상태)                     |
-| `docs/`       | 제품 · 아키텍처 · 디자인 · 개발 · 품질      |
+| 영역          | 상태                                                                                |
+| ------------- | ----------------------------------------------------------------------------------- |
+| Nx workspace  | integrated, pnpm workspaces                                                         |
+| `apps/web`    | Next.js App Router. 홈 · `/history`(빈 기록) 두 화면, 브라우저 셸과 앱 WebView 모드 |
+| `apps/mobile` | Expo. React Navigation native stack — 네이티브 홈 · WebView 콘텐츠 화면             |
+| `apps/api`    | module `snapdone/api`, `GET /health`만 존재                                         |
+| `libs/`       | `webview-bridge` — 앱 ↔ WebView 계약 (web · mobile이 둘 다 사용)                    |
+| `docs/`       | 제품 · 아키텍처 · 디자인 · 개발 · 품질                                              |
 
 버전은 아래 [버전 정책](#버전-정책)에 한 곳으로 모아 두었다.
 
@@ -36,7 +36,8 @@ Nx Workspace (repository root)
 
 - Nx monorepo와 세 앱의 골격
 - 앱별 부트스트랩 화면 (서비스명 + 소개 문구 + 상태 문구)
-- 디자인 토큰과 App Shell
+- 디자인 토큰과 App Shell, web 라이트/다크 테마
+- 네이티브 셸 + 웹 콘텐츠 골격 — mobile native stack, WebView 화면(로딩 · 오류 · 외부 링크), web in-app 모드, `libs/webview-bridge` 계약과 모듈 경계 lint
 - Go `GET /health` 하나
 - 검증 명령과 문서
 
@@ -57,31 +58,58 @@ Nx Workspace (repository root)
 
 다음 단계는 공통 앱 셸과 디자인 시스템 위에 실제 화면을 기획서 순서대로 하나씩 올리는 것이다. 테스트가 어디까지 덮고 있는지는 [quality-gates.md](../engineering/quality-gates.md).
 
+## 제품 구성 — 네이티브 셸 + 웹 콘텐츠
+
+**결정 (2026-09-15):** mobile이 주 제품이다. web은 브라우저 단독 서비스이면서 앱 안 WebView로도 열린다. 하이브리드 앱에서 가장 보편적인 분담을 따른다.
+
+| 영역                                                                     | 담당                              | 이유                                                     |
+| ------------------------------------------------------------------------ | --------------------------------- | -------------------------------------------------------- |
+| 탭 · 스택 네비게이션, 로그인, 권한, 푸시                                 | mobile 네이티브                   | 앱다운 사용감, 스토어 심사(App Store 4.2 최소 기능) 안전 |
+| Capture → Understand → Route → Act 핵심 흐름 (카메라 · 사진 · 공유 시트) | mobile 네이티브                   | 네이티브 API가 필요하고 제품의 무게중심이 여기 있다      |
+| 결과 상세 · 기록 · 공지 / FAQ · 약관 · 설정 일부                         | web 한 벌 → 브라우저 + 앱 WebView | 스토어 배포 없이 고치고 코드는 한 벌                     |
+| 브라우저 단독 접속                                                       | web 전체                          | URL 공유, 서버 렌더링된 첫 HTML                          |
+
+### 런타임 계약
+
+web과 mobile은 **코드로 서로 참조하지 않는다.** 앱은 web을 URL로 연다. 둘 사이 계약은 아래 다섯 가지뿐이다.
+
+1. **in-app 판별** — 앱이 WebView User-Agent 뒤에 `SnapdoneApp/<bridge 계약 버전>`(지금 `SnapdoneApp/1`)을 붙인다(`react-native-webview`의 `applicationNameForUserAgent`). 앱 버전이 아니라 계약 버전이라 web이 어떤 메시지를 쓸 수 있는지 안다. web은 서버에서 이 값을 읽으므로 첫 HTML부터 in-app 모드가 적용된다. 판별 함수는 web에 하나만 둔다
+2. **로그인** — 일회용 코드 핸드오프. [data-access.md](./data-access.md#webview-로그인-핸드오프)
+3. **메시지** — web → 앱 `window.ReactNativeWebView.postMessage(JSON)`, 앱 → web `postMessage` · `injectJavaScript`. 메시지 타입(닫기 · 결과 전달 · 오류 · 촬영/공유 요청)은 web과 mobile이 함께 쓰므로 `libs/`의 플랫폼 중립 TypeScript 계약으로 둔다
+4. **링크 · 뒤로 가기** — 같은 도메인은 WebView 안에서, 외부 도메인은 시스템 브라우저로(`onShouldStartLoadWithRequest` → `Linking.openURL`). 뒤로 가기 · 닫기는 네이티브가 담당한다
+5. **URL** — web 경로와 앱 딥링크(Universal Link / App Link) 경로를 같게 둔다. 공유 링크는 앱이 있으면 앱, 없으면 브라우저로 열린다
+
+**구현된 것 (MVP 골격):** `react-native-webview` 13.16.1 · React Navigation native stack, web `isInAppRequest()` · `InAppReady`, mobile `WebContentScreen` · `webViewNavigation`, `libs/webview-bridge`(User-Agent 토큰 · `ready` 메시지), in-app E2E.
+
+**아직 없는 것:** 로그인 핸드오프 route(인증 도입 때), 앱 → web 메시지, 딥링크 설정, 촬영 · 공유 요청 메시지. 핵심 흐름을 WebView로 옮기지 않는다.
+
 ## 각 영역의 책임
 
 ### `apps/web` — Next.js
 
-브라우저에서의 제품 경험 전체를 담당한다.
+브라우저 단독 서비스 전체와, 앱 WebView로 여는 콘텐츠 화면을 담당한다. 두 환경은 **같은 코드 한 벌**이며 in-app 모드에서는 셸만 숨긴다.
 
 - 라우팅, 페이지 구성, 데이터 페칭 (App Router)
 - 서버에서 할 수 있는 일은 Server Component에서 한다
 - 브라우저 상호작용이 필요한 부분만 Client Component
-- 웹 고유의 입력 경로 — 파일 선택, 드래그 앤 드롭, 붙여넣기
+- 폰 폭(320–767px) 우선 반응형 — WebView는 항상 이 폭이다
+- 웹 고유의 입력 경로 — 파일 선택, 드래그 앤 드롭, 붙여넣기 (브라우저 단독 접속에서)
 
-담지 않는 것: 웹 전용이 아닌 도메인 규칙과 검증 로직을 웹에 묶어두는 일. 아직 web에서만 쓰는 동안에는 web 안에 두고, mobile에서도 필요해지는 시점에 `libs/`로 올린다.
+담지 않는 것: 웹 전용이 아닌 도메인 규칙과 검증 로직을 웹에 묶어두는 일. 아직 web에서만 쓰는 동안에는 web 안에 두고, mobile에서도 필요해지는 시점에 `libs/`로 올린다. in-app 모드에서 카메라 · 공유 시트를 web으로 구현하는 일 — 앱에 메시지로 요청한다.
 
 ### `apps/mobile` — React Native + Expo
 
-모바일에서의 제품 경험 전체를 담당한다.
+주 제품이다. 네이티브 셸과 핵심 흐름, 그리고 web 콘텐츠를 여는 WebView 호스트를 담당한다.
 
 - 네이티브 입력 경로 — 카메라, 사진 라이브러리, 공유 시트
 - 권한 요청과 그 실패 처리
 - 플랫폼 네비게이션, 시트, 알림
 - Safe Area, 키보드, 접근성
+- WebView 호스트 — in-app User-Agent, 로그인 핸드오프, 메시지 수신, 외부 링크 처리
 
-담지 않는 것: web과 동일한 화면 구조를 억지로 맞추는 일. 결과는 같고 구현은 각자에 맞게 한다.
+담지 않는 것: web과 동일한 화면 구조를 억지로 맞추는 일. 결과는 같고 구현은 각자에 맞게 한다. web 콘텐츠 화면을 RN으로 다시 만드는 일.
 
-**네비게이션은 아직 없다.** 지금은 단일 `src/app/App.tsx`다. 화면이 여러 개가 되는 시점에 bottom navigation을 넣을지 판단한다. 가짜 탭을 미리 만들지 않는다 ([foundation.md](../design/foundation.md)의 Mobile Shell).
+**네비게이션은 React Navigation native stack이다.** `src/app/App.tsx`가 `Home`(네이티브) · `WebContent`(WebView) 두 화면을 가진다. bottom navigation은 실제 탭이 생길 때 넣는다. 가짜 탭을 미리 만들지 않는다 ([foundation.md](../design/foundation.md)의 Mobile Shell).
 
 ### `apps/api` — Go
 
@@ -106,7 +134,7 @@ git remote가 없고 조직명도 정해지지 않았으므로 `github.com/...` 
 
 ### `libs/` — 공유 코드
 
-**지금은 비어 있고, 그대로 두는 것이 맞다.**
+**지금 lib은 `webview-bridge` 하나다.** web과 mobile이 둘 다 쓰는 앱 ↔ WebView 계약이라 두 번째 사용처 조건을 처음부터 만족한다. 모양과 경계 규칙은 `.claude/rules/libs.md`.
 
 라이브러리는 재사용이 실제로 발생한 뒤에 만든다. 두 번째 사용처가 나타나기 전에는 코드를 쓰는 앱 안에 둔다.
 
@@ -184,7 +212,7 @@ Nx는 orchestration 계층이다. 각 플랫폼의 빌드 도구(Next.js, Expo, 
 | pnpm         | 10.30.3                           |
 | Nx           | 23.1.1 (`nx`와 모든 `@nx/*` 동일) |
 | Next.js      | 16.1.7                            |
-| React        | 19.2.8                            |
+| React        | 19.2.3 (정확히 고정, 아래 참고)   |
 | Expo SDK     | 56.0.19                           |
 | React Native | 0.85.3                            |
 | Go           | 1.26.6                            |
@@ -196,6 +224,8 @@ Nx는 orchestration 계층이다. 각 플랫폼의 빌드 도구(Next.js, Expo, 
 | Playwright   | 1.62.1                            |
 
 `nx`와 모든 `@nx/*` 플러그인은 **정확히 같은 버전**이어야 한다. 플러그인 dependency가 exact pin이라 하나만 어긋나면 중복 설치와 그래프 오류가 난다.
+
+**React는 `19.2.3`으로 정확히 고정한다** (root · `apps/web` 모두, `^` 금지). react-native 0.85.3 렌더러가 React 19.2.3으로 빌드됐고 버전이 다르면 `Incompatible React versions`로 멈춘다. Expo SDK 56 `expo install --check`의 기대값도 같다. web은 한 monorepo에서 같은 React를 쓰도록 맞춘다 — `next` peer `^19.0.0`이라 문제없다. 네이티브 모듈 버전(`react-native-svg` 등)도 `expo/bundledNativeModules.json` 값을 따른다.
 
 **Expo는 SDK 56에 고정한다.** `@nx/expo`가 아직 SDK 57을 생성·마이그레이션하지 못한다 (nrwl/nx#36443 open).
 

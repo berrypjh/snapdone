@@ -32,8 +32,7 @@ nx show projects --affected --files=<바뀐 파일, 쉼표 구분>
 | `apps/web/**`                                                                | `web`, **`web-e2e`** |
 | `apps/mobile/**`                                                             | `mobile`             |
 | `apps/api/**`                                                                | `api`                |
-| `tools/mcp/commit/**`                                                        | `commit-mcp`         |
-| `nx.json` · `tsconfig.base.json` · 루트 `package.json` · `eslint.config.mjs` | **전부 5개**         |
+| `nx.json` · `tsconfig.base.json` · 루트 `package.json` · `eslint.config.mjs` | **전부 4개**         |
 | `docs/**` · `.claude/**`                                                     | 없음 (`[]`)          |
 
 `web` 변경이 `web-e2e`까지 끌어오는 것은 `implicitDependencies` 때문이며 의도된 동작이다.
@@ -42,13 +41,12 @@ nx show projects --affected --files=<바뀐 파일, 쉼표 구분>
 
 target 이름은 프로젝트마다 다르다.
 
-| project      | 있는 target                                                  |
-| ------------ | ------------------------------------------------------------ |
-| `web`        | `lint` `typecheck` `test` `build`                            |
-| `mobile`     | `lint` `typecheck` `test` — `build`는 EAS 클라우드           |
-| `api`        | **`vet` `fmt` `test` `build`** — `lint`도 `typecheck`도 없다 |
-| `web-e2e`    | `lint` `typecheck` `e2e`                                     |
-| `commit-mcp` | `lint` `typecheck` `build` — 테스트 러너 없음                |
+| project   | 있는 target                                                  |
+| --------- | ------------------------------------------------------------ |
+| `web`     | `lint` `typecheck` `test` `build`                            |
+| `mobile`  | `lint` `typecheck` `test` — `build`는 EAS 클라우드           |
+| `api`     | **`vet` `fmt` `test` `build`** — `lint`도 `typecheck`도 없다 |
+| `web-e2e` | `lint` `typecheck` `e2e`                                     |
 
 확실하지 않으면 `nx show project <이름>`으로 본다. `nx affected -t <target>`은 그 target이 없는 프로젝트를 **조용히 건너뛴다**(`No tasks were run`). 없는 target 때문에 실패하지 않으므로 target을 묶어서 넘겨도 된다.
 
@@ -74,7 +72,7 @@ nx affected -t lint,typecheck,test --files=<바뀐 파일>
 
 **Level 3 — 교차 변경**
 
-두 앱에 걸친 쌍(`apps/*/src/lib/api.ts`, 디자인 토큰 `global.css` ↔ `tokens.ts`)을 고쳤으면 **양쪽 앱을 모두** 범위에 넣는다. affected는 파일 기준이라 "짝이 되는 파일을 안 고친 것"은 잡아주지 못한다.
+두 앱에 걸친 쌍(`apps/*/src/lib/api.ts`)을 고쳤으면 **양쪽 앱을 모두** 범위에 넣는다. 디자인 토큰은 두 앱 모두 공용 라이브러리(web `@berrypjh/react-ui`, mobile `@berrypjh/react-native-ui`)가 소유해 앱 안에 짝 파일이 없다. affected는 파일 기준이라 "짝이 되는 파일을 안 고친 것"은 잡아주지 못한다.
 
 **Level 4 — 빌드**
 
@@ -115,11 +113,10 @@ nx affected -t vet,fmt,test --files=<바뀐 Go 파일>
 | `nx build web`           | Turbopack의 PostCSS 워커가 포트를 연다. 같은 이유로 막힌다                 |
 | `nx build mobile`        | 로컬 빌드가 아니라 **EAS 클라우드 빌드**다. 로컬 번들은 `nx export mobile` |
 | mobile 런타임 검증       | 시뮬레이터 · Detox · Maestro가 없다. **수단 자체가 없다**                  |
-| `commit-mcp` 단위 테스트 | 테스트 러너가 설치돼 있지 않다                                             |
 
-앞의 셋은 **AI 세션에서만** 막힌다. 사용자 터미널에서는 정상 동작하므로 실행을 요청하면 된다. 뒤의 둘은 이 머신에 수단 자체가 없다.
+앞의 셋은 **AI 세션에서만** 막힌다. 사용자 터미널에서는 정상 동작하므로 실행을 요청하면 된다. 마지막 하나는 이 머신에 수단 자체가 없다.
 
-`pnpm build`는 `api`와 `commit-mcp`까지 통과하고 `web`에서 멈춘다. "web 빌드는 확인하지 못했다"고 적고 사용자에게 요청한다. 결과를 받았으면 `.next/BUILD_ID`와 `routes-manifest.json` 존재로 성공을 확인할 수 있다.
+`pnpm build`는 `api`까지 통과하고 `web`에서 멈춘다. "web 빌드는 확인하지 못했다"고 적고 사용자에게 요청한다. 결과를 받았으면 `.next/BUILD_ID`와 `routes-manifest.json` 존재로 성공을 확인할 수 있다.
 
 ## 7. 마지막
 

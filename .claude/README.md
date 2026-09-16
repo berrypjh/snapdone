@@ -22,7 +22,7 @@ AI가 이 저장소에서 **일반적인 Nx 조언이 아니라 이 저장소의
 | 메인 대화를 오염시키는 대량 탐색           | built-in subagent           | `Explore`, `Plan`                                     |
 | 모델 판단과 무관하게 **막아야** 하는 것    | permission (settings)       | `.env` 읽기, 스토어 제출                              |
 | permission 문법으로 표현되지 않는 판단     | `.claude/hooks/*.mjs`       | 명령 문자열 전체를 봐야 하는 것                       |
-| 외부 시스템 접근이 필요한 것               | MCP                         | `commit-mcp`                                          |
+| 여러 저장소가 같은 규칙으로 쓰는 개발 도구 | 공용 plugin                 | `berry-commit@berrypjh` (commit skill + MCP)          |
 
 `AGENTS.md`와 rule은 **context이지 강제 장치가 아니다.** 반드시 막아야 하는 것은 permission으로 처리한다.
 
@@ -39,7 +39,6 @@ CLAUDE.md                     `@AGENTS.md` 한 줄. Claude Code 진입점
 │  ├─ ko-ui.md                apps/{web,mobile}/src/**/*.tsx
 │  └─ libs.md                 libs/**            (지금은 비어 있어 로드되지 않는다)
 ├─ skills/                    호출하거나 관련성이 판단될 때만 로드
-│  ├─ commit-scope/           scope별 한국어 커밋 (사용자만 호출)
 │  ├─ repo-verify/            변경 영향 범위 판정 + 검증 사다리
 │  └─ frontend-quality/       화면 제품 검수 (references/ 2개는 필요할 때만)
 ├─ hooks/
@@ -47,7 +46,6 @@ CLAUDE.md                     `@AGENTS.md` 한 줄. Claude Code 진입점
 ├─ settings.json              팀 공유. 커밋된다
 ├─ settings.local.json        개인용. gitignore된다
 └─ README.md                  이 문서. Claude가 로드하지 않는다
-.mcp.json                     프로젝트 MCP 서버. 커밋된다
 docs/                         사람이 읽는 문서. rule과 skill이 링크로 참조한다
 ```
 
@@ -55,15 +53,15 @@ docs/                         사람이 읽는 문서. rule과 skill이 링크�
 
 ## Skill
 
-| skill              | 언제                              | 누가 호출               |
-| ------------------ | --------------------------------- | ----------------------- |
-| `commit-scope`     | staged 변경을 scope별로 커밋할 때 | **사용자만**            |
-| `repo-verify`      | 코드를 바꾸고 완료를 보고하기 전  | Claude 자동 또는 사용자 |
-| `frontend-quality` | web·mobile 화면을 바꾸고 나서     | Claude 자동 또는 사용자 |
+| skill                        | 출처                       | 언제                              | 누가 호출               |
+| ---------------------------- | -------------------------- | --------------------------------- | ----------------------- |
+| `/berry-commit:commit-scope` | 공용 plugin `berry-commit` | staged 변경을 scope별로 커밋할 때 | **사용자만**            |
+| `repo-verify`                | 이 저장소                  | 코드를 바꾸고 완료를 보고하기 전  | Claude 자동 또는 사용자 |
+| `frontend-quality`           | 이 저장소                  | web·mobile 화면을 바꾸고 나서     | Claude 자동 또는 사용자 |
 
-`commit-scope`는 `disable-model-invocation: true`다. 커밋은 사용자가 시작해야 하는 일이라 Claude가 알아서 부르지 않는다. 이 플래그가 붙은 skill은 설명이 컨텍스트에 올라가지도 않는다.
+커밋은 사용자가 시작해야 하는 일이다. plugin의 `commit_scope` tool은 **명시적 승인 뒤에만** 호출하고, git commit은 permission `ask`가 한 번 더 지킨다.
 
-나머지 둘은 자동 호출을 허용한다. "검증 없이 완료를 선언하지 않는다"와 "화면은 제품 기준으로 본다"가 Claude가 스스로 지켜야 하는 규칙이라, 사용자가 매번 타이핑해야 한다면 의미가 없기 때문이다.
+이 저장소의 두 skill은 자동 호출을 허용한다. "검증 없이 완료를 선언하지 않는다"와 "화면은 제품 기준으로 본다"가 Claude가 스스로 지켜야 하는 규칙이라, 사용자가 매번 타이핑해야 한다면 의미가 없기 때문이다.
 
 **새 skill을 만드는 기준**
 
@@ -149,7 +147,7 @@ Skill 본문은 한번 로드되면 이후 턴에도 컨텍스트에 남는다. 
 - `allowManagedPermissionRulesOnly` · `deniedMcpServers` · `disableBypassPermissionsMode` — managed 전용
 - 홈 디렉터리 credential 정책 — 저장소가 개인 홈 설정을 정하는 것은 월권이다
 
-마지막으로, **clone한 저장소의 내용 자체가 신뢰 대상이 아닐 수 있다.** 이 저장소의 `.claude/settings.json` · `.mcp.json` · 스킬의 `allowed-tools`는 전부 git에서 오는 것이고, 그중 일부(hook · `env` · 스킬의 `allowed-tools`)는 **신뢰 다이얼로그를 수락하기 전에도 적용된다.** 남의 저장소에서 `claude -p`를 돌리기 전에는 `--setting-sources user` 또는 `--bare`를 검토한다.
+마지막으로, **clone한 저장소의 내용 자체가 신뢰 대상이 아닐 수 있다.** 이 저장소의 `.claude/settings.json`(plugin 선언 포함) · 스킬의 `allowed-tools`는 전부 git에서 오는 것이고, 그중 일부(hook · `env` · 스킬의 `allowed-tools`)는 **신뢰 다이얼로그를 수락하기 전에도 적용된다.** 남의 저장소에서 `claude -p`를 돌리기 전에는 `--setting-sources user` 또는 `--bare`를 검토한다.
 
 ## Hook
 
@@ -167,7 +165,7 @@ Skill 본문은 한번 로드되면 이후 턴에도 컨텍스트에 남는다. 
 **의도적으로 넣지 않은 것**
 
 - `nx build mobile` · `eas *` · `nx submit` — permission의 `ask`/`deny`가 이미 처리한다. 두 곳에 적지 않는다
-- `pnpm build` — `api`와 `commit-mcp`까지 성공하고 `web`에서 멈춘다. 부분 성공에 정보가 있으므로 막지 않는다
+- `pnpm build` — `api`까지 성공하고 `web`에서 멈춘다. 부분 성공에 정보가 있으므로 막지 않는다
 - prettier · typecheck 자동 실행 — `lint-staged`가 더 잘 한다. Claude 밖에서 들어온 코드에도 걸린다
 
 **실패하면 통과시킨다.** 훅이 깨져서 모든 Bash가 막히는 쪽이 더 나쁘다. 그래서 이것은 보조 장치이지 마지막 방어선이 아니다.
@@ -201,7 +199,7 @@ AI 설정과 별개의 층이다. **누가 커밋하든 걸린다**는 점이 �
 
 `lint-staged`는 `package.json`에 있다. TS·JS는 `eslint --fix` + `prettier --write`, JSON·CSS·MD는 `prettier --write`, **Go는 `gofmt -w`**다. Go를 넣은 이유는 `api`에 `lint` 타겟이 없고 `nx fmt api`가 검사만 하기 때문이다. 자동으로 고치는 지점이 여기밖에 없다.
 
-`commitlint` 규칙은 `.claude/skills/commit-scope/examples/commit-message-rules.md`와 **같은 내용**이다. 문서는 Claude에게 설명하고 config는 강제한다. type 목록이나 `!:` 금지를 바꾸면 **두 곳을 함께 고친다.**
+`commitlint` 규칙(`@berrypjh/commitlint-config`)과 plugin `berry-commit`의 `skills/commit-scope/examples/commit-message-rules.md`는 **같은 내용**이며 둘 다 공용 shared-stack이 소유한다. 문서는 Claude에게 설명하고 config는 강제한다. 바꿔야 하면 이 저장소가 아니라 upstream에서 함께 고친다.
 
 `prettier`는 `nx format:*`이 아니라 **plain `prettier .`**를 쓴다. `nx format:check`는 base 대비 변경된 파일만 검사해서, 한 번 들어간 드리프트를 영원히 놓친다. 실제로 `tools/mcp/commit/`의 5개 파일이 그렇게 방치돼 있었다.
 
@@ -211,12 +209,12 @@ AI 설정과 별개의 층이다. **누가 커밋하든 걸린다**는 점이 �
 
 harness가 커지면서 **아무도 실행을 지시하지 않아도 도는 코드**가 생겼다. 여기 전부 적는다.
 
-| 언제                   | 무엇이                                      | 출처                        |
-| ---------------------- | ------------------------------------------- | --------------------------- |
-| Claude의 Bash 호출마다 | `node .claude/hooks/guard-bash.mjs`         | 이 저장소                   |
-| `git commit`마다       | `npx lint-staged` · `npx commitlint --edit` | 이 저장소 + npm             |
-| `pnpm install`마다     | `prepare: husky`                            | npm                         |
-| MCP 세션 시작마다      | `node ./tools/mcp/commit/dist/index.js`     | 이 저장소 (**빌드 산출물**) |
+| 언제                   | 무엇이                                                                            | 출처                                                   |
+| ---------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Claude의 Bash 호출마다 | `node .claude/hooks/guard-bash.mjs`                                               | 이 저장소                                              |
+| `git commit`마다       | `npx lint-staged` · `npx commitlint --edit`                                       | 이 저장소 + npm                                        |
+| `pnpm install`마다     | `prepare: husky`                                                                  | npm                                                    |
+| Claude 세션 시작마다   | `node ${CLAUDE_PLUGIN_ROOT}/dist/index.js` (`berry-commit` plugin의 `commit-mcp`) | 공용 marketplace `berrypjh` (**plugin에 커밋된 번들**) |
 
 그리고 lint · format · tsconfig · commitlint 규칙은 **npm 공식 레지스트리가 아닌** GitHub Packages에서 온다.
 
@@ -241,7 +239,7 @@ pnpm ls @berrypjh/eslint-config @berrypjh/tsconfig    # 버전이 예상과 같�
 
 - **새로 실행되는 것이 생겼나** — `settings.json`의 `hooks`, `.husky/` 새 파일, `package.json`의 `prepare`/`lint-staged`
 - **네트워크나 홈 디렉터리에 닿는가** — 훅은 프로젝트 안에서만 끝나야 한다. `curl` · `~/.ssh` · `$HOME`이 보이면 멈춘다
-- **`dist/`를 실행하는 것이 최신인가** — `commit-mcp`는 소스가 아니라 빌드 산출물을 돈다. `pnpm build:mcp:commit`을 잊으면 옛 코드가 계속 뜬다
+- **plugin이 무엇을 실행하는가** — `settings.json`의 `extraKnownMarketplaces` · `enabledPlugins`가 바뀌면 세션 시작 시 도는 코드가 바뀐다. `claude plugin list`로 설치 버전과 scope를 확인한다
 
 `claude plugin validate .` 도 있지만 이 저장소는 plugin이 아니라 프로젝트 설정이라 대상이 아니다.
 
@@ -249,7 +247,6 @@ pnpm ls @berrypjh/eslint-config @berrypjh/tsconfig    # 버전이 예상과 같�
 
 `.claude/settings.local.json`은 gitignore된다. 여기에 두는 것:
 
-- 프로젝트 MCP 서버 승인(`enabledMcpjsonServers`)
 - 이 머신에서만 필요한 샌드박스 경로
 - 개인 플러그인
 
@@ -288,25 +285,24 @@ MCP 서버와 plugin은 사용자 권한으로 임의 코드를 실행할 수 �
 
 ### 현재 상태
 
-**프로젝트 MCP는 `commit-mcp` 하나이고 직접 만든 것이다**(`tools/mcp/commit`). 외부 MCP는 프로젝트 스코프에 하나도 없다. `/commit-scope` 스킬이 이 서버를 쓴다.
+**프로젝트에 로컬 MCP 서버는 없다.** 커밋용 `commit-mcp`는 공용 plugin `berry-commit@berrypjh`가 제공한다(tool 이름 `mcp__plugin_berry-commit_commit-mcp__*`). 예전의 `tools/mcp/commit` · `.mcp.json` · `/commit-scope` 로컬 사본은 plugin 연결을 확인한 뒤 삭제했다 — plugin 쪽이 staged patch를 `git apply --cached`로 복원해 더 안전하다.
 
-`commit-mcp`의 보안 성격 — tool 3개 중 쓰기는 `commit_scope` 하나뿐이고, **네트워크 호출이 없고 credential을 읽지 않는다.** git 호출은 `spawnSync('git', args)` 배열 형태라 모델이 만든 커밋 문구가 셸로 해석되지 않는다. `execSync`는 인자가 없는 상수 명령 한 곳에만 쓴다.
+`settings.json`의 plugin 키:
 
-**clone 직후에는 이 서버가 뜨지 않는다.** `.mcp.json`이 가리키는 `tools/mcp/commit/dist/`는 gitignore 대상이라 저장소에 없다. `/commit-scope`를 쓰려면 한 번 빌드해야 한다.
-
-```bash
-pnpm build:mcp:commit
+```json
+"extraKnownMarketplaces": { "berrypjh": { "source": { "source": "github", "repo": "berrypjh/shared-stack" } } },
+"enabledPlugins": { "berry-commit@berrypjh": true, "code-review@claude-plugins-official": true }
 ```
 
-빌드 산출물을 커밋하지 않는 것은 의도한 것이다. 덕분에 저장소를 clone한 것만으로는 `.mcp.json`이 어떤 코드도 실행시키지 못한다 — `claude -p`처럼 승인 프롬프트가 없는 실행 경로에서도 마찬가지다.
+`commit-mcp`의 보안 성격 — tool 3개 중 쓰기는 `commit_scope` 하나뿐이고, **네트워크 호출이 없고 credential을 읽지 않는다.** git 호출은 `spawnSync('git', args)` 배열 형태라 모델이 만든 커밋 문구가 셸로 해석되지 않는다. **plugin 설치에는 빌드 단계가 없고 `dist/index.js` 번들이 plugin 저장소에 커밋돼 있다** — 신뢰 표면이 shared-stack으로 옮겨갔다는 뜻이다.
 
-**`enabledPlugins`는 선언하지 않았다.** `settings.json`의 키는 `permissions` · `enabledMcpjsonServers` · `hooks` 셋뿐이다. 후보였던 `code-review@claude-plugins-official`을 넣지 않은 이유는 두 가지다. GitHub PR 워크플로 전용이라(`gh pr view` · `gh pr diff` · `gh pr comment`) **remote도 `gh` CLI도 없는 지금 이 저장소에서는 동작하지 않고**, 활성화하면 `gh pr comment`(외부 쓰기)가 미리 승인된다 — 스킬의 `allowed-tools`는 workspace trust 게이트를 받지 않는다. 코드 리뷰는 번들 `/code-review`로 한다.
+`code-review@claude-plugins-official`도 켜져 있다. GitHub PR 워크플로 전용이라(`gh pr view` · `gh pr diff` · `gh pr comment`) 활성화하면 `gh pr comment`(외부 쓰기)가 미리 승인된다 — 스킬의 `allowed-tools`는 workspace trust 게이트를 받지 않는다. 사용자가 켠 설정이며 이 문서는 그 영향만 기록한다.
 
 Plugin은 사용자 스코프(`~/.claude/settings.json`)에서도 켤 수 있는데, 그렇게 켠 것은 **저장소에 흔적이 남지 않아 팀원 환경에서 재현되지 않는다.** 팀이 함께 써야 하는 것은 프로젝트 `enabledPlugins`에 선언하고, 팀원은 `claude plugin install`을 한 번 실행해야 한다.
 
 ### 외부 없이도 돌아가야 한다
 
-`AGENTS.md` · rules · `repo-verify` · `frontend-quality` · permissions는 **MCP와 plugin이 하나도 없어도 그대로 동작한다.** 전부 파일과 로컬 `nx` · `git`만 쓴다. `/commit-scope`만 MCP에 의존하는데, 없으면 손으로 커밋하면 되고 그 경로는 permission의 ask가 지킨다.
+`AGENTS.md` · rules · `repo-verify` · `frontend-quality` · permissions는 **MCP와 plugin이 하나도 없어도 그대로 동작한다.** 전부 파일과 로컬 `nx` · `git`만 쓴다. `/berry-commit:commit-scope`만 plugin MCP에 의존하는데, plugin이 없으면 손으로 커밋하면 되고 그 경로는 permission의 ask가 지킨다. 공용 UI 조회도 네트워크 없이 **설치된 패키지 bin**(`berry-react-ui`)만 쓴다.
 
 저장소를 이해하고 검증하는 능력을 외부 서버에 의존시키지 않는다.
 

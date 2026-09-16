@@ -59,6 +59,25 @@ HTTP 클라이언트 라이브러리는 없다. Node 24와 React Native 0.85 모
 - 브라우저가 아니므로 CORS와 무관하다
 - `localhost`, `10.0.2.2`, 사설 IP를 **코드에 넣지 않는다.** 기기별 차이는 `.env`로 해결한다 ([local-development.md](../development/local-development.md) 참조)
 
+## 앱 WebView에서 열린 web
+
+**결정됨, 아직 구현 안 함.** 구조는 [target-architecture.md](./target-architecture.md#제품-구성--네이티브-셸--웹-콘텐츠).
+
+web 화면이 앱 WebView 안에서 열려도 **데이터 경로는 바뀌지 않는다.** WebView는 브라우저이고, web은 여전히 Server Component에서 Go API를 부른다. CORS · `NEXT_PUBLIC_*` 판단도 위 "Web은 서버에서 호출한다"와 같다.
+
+### WebView 로그인 핸드오프
+
+앱의 로그인 상태는 WebView에 자동으로 넘어가지 않는다. 표준 방식은 일회용 코드 교환이다.
+
+1. 로그인한 앱이 Go API에서 짧게 유효한 **일회용 코드**를 받는다
+2. 앱이 WebView로 `/auth/handoff?code=…&next=<경로>`를 연다
+3. web 서버가 코드를 Go API로 교환하고 **httpOnly 쿠키**를 심은 뒤 `next`로 redirect한다
+
+- access token을 URL · JS 전역 · `injectJavaScript`로 넘기지 않는다. 코드는 1회용이고 만료가 짧다
+- `next`는 같은 도메인 경로만 허용한다 (open redirect 방지)
+- 브라우저 단독 접속은 web 자체 로그인 흐름을 쓰고, 세션 쿠키 형식은 핸드오프와 같다
+- **인증이 없는 지금은 만들지 않는다.** 인증을 도입할 때 Go API endpoint와 web route를 함께 설계한다
+
 ## 앞으로: UI는 API를 직접 모른다
 
 business API가 생기면 아래 형태를 쓴다.
