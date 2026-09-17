@@ -5,7 +5,7 @@ paths:
 
 # libs (`libs/`)
 
-이 규칙은 `libs/` 파일을 열 때 읽힌다. 지금 lib은 `webview-bridge` 하나다 — 앱 ↔ WebView 계약(User-Agent 토큰 · 메시지 타입)이며 web과 mobile이 둘 다 쓴다.
+이 규칙은 `libs/` 파일을 열 때 읽힌다. 지금 lib은 둘이고 web과 mobile이 둘 다 쓴다 — `webview-bridge`(앱 ↔ WebView 계약: User-Agent 토큰 · 메시지 타입), `auth-contracts`(인증 wire 타입: provider · 오류 코드 · `Session`).
 
 ## 모양
 

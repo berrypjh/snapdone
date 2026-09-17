@@ -26,10 +26,20 @@ Next.js App Router. 소스는 `src/`, alias는 `@/*` → `./src/*`.
 - 카메라 · 사진 · 공유 시트를 web에서 구현하지 않는다. in-app 모드에서는 앱에 메시지로 요청한다
 - 앱과 주고받는 메시지는 `libs/`의 계약 타입만 쓴다. 문자열 메시지를 흩어 쓰지 않는다
 - 로그인 토큰을 URL · JS 전역으로 받지 않는다. 핸드오프는 [data-access.md](../../docs/architecture/data-access.md#webview-로그인-핸드오프)
-- 판별은 `src/lib/in-app.ts`의 `isInAppRequest()`(서버, User-Agent) 하나다. root layout이 읽어 `AppShell inApp`으로 넘긴다 — 앱 안에서는 header · sidebar · SkipLink 없이 `main`만 렌더한다
+- 판별은 `src/lib/in-app.ts`의 `isInAppRequest()`(서버, User-Agent) 하나다. `(product)` layout이 읽어 `AppShell inApp`으로 넘긴다 — 앱 안에서는 header · sidebar · SkipLink 없이 `main`만 렌더한다
 - WebView로 열리는 페이지는 `<InAppReady title="…" />`로 앱에 준비 완료와 제목을 알린다. 브라우저에서는 아무 일도 하지 않는다
 - 앱 모드 계약은 `apps/web-e2e/src/in-app.spec.ts`가 앱 User-Agent로 고정한다
-- 로그인 핸드오프 route는 인증이 생길 때 만든다
+- 앱 안 `/login`은 Google 버튼 대신 안내를 보이고 `auth-required`를 보낸다. 앱이 `/auth/handoff/start` → ready(`handoff-ready`) → `/auth/handoff`로 세션을 넘긴다(`src/lib/auth/handoff.ts`). 메시지는 `<InAppMessage message={…} />`로 보낸다
+
+## 인증
+
+구조는 [ON-01 Web 구성](../../docs/features/on01/architecture.md#web-구성-구현됨).
+
+- root layout은 html · theme · CSS만 둔다. 제품 화면은 `app/(product)`(AppShell), 로그인 화면은 `app/(auth)`(nav 없는 단일 main)
+- 보호 page는 page 안에서 `requireSession(returnTo)`를 부른다. layout · proxy만으로 인가를 끝내지 않는다
+- 로그인 뒤 돌아갈 경로는 `src/lib/auth/redirect.ts` allowlist에 추가한다
+- credential · preauth 값을 props · Server Action 반환값 · 브라우저 저장소에 싣지 않는다. cookie는 `src/lib/auth/cookies.ts`의 `authCookies()` 이름 · 속성만 쓴다
+- mutation Server Action은 `isAllowedOrigin`(`WEB_ORIGIN` 정확 비교)을 먼저 확인한다
 
 ## Styling
 
@@ -62,7 +72,7 @@ Tailwind v4 + `@berrypjh/react-ui`. 색 · 타입 스케일 · radius · shadow�
 ## Data
 
 - API 주소를 아는 파일은 `src/lib/api.ts` **하나뿐이다.** component에 URL 문자열을 쓰지 않는다
-- Server Component에서 호출한다. 브라우저가 Go API를 직접 부르지 않으므로 CORS 설정이 없다
+- 서버에서 호출한다 — 읽기는 Server Component, mutation은 Server Action · Route Handler. 브라우저가 Go API를 직접 부르지 않으므로 CORS 설정이 없다. 인증 endpoint 호출은 `src/lib/auth/api.ts`에 모은다
 - `app/api/*` route를 만들지 않는다. 브라우저 직접 호출이 필요해지면 [data-access.md](../../docs/architecture/data-access.md)의 전환 절차를 먼저 읽는다
 - 환경변수는 `API_BASE_URL`이다. `NEXT_PUBLIC_` 접두사가 없는 것은 의도적이다
 - 응답은 좁은 타입 가드로 확인한다. `any`를 쓰지 않는다

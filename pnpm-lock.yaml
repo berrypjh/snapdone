@@ -231,6 +231,9 @@ importers:
       '@react-navigation/native-stack':
         specifier: '*'
         version: 7.19.1(@react-navigation/native@7.4.1(react-native@0.85.3(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native-safe-area-context@5.7.0(react-native@0.85.3(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native-screens@4.26.2(react-native@0.85.3(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)
+      '@snapdone/auth-contracts':
+        specifier: workspace:*
+        version: link:../../libs/auth-contracts
       '@snapdone/webview-bridge':
         specifier: workspace:*
         version: link:../../libs/webview-bridge
@@ -285,6 +288,9 @@ importers:
       '@berrypjh/react-ui':
         specifier: ^1.1.2
         version: 1.1.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@snapdone/auth-contracts':
+        specifier: workspace:*
+        version: link:../../libs/auth-contracts
       '@snapdone/webview-bridge':
         specifier: workspace:*
         version: link:../../libs/webview-bridge
@@ -299,6 +305,8 @@ importers:
         version: 19.2.3(react@19.2.3)
 
   apps/web-e2e: {}
+
+  libs/auth-contracts: {}
 
   libs/webview-bridge: {}
 
