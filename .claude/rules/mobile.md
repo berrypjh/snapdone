@@ -16,6 +16,7 @@ Expo managed + React Native. 진입점은 `index.js` → `src/app/App.tsx`.
 - **패키지를 추가할 때 루트 `package.json`에 실제 버전을, `apps/mobile/package.json`에는 `"*"`를 적는다.** 루트에 빠뜨리면 `"*"`가 레지스트리 최신 버전으로 풀려 SDK와 어긋난다. 버전은 `node -e "console.log(require('expo/bundledNativeModules.json')['패키지명'])"`로 확인한다
 - **버전에 민감한 패키지는 `apps/mobile`에도 루트와 같은 정확한 버전을 적는다** — `react`, `react-native-svg`, `@berrypjh/react-native-ui`. `"*"`는 루트 버전을 바꿔도 lock의 옛 해석을 유지해서, 루트는 React 19.2.3 · 앱은 19.2.8처럼 **두 벌이 섞인다.** 그러면 react-native 모듈 트리도 두 벌이 되어 렌더러 shim이 `undefined`로 풀리는 런타임 오류(`Cannot read property 'default' of undefined`)가 난다. 앱 코드가 import하는 공용 패키지는 앱에 직접 선언한다
 - `build` target은 로컬 빌드가 아니라 **EAS 클라우드 빌드**다. 로컬 번들은 `nx export mobile`
+- `nx run-android` · `nx run-ios`가 만드는 `apps/mobile/android/` · `ios/`는 `app.json`에서 생성되는 산출물이라 git에서 제외했다. 네이티브 설정은 이 폴더가 아니라 `app.json` · config plugin에서 바꾼다(다시 생성하면 직접 고친 내용이 사라진다)
 - **`apps/mobile/package.json`의 `nx.targets.start.continuous: false`를 지우지 않는다.** 지우면 Nx가 단일 continuous 태스크에 PTY를 주지 않아 `expo start`가 QR · 키 입력 없이 뜬다 ([local-development.md](../../docs/development/local-development.md))
 
 ## 구조
@@ -23,7 +24,8 @@ Expo managed + React Native. 진입점은 `index.js` → `src/app/App.tsx`.
 - 파일 이름은 **PascalCase**(`AppShell.tsx`). web의 kebab-case와 다르다
 - **navigation은 React Navigation native stack이다** (`src/app/App.tsx`, 화면 타입은 `src/app/navigation.ts`). Expo Router는 `@nx/expo` 생성기가 지원하지 않는다 (nrwl/nx#36442). 화면은 `src/screens/`, 파일 이름은 `XxxScreen.tsx`
 - 제목과 상단 inset은 native stack header가 가진다. `AppShell`은 좌우 inset + 스크롤 본문만 준다. bottom navigation은 실제 탭이 생길 때 넣는다
-- **로컬 primitive를 만들지 않는다.** 공용 `@berrypjh/react-native-ui`(`Box` · `Stack` · `Button` · `ThemeProvider` 등)를 조합한다. 앱이 소유하는 것은 `AppShell`과 화면(`src/screens/`)뿐이다
+- **로컬 primitive를 만들지 않는다.** 공용 `@berrypjh/react-native-ui`(`Box` · `Stack` · `Button` · `ThemeProvider` 등)를 조합한다. 앱이 소유하는 것은 `AppShell`, 화면(`src/screens/`), 기능별 제품 조합(`src/components/auth/` 등)뿐이다
+- **인증은 `src/auth/`다.** 화면은 `controller`만 부르고, API는 `api.ts`, 기기 저장 · 암호 · 시스템 인증 브라우저는 `device.ts`(expo-secure-store · expo-crypto · expo-web-browser)만 안다. provider 동의 화면은 `openAuthSessionAsync`로만 열고 제품 WebView에서 열지 않는다. 복귀 URL은 `callback.ts` 하나로 검사한다. credential을 AsyncStorage · route params · 로그 · WebView에 넣지 않는다. native header가 없는 인증 화면은 `AuthShell`이 상하좌우 inset을 가진다 ([ON-01](../../docs/features/on01/architecture.md#mobile-구성-구현됨))
 
 ## 네이티브 셸 · WebView 호스트
 

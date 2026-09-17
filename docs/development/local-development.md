@@ -190,6 +190,21 @@ API_PORT=9000 pnpm dev:api
 
 기본값은 `API_HOST=127.0.0.1`, `API_PORT=8080`, `API_ENV=development`다.
 
+### 로컬 Postgres
+
+`DATABASE_URL`은 기본값이 없다. 로컬은 Docker로 띄운다.
+
+```bash
+docker compose -f apps/api/compose.yaml up -d
+export DATABASE_URL='postgres://snapdone:snapdone@127.0.0.1:5432/snapdone?sslmode=disable'
+pnpm exec nx run api:migrate
+pnpm dev:api
+```
+
+서버는 마이그레이션을 적용하지 않는다. `apps/api/internal/database/migrations`에 미적용 SQL이 있으면 `api refused to start: database: pending migrations`로 기동을 거부하므로 `nx run api:migrate`를 먼저 실행한다(Nx 내장 `nx migrate`와 다른 명령이다). 데이터를 지우려면 `docker compose -f apps/api/compose.yaml down -v`.
+
+`AUTH_*`를 비워 두면 인증이 비활성이고 `/v1/auth/*`는 503을 돌려준다. 일부만 설정하면 서버가 기동하지 않는다. 변수 이름은 `apps/api`의 예시 env 파일에 있다.
+
 ## 실기기에서 API 주소 잡기
 
 **시뮬레이터/에뮬레이터가 아닌 실제 폰에서는 `localhost`가 개발 PC가 아니라 폰 자신을 가리킨다.** 이 상태로는 API 호출이 전부 실패한다.

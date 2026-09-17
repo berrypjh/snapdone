@@ -67,6 +67,9 @@ web-build
 *.p12
 *.key
 *.mobileprovision
+# Native projects generated from app.json by `expo run:android` / `expo run:ios` (CNG)
+/apps/mobile/android/
+/apps/mobile/ios/
 
 # Go
 *.exe

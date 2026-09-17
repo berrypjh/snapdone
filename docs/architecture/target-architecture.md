@@ -13,14 +13,14 @@ Nx Workspace (repository root)
 
 ## 현재 상태
 
-| 영역          | 상태                                                                                |
-| ------------- | ----------------------------------------------------------------------------------- |
-| Nx workspace  | integrated, pnpm workspaces                                                         |
-| `apps/web`    | Next.js App Router. 홈 · `/history`(빈 기록) 두 화면, 브라우저 셸과 앱 WebView 모드 |
-| `apps/mobile` | Expo. React Navigation native stack — 네이티브 홈 · WebView 콘텐츠 화면             |
-| `apps/api`    | module `snapdone/api`, `GET /health`만 존재                                         |
-| `libs/`       | `webview-bridge` — 앱 ↔ WebView 계약 (web · mobile이 둘 다 사용)                    |
-| `docs/`       | 제품 · 아키텍처 · 디자인 · 개발 · 품질                                              |
+| 영역          | 상태                                                                                                                                           |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Nx workspace  | integrated, pnpm workspaces                                                                                                                    |
+| `apps/web`    | Next.js App Router. 홈 · `/history`(빈 기록) 두 화면, 브라우저 셸과 앱 WebView 모드                                                            |
+| `apps/mobile` | Expo. React Navigation native stack — 네이티브 홈 · WebView 콘텐츠 화면                                                                        |
+| `apps/api`    | module `snapdone/api`, `GET /health`, `/v1/auth/*`(session · logout · Google OAuth), Postgres 마이그레이션(`nx run api:migrate`) · 인증 저장소 |
+| `libs/`       | `webview-bridge` — 앱 ↔ WebView 계약 (web · mobile이 둘 다 사용)                                                                               |
+| `docs/`       | 제품 · 아키텍처 · 디자인 · 개발 · 품질                                                                                                         |
 
 버전은 아래 [버전 정책](#버전-정책)에 한 곳으로 모아 두었다.
 
@@ -39,11 +39,12 @@ Nx Workspace (repository root)
 - 디자인 토큰과 App Shell, web 라이트/다크 테마
 - 네이티브 셸 + 웹 콘텐츠 골격 — mobile native stack, WebView 화면(로딩 · 오류 · 외부 링크), web in-app 모드, `libs/webview-bridge` 계약과 모듈 경계 lint
 - Go `GET /health` 하나
+- Postgres 연결 · 마이그레이션(로컬 Docker)과 인증 기반 — 사용자 · 로그인 수단 · 세션(root/child) · 일회용 grant · OAuth transaction, `GET /v1/auth/session` · `POST /v1/auth/logout` ([ON-01](../features/on01/architecture.md))
 - 검증 명령과 문서
 
 아직 구현하지 않은 것:
 
-- 인증
+- 로그인 수단은 Google만 (코드만 있고 실계정 검증 전). Apple · 네이버 · 카카오는 나중에 추가
 - 실제 이미지 업로드
 - AI 분석
 - 장소
@@ -51,7 +52,7 @@ Nx Workspace (repository root)
 - 영수증
 - 번역
 - 자동화
-- DB
+- production DB (Cloud SQL 미생성)
 - production 배포
 
 **이 목록은 "예정"이 아니라 "없음"이다.** 위 기능과 관련된 코드는 저장소에 존재하지 않는다.
