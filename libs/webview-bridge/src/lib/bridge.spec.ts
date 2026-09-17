@@ -43,3 +43,36 @@ describe('web to app messages', () => {
     expect(decodeWebToAppMessage('null')).toBeNull();
   });
 });
+
+describe('auth messages', () => {
+  const challenge = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
+
+  it('round-trips auth-required and handoff-ready', () => {
+    const ready = { type: 'handoff-ready', challenge, next: '/history' } as const;
+
+    expect(decodeWebToAppMessage(encodeWebToAppMessage({ type: 'auth-required' }))).toEqual({
+      type: 'auth-required',
+    });
+    expect(decodeWebToAppMessage(encodeWebToAppMessage(ready))).toEqual(ready);
+  });
+
+  it('keeps accepting a v1 ready message with extra fields', () => {
+    expect(decodeWebToAppMessage(JSON.stringify({ type: 'ready', title: '기록', v: 2 }))).toEqual({
+      type: 'ready',
+      title: '기록',
+    });
+  });
+
+  it.each([
+    { type: 'auth-required', next: '/history' },
+    { type: 'handoff-ready', challenge, next: '/history', credential: 'x' },
+    { type: 'handoff-ready', challenge: 'short', next: '/history' },
+    { type: 'handoff-ready', challenge: `${challenge}=`, next: '/history' },
+    { type: 'handoff-ready', challenge, next: 'https://evil.example/' },
+    { type: 'handoff-ready', challenge, next: '//evil.example' },
+    { type: 'handoff-ready', challenge },
+    [{ type: 'auth-required' }],
+  ])('rejects malformed auth message %j', (message) => {
+    expect(decodeWebToAppMessage(JSON.stringify(message))).toBeNull();
+  });
+});

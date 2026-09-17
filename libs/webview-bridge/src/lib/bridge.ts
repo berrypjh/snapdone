@@ -11,13 +11,33 @@ export const inAppUserAgentName = () => `${IN_APP_USER_AGENT_TOKEN}/${BRIDGE_VER
 export const isInAppUserAgent = (userAgent: string | null | undefined) =>
   userAgent?.includes(`${IN_APP_USER_AGENT_TOKEN}/`) ?? false;
 
-/** web이 `window.ReactNativeWebView.postMessage`로 보내는 메시지. `ready`는 페이지 제목을 네이티브 헤더에 넘긴다. */
-export type WebToAppMessage = { type: 'ready'; title: string };
+/**
+ * web이 `window.ReactNativeWebView.postMessage`로 보내는 메시지.
+ * - `ready`: 페이지 제목을 네이티브 헤더에 넘긴다 (v1)
+ * - `auth-required`: 이 WebView에 web 세션이 없다. 앱이 세션을 확인하고 핸드오프를 다시 시작한다
+ * - `handoff-ready`: 핸드오프 verifier cookie를 만들었다. 앱은 `challenge`로 일회용 코드를 받는다
+ */
+export type WebToAppMessage =
+  | { type: 'ready'; title: string }
+  | { type: 'auth-required' }
+  | { type: 'handoff-ready'; challenge: string; next: string };
 
 /** `postMessage`는 문자열만 전달한다. */
 export const encodeWebToAppMessage = (message: WebToAppMessage) => JSON.stringify(message);
 
-/** WebView 원시 메시지를 파싱한다. 알려진 메시지가 아니면 `null`로 무시한다. */
+/** S256 challenge 모양: SHA-256의 base64url(패딩 없음). */
+const CHALLENGE = /^[A-Za-z0-9_-]{43}$/;
+
+const hasOnlyKeys = (value: Record<string, unknown>, keys: string[]) =>
+  Object.keys(value).every((key) => keys.includes(key));
+
+const isPath = (value: unknown): value is string =>
+  typeof value === 'string' && value.startsWith('/') && !value.startsWith('//');
+
+/**
+ * WebView 원시 메시지를 파싱한다. 알려진 메시지가 아니면 `null`로 무시한다.
+ * 인증 메시지는 필드가 정확히 맞을 때만 받는다.
+ */
 export function decodeWebToAppMessage(raw: string): WebToAppMessage | null {
   let value: unknown;
   try {
@@ -26,8 +46,21 @@ export function decodeWebToAppMessage(raw: string): WebToAppMessage | null {
     return null;
   }
 
-  if (typeof value !== 'object' || value === null) return null;
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;
 
-  const { type, title } = value as Record<string, unknown>;
-  return type === 'ready' && typeof title === 'string' ? { type, title } : null;
+  const record = value as Record<string, unknown>;
+  switch (record.type) {
+    case 'ready':
+      return typeof record.title === 'string' ? { type: 'ready', title: record.title } : null;
+    case 'auth-required':
+      return hasOnlyKeys(record, ['type']) ? { type: 'auth-required' } : null;
+    case 'handoff-ready': {
+      const { challenge, next } = record;
+      if (!hasOnlyKeys(record, ['type', 'challenge', 'next'])) return null;
+      if (typeof challenge !== 'string' || !CHALLENGE.test(challenge) || !isPath(next)) return null;
+      return { type: 'handoff-ready', challenge, next };
+    }
+    default:
+      return null;
+  }
 }
