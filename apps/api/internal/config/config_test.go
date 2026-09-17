@@ -31,3 +31,20 @@ func TestLoadReadsEnvironmentVariables(t *testing.T) {
 		t.Errorf("Environment = %q, want %q", cfg.Environment, "production")
 	}
 }
+
+func TestLoadHasNoDatabaseURLDefault(t *testing.T) {
+	t.Setenv("DATABASE_URL", "")
+
+	if cfg := Load(); cfg.DatabaseURL != "" {
+		t.Errorf("DatabaseURL = %q, want empty", cfg.DatabaseURL)
+	}
+}
+
+func TestLoadReadsDatabaseURL(t *testing.T) {
+	const url = "postgres://user:pass@127.0.0.1:5432/db"
+	t.Setenv("DATABASE_URL", url)
+
+	if cfg := Load(); cfg.DatabaseURL != url {
+		t.Errorf("DatabaseURL = %q, want %q", cfg.DatabaseURL, url)
+	}
+}

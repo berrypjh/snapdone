@@ -1,0 +1,22 @@
+# 로컬 개발 전용 Postgres.
+# 실행: docker compose -f apps/api/compose.yaml up -d
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: snapdone
+      POSTGRES_PASSWORD: snapdone
+      POSTGRES_DB: snapdone
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      # Postgres 18 이미지부터 데이터 볼륨 위치가 /var/lib/postgresql
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U snapdone -d snapdone"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+volumes:
+  postgres-data:

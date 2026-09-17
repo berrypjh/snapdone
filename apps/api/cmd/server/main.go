@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"snapdone/api/internal/config"
+	"snapdone/api/internal/database"
 	"snapdone/api/internal/httpserver"
 )
 
@@ -18,11 +19,25 @@ const shutdownTimeout = 10 * time.Second
 
 func main() {
 	cfg := config.Load()
-	server := httpserver.New(cfg)
+	if cfg.DatabaseURL == "" {
+		log.Fatal("DATABASE_URL is not set; see apps/api/.env.example")
+	}
 
 	// SIGINT(Ctrl+C) 또는 SIGTERM을 받으면 서버 종료 절차를 시작한다.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+
+	pool, err := database.Open(ctx, cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("api failed to open database: %v", err)
+	}
+	defer pool.Close()
+
+	if err := database.Migrate(ctx, pool); err != nil {
+		log.Fatalf("api failed to migrate database: %v", err)
+	}
+
+	server := httpserver.New(cfg)
 
 	go func() {
 		log.Printf("api listening on %s (env=%s)", server.Addr, cfg.Environment)
