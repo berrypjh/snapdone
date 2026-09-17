@@ -1,7 +1,5 @@
 import type { Metadata } from 'next';
 
-import { AppShell } from '@/components/app-shell';
-import { isInAppRequest } from '@/lib/in-app';
 import { themeInitScript } from '@/lib/theme';
 
 import '@berrypjh/react-ui/styles.css';
@@ -12,17 +10,13 @@ export const metadata: Metadata = {
   description: '사진이나 스크린샷에서 필요한 정보를 찾고, 해야 할 일까지 자연스럽게 이어줍니다.',
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const inApp = await isInAppRequest();
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body>
-        <AppShell inApp={inApp}>{children}</AppShell>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

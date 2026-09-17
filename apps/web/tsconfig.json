@@ -45,6 +45,9 @@
   "references": [
     {
       "path": "../../libs/webview-bridge"
+    },
+    {
+      "path": "../../libs/auth-contracts"
     }
   ]
 }

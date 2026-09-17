@@ -1,19 +1,5 @@
-'use client';
-
-import { useEffect } from 'react';
-
-import { encodeWebToAppMessage } from '@snapdone/webview-bridge';
-
-declare global {
-  interface Window {
-    ReactNativeWebView?: { postMessage: (message: string) => void };
-  }
-}
+import { InAppMessage } from '@/components/in-app-message';
 
 export function InAppReady({ title }: { title: string }) {
-  useEffect(() => {
-    window.ReactNativeWebView?.postMessage(encodeWebToAppMessage({ type: 'ready', title }));
-  }, [title]);
-
-  return null;
+  return <InAppMessage message={{ type: 'ready', title }} />;
 }

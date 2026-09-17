@@ -2,6 +2,7 @@ import { Box, Stack } from '@berrypjh/react-ui';
 import type { Metadata } from 'next';
 
 import { InAppReady } from '@/components/in-app-ready';
+import { requireSession } from '@/lib/auth/session';
 
 const TITLE = '기록';
 
@@ -9,7 +10,9 @@ export const metadata: Metadata = {
   title: TITLE,
 };
 
-export default function HistoryPage() {
+export default async function HistoryPage() {
+  await requireSession('/history');
+
   return (
     <Stack gap="xl">
       <h1 className="typo-heading-h4">{TITLE}</h1>

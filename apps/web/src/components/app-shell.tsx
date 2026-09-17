@@ -1,9 +1,10 @@
 import Link from 'next/link';
 
-import { SkipLink } from '@berrypjh/react-ui';
+import { Button, SkipLink } from '@berrypjh/react-ui';
 import type { ReactNode } from 'react';
 
 import { ThemeSwitch } from '@/components/theme-switch';
+import { logout } from '@/lib/auth/actions';
 
 const PRODUCT_NAME = '이미지 액션 라우터';
 const MAIN_CONTENT_ID = 'main-content';
@@ -15,10 +16,11 @@ const NAV_ITEMS = [
 
 type AppShellProps = {
   inApp: boolean;
+  signedIn: boolean;
   children: ReactNode;
 };
 
-export function AppShell({ inApp, children }: AppShellProps) {
+export function AppShell({ inApp, signedIn, children }: AppShellProps) {
   if (inApp) {
     return (
       <main id={MAIN_CONTENT_ID} className="min-h-dvh px-4 py-6">
@@ -52,8 +54,15 @@ export function AppShell({ inApp, children }: AppShellProps) {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center border-b border-stroke-light px-4 md:px-6">
           <span className="typo-body-medium-strong md:hidden">{PRODUCT_NAME}</span>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-4">
             <ThemeSwitch />
+            {signedIn && (
+              <form action={logout}>
+                <Button type="submit" variant="text" size="sm">
+                  로그아웃
+                </Button>
+              </form>
+            )}
           </div>
         </header>
 
