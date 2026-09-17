@@ -11,7 +11,8 @@ type Config struct {
 	Environment string
 	DatabaseURL string
 
-	Auth *Auth
+	Auth   *Auth
+	Google *Google
 }
 
 // 환경 변수에서 설정을 읽고, 값이 없으면 로컬 개발 환경을 위한 기본값을 사용한다.
@@ -28,6 +29,9 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 	cfg.Auth = auth
+	if cfg.Google, err = loadGoogle(auth); err != nil {
+		return Config{}, err
+	}
 	return cfg, nil
 }
 

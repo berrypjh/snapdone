@@ -6,12 +6,16 @@ import (
 	"log"
 	"net/http"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"snapdone/api/internal/auth"
 	"snapdone/api/internal/config"
 	"snapdone/api/internal/database"
+	"snapdone/api/internal/google"
 	"snapdone/api/internal/httpserver"
 )
 
@@ -42,14 +46,11 @@ func main() {
 		log.Fatalf("api refused to start: %v; run `nx run api:migrate`", err)
 	}
 
-	// 인증 설정이 없으면 nil 인터페이스를 넘겨 인증 endpoint를 503으로 둔다.
-	var sessions httpserver.SessionStore
-	if cfg.Auth != nil {
-		sessions = auth.NewStore(pool)
-	} else {
-		log.Println("api auth is disabled: AUTH_* is not set")
+	sessions, oauth, err := newAuth(cfg, pool)
+	if err != nil {
+		log.Fatalf("api auth setup: %v", err)
 	}
-	server := httpserver.New(cfg, sessions)
+	server := httpserver.New(cfg, sessions, oauth)
 
 	go func() {
 		log.Printf("api listening on %s (env=%s)", server.Addr, cfg.Environment)
@@ -71,4 +72,27 @@ func main() {
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Printf("api shutdown failed: %v", err)
 	}
+}
+
+// 인증 설정이 없으면 nil 인터페이스를 돌려줘 인증 endpoint를 503으로 둔다.
+func newAuth(cfg config.Config, pool *pgxpool.Pool) (httpserver.SessionStore, *auth.OAuth, error) {
+	if cfg.Auth == nil {
+		log.Println("api auth is disabled: AUTH_* is not set")
+		return nil, nil, nil
+	}
+	cipher, err := auth.NewCipher(cfg.Auth.EncryptionKeyID, cfg.Auth.EncryptionKey)
+	if err != nil {
+		return nil, nil, err
+	}
+	var googleClient *google.Client
+	if cfg.Google != nil {
+		callback := strings.TrimRight(cfg.Auth.PublicBaseURL, "/") + "/v1/auth/oauth/callback"
+		googleClient = google.NewClient(cfg.Google.ClientID, cfg.Google.ClientSecret, callback)
+	}
+	store := auth.NewStore(pool)
+	oauth := auth.NewOAuth(store, cipher, googleClient, auth.ReturnURIs{
+		Mobile: cfg.Auth.MobileRedirectURI,
+		Web:    strings.TrimRight(cfg.Auth.WebOrigin, "/") + "/auth/callback",
+	}, auth.Consent{TermsVersion: cfg.Auth.TermsVersion, PrivacyVersion: cfg.Auth.PrivacyVersion})
+	return store, oauth, nil
 }

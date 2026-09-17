@@ -48,7 +48,7 @@ func serve(t *testing.T, sessions SessionStore, method, path string, headers ...
 		req.Header.Add("Authorization", h)
 	}
 	recorder := httptest.NewRecorder()
-	NewHandler(sessions).ServeHTTP(recorder, req)
+	NewHandler(sessions, nil).ServeHTTP(recorder, req)
 	return recorder
 }
 

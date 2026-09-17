@@ -11,7 +11,7 @@ import (
 
 func TestHealthReturnsOKJSON(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	NewHandler(nil).ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health", nil))
+	NewHandler(nil, nil).ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health", nil))
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
@@ -32,7 +32,7 @@ func TestHealthReturnsOKJSON(t *testing.T) {
 
 func TestHealthRejectsNonGET(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	NewHandler(nil).ServeHTTP(recorder, httptest.NewRequest(http.MethodPost, "/health", nil))
+	NewHandler(nil, nil).ServeHTTP(recorder, httptest.NewRequest(http.MethodPost, "/health", nil))
 
 	if recorder.Code != http.StatusMethodNotAllowed {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusMethodNotAllowed)
@@ -41,7 +41,7 @@ func TestHealthRejectsNonGET(t *testing.T) {
 
 func TestUnknownRouteReturns404(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	NewHandler(nil).ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/nope", nil))
+	NewHandler(nil, nil).ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/nope", nil))
 
 	if recorder.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusNotFound)
@@ -49,7 +49,7 @@ func TestUnknownRouteReturns404(t *testing.T) {
 }
 
 func TestNewUsesConfiguredAddressAndTimeouts(t *testing.T) {
-	server := New(config.Config{Host: "0.0.0.0", Port: "9999", Environment: "test"}, nil)
+	server := New(config.Config{Host: "0.0.0.0", Port: "9999", Environment: "test"}, nil, nil)
 
 	if server.Addr != "0.0.0.0:9999" {
 		t.Errorf("Addr = %q, want %q", server.Addr, "0.0.0.0:9999")

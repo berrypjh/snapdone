@@ -14,6 +14,7 @@ type Transaction struct {
 	Purpose          Purpose
 	Provider         string
 	ClientChallenge  string
+	ClientState      string
 	UpstreamVerifier []byte
 	UpstreamNonce    []byte
 	KeyID            string
@@ -22,9 +23,10 @@ type Transaction struct {
 func (s *Store) CreateTransaction(ctx context.Context, stateHash []byte, tx Transaction, ttl time.Duration) error {
 	_, err := s.pool.Exec(ctx, `
 		INSERT INTO auth_transactions
-			(state_hash, purpose, provider, client_challenge, upstream_verifier, upstream_nonce, key_id, expires_at)
-		VALUES ($1, $2, $3, $4, $5, $6, NULLIF($7, ''), now() + make_interval(secs => $8))`,
-		stateHash, tx.Purpose, tx.Provider, tx.ClientChallenge, tx.UpstreamVerifier, tx.UpstreamNonce, tx.KeyID, ttl.Seconds())
+			(state_hash, purpose, provider, client_challenge, client_state, upstream_verifier, upstream_nonce, key_id, expires_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''), now() + make_interval(secs => $9))`,
+		stateHash, tx.Purpose, tx.Provider, tx.ClientChallenge, tx.ClientState,
+		tx.UpstreamVerifier, tx.UpstreamNonce, tx.KeyID, ttl.Seconds())
 	return err
 }
 
@@ -34,11 +36,19 @@ func (s *Store) ConsumeTransaction(ctx context.Context, stateHash []byte) (Trans
 	err := s.pool.QueryRow(ctx, `
 		UPDATE auth_transactions SET consumed_at = now()
 		WHERE state_hash = $1 AND consumed_at IS NULL AND expires_at > now()
-		RETURNING purpose, provider, client_challenge, upstream_verifier, upstream_nonce, coalesce(key_id, '')`,
+		RETURNING purpose, provider, client_challenge, client_state, upstream_verifier, upstream_nonce, coalesce(key_id, '')`,
 		stateHash).
-		Scan(&tx.Purpose, &tx.Provider, &tx.ClientChallenge, &tx.UpstreamVerifier, &tx.UpstreamNonce, &tx.KeyID)
+		Scan(&tx.Purpose, &tx.Provider, &tx.ClientChallenge, &tx.ClientState, &tx.UpstreamVerifier, &tx.UpstreamNonce, &tx.KeyID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Transaction{}, ErrNotFound
 	}
 	return tx, err
+}
+
+// 앱이 취소한 OAuth 시작을 폐기한다. 없거나 이미 소비됐어도 오류가 아니다.
+func (s *Store) DiscardTransaction(ctx context.Context, clientState string) error {
+	_, err := s.pool.Exec(ctx,
+		"UPDATE auth_transactions SET consumed_at = now() WHERE client_state = $1 AND consumed_at IS NULL",
+		clientState)
+	return err
 }

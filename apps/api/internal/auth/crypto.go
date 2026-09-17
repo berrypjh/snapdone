@@ -66,3 +66,9 @@ func (c *Cipher) Open(keyID string, sealed, aad []byte) ([]byte, error) {
 	}
 	return plaintext, nil
 }
+
+// PKCE S256 challenge: base64url(SHA-256(verifier)).
+func ChallengeS256(verifier string) string {
+	sum := sha256.Sum256([]byte(verifier))
+	return base64.RawURLEncoding.EncodeToString(sum[:])
+}
