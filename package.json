@@ -22,7 +22,7 @@
   },
   "lint-staged": {
     "*.{js,jsx,cjs,mjs,ts,tsx,cts,mts}": [
-      "eslint --fix",
+      "eslint --flag v10_config_lookup_from_file --fix",
       "prettier --write"
     ],
     "*.{json,css,md,yaml,yml}": [
