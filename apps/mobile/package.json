@@ -24,6 +24,8 @@
     "@react-navigation/native-stack": "*",
     "@snapdone/webview-bridge": "workspace:*",
     "expo": "*",
+    "expo-crypto": "*",
+    "expo-secure-store": "*",
     "expo-splash-screen": "*",
     "expo-status-bar": "*",
     "expo-system-ui": "*",

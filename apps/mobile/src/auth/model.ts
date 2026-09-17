@@ -1,19 +1,17 @@
 export const AUTH_ERROR_CODES = [
-  'invalid_email',
-  'invalid_code',
-  'expired_code',
-  'rate_limited',
   'cancelled',
   'provider_unavailable',
   'network',
   'session_expired',
-  'account_conflict',
   'invalid_callback',
+  'storage_unavailable',
 ] as const;
 
 export type AuthErrorCode = (typeof AUTH_ERROR_CODES)[number];
 
-export type AuthProvider = 'email' | 'apple' | 'google';
+export const AUTH_PROVIDERS = ['google', 'apple', 'naver', 'kakao'] as const;
+
+export type AuthProvider = (typeof AUTH_PROVIDERS)[number];
 
 export type OnboardingStep = 'intro' | 'complete';
 
@@ -24,13 +22,9 @@ export type Session = {
 };
 
 export type AuthOutcome =
-  | { type: 'code-sent' }
-  | { type: 'authenticated'; session: Session }
-  | { type: 'failed'; error: AuthErrorCode };
+  { type: 'authenticated'; session: Session } | { type: 'failed'; error: AuthErrorCode };
 
-type Idle =
-  | { status: 'anonymous'; generation: number }
-  | { status: 'email-code'; generation: number; email: string };
+type Idle = { status: 'anonymous'; generation: number };
 
 export type AuthState =
   | { status: 'restoring'; generation: number }
@@ -40,16 +34,15 @@ export type AuthState =
       generation: number;
       provider: AuthProvider;
       requestId: string;
-      email?: string;
       previous: Idle;
     }
   | { status: 'authenticated'; generation: number; session: Session }
-  | { status: 'recoverable-error'; generation: number; error: AuthErrorCode; email?: string };
+  | { status: 'recoverable-error'; generation: number; error: AuthErrorCode };
 
 export type AuthEvent =
   | { type: 'restored'; generation: number; session: Session | null }
   | { type: 'restore-failed'; generation: number; error: AuthErrorCode }
-  | { type: 'submit'; provider: AuthProvider; requestId: string; email?: string }
+  | { type: 'submit'; provider: AuthProvider; requestId: string }
   | { type: 'resolved'; generation: number; requestId: string; outcome: AuthOutcome }
   | { type: 'cancel' }
   | { type: 'dismiss' }
@@ -61,12 +54,9 @@ export const initialAuthState: AuthState = { status: 'restoring', generation: 0 
 const idleFrom = (state: AuthState): Idle | null => {
   switch (state.status) {
     case 'anonymous':
-    case 'email-code':
       return state;
     case 'recoverable-error':
-      return state.email
-        ? { status: 'email-code', generation: state.generation, email: state.email }
-        : { status: 'anonymous', generation: state.generation };
+      return { status: 'anonymous', generation: state.generation };
     default:
       return null;
   }
@@ -76,15 +66,11 @@ const submit = (state: AuthState, event: Extract<AuthEvent, { type: 'submit' }>)
   const previous = idleFrom(state);
   if (!previous) return state;
 
-  const email = previous.status === 'email-code' ? previous.email : event.email;
-  if (event.provider === 'email' && !email) return state;
-
   return {
     status: 'submitting',
     generation: state.generation,
     provider: event.provider,
     requestId: event.requestId,
-    email: event.provider === 'email' ? email : undefined,
     previous,
   };
 };
@@ -98,22 +84,15 @@ const resolve = (state: AuthState, event: Extract<AuthEvent, { type: 'resolved' 
     return state;
   }
 
-  const { generation, email, previous } = state;
+  const { generation, previous } = state;
   const { outcome } = event;
 
   switch (outcome.type) {
-    case 'code-sent':
-      return email ? { status: 'email-code', generation, email } : state;
     case 'authenticated':
       return { status: 'authenticated', generation, session: outcome.session };
     case 'failed':
       if (outcome.error === 'cancelled') return previous;
-      return {
-        status: 'recoverable-error',
-        generation,
-        error: outcome.error,
-        email: previous.status === 'email-code' ? previous.email : undefined,
-      };
+      return { status: 'recoverable-error', generation, error: outcome.error };
   }
 };
 

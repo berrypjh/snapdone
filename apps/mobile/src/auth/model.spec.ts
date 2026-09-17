@@ -21,11 +21,10 @@ const run = (events: AuthEvent[], from: AuthState = initialAuthState) =>
 
 const anonymous: AuthState = { status: 'anonymous', generation: 0 };
 
-const submitEmail = (requestId: string): AuthEvent => ({
+const submitGoogle = (requestId: string): AuthEvent => ({
   type: 'submit',
-  provider: 'email',
+  provider: 'google',
   requestId,
-  email: 'user@example.com',
 });
 
 describe('restoring', () => {
@@ -56,61 +55,15 @@ describe('restoring', () => {
   });
 });
 
-describe('email sign-in', () => {
-  it('moves from code sent to authenticated', () => {
-    const state = run(
-      [
-        submitEmail('r1'),
-        { type: 'resolved', generation: 0, requestId: 'r1', outcome: { type: 'code-sent' } },
-        { type: 'submit', provider: 'email', requestId: 'r2' },
-        {
-          type: 'resolved',
-          generation: 0,
-          requestId: 'r2',
-          outcome: { type: 'authenticated', session: session('intro') },
-        },
-      ],
-      anonymous,
-    );
-
-    expect(state).toEqual({ status: 'authenticated', generation: 0, session: session('intro') });
-  });
-
-  it('does not start without an email', () => {
-    expect(authReducer(anonymous, { type: 'submit', provider: 'email', requestId: 'r1' })).toBe(
-      anonymous,
-    );
-  });
-
-  it('keeps the email after a wrong code so the user can retry', () => {
-    const codeStep: AuthState = { status: 'email-code', generation: 0, email: 'user@example.com' };
-    const state = run(
-      [
-        { type: 'submit', provider: 'email', requestId: 'r2' },
-        {
-          type: 'resolved',
-          generation: 0,
-          requestId: 'r2',
-          outcome: { type: 'failed', error: 'invalid_code' },
-        },
-        { type: 'dismiss' },
-      ],
-      codeStep,
-    );
-
-    expect(state).toEqual(codeStep);
-  });
-});
-
 describe('stale and duplicate responses', () => {
   it('ignores a second submit while one is pending', () => {
-    const pending = authReducer(anonymous, submitEmail('r1'));
+    const pending = authReducer(anonymous, submitGoogle('r1'));
 
-    expect(authReducer(pending, submitEmail('r2'))).toBe(pending);
+    expect(authReducer(pending, submitGoogle('r2'))).toBe(pending);
   });
 
   it('ignores a response for another request', () => {
-    const pending = authReducer(anonymous, submitEmail('r1'));
+    const pending = authReducer(anonymous, submitGoogle('r1'));
     const next = authReducer(pending, {
       type: 'resolved',
       generation: 0,
@@ -216,7 +169,8 @@ describe('destinationFor', () => {
 
 describe('toAuthErrorCode', () => {
   it('keeps known codes and hides anything else', () => {
-    expect(toAuthErrorCode('rate_limited')).toBe('rate_limited');
+    expect(toAuthErrorCode('invalid_callback')).toBe('invalid_callback');
+    expect(toAuthErrorCode('rate_limited')).toBe('provider_unavailable');
     expect(toAuthErrorCode('AuthApiError: User already registered')).toBe('provider_unavailable');
   });
 });
