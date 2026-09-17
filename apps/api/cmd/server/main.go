@@ -46,11 +46,11 @@ func main() {
 		log.Fatalf("api refused to start: %v; run `nx run api:migrate`", err)
 	}
 
-	sessions, oauth, err := newAuth(cfg, pool)
+	sessions, oauth, handoff, err := newAuth(cfg, pool)
 	if err != nil {
 		log.Fatalf("api auth setup: %v", err)
 	}
-	server := httpserver.New(cfg, sessions, oauth)
+	server := httpserver.New(cfg, sessions, oauth, handoff)
 
 	go func() {
 		log.Printf("api listening on %s (env=%s)", server.Addr, cfg.Environment)
@@ -75,14 +75,14 @@ func main() {
 }
 
 // 인증 설정이 없으면 nil 인터페이스를 돌려줘 인증 endpoint를 503으로 둔다.
-func newAuth(cfg config.Config, pool *pgxpool.Pool) (httpserver.SessionStore, *auth.OAuth, error) {
+func newAuth(cfg config.Config, pool *pgxpool.Pool) (httpserver.SessionStore, *auth.OAuth, *auth.Handoff, error) {
 	if cfg.Auth == nil {
 		log.Println("api auth is disabled: AUTH_* is not set")
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 	cipher, err := auth.NewCipher(cfg.Auth.EncryptionKeyID, cfg.Auth.EncryptionKey)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	var googleClient *google.Client
 	if cfg.Google != nil {
@@ -94,5 +94,5 @@ func newAuth(cfg config.Config, pool *pgxpool.Pool) (httpserver.SessionStore, *a
 		Mobile: cfg.Auth.MobileRedirectURI,
 		Web:    strings.TrimRight(cfg.Auth.WebOrigin, "/") + "/auth/callback",
 	}, auth.Consent{TermsVersion: cfg.Auth.TermsVersion, PrivacyVersion: cfg.Auth.PrivacyVersion})
-	return store, oauth, nil
+	return store, oauth, auth.NewHandoff(store), nil
 }

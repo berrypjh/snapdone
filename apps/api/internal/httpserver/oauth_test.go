@@ -88,7 +88,7 @@ func newOAuthFixture(t *testing.T) *oauthFixture {
 	oauth := auth.NewOAuth(store, cipher, client,
 		auth.ReturnURIs{Mobile: mobileReturnURI, Web: webReturnURI},
 		auth.Consent{TermsVersion: "t1", PrivacyVersion: "p1"})
-	return &oauthFixture{pool: pool, handler: NewHandler(store, oauth), google: fake}
+	return &oauthFixture{pool: pool, handler: NewHandler(store, oauth, auth.NewHandoff(store)), google: fake}
 }
 
 func (f *oauthFixture) do(method, target string, body any) *httptest.ResponseRecorder {

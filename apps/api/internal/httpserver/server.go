@@ -10,11 +10,11 @@ import (
 )
 
 // 설정된 주소와 기본 timeout을 적용한 HTTP 서버를 생성한다.
-// sessions · oauth가 nil이면 인증 endpoint는 503을 돌려준다.
-func New(cfg config.Config, sessions SessionStore, oauth *auth.OAuth) *http.Server {
+// sessions · oauth · handoff가 nil이면 해당 인증 endpoint는 503을 돌려준다.
+func New(cfg config.Config, sessions SessionStore, oauth *auth.OAuth, handoff *auth.Handoff) *http.Server {
 	return &http.Server{
 		Addr:              cfg.Addr(),
-		Handler:           NewHandler(sessions, oauth),
+		Handler:           NewHandler(sessions, oauth, handoff),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,
@@ -22,10 +22,10 @@ func New(cfg config.Config, sessions SessionStore, oauth *auth.OAuth) *http.Serv
 	}
 }
 
-func NewHandler(sessions SessionStore, oauth *auth.OAuth) http.Handler {
+func NewHandler(sessions SessionStore, oauth *auth.OAuth, handoff *auth.Handoff) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", health)
-	registerAuth(mux, sessions, oauth)
+	registerAuth(mux, sessions, oauth, handoff)
 	return mux
 }
 

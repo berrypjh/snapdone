@@ -37,8 +37,8 @@ type sessionResponse struct {
 }
 
 // sessions가 nil이면 인증 기반이 설정되지 않은 것이고 모든 인증 endpoint가 503을 돌려준다.
-// oauth가 nil이면 로그인 시작 · 콜백 · exchange만 503이다.
-func registerAuth(mux *http.ServeMux, sessions SessionStore, oauth *auth.OAuth) {
+// oauth가 nil이면 로그인 시작 · 콜백 · exchange만, handoff가 nil이면 handoff만 503이다.
+func registerAuth(mux *http.ServeMux, sessions SessionStore, oauth *auth.OAuth, handoff *auth.Handoff) {
 	unavailable := func(w http.ResponseWriter, _ *http.Request) {
 		writeError(w, http.StatusServiceUnavailable, errProviderUnavailable)
 	}
@@ -48,11 +48,18 @@ func registerAuth(mux *http.ServeMux, sessions SessionStore, oauth *auth.OAuth) 
 		"GET /v1/auth/oauth/callback": func(o *oauthHandler) http.HandlerFunc { return o.callback },
 		"POST /v1/auth/exchange":      func(o *oauthHandler) http.HandlerFunc { return o.exchange },
 	}
+	handoffRoutes := map[string]func(*handoffHandler) http.HandlerFunc{
+		"POST /v1/auth/handoff/start":    func(h *handoffHandler) http.HandlerFunc { return h.start },
+		"POST /v1/auth/handoff/exchange": func(h *handoffHandler) http.HandlerFunc { return h.exchange },
+	}
 	if sessions == nil {
 		for _, pattern := range []string{"GET /v1/auth/capabilities", "GET /v1/auth/session", "POST /v1/auth/logout"} {
 			mux.HandleFunc(pattern, unavailable)
 		}
 		for pattern := range oauthRoutes {
+			mux.HandleFunc(pattern, unavailable)
+		}
+		for pattern := range handoffRoutes {
 			mux.HandleFunc(pattern, unavailable)
 		}
 		return
@@ -70,6 +77,13 @@ func registerAuth(mux *http.ServeMux, sessions SessionStore, oauth *auth.OAuth) 
 			mux.HandleFunc(pattern, unavailable)
 		} else {
 			mux.HandleFunc(pattern, handler(&oauthHandler{oauth: oauth}))
+		}
+	}
+	for pattern, handler := range handoffRoutes {
+		if handoff == nil {
+			mux.HandleFunc(pattern, unavailable)
+		} else {
+			mux.HandleFunc(pattern, handler(&handoffHandler{handoff: handoff}))
 		}
 	}
 }

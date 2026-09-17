@@ -48,7 +48,7 @@ func serve(t *testing.T, sessions SessionStore, method, path string, headers ...
 		req.Header.Add("Authorization", h)
 	}
 	recorder := httptest.NewRecorder()
-	NewHandler(sessions, nil).ServeHTTP(recorder, req)
+	NewHandler(sessions, nil, nil).ServeHTTP(recorder, req)
 	return recorder
 }
 
@@ -98,6 +98,8 @@ func TestAuthEndpointsUnavailableWithoutConfig(t *testing.T) {
 		{http.MethodGet, "/v1/auth/capabilities"},
 		{http.MethodGet, "/v1/auth/session"},
 		{http.MethodPost, "/v1/auth/logout"},
+		{http.MethodPost, "/v1/auth/handoff/start"},
+		{http.MethodPost, "/v1/auth/handoff/exchange"},
 	} {
 		r := serve(t, nil, route[0], route[1], "Bearer "+validToken)
 		if r.Code != http.StatusServiceUnavailable || errorCode(t, r) != "provider_unavailable" {
