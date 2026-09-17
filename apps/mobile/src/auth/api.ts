@@ -1,12 +1,14 @@
-import { getApiBaseUrl } from '../lib/api';
-
 import {
   AUTH_PROVIDERS,
-  type AuthErrorCode,
   type AuthProvider,
+  parseSession,
   type Session,
   toAuthErrorCode,
-} from './model';
+} from '@snapdone/auth-contracts';
+
+import { getApiBaseUrl } from '../lib/api';
+
+import type { AuthErrorCode } from './model';
 
 export class AuthApiError extends Error {
   constructor(readonly code: AuthErrorCode) {
@@ -31,6 +33,11 @@ export type AuthApi = {
   oauthStart: (request: OAuthStartRequest) => Promise<string>;
   oauthCancel: (state: string) => Promise<void>;
   exchange: (request: { code: string; verifier: string; state: string }) => Promise<LoginResponse>;
+  /** WebView 핸드오프 일회용 코드. Go가 세션을 받지 않으면(401) `null`이다. */
+  handoffStart: (
+    credential: string,
+    request: { challenge: string; next: string },
+  ) => Promise<string | null>;
 };
 
 const request = async (path: string, init?: RequestInit): Promise<Response> => {
@@ -48,23 +55,15 @@ const request = async (path: string, init?: RequestInit): Promise<Response> => {
 
 const bearer = (credential: string) => ({ Authorization: `Bearer ${credential}` });
 
-const postJson = (path: string, body: unknown) =>
+const postJson = (path: string, body: unknown, headers: Record<string, string> = {}) =>
   request(path, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...headers },
     body: JSON.stringify(body),
   });
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
-
-export const parseSession = (value: unknown): Session | null => {
-  if (!isRecord(value) || !isRecord(value.user)) return null;
-  const { user, onboardingStep, expiresAt } = value;
-  if (typeof user.id !== 'string' || typeof expiresAt !== 'string') return null;
-  if (onboardingStep !== 'intro' && onboardingStep !== 'complete') return null;
-  return { user: { id: user.id }, onboardingStep, expiresAt };
-};
 
 export const authApi: AuthApi = {
   capabilities: async () => {
@@ -115,5 +114,16 @@ export const authApi: AuthApi = {
       throw new AuthApiError('provider_unavailable');
     }
     return { session, credential: body.credential };
+  },
+
+  handoffStart: async (credential, handoffRequest) => {
+    const response = await postJson('/v1/auth/handoff/start', handoffRequest, bearer(credential));
+    if (response.status === 401) return null;
+
+    const body: unknown = await response.json();
+    if (!isRecord(body) || typeof body.code !== 'string' || body.code === '') {
+      throw new AuthApiError('provider_unavailable');
+    }
+    return body.code;
   },
 };

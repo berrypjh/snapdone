@@ -2,9 +2,9 @@ import { useEffect, useRef } from 'react';
 import { AccessibilityInfo, StyleSheet, Text, View } from 'react-native';
 
 import { Box, Button, Divider, getColor, Stack, useTheme } from '@berrypjh/react-native-ui';
+import type { AuthProvider } from '@snapdone/auth-contracts';
 
 import { type AuthController, useAuthSnapshot } from '../auth/controller';
-import type { AuthProvider } from '../auth/model';
 import {
   authErrorMessage,
   PROVIDER_NAME,

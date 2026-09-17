@@ -1,16 +1,41 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ActivityIndicator, Linking, StyleSheet, Text, View } from 'react-native';
 
 import { Button, getColor, useTheme } from '@berrypjh/react-native-ui';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { decodeWebToAppMessage, inAppUserAgentName } from '@snapdone/webview-bridge';
-import { WebView } from 'react-native-webview';
+import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 
 import type { RootStackParamList } from '../app/navigation';
-import { webUrl, webViewNavigation } from '../lib/web';
+import { type AuthController, useAuthSnapshot } from '../auth/controller';
+import {
+  handoffKey,
+  type HandoffMemory,
+  initialWebContent,
+  openExchange,
+  receiveMessage,
+  retryAfterFailure,
+  retryHandoff,
+  type WebContent,
+} from '../auth/webHandoff';
+import { webViewNavigation } from '../lib/web';
 import { textStyle } from '../theme/text';
 
-type WebContentScreenProps = NativeStackScreenProps<RootStackParamList, 'WebContent'>;
+type WebContentScreenProps = NativeStackScreenProps<RootStackParamList, 'WebContent'> & {
+  controller: AuthController;
+  handoffMemory: HandoffMemory;
+};
+
+const FAILURE_COPY = {
+  load: {
+    title: '화면을 불러오지 못했습니다.',
+    message: '인터넷 연결을 확인한 뒤 다시 시도해 주세요.',
+  },
+  handoff: {
+    title: '로그인 정보를 전달하지 못했습니다.',
+    message: '잠시 후 다시 시도해 주세요.',
+  },
+} as const;
 
 const Loading = () => {
   const theme = useTheme();
@@ -24,14 +49,73 @@ const Loading = () => {
 
 const renderLoading = () => <Loading />;
 
-export const WebContentScreen = ({ navigation, route }: WebContentScreenProps) => {
+/** 허용 경로는 WebView 안에서, 외부 https는 시스템 브라우저로 연다. 그 외는 막는다. */
+const openOutside = (url: string) => {
+  if (webViewNavigation(url) === 'external') void Linking.openURL(url);
+};
+
+/**
+ * web 콘텐츠 화면. 이 WebView가 현재 로그인을 받지 않았으면 핸드오프부터 시작하고,
+ * web이 `auth-required`를 보내면 앱 세션을 확인한 뒤 한 번만 다시 핸드오프한다.
+ */
+export const WebContentScreen = ({
+  navigation,
+  route,
+  controller,
+  handoffMemory,
+}: WebContentScreenProps) => {
   const theme = useTheme();
-  const [failed, setFailed] = useState(false);
-  const [attempt, setAttempt] = useState(0);
+  const { auth } = useAuthSnapshot(controller);
+  const key =
+    auth.status === 'authenticated' ? handoffKey(auth.generation, auth.session.user.id) : null;
+
+  const [content, setContentState] = useState(() =>
+    initialWebContent(route.params.path, key !== null && handoffMemory.needs(key)),
+  );
+  const contentRef = useRef(content);
+  const setContent = (next: WebContent) => {
+    contentRef.current = next;
+    setContentState(next);
+  };
+
   const { spacing, typography } = theme.tokens;
   const background = { backgroundColor: getColor(theme, 'background.surface') };
 
-  if (failed) {
+  const handoff = async (challenge: string) => {
+    const result = await controller.startHandoff(challenge, contentRef.current.path);
+    if (result.ok) {
+      if (key) handoffMemory.remember(key);
+      setContent(openExchange(contentRef.current, result.code));
+    } else if (result.error !== 'session_expired') {
+      setContent({ ...contentRef.current, failure: 'handoff' });
+    }
+    // session_expired: controller가 로그인 화면으로 바꾸며 이 화면이 닫힌다.
+  };
+
+  const onMessage = async (event: WebViewMessageEvent) => {
+    const message = decodeWebToAppMessage(event.nativeEvent.data);
+    if (!message) return;
+    const { next, effect } = receiveMessage(contentRef.current, message, event.nativeEvent.url);
+    setContent(next);
+
+    switch (effect.type) {
+      case 'title':
+        navigation.setOptions({ title: effect.title });
+        return;
+      case 'start-handoff':
+        await handoff(effect.challenge);
+        return;
+      case 'revalidate':
+        await controller.revalidate();
+        if (controller.getSnapshot().auth.status === 'authenticated') {
+          setContent(retryHandoff(contentRef.current));
+        }
+        return;
+    }
+  };
+
+  if (content.failure) {
+    const copy = FAILURE_COPY[content.failure];
     return (
       <View style={[styles.center, background, { gap: spacing.lg, padding: spacing.xl }]}>
         <Text
@@ -41,7 +125,7 @@ export const WebContentScreen = ({ navigation, route }: WebContentScreenProps) =
             { color: getColor(theme, 'text.default') },
           ]}
         >
-          화면을 불러오지 못했습니다.
+          {copy.title}
         </Text>
         <Text
           style={[
@@ -50,14 +134,11 @@ export const WebContentScreen = ({ navigation, route }: WebContentScreenProps) =
             { color: getColor(theme, 'text.light') },
           ]}
         >
-          인터넷 연결을 확인한 뒤 다시 시도해 주세요.
+          {copy.message}
         </Text>
         <Button
           variant="contained"
-          onPress={() => {
-            setFailed(false);
-            setAttempt((count) => count + 1);
-          }}
+          onPress={() => setContent(retryAfterFailure(contentRef.current))}
         >
           다시 시도
         </Button>
@@ -67,23 +148,21 @@ export const WebContentScreen = ({ navigation, route }: WebContentScreenProps) =
 
   return (
     <WebView
-      key={attempt}
+      key={content.attempt}
       style={background}
-      source={{ uri: webUrl(route.params.path) }}
+      source={{ uri: content.uri }}
       applicationNameForUserAgent={inAppUserAgentName()}
       startInLoadingState
       renderLoading={renderLoading}
-      onError={() => setFailed(true)}
-      onHttpError={() => setFailed(true)}
-      onMessage={(event) => {
-        const message = decodeWebToAppMessage(event.nativeEvent.data);
-        if (message) navigation.setOptions({ title: message.title });
-      }}
-      onShouldStartLoadWithRequest={({ url }) => {
+      onError={() => setContent({ ...contentRef.current, failure: 'load' })}
+      onHttpError={() => setContent({ ...contentRef.current, failure: 'load' })}
+      onMessage={(event) => void onMessage(event)}
+      onShouldStartLoadWithRequest={({ url, isTopFrame }) => {
         if (webViewNavigation(url) === 'load') return true;
-        void Linking.openURL(url);
+        if (isTopFrame) openOutside(url);
         return false;
       }}
+      onOpenWindow={({ nativeEvent }) => openOutside(nativeEvent.targetUrl)}
     />
   );
 };

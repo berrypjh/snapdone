@@ -1,14 +1,14 @@
 import { useSyncExternalStore } from 'react';
 
+import type { AuthProvider, Session } from '@snapdone/auth-contracts';
+
 import { type AuthApi, AuthApiError } from './api';
 import {
   type AuthErrorCode,
   type AuthEvent,
-  type AuthProvider,
   authReducer,
   type AuthState,
   initialAuthState,
-  type Session,
 } from './model';
 import type { AuthStorage } from './storage';
 
@@ -26,6 +26,11 @@ export type Capabilities =
 export type AuthSnapshot = { auth: AuthState; capabilities: Capabilities };
 
 export type ProviderAvailability = 'available' | 'unavailable' | 'checking';
+
+/** `revoked: false`는 이 기기에서는 로그아웃했지만 서버 세션 취소를 확인하지 못했다는 뜻이다. */
+export type LogoutResult = { ok: true; revoked: boolean } | { ok: false; error: AuthErrorCode };
+
+export type HandoffResult = { ok: true; code: string } | { ok: false; error: AuthErrorCode };
 
 export type AuthControllerDeps = {
   api: AuthApi;
@@ -52,7 +57,11 @@ export const createAuthController = (deps: AuthControllerDeps) => {
   const dispatch = (event: AuthEvent) =>
     publish({ ...snapshot, auth: authReducer(snapshot.auth, event) });
 
-  const revoke = (credential: string) => api.logout(credential).catch(() => undefined);
+  const revoke = (credential: string) =>
+    api.logout(credential).then(
+      () => true,
+      () => false,
+    );
 
   const isPending = (requestId: string, generation: number) => {
     const { auth } = snapshot;
@@ -95,6 +104,72 @@ export const createAuthController = (deps: AuthControllerDeps) => {
       dispatch({ type: 'restored', generation, session });
     } catch (error) {
       dispatch({ type: 'restore-failed', generation, error: errorCodeOf(error) });
+    }
+  };
+
+  const retryRestore = async () => {
+    if (snapshot.auth.status !== 'restore-failed') return;
+    dispatch({ type: 'retry-restore' });
+    await restore();
+  };
+
+  const isCurrentSession = (generation: number) =>
+    snapshot.auth.status === 'authenticated' && snapshot.auth.generation === generation;
+
+  /** 서버가 세션을 거부했다. 같은 로그인이 아직 화면에 있을 때만 credential을 지우고 로그인으로 보낸다. */
+  const expire = async (generation: number) => {
+    if (!isCurrentSession(generation)) return;
+    await storage.deleteCredential().catch(() => undefined);
+    dispatch({ type: 'session-expired', generation });
+  };
+
+  const checkSession = async () => {
+    if (snapshot.auth.status !== 'authenticated') return;
+    const { generation } = snapshot.auth;
+    const stored = await storage.readCredential();
+    if (stored.status === 'unavailable') return;
+    if (stored.status === 'empty') {
+      await expire(generation);
+      return;
+    }
+    try {
+      if (!(await api.session(stored.credential))) await expire(generation);
+    } catch {
+      // 서버에 닿지 못했다. 오프라인은 로그인 상태를 유지한다.
+    }
+  };
+
+  let revalidating: Promise<void> | null = null;
+
+  /** 로그인 상태면 서버에 세션을 다시 확인한다. 진행 중인 확인이 있으면 그 결과를 함께 기다린다. */
+  const revalidate = () => {
+    revalidating ??= checkSession().finally(() => {
+      revalidating = null;
+    });
+    return revalidating;
+  };
+
+  /** web ready page가 준 challenge로 WebView 핸드오프 코드를 받는다. credential은 밖으로 나가지 않는다. */
+  const startHandoff = async (challenge: string, next: string): Promise<HandoffResult> => {
+    if (snapshot.auth.status !== 'authenticated') return { ok: false, error: 'session_expired' };
+    const { generation } = snapshot.auth;
+    const stored = await storage.readCredential();
+    if (stored.status === 'unavailable') return { ok: false, error: 'storage_unavailable' };
+    if (stored.status === 'empty') {
+      await expire(generation);
+      return { ok: false, error: 'session_expired' };
+    }
+    try {
+      const code = await api.handoffStart(stored.credential, { challenge, next });
+      if (!code) {
+        await expire(generation);
+        return { ok: false, error: 'session_expired' };
+      }
+      return isCurrentSession(generation)
+        ? { ok: true, code }
+        : { ok: false, error: 'session_expired' };
+    } catch (error) {
+      return { ok: false, error: errorCodeOf(error) };
     }
   };
 
@@ -143,17 +218,17 @@ export const createAuthController = (deps: AuthControllerDeps) => {
   const resume = (provider: AuthProvider, finish: () => Promise<SignInResult | null>) =>
     run(provider, async () => (await finish()) ?? { type: 'failed', error: 'cancelled' });
 
-  const logout = async (): Promise<{ ok: true } | { ok: false; error: AuthErrorCode }> => {
+  const logout = async (): Promise<LogoutResult> => {
     const stored = await storage.readCredential();
     if (stored.status === 'unavailable') return { ok: false, error: 'storage_unavailable' };
-    if (stored.status === 'found') await revoke(stored.credential);
+    const revoked = stored.status === 'found' ? await revoke(stored.credential) : true;
     try {
       await storage.deleteCredential();
     } catch {
       return { ok: false, error: 'storage_unavailable' };
     }
     dispatch({ type: 'logout' });
-    return { ok: true };
+    return { ok: true, revoked };
   };
 
   return {
@@ -167,6 +242,9 @@ export const createAuthController = (deps: AuthControllerDeps) => {
       publish({ ...snapshot, capabilities: { status: 'loading' } });
       await loadCapabilities();
     },
+    retryRestore,
+    revalidate,
+    startHandoff,
     availability,
     signIn,
     resume,

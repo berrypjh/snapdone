@@ -1,8 +1,8 @@
+import type { AuthProvider, Session } from '@snapdone/auth-contracts';
 import { describe, expect, it, vi } from 'vitest';
 
 import { type AuthApi, AuthApiError } from './api';
 import { type AuthControllerDeps, createAuthController, type SignInResult } from './controller';
-import type { AuthProvider, Session } from './model';
 import type { AuthStorage, CredentialRead } from './storage';
 
 const session: Session = {
@@ -26,6 +26,7 @@ const fakeApi = (overrides: Partial<AuthApi> = {}): AuthApi => ({
   oauthStart: vi.fn(async () => 'https://accounts.google.com/o/oauth2/v2/auth'),
   oauthCancel: vi.fn(async () => undefined),
   exchange: vi.fn(async () => ({ session, credential: 'opaque' })),
+  handoffStart: vi.fn(async (): Promise<string | null> => 'handoff-code'),
   ...overrides,
 });
 
@@ -92,11 +93,11 @@ describe('restore', () => {
     expect(controller.getSnapshot().auth.status).toBe('anonymous');
   });
 
-  it('treats an unreadable secure store as an error, not as signed out', async () => {
+  it('treats an unreadable secure store as a retryable failure, not as signed out', async () => {
     const { controller } = await setup({ storage: fakeStorage({ status: 'unavailable' }) });
 
     expect(controller.getSnapshot().auth).toEqual({
-      status: 'recoverable-error',
+      status: 'restore-failed',
       generation: 0,
       error: 'storage_unavailable',
     });
@@ -109,9 +110,213 @@ describe('restore', () => {
 
     expect(storage.deleteCredential).not.toHaveBeenCalled();
     expect(controller.getSnapshot().auth).toMatchObject({
-      status: 'recoverable-error',
+      status: 'restore-failed',
       error: 'network',
     });
+  });
+
+  it('does not treat an unreadable profile (unknown onboarding step) as a new user', async () => {
+    const api = fakeApi({
+      session: vi.fn(() => Promise.reject(new AuthApiError('provider_unavailable'))),
+    });
+    const { controller } = await setup({
+      api,
+      storage: fakeStorage({ status: 'found', credential: 'c' }),
+    });
+
+    expect(controller.getSnapshot().auth).toMatchObject({ status: 'restore-failed' });
+  });
+
+  it('retries a failed restore with the kept credential', async () => {
+    const session$ = vi
+      .fn<AuthApi['session']>()
+      .mockRejectedValueOnce(new AuthApiError('network'))
+      .mockResolvedValueOnce(session);
+    const { controller } = await setup({
+      api: fakeApi({ session: session$ }),
+      storage: fakeStorage({ status: 'found', credential: 'c' }),
+    });
+
+    await controller.retryRestore();
+
+    expect(session$).toHaveBeenLastCalledWith('c');
+    expect(controller.getSnapshot().auth).toEqual({
+      status: 'authenticated',
+      generation: 0,
+      session,
+    });
+  });
+
+  it('restores nothing on retry when not in a failed restore', async () => {
+    const storage = fakeStorage();
+    const { controller } = await setup({ storage });
+
+    await controller.retryRestore();
+
+    expect(storage.readCredential).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('revalidate (foreground)', () => {
+  const signedIn = (api: AuthApi, storage = fakeStorage({ status: 'found', credential: 'c' })) =>
+    setup({ api, storage }).then((result) => ({ ...result, storage }));
+
+  it('keeps a session the server still accepts', async () => {
+    const { controller } = await signedIn(fakeApi());
+
+    await controller.revalidate();
+
+    expect(controller.getSnapshot().auth.status).toBe('authenticated');
+  });
+
+  it('deletes the credential and shows session expired on 401', async () => {
+    const session$ = vi
+      .fn<AuthApi['session']>()
+      .mockResolvedValueOnce(session)
+      .mockResolvedValue(null);
+    const { controller, storage } = await signedIn(fakeApi({ session: session$ }));
+
+    await controller.revalidate();
+
+    expect(storage.deleteCredential).toHaveBeenCalled();
+    expect(controller.getSnapshot().auth).toEqual({
+      status: 'recoverable-error',
+      generation: 1,
+      error: 'session_expired',
+    });
+  });
+
+  it('stays signed in while offline', async () => {
+    const session$ = vi
+      .fn<AuthApi['session']>()
+      .mockResolvedValueOnce(session)
+      .mockRejectedValue(new AuthApiError('network'));
+    const { controller, storage } = await signedIn(fakeApi({ session: session$ }));
+
+    await controller.revalidate();
+
+    expect(storage.deleteCredential).not.toHaveBeenCalled();
+    expect(controller.getSnapshot().auth.status).toBe('authenticated');
+  });
+
+  it('shares one request between overlapping foreground events', async () => {
+    const pending = deferred<Session | null>();
+    const session$ = vi
+      .fn<AuthApi['session']>()
+      .mockResolvedValueOnce(session)
+      .mockReturnValue(pending.promise);
+    const { controller } = await signedIn(fakeApi({ session: session$ }));
+
+    const first = controller.revalidate();
+    const second = controller.revalidate();
+    pending.resolve(session);
+    await Promise.all([first, second]);
+
+    expect(session$).toHaveBeenCalledTimes(2);
+  });
+
+  it('drops a late 401 that arrives after logout and a new sign-in', async () => {
+    const pending = deferred<Session | null>();
+    const session$ = vi
+      .fn<AuthApi['session']>()
+      .mockResolvedValueOnce(session)
+      .mockReturnValueOnce(pending.promise);
+    const storage = fakeStorage({ status: 'found', credential: 'a' });
+    const { controller } = await setup({
+      api: fakeApi({ session: session$ }),
+      storage,
+      signIn: { google: vi.fn(async () => authenticated('b')) },
+    });
+
+    const late = controller.revalidate();
+    await vi.waitFor(() => expect(session$).toHaveBeenCalledTimes(2));
+    await controller.logout();
+    await controller.signIn('google');
+    vi.mocked(storage.deleteCredential).mockClear();
+    pending.resolve(null);
+    await late;
+
+    expect(storage.deleteCredential).not.toHaveBeenCalled();
+    expect(controller.getSnapshot().auth).toMatchObject({ status: 'authenticated', generation: 1 });
+  });
+
+  it('does nothing when signed out', async () => {
+    const api = fakeApi();
+    const { controller } = await setup({ api });
+
+    await controller.revalidate();
+
+    expect(api.session).not.toHaveBeenCalled();
+  });
+});
+
+describe('startHandoff', () => {
+  const challenge = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
+
+  it('asks Go for a code with the stored credential', async () => {
+    const api = fakeApi();
+    const { controller } = await setup({
+      api,
+      storage: fakeStorage({ status: 'found', credential: 'c' }),
+    });
+
+    await expect(controller.startHandoff(challenge, '/history')).resolves.toEqual({
+      ok: true,
+      code: 'handoff-code',
+    });
+    expect(api.handoffStart).toHaveBeenCalledWith('c', { challenge, next: '/history' });
+  });
+
+  it('signs out when Go no longer accepts the session', async () => {
+    const storage = fakeStorage({ status: 'found', credential: 'c' });
+    const { controller } = await setup({
+      api: fakeApi({ handoffStart: vi.fn(async () => null) }),
+      storage,
+    });
+
+    await expect(controller.startHandoff(challenge, '/history')).resolves.toEqual({
+      ok: false,
+      error: 'session_expired',
+    });
+    expect(storage.deleteCredential).toHaveBeenCalled();
+    expect(controller.getSnapshot().auth).toMatchObject({ error: 'session_expired' });
+  });
+
+  it('reports network without signing out', async () => {
+    const { controller } = await setup({
+      api: fakeApi({ handoffStart: vi.fn(() => Promise.reject(new AuthApiError('network'))) }),
+      storage: fakeStorage({ status: 'found', credential: 'c' }),
+    });
+
+    await expect(controller.startHandoff(challenge, '/history')).resolves.toEqual({
+      ok: false,
+      error: 'network',
+    });
+    expect(controller.getSnapshot().auth.status).toBe('authenticated');
+  });
+
+  it('does not hand off when signed out', async () => {
+    const api = fakeApi();
+    const { controller } = await setup({ api });
+
+    await expect(controller.startHandoff(challenge, '/history')).resolves.toMatchObject({
+      ok: false,
+    });
+    expect(api.handoffStart).not.toHaveBeenCalled();
+  });
+
+  it('discards a code that arrives after logout', async () => {
+    const pending = deferred<string | null>();
+    const { controller } = await setup({
+      api: fakeApi({ handoffStart: () => pending.promise }),
+      storage: fakeStorage({ status: 'found', credential: 'c' }),
+    });
+
+    const running = controller.startHandoff(challenge, '/history');
+    await controller.logout();
+    pending.resolve('late-code');
+
+    await expect(running).resolves.toEqual({ ok: false, error: 'session_expired' });
   });
 });
 
@@ -312,7 +517,7 @@ describe('logout', () => {
     const storage = fakeStorage({ status: 'found', credential: 'c' });
     const { controller } = await setup({ api, storage });
 
-    await expect(controller.logout()).resolves.toEqual({ ok: true });
+    await expect(controller.logout()).resolves.toEqual({ ok: true, revoked: true });
 
     expect(api.logout).toHaveBeenCalledWith('c');
     expect(storage.deleteCredential).toHaveBeenCalled();
@@ -335,8 +540,9 @@ describe('logout', () => {
     const api = fakeApi({ logout: vi.fn(() => Promise.reject(new AuthApiError('network'))) });
     const { controller } = await setup({ api, storage });
 
-    await expect(controller.logout()).resolves.toEqual({ ok: true });
+    await expect(controller.logout()).resolves.toEqual({ ok: true, revoked: false });
     expect(storage.deleteCredential).toHaveBeenCalled();
+    expect(controller.getSnapshot().auth.status).toBe('anonymous');
   });
 });
 

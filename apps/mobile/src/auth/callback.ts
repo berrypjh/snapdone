@@ -1,4 +1,6 @@
-import { type AuthErrorCode, toAuthErrorCode } from './model';
+import { toAuthErrorCode } from '@snapdone/auth-contracts';
+
+import type { AuthErrorCode } from './model';
 
 export type OAuthCallback =
   | { type: 'code'; code: string; state: string }

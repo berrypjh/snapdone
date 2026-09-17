@@ -1,8 +1,8 @@
+import type { Session } from '@snapdone/auth-contracts';
 import { describe, expect, it, vi } from 'vitest';
 
 import { AuthApiError } from './api';
 import { createGoogleSignIn, finishGoogleSignIn, type GoogleSignInDeps } from './google';
-import type { Session } from './model';
 import type { ProofCrypto } from './proof';
 import type { AuthStorage, PendingProof } from './storage';
 

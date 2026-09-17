@@ -1,7 +1,7 @@
 import { Button } from '@berrypjh/react-native-ui';
+import type { AuthProvider } from '@snapdone/auth-contracts';
 
 import type { ProviderAvailability } from '../../auth/controller';
-import type { AuthProvider } from '../../auth/model';
 
 import { continueWith } from './authCopy';
 

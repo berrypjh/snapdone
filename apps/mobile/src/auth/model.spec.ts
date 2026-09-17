@@ -1,3 +1,4 @@
+import type { Session } from '@snapdone/auth-contracts';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -6,8 +7,6 @@ import {
   type AuthState,
   destinationFor,
   initialAuthState,
-  type Session,
-  toAuthErrorCode,
 } from './model';
 
 const session = (onboardingStep: Session['onboardingStep']): Session => ({
@@ -38,11 +37,20 @@ describe('restoring', () => {
     expect(state.status).toBe('authenticated');
   });
 
-  it('shows a recoverable error when restore fails and returns to sign-in on dismiss', () => {
+  it('keeps a failed restore retryable instead of showing sign-in', () => {
     const failed = run([{ type: 'restore-failed', generation: 0, error: 'network' }]);
 
-    expect(failed).toEqual({ status: 'recoverable-error', generation: 0, error: 'network' });
-    expect(authReducer(failed, { type: 'dismiss' })).toEqual(anonymous);
+    expect(failed).toEqual({ status: 'restore-failed', generation: 0, error: 'network' });
+    expect(destinationFor(failed)).toBe('restore-failed');
+    expect(authReducer(failed, { type: 'dismiss' })).toBe(failed);
+    expect(authReducer(failed, { type: 'submit', provider: 'google', requestId: 'r1' })).toBe(
+      failed,
+    );
+    expect(authReducer(failed, { type: 'retry-restore' })).toEqual(initialAuthState);
+  });
+
+  it('ignores retry-restore outside a failed restore', () => {
+    expect(authReducer(anonymous, { type: 'retry-restore' })).toBe(anonymous);
   });
 
   it('ignores a restore result that arrives after logout', () => {
@@ -139,7 +147,7 @@ describe('stale and duplicate responses', () => {
     expect(authReducer(signedIn, { type: 'session-expired', generation: 0 })).toBe(signedIn);
     expect(authReducer(signedIn, { type: 'session-expired', generation: 1 })).toEqual({
       status: 'recoverable-error',
-      generation: 1,
+      generation: 2,
       error: 'session_expired',
     });
   });
@@ -164,13 +172,5 @@ describe('destinationFor', () => {
     [{ status: 'recoverable-error', generation: 0, error: 'network' }, 'sign-in'],
   ])('maps %j to %s', (state, destination) => {
     expect(destinationFor(state)).toBe(destination);
-  });
-});
-
-describe('toAuthErrorCode', () => {
-  it('keeps known codes and hides anything else', () => {
-    expect(toAuthErrorCode('invalid_callback')).toBe('invalid_callback');
-    expect(toAuthErrorCode('rate_limited')).toBe('provider_unavailable');
-    expect(toAuthErrorCode('AuthApiError: User already registered')).toBe('provider_unavailable');
   });
 });

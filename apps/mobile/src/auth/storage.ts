@@ -1,4 +1,5 @@
-import { AUTH_PROVIDERS, type AuthProvider } from './model';
+import { AUTH_PROVIDERS, type AuthProvider } from '@snapdone/auth-contracts';
+
 import type { OAuthProof } from './proof';
 
 export type CredentialRead =
