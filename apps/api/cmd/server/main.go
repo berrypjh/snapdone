@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"snapdone/api/internal/auth"
 	"snapdone/api/internal/config"
 	"snapdone/api/internal/database"
 	"snapdone/api/internal/httpserver"
@@ -18,7 +19,10 @@ import (
 const shutdownTimeout = 10 * time.Second
 
 func main() {
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("api config: %v", err)
+	}
 	if cfg.DatabaseURL == "" {
 		log.Fatal("DATABASE_URL is not set; see apps/api/.env.example")
 	}
@@ -33,11 +37,19 @@ func main() {
 	}
 	defer pool.Close()
 
-	if err := database.Migrate(ctx, pool); err != nil {
-		log.Fatalf("api failed to migrate database: %v", err)
+	// 마이그레이션은 cmd/migrate가 배포 단계에서 적용한다. 뒤처진 스키마로는 기동하지 않는다.
+	if err := database.RequireMigrated(ctx, pool); err != nil {
+		log.Fatalf("api refused to start: %v; run `nx run api:migrate`", err)
 	}
 
-	server := httpserver.New(cfg)
+	// 인증 설정이 없으면 nil 인터페이스를 넘겨 인증 endpoint를 503으로 둔다.
+	var sessions httpserver.SessionStore
+	if cfg.Auth != nil {
+		sessions = auth.NewStore(pool)
+	} else {
+		log.Println("api auth is disabled: AUTH_* is not set")
+	}
+	server := httpserver.New(cfg, sessions)
 
 	go func() {
 		log.Printf("api listening on %s (env=%s)", server.Addr, cfg.Environment)

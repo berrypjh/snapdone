@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -30,9 +29,10 @@ type User struct {
 	OnboardingStep string
 }
 
-type Session struct {
-	User      User
-	ExpiresAt time.Time
+// 가입 시 동의한 이용약관 · 개인정보처리방침 버전.
+type Consent struct {
+	TermsVersion   string
+	PrivacyVersion string
 }
 
 type Store struct {
@@ -45,7 +45,7 @@ func NewStore(pool *pgxpool.Pool) *Store {
 
 // 사용자 · 로그인 수단 · profile을 한 트랜잭션으로 만든다.
 // 로그인 수단이 이미 연결돼 있으면 ErrIdentityTaken을 반환한다.
-func (s *Store) CreateUser(ctx context.Context, identity Identity) (User, error) {
+func (s *Store) CreateUser(ctx context.Context, identity Identity, consent Consent) (User, error) {
 	user := User{OnboardingStep: "intro"}
 
 	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
@@ -58,7 +58,9 @@ func (s *Store) CreateUser(ctx context.Context, identity Identity) (User, error)
 		if err != nil {
 			return err
 		}
-		_, err = tx.Exec(ctx, "INSERT INTO profiles (user_id) VALUES ($1::uuid)", user.ID)
+		_, err = tx.Exec(ctx,
+			"INSERT INTO profiles (user_id, terms_version, privacy_version) VALUES ($1::uuid, $2, $3)",
+			user.ID, consent.TermsVersion, consent.PrivacyVersion)
 		return err
 	})
 
@@ -89,34 +91,16 @@ func (s *Store) FindUserByIdentity(ctx context.Context, provider, subject string
 	return user, err
 }
 
-func (s *Store) CreateSession(ctx context.Context, userID string, tokenHash []byte, expiresAt time.Time) error {
-	_, err := s.pool.Exec(ctx,
-		"INSERT INTO sessions (user_id, token_hash, expires_at) VALUES ($1::uuid, $2, $3)",
-		userID, tokenHash, expiresAt)
-	return err
-}
-
-// 유효한 세션만 찾는다. 만료 · 폐기됐거나 없으면 ErrNotFound를 반환한다.
-// 만료 판단은 DB 시각(now()) 기준.
-func (s *Store) FindSession(ctx context.Context, tokenHash []byte) (Session, error) {
-	var session Session
-	err := s.pool.QueryRow(ctx, `
-		SELECT s.user_id::text, p.onboarding_step, s.expires_at
-		FROM sessions s
-		JOIN profiles p ON p.user_id = s.user_id
-		WHERE s.token_hash = $1 AND s.revoked_at IS NULL AND s.expires_at > now()`,
-		tokenHash).Scan(&session.User.ID, &session.User.OnboardingStep, &session.ExpiresAt)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return Session{}, ErrNotFound
+// 로그인 수단의 사용자를 찾고, 없으면 만든다.
+// 같은 로그인 수단으로 동시에 가입하면 한쪽이 UNIQUE 위반 후 재조회로 같은 사용자에 수렴한다.
+func (s *Store) FindOrCreateUser(ctx context.Context, identity Identity, consent Consent) (User, error) {
+	user, err := s.FindUserByIdentity(ctx, identity.Provider, identity.Subject)
+	if !errors.Is(err, ErrNotFound) {
+		return user, err
 	}
-	return session, err
-}
-
-// 세션을 삭제하지 않고 revoked_at을 기록한다.
-// 이미 폐기됐거나 없는 세션이어도 오류가 아니다.
-func (s *Store) RevokeSession(ctx context.Context, tokenHash []byte) error {
-	_, err := s.pool.Exec(ctx,
-		"UPDATE sessions SET revoked_at = now() WHERE token_hash = $1 AND revoked_at IS NULL",
-		tokenHash)
-	return err
+	user, err = s.CreateUser(ctx, identity, consent)
+	if errors.Is(err, ErrIdentityTaken) {
+		return s.FindUserByIdentity(ctx, identity.Provider, identity.Subject)
+	}
+	return user, err
 }

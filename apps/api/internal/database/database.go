@@ -3,9 +3,11 @@ package database
 import (
 	"context"
 	"embed"
+	"errors"
 	"fmt"
 	"io/fs"
 	"path"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -33,6 +35,10 @@ func Open(ctx context.Context, url string) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
+// 적용되지 않은 마이그레이션이 남아 있다.
+var ErrPendingMigrations = errors.New("database: pending migrations")
+
+// 적용되지 않은 마이그레이션을 순서대로 적용한다.
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	names, err := fs.Glob(migrations, "migrations/*.sql")
 	if err != nil {
@@ -42,6 +48,51 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		if err := apply(ctx, pool, name); err != nil {
 			return fmt.Errorf("migration %s: %w", path.Base(name), err)
 		}
+	}
+	return nil
+}
+
+// schema_migrations에 기록되지 않은 마이그레이션 파일 이름을 돌려준다.
+func Pending(ctx context.Context, pool *pgxpool.Pool) ([]string, error) {
+	names, err := fs.Glob(migrations, "migrations/*.sql")
+	if err != nil {
+		return nil, err
+	}
+	applied := map[string]bool{}
+	var exists bool
+	if err := pool.QueryRow(ctx, "SELECT to_regclass('schema_migrations') IS NOT NULL").Scan(&exists); err != nil {
+		return nil, err
+	}
+	if exists {
+		rows, err := pool.Query(ctx, "SELECT version FROM schema_migrations")
+		if err != nil {
+			return nil, err
+		}
+		versions, err := pgx.CollectRows(rows, pgx.RowTo[string])
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range versions {
+			applied[v] = true
+		}
+	}
+	var pending []string
+	for _, name := range names {
+		if version := path.Base(name); !applied[version] {
+			pending = append(pending, version)
+		}
+	}
+	return pending, nil
+}
+
+// 미적용 마이그레이션이 하나라도 있으면 ErrPendingMigrations를 반환한다.
+func RequireMigrated(ctx context.Context, pool *pgxpool.Pool) error {
+	pending, err := Pending(ctx, pool)
+	if err != nil {
+		return err
+	}
+	if len(pending) > 0 {
+		return fmt.Errorf("%w: %s", ErrPendingMigrations, strings.Join(pending, ", "))
 	}
 	return nil
 }

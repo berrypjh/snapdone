@@ -3,12 +3,14 @@ package auth_test
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
-	"time"
 
 	"snapdone/api/internal/auth"
 	"snapdone/api/internal/database/databasetest"
 )
+
+var consent = auth.Consent{TermsVersion: "2026-09-01", PrivacyVersion: "2026-09-01"}
 
 // newStore는 격리된 schema 위의 인증 저장소를 만든다.
 func newStore(t *testing.T) *auth.Store {
@@ -19,7 +21,7 @@ func newStore(t *testing.T) *auth.Store {
 // createUser는 사용자를 만들고 실패하면 테스트를 멈춘다.
 func createUser(t *testing.T, store *auth.Store, identity auth.Identity) auth.User {
 	t.Helper()
-	user, err := store.CreateUser(context.Background(), identity)
+	user, err := store.CreateUser(context.Background(), identity, consent)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,51 +73,53 @@ func TestCreateUserRejectsLinkedIdentity(t *testing.T) {
 	ctx := context.Background()
 	createUser(t, store, auth.Identity{Provider: "naver", Subject: "n-1"})
 
-	_, err := store.CreateUser(ctx, auth.Identity{Provider: "naver", Subject: "n-1"})
+	_, err := store.CreateUser(ctx, auth.Identity{Provider: "naver", Subject: "n-1"}, consent)
 	if !errors.Is(err, auth.ErrIdentityTaken) {
 		t.Errorf("err = %v, want ErrIdentityTaken", err)
 	}
 }
 
-// 세션 생성 · 조회 · 취소 흐름을 확인한다. 취소는 여러 번 해도 된다.
-func TestSessionLifecycle(t *testing.T) {
+// identities.provider CHECK는 네 provider만 허용한다.
+func TestCreateUserRejectsUnknownProvider(t *testing.T) {
 	store := newStore(t)
-	ctx := context.Background()
-	user := createUser(t, store, auth.Identity{Provider: "google", Subject: "g-1"})
-	hash := []byte("session-hash")
 
-	if err := store.CreateSession(ctx, user.ID, hash, time.Now().Add(time.Hour)); err != nil {
-		t.Fatal(err)
-	}
-	session, err := store.FindSession(ctx, hash)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if session.User != user {
-		t.Errorf("session user = %+v, want %+v", session.User, user)
-	}
-
-	for range 2 {
-		if err := store.RevokeSession(ctx, hash); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if _, err := store.FindSession(ctx, hash); !errors.Is(err, auth.ErrNotFound) {
-		t.Errorf("revoked session: got %v", err)
+	_, err := store.CreateUser(context.Background(), auth.Identity{Provider: "email", Subject: "a@b.c"}, consent)
+	if err == nil {
+		t.Fatal("provider email was accepted")
 	}
 }
 
-// 만료된 세션은 조회되지 않는다.
-func TestFindSessionIgnoresExpired(t *testing.T) {
-	store := newStore(t)
+// 같은 로그인 수단으로 동시에 가입해도 사용자는 하나로 수렴한다.
+func TestFindOrCreateUserConvergesUnderRace(t *testing.T) {
+	pool := databasetest.MigratedPool(t)
+	store := auth.NewStore(pool)
 	ctx := context.Background()
-	user := createUser(t, store, auth.Identity{Provider: "google", Subject: "g-1"})
-	hash := []byte("expired-hash")
+	identity := auth.Identity{Provider: "kakao", Subject: "k-1"}
 
-	if err := store.CreateSession(ctx, user.ID, hash, time.Now().Add(-time.Minute)); err != nil {
+	const n = 16
+	ids := make([]string, n)
+	var wg sync.WaitGroup
+	for i := range n {
+		wg.Go(func() {
+			user, err := store.FindOrCreateUser(ctx, identity, consent)
+			if err != nil {
+				t.Error(err)
+			}
+			ids[i] = user.ID
+		})
+	}
+	wg.Wait()
+
+	for _, id := range ids {
+		if id != ids[0] || id == "" {
+			t.Fatalf("ids = %v, want one shared id", ids)
+		}
+	}
+	var users int
+	if err := pool.QueryRow(ctx, "SELECT count(*) FROM users").Scan(&users); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := store.FindSession(ctx, hash); !errors.Is(err, auth.ErrNotFound) {
-		t.Errorf("expired session: got %v", err)
+	if users != 1 {
+		t.Errorf("users = %d, want 1", users)
 	}
 }
