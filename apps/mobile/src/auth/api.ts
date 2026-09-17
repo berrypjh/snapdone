@@ -15,10 +15,22 @@ export class AuthApiError extends Error {
   }
 }
 
+export type OAuthStartRequest = {
+  provider: AuthProvider;
+  challenge: string;
+  state: string;
+  platform: 'mobile';
+};
+
+export type LoginResponse = { session: Session; credential: string };
+
 export type AuthApi = {
   capabilities: () => Promise<AuthProvider[]>;
   session: (credential: string) => Promise<Session | null>;
   logout: (credential: string) => Promise<void>;
+  oauthStart: (request: OAuthStartRequest) => Promise<string>;
+  oauthCancel: (state: string) => Promise<void>;
+  exchange: (request: { code: string; verifier: string; state: string }) => Promise<LoginResponse>;
 };
 
 const request = async (path: string, init?: RequestInit): Promise<Response> => {
@@ -35,6 +47,13 @@ const request = async (path: string, init?: RequestInit): Promise<Response> => {
 };
 
 const bearer = (credential: string) => ({ Authorization: `Bearer ${credential}` });
+
+const postJson = (path: string, body: unknown) =>
+  request(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
@@ -65,5 +84,36 @@ export const authApi: AuthApi = {
 
   logout: async (credential) => {
     await request('/v1/auth/logout', { method: 'POST', headers: bearer(credential) });
+  },
+
+  oauthStart: async (startRequest) => {
+    const body: unknown = await (await postJson('/v1/auth/oauth/start', startRequest)).json();
+    if (
+      !isRecord(body) ||
+      typeof body.authorizeUrl !== 'string' ||
+      !body.authorizeUrl.startsWith('https://')
+    ) {
+      throw new AuthApiError('provider_unavailable');
+    }
+    return body.authorizeUrl;
+  },
+
+  oauthCancel: async (state) => {
+    await postJson('/v1/auth/oauth/cancel', { state });
+  },
+
+  exchange: async (exchangeRequest) => {
+    const response = await postJson('/v1/auth/exchange', exchangeRequest);
+    const body: unknown = await response.json();
+    const session = isRecord(body) ? parseSession(body.session) : null;
+    if (
+      !session ||
+      !isRecord(body) ||
+      typeof body.credential !== 'string' ||
+      body.credential === ''
+    ) {
+      throw new AuthApiError('provider_unavailable');
+    }
+    return { session, credential: body.credential };
   },
 };

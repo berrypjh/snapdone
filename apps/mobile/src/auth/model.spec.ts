@@ -77,7 +77,7 @@ describe('stale and duplicate responses', () => {
   it('ignores a late success after cancel', () => {
     const state = run(
       [
-        { type: 'submit', provider: 'apple', requestId: 'r1' },
+        { type: 'submit', provider: 'google', requestId: 'r1' },
         { type: 'cancel' },
         {
           type: 'resolved',
@@ -115,7 +115,7 @@ describe('stale and duplicate responses', () => {
   it('returns to the previous step when the provider reports cancelled', () => {
     const state = run(
       [
-        { type: 'submit', provider: 'apple', requestId: 'r1' },
+        { type: 'submit', provider: 'google', requestId: 'r1' },
         {
           type: 'resolved',
           generation: 0,

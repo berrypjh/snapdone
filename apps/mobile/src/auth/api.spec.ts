@@ -29,7 +29,7 @@ describe('capabilities', () => {
   it('keeps only known providers in product order', async () => {
     stubFetch(() => json({ providers: ['kakao', 'email', 'google'] }));
 
-    await expect(authApi.capabilities()).resolves.toEqual(['google', 'kakao']);
+    await expect(authApi.capabilities()).resolves.toEqual(['google']);
   });
 
   it('narrows a 503 to provider_unavailable', async () => {
@@ -88,5 +88,71 @@ describe('logout', () => {
       method: 'POST',
       headers: { Authorization: 'Bearer opaque' },
     });
+  });
+});
+
+describe('oauthStart', () => {
+  it('posts the proof and returns the https authorize URL', async () => {
+    const fetchMock = stubFetch(() =>
+      json({ authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth?x=1' }),
+    );
+    const startRequest = {
+      provider: 'google',
+      challenge: 'c',
+      state: 's',
+      platform: 'mobile',
+    } as const;
+
+    await expect(authApi.oauthStart(startRequest)).resolves.toBe(
+      'https://accounts.google.com/o/oauth2/v2/auth?x=1',
+    );
+    expect(fetchMock).toHaveBeenCalledWith(`${BASE_URL}/v1/auth/oauth/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(startRequest),
+    });
+  });
+
+  it('refuses a non-https authorize URL', async () => {
+    stubFetch(() => json({ authorizeUrl: 'http://accounts.example.com/auth' }));
+
+    await expect(
+      errorCode(
+        authApi.oauthStart({ provider: 'google', challenge: 'c', state: 's', platform: 'mobile' }),
+      ),
+    ).resolves.toBe('provider_unavailable');
+  });
+});
+
+describe('exchange', () => {
+  const session = {
+    user: { id: 'u1' },
+    onboardingStep: 'intro',
+    expiresAt: '2026-10-01T00:00:00Z',
+  };
+
+  it('returns the session and credential', async () => {
+    stubFetch(() => json({ session, credential: 'opaque' }));
+
+    await expect(authApi.exchange({ code: 'c', verifier: 'v', state: 's' })).resolves.toEqual({
+      session,
+      credential: 'opaque',
+    });
+  });
+
+  it('maps a rejected code to invalid_callback', async () => {
+    stubFetch(() => json({ error: 'invalid_callback' }, 400));
+
+    await expect(
+      errorCode(authApi.exchange({ code: 'c', verifier: 'v', state: 's' })),
+    ).resolves.toBe('invalid_callback');
+  });
+
+  it('rejects a response without a credential', async () => {
+    stubFetch(() => json({ session }));
+
+    await expect(
+      errorCode(authApi.exchange({ code: 'c', verifier: 'v', state: 's' })),
+    ).resolves.toBe('provider_unavailable');
   });
 });

@@ -98,10 +98,7 @@ export const createAuthController = (deps: AuthControllerDeps) => {
     }
   };
 
-  const signIn = async (provider: AuthProvider) => {
-    const port = deps.signIn[provider];
-    if (!port || availability(provider) !== 'available') return;
-
+  const run = async (provider: AuthProvider, port: SignInPort) => {
     const requestId = deps.newRequestId();
     dispatch({ type: 'submit', provider, requestId });
     if (snapshot.auth.status !== 'submitting' || snapshot.auth.requestId !== requestId) return;
@@ -137,6 +134,15 @@ export const createAuthController = (deps: AuthControllerDeps) => {
     resolve({ type: 'authenticated', session: result.session });
   };
 
+  const signIn = async (provider: AuthProvider) => {
+    const port = deps.signIn[provider];
+    if (!port || availability(provider) !== 'available') return;
+    await run(provider, port);
+  };
+
+  const resume = (provider: AuthProvider, finish: () => Promise<SignInResult | null>) =>
+    run(provider, async () => (await finish()) ?? { type: 'failed', error: 'cancelled' });
+
   const logout = async (): Promise<{ ok: true } | { ok: false; error: AuthErrorCode }> => {
     const stored = await storage.readCredential();
     if (stored.status === 'unavailable') return { ok: false, error: 'storage_unavailable' };
@@ -163,6 +169,7 @@ export const createAuthController = (deps: AuthControllerDeps) => {
     },
     availability,
     signIn,
+    resume,
     cancel: () => dispatch({ type: 'cancel' }),
     dismiss: () => dispatch({ type: 'dismiss' }),
     logout,

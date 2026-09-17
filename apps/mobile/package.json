@@ -29,6 +29,7 @@
     "expo-splash-screen": "*",
     "expo-status-bar": "*",
     "expo-system-ui": "*",
+    "expo-web-browser": "*",
     "react": "19.2.3",
     "react-native": "*",
     "react-native-safe-area-context": "*",

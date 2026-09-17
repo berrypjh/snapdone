@@ -9,7 +9,6 @@ import { textStyle } from '../theme/text';
 
 type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
-/** Native home. The Capture → Act flow will live here; for now it opens the first web content page. */
 export const HomeScreen = ({ navigation }: HomeScreenProps) => {
   const theme = useTheme();
   const { typography } = theme.tokens;

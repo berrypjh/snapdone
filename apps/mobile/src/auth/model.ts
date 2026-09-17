@@ -9,7 +9,7 @@ export const AUTH_ERROR_CODES = [
 
 export type AuthErrorCode = (typeof AUTH_ERROR_CODES)[number];
 
-export const AUTH_PROVIDERS = ['google', 'apple', 'naver', 'kakao'] as const;
+export const AUTH_PROVIDERS = ['google'] as const;
 
 export type AuthProvider = (typeof AUTH_PROVIDERS)[number];
 

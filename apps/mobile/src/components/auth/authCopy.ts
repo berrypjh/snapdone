@@ -1,12 +1,9 @@
 import type { AuthErrorCode, AuthProvider } from '../../auth/model';
 
-export const PROVIDER_ORDER: readonly AuthProvider[] = ['google', 'apple', 'naver', 'kakao'];
+export const PROVIDER_ORDER: readonly AuthProvider[] = ['google'];
 
 export const PROVIDER_NAME: Record<AuthProvider, string> = {
   google: 'Google',
-  apple: 'Apple',
-  naver: '네이버',
-  kakao: '카카오',
 };
 
 export const AUTH_ERROR_MESSAGE: Record<Exclude<AuthErrorCode, 'cancelled'>, string> = {

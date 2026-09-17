@@ -9,8 +9,10 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { authApi } from '../auth/api';
-import { createAuthController, useAuthSnapshot } from '../auth/controller';
-import { secureAuthStorage } from '../auth/device';
+import { parseOAuthCallback } from '../auth/callback';
+import { type AuthController, createAuthController, useAuthSnapshot } from '../auth/controller';
+import { expoProofCrypto, secureAuthStorage, systemAuthBrowser } from '../auth/device';
+import { createGoogleSignIn, finishGoogleSignIn, type GoogleSignInDeps } from '../auth/google';
 import { destinationFor } from '../auth/model';
 import { AuthRestoring } from '../components/auth/AuthRestoring';
 import { getLegalLinks, isSignUpAllowed } from '../lib/legal';
@@ -25,15 +27,33 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const legalLinks = getLegalLinks();
 
+const authRedirectUri = process.env.EXPO_PUBLIC_AUTH_REDIRECT_URI;
+
+const googleSignInDeps: GoogleSignInDeps | null = authRedirectUri
+  ? {
+      api: authApi,
+      storage: secureAuthStorage,
+      crypto: expoProofCrypto,
+      browser: systemAuthBrowser,
+      redirectUri: authRedirectUri,
+      now: Date.now,
+    }
+  : null;
+
 const createAppAuthController = () =>
   createAuthController({
     api: authApi,
     storage: secureAuthStorage,
-    // Provider sign-in ports are added from 03 (OAuth) and 05 (Apple). Until then every provider is unavailable.
-    signIn: {},
+    signIn: googleSignInDeps ? { google: createGoogleSignIn(googleSignInDeps) } : {},
     signUpAllowed: isSignUpAllowed(legalLinks, __DEV__),
     newRequestId: randomUUID,
   });
+
+const resumeFromLaunchUrl = async (controller: AuthController) => {
+  const url = await Linking.getInitialURL();
+  if (!googleSignInDeps || !url || !parseOAuthCallback(url, googleSignInDeps.redirectUri)) return;
+  await controller.resume('google', () => finishGoogleSignIn(googleSignInDeps, url));
+};
 
 const AppNavigator = () => {
   const theme = useTheme();
@@ -41,7 +61,7 @@ const AppNavigator = () => {
   const destination = destinationFor(useAuthSnapshot(controller).auth);
 
   useEffect(() => {
-    void controller.start();
+    void controller.start().then(() => resumeFromLaunchUrl(controller));
   }, [controller]);
 
   return (
@@ -65,7 +85,6 @@ const AppNavigator = () => {
             )}
           </Stack.Screen>
         )}
-        {/* Onboarding screens (ON-02~07) do not exist yet, so a new profile also lands on Home. */}
         {(destination === 'onboarding' || destination === 'home') && (
           <>
             <Stack.Screen

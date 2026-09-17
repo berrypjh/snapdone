@@ -20,9 +20,12 @@ const deferred = <T>() => {
 };
 
 const fakeApi = (overrides: Partial<AuthApi> = {}): AuthApi => ({
-  capabilities: vi.fn(async (): Promise<AuthProvider[]> => ['google', 'apple', 'naver', 'kakao']),
+  capabilities: vi.fn(async (): Promise<AuthProvider[]> => ['google']),
   session: vi.fn(async () => session),
   logout: vi.fn(async () => undefined),
+  oauthStart: vi.fn(async () => 'https://accounts.google.com/o/oauth2/v2/auth'),
+  oauthCancel: vi.fn(async () => undefined),
+  exchange: vi.fn(async () => ({ session, credential: 'opaque' })),
   ...overrides,
 });
 
@@ -129,7 +132,7 @@ describe('provider availability', () => {
   it('is unavailable when the app has no sign-in port for the provider', async () => {
     const { controller } = await setup();
 
-    expect(controller.availability('kakao')).toBe('unavailable');
+    expect(controller.availability('google')).toBe('unavailable');
   });
 
   it('is unavailable when sign-up is not allowed (no legal documents)', async () => {
@@ -171,12 +174,12 @@ describe('sign-in', () => {
     const storage = fakeStorage();
     const { controller } = await setup({
       storage,
-      signIn: { naver: vi.fn(async () => authenticated('n-cred')) },
+      signIn: { google: vi.fn(async () => authenticated('g-cred')) },
     });
 
-    await controller.signIn('naver');
+    await controller.signIn('google');
 
-    expect(storage.saveCredential).toHaveBeenCalledWith('n-cred');
+    expect(storage.saveCredential).toHaveBeenCalledWith('g-cred');
     expect(controller.getSnapshot().auth).toEqual({
       status: 'authenticated',
       generation: 0,
@@ -184,22 +187,19 @@ describe('sign-in', () => {
     });
   });
 
-  it('marks only the requested provider as submitting and ignores a second press', async () => {
+  it('marks the request as submitting and ignores a second press', async () => {
     const pending = deferred<SignInResult>();
-    const kakao = vi.fn(() => pending.promise);
-    const google = vi.fn(async () => authenticated());
-    const { controller } = await setup({ signIn: { kakao, google } });
+    const google = vi.fn(() => pending.promise);
+    const { controller } = await setup({ signIn: { google } });
 
-    const first = controller.signIn('kakao');
+    const first = controller.signIn('google');
     void controller.signIn('google');
-    void controller.signIn('kakao');
 
     expect(controller.getSnapshot().auth).toMatchObject({
       status: 'submitting',
-      provider: 'kakao',
+      provider: 'google',
     });
-    expect(kakao).toHaveBeenCalledTimes(1);
-    expect(google).not.toHaveBeenCalled();
+    expect(google).toHaveBeenCalledTimes(1);
 
     pending.resolve(authenticated());
     await first;
@@ -209,11 +209,11 @@ describe('sign-in', () => {
   it('returns to sign-in when the user cancels in the provider', async () => {
     const { controller } = await setup({
       signIn: {
-        apple: vi.fn(async (): Promise<SignInResult> => ({ type: 'failed', error: 'cancelled' })),
+        google: vi.fn(async (): Promise<SignInResult> => ({ type: 'failed', error: 'cancelled' })),
       },
     });
 
-    await controller.signIn('apple');
+    await controller.signIn('google');
 
     expect(controller.getSnapshot().auth).toEqual({ status: 'anonymous', generation: 0 });
   });
@@ -269,12 +269,12 @@ describe('sign-in', () => {
     const { controller } = await setup({
       api,
       storage,
-      signIn: { kakao: vi.fn(async () => authenticated('k')) },
+      signIn: { google: vi.fn(async () => authenticated('g')) },
     });
 
-    await controller.signIn('kakao');
+    await controller.signIn('google');
 
-    expect(api.logout).toHaveBeenCalledWith('k');
+    expect(api.logout).toHaveBeenCalledWith('g');
     expect(controller.getSnapshot().auth).toEqual({
       status: 'recoverable-error',
       generation: 0,
@@ -354,5 +354,51 @@ describe('subscribe', () => {
 
     expect(calls).toBeGreaterThan(0);
     expect(listener).toHaveBeenCalledTimes(calls);
+  });
+});
+
+describe('resume (cold start)', () => {
+  it('signs in with a result finished from the launch URL', async () => {
+    const storage = fakeStorage();
+    const { controller } = await setup({ storage });
+
+    await controller.resume('google', async () => authenticated('cold'));
+
+    expect(storage.saveCredential).toHaveBeenCalledWith('cold');
+    expect(controller.getSnapshot().auth.status).toBe('authenticated');
+  });
+
+  it('returns to sign-in without an error when there is no pending sign-in', async () => {
+    const { controller } = await setup();
+
+    await controller.resume('google', async () => null);
+
+    expect(controller.getSnapshot().auth).toEqual({ status: 'anonymous', generation: 0 });
+  });
+
+  it('does not finish anything for a user who is already signed in', async () => {
+    const finish = vi.fn(async () => authenticated('other'));
+    const { controller } = await setup({
+      storage: fakeStorage({ status: 'found', credential: 'c' }),
+    });
+
+    await controller.resume('google', finish);
+
+    expect(finish).not.toHaveBeenCalled();
+    expect(controller.getSnapshot().auth.status).toBe('authenticated');
+  });
+
+  it('revokes a resumed result that arrives after the user cancelled', async () => {
+    const pending = deferred<SignInResult | null>();
+    const api = fakeApi();
+    const { controller } = await setup({ api });
+
+    const running = controller.resume('google', () => pending.promise);
+    controller.cancel();
+    pending.resolve(authenticated('cold-late'));
+    await running;
+
+    expect(api.logout).toHaveBeenCalledWith('cold-late');
+    expect(controller.getSnapshot().auth.status).toBe('anonymous');
   });
 });

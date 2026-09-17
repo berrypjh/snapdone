@@ -5,13 +5,8 @@ import { AUTH_ERROR_CODES } from '../../auth/model';
 import { authErrorMessage, continueWith, PROVIDER_ORDER, unavailableMessage } from './authCopy';
 
 describe('auth copy', () => {
-  it('keeps the confirmed button order and labels', () => {
-    expect(PROVIDER_ORDER.map(continueWith)).toEqual([
-      'Google로 계속하기',
-      'Apple로 계속하기',
-      '네이버로 계속하기',
-      '카카오로 계속하기',
-    ]);
+  it('offers only Google for now', () => {
+    expect(PROVIDER_ORDER.map(continueWith)).toEqual(['Google로 계속하기']);
   });
 
   it('has a polite message for every error except cancel', () => {
@@ -22,10 +17,8 @@ describe('auth copy', () => {
     }
   });
 
-  it('names the unavailable providers in order', () => {
+  it('names the unavailable provider', () => {
     expect(unavailableMessage([])).toBeNull();
-    expect(unavailableMessage(['naver', 'kakao'])).toBe(
-      '지금은 네이버 · 카카오 로그인을 사용할 수 없습니다.',
-    );
+    expect(unavailableMessage(['google'])).toBe('지금은 Google 로그인을 사용할 수 없습니다.');
   });
 });

@@ -1,6 +1,8 @@
 import { CryptoDigestAlgorithm, digest, getRandomBytes } from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
+import { openAuthSessionAsync } from 'expo-web-browser';
 
+import type { AuthBrowser } from './google';
 import type { ProofCrypto } from './proof';
 import { type AuthStorage, parsePendingProof } from './storage';
 
@@ -38,4 +40,11 @@ export const secureAuthStorage: AuthStorage = {
 export const expoProofCrypto: ProofCrypto = {
   randomBytes: getRandomBytes,
   sha256: async (data) => new Uint8Array(await digest(CryptoDigestAlgorithm.SHA256, data)),
+};
+
+export const systemAuthBrowser: AuthBrowser = {
+  openAuthSession: async (url, redirectUri) => {
+    const result = await openAuthSessionAsync(url, redirectUri);
+    return result.type === 'success' ? { type: 'success', url: result.url } : { type: 'cancel' };
+  },
 };

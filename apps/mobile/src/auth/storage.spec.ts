@@ -8,7 +8,7 @@ const proof: PendingProof = {
   verifier: 'v'.repeat(43),
   challenge: 'c'.repeat(43),
   state: 's'.repeat(43),
-  provider: 'kakao',
+  provider: 'google',
   createdAt: NOW - 1000,
 };
 
@@ -27,6 +27,7 @@ describe('parsePendingProof', () => {
     ['nothing stored', null],
     ['not JSON', '{'],
     ['unknown provider', JSON.stringify({ ...proof, provider: 'email' })],
+    ['a provider not offered yet', JSON.stringify({ ...proof, provider: 'kakao' })],
     ['missing verifier', JSON.stringify({ ...proof, verifier: '' })],
     ['future timestamp', JSON.stringify({ ...proof, createdAt: NOW + 1 })],
   ])('drops %s', (_, raw) => {
