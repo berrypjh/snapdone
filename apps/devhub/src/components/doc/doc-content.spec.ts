@@ -8,9 +8,12 @@ import type { DocumentRef } from '../../domain/model';
 import { documentBlocks, documentOutline } from '../../lib/documents';
 import { findEntity } from '../../lib/entities';
 import { inspect } from '../../lib/inspection';
+import { EntityHeader } from '../entity-header';
+import { EntitySummary } from '../entity-summary';
 import { Inspector } from '../inspector';
 
 import { DocContent } from './doc-content';
+import { DOCUMENT_COLUMN, DocumentLayout } from './document-layout';
 
 const render = (doc: DocumentRef) =>
   renderToStaticMarkup(
@@ -57,13 +60,39 @@ describe('links between documents', () => {
   });
 });
 
-describe('document inspector', () => {
-  it('starts with "이 페이지에서", one entry per section', () => {
-    const entity = findEntity('documents', 'quality-gates');
-    if (!entity) throw new Error('no quality-gates');
+describe('"이 페이지에서"', () => {
+  const entity = findEntity('documents', 'quality-gates');
+  if (!entity || entity.section !== 'documents') throw new Error('no quality-gates');
+  const outline = documentOutline(entity.record);
+
+  it('sits inside the workspace: folded above the text, and beside it when wide', () => {
+    const html = renderToStaticMarkup(createElement(DocumentLayout, { doc: entity.record }));
+    const folded = html.match(/<details[^>]*>[\s\S]*?<\/details>/)?.[0] ?? '';
+    expect(folded).not.toMatch(/<details[^>]* open/);
+    expect(folded).toContain('aria-label="이 페이지에서"');
+    expect(count(folded, /<li>/g)).toBe(outline.length);
+    const beside = html.match(/<nav aria-labelledby="doc-toc-heading"[\s\S]*?<\/nav>/)?.[0] ?? '';
+    expect(beside).toContain('이 페이지에서');
+    expect(count(beside, /<li>/g)).toBe(outline.length);
+    expect(html.indexOf('<details')).toBeLessThan(html.indexOf('<article'));
+  });
+
+  it('is no longer in the inspector', () => {
     const html = renderToStaticMarkup(createElement(Inspector, { inspection: inspect(entity) }));
-    const outline = html.match(/<section[^>]*id="inspector-outline"[\s\S]*?<\/section>/)?.[0] ?? '';
-    expect(outline).toContain('이 페이지에서');
-    expect(count(outline, /<li>/g)).toBe(documentOutline(entity.record as DocumentRef).length);
+    expect(html).not.toContain('이 페이지에서');
+  });
+});
+
+describe('document page column', () => {
+  it('centers the header and the document in one shared column', () => {
+    const entity = findEntity('documents', 'quality-gates');
+    if (!entity || entity.section !== 'documents') throw new Error('no quality-gates');
+    const header = renderToStaticMarkup(
+      createElement(EntityHeader, { section: 'documents', id: 'quality-gates' }),
+    );
+    const body = renderToStaticMarkup(createElement(EntitySummary, { entity }));
+    for (const html of [header, body]) {
+      expect(html.slice(0, 200)).toContain(DOCUMENT_COLUMN);
+    }
   });
 });

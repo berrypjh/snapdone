@@ -11,7 +11,10 @@ import { catalog } from '../data';
 import { findEntity } from '../lib/entities';
 import { inspect } from '../lib/inspection';
 
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => '/',
+}));
 
 /** A whole document page: shell, workspace with the document, and its inspector. */
 const page = (id: string) => {

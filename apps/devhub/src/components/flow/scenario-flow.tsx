@@ -6,10 +6,20 @@ import type { FlowModel } from '@/lib/flow';
 import { NODE } from '@/lib/flow';
 
 import { CanvasEdges } from '../canvas/canvas-edges';
+import type { LegendItem } from '../canvas/canvas-toolbar';
 import { CanvasViewport } from '../canvas/canvas-viewport';
 
 import { FlowLanes } from './flow-lanes';
 import { FlowNode } from './flow-node';
+
+const BACK_DASH = '6 4';
+
+const LEGEND: LegendItem[] = [
+  { box: 'solid', label: '코드가 있는 단계' },
+  { box: 'dashed', label: '코드가 없는 단계' },
+  { line: null, label: '다음 단계로' },
+  { line: BACK_DASH, label: '앞 단계로 돌아가는 흐름' },
+];
 
 /** The step selected by the URL (`…/steps/<id>`) below the scenario layout. */
 const useSelectedStep = () => {
@@ -30,14 +40,14 @@ export function ScenarioFlow({ model, title }: { model: FlowModel; title: string
   const edges = model.edges.map((edge) => ({
     id: edge.id,
     path: edge.path,
-    dash: edge.back ? '6 4' : undefined,
+    dash: edge.back ? BACK_DASH : undefined,
   }));
 
   return (
     <CanvasViewport
       label={`${title} 흐름 그림`}
       content={{ width: model.width, height: model.height }}
-      help="점선 테두리는 코드가 없는 단계, 점선 화살표는 앞 단계로 돌아가는 흐름입니다."
+      legend={LEGEND}
       summary={summary}
       selected={current && { x: current.x, y: current.y, ...NODE }}
     >

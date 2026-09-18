@@ -64,6 +64,23 @@ describe('ArchitectureMap summary and selection', () => {
   });
 });
 
+describe('ArchitectureMap nodes', () => {
+  const linkOf = (html: string, id: string) =>
+    html.match(new RegExp(`<a[^>]*href="/architecture/${id}"[^>]*>`))?.[0] ?? '';
+
+  it('draws systems outside the repository dashed, and says so in the legend', () => {
+    const html = render();
+    for (const node of model.nodes) {
+      const link = linkOf(html, node.id);
+      if (node.nodeKind === 'external') expect(link).toContain('border-dashed');
+      else expect(link).not.toContain('border-dashed');
+    }
+    expect(model.nodes.some((node) => node.nodeKind === 'external')).toBe(true);
+    expect(html).toContain('저장소 밖 시스템');
+    expect(html).toContain('저장소 안 프로젝트');
+  });
+});
+
 describe('ArchitectureOutline', () => {
   const outline = (kind?: string, query?: string) =>
     renderToStaticMarkup(createElement(ArchitectureOutline, { model, kind, query }));

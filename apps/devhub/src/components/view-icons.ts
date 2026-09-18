@@ -14,6 +14,13 @@ export const SECTION_ICON: Record<SectionId, IconName> = {
   engineering: 'engineering',
 };
 
+/** Architecture node kinds: the section icons for projects, a globe for systems outside. */
+export const NODE_KIND_ICON = {
+  application: 'application',
+  library: 'library',
+  external: 'globe',
+} as const satisfies Record<string, IconName>;
+
 export const VIEW_ICON = {
   overview: 'home',
   architecture: 'architecture',

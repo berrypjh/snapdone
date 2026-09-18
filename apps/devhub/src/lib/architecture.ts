@@ -26,6 +26,9 @@ export const architectureHref = (nodeId: string) => `/architecture/${nodeId}`;
 export const findNode = (id: string): ArchitectureNode | undefined =>
   catalog.nodes.find((node) => node.id === id);
 
+/** Route params of every architecture node page, for `generateStaticParams`. */
+export const nodeParams = () => catalog.nodes.map((node) => ({ nodeId: node.id }));
+
 export const nodeLabel = (node: ArchitectureNode) =>
   node.kind === 'external' ? node.name : node.id;
 

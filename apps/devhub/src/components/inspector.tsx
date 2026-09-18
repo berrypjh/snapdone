@@ -1,11 +1,11 @@
+import { type ReactNode, Suspense } from 'react';
 import Link from 'next/link';
-
-import type { ReactNode } from 'react';
 
 import { swaggerDocument } from '@/data/apis';
 import type { ApiRef, TestRef } from '@/domain/model';
-import type { Fact, Inspection, RelatedGroup, ResolvedDocument } from '@/lib/inspection';
+import type { Fact, Inspection, NodeOrder, RelatedGroup, ResolvedDocument } from '@/lib/inspection';
 import { CONSTRAINT } from '@/lib/labels';
+import { pagerOf } from '@/lib/pager';
 import {
   countByProject,
   countByRunner,
@@ -16,21 +16,47 @@ import {
   type ProjectGroup,
 } from '@/lib/reference-groups';
 
-import { DocToc } from './doc/doc-toc';
+import { NodePager } from './architecture/node-pager';
 import { ByProject, FileRow, Symbols } from './file-row';
 import { Icon, type IconName } from './icon';
+import { Pager } from './pager';
 import { StatusChip } from './status-chip';
-import { INSPECTOR_ID } from './workspace';
+import { detailsHref, INSPECTOR_ID } from './workspace';
 
 type SectionMeta = { id: string; title: string; icon: IconName };
 
-const OUTLINE: SectionMeta = { id: 'inspector-outline', title: '이 페이지에서', icon: 'document' };
 const OVERVIEW: SectionMeta = { id: 'inspector-overview', title: '개요', icon: 'overview' };
 const SOURCE: SectionMeta = { id: 'inspector-source', title: '소스', icon: 'source' };
 const DOCS: SectionMeta = { id: 'inspector-docs', title: '문서', icon: 'document' };
 const TESTS: SectionMeta = { id: 'inspector-tests', title: '테스트', icon: 'test' };
 const API_SECTION: SectionMeta = { id: 'inspector-apis', title: 'API', icon: 'api' };
 const RELATED_SECTION: SectionMeta = { id: 'inspector-related', title: '연결', icon: 'related' };
+
+/**
+ * Previous and next architecture node. The kind filter is read from the URL on the client, so the
+ * static fallback pages through every node.
+ */
+function NodePagerSlot({ order }: { order: NodeOrder }) {
+  const all = pagerOf('구성 요소', order.nodes, order.current);
+  return (
+    <Suspense fallback={all && <Pager pager={all} />}>
+      <NodePager order={order} />
+    </Suspense>
+  );
+}
+
+/** A fact detail: text, or a link that opens the other item's details. */
+function Detail({ detail }: { detail: Fact['details'][number] }) {
+  if (typeof detail === 'string') return detail;
+  return (
+    <Link
+      href={detailsHref(detail.href)}
+      className="text-text-link underline-offset-2 hover:underline"
+    >
+      {detail.label}
+    </Link>
+  );
+}
 
 function InspectorSection({
   meta,
@@ -81,7 +107,9 @@ function Facts({ facts }: { facts: Fact[] }) {
             <dd className="typo-body-small">
               <ul className="flex flex-col gap-1">
                 {fact.details.map((detail, index) => (
-                  <li key={index}>{detail}</li>
+                  <li key={index}>
+                    <Detail detail={detail} />
+                  </li>
                 ))}
               </ul>
             </dd>
@@ -210,17 +238,8 @@ function RelatedGroups({ groups }: { groups: RelatedGroup[] }) {
   );
 }
 
-function Contents({
-  apis,
-  related,
-  outline,
-}: {
-  apis: boolean;
-  related: boolean;
-  outline: boolean;
-}) {
+function Contents({ apis, related }: { apis: boolean; related: boolean }) {
   const sections = [
-    ...(outline ? [OUTLINE] : []),
     OVERVIEW,
     SOURCE,
     DOCS,
@@ -261,23 +280,19 @@ export function Inspector({ inspection }: { inspection?: Inspection }) {
       className="relative border-t border-stroke-light bg-background-surface lg:overflow-y-auto lg:border-t-0 lg:border-l"
     >
       {inspection ? (
-        <div className="flex flex-col divide-y divide-stroke-light p-4">
+        <div className="flex flex-col divide-y divide-stroke-light p-4 pb-12">
           <header className="flex flex-col gap-2 pb-4">
-            <p className="typo-caption-small text-text-light">{inspection.kind}</p>
+            {/* The arrows end the first row, which is where a move between neighbours lands. */}
+            <div className="flex items-center justify-between gap-2">
+              <p className="min-w-0 typo-caption-small text-text-light">{inspection.kind}</p>
+              {inspection.pager && <Pager pager={inspection.pager} />}
+              {inspection.nodeOrder && <NodePagerSlot order={inspection.nodeOrder} />}
+            </div>
             <h2 className="typo-body-medium-strong">{inspection.title}</h2>
             {inspection.status && <StatusChip status={inspection.status} />}
-            <Contents
-              apis={!!inspection.apis?.length}
-              related={!!inspection.related}
-              outline={!!inspection.outline?.length}
-            />
+            <Contents apis={!!inspection.apis?.length} related={!!inspection.related} />
           </header>
 
-          {inspection.outline && inspection.outline.length > 0 && (
-            <InspectorSection meta={OUTLINE} count={inspection.outline.length}>
-              <DocToc items={inspection.outline} />
-            </InspectorSection>
-          )}
           <InspectorSection meta={OVERVIEW}>
             <Facts facts={inspection.facts} />
           </InspectorSection>

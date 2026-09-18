@@ -25,24 +25,31 @@ import {
   stepNodeIds,
   stepsTouching,
 } from './architecture';
-import { documentOutline, type OutlineItem } from './documents';
+import { architectureModel } from './architecture-layout';
 import { commandHref, type Entity, stepHref } from './entities';
 import { CONSTRAINT, GAP, INTERACTION, RELATION, ROLE, TRACK } from './labels';
+import { type Pager, type PagerItem, pagerOf } from './pager';
 import type { SourceUsage } from './source-usage';
 
-export type Fact = { term: string; details: string[] };
+export type RelatedLink = { label: string; href: string; detail?: string };
+
+/** A fact's detail is text, or a link to another item shown in the inspector. */
+export type Fact = { term: string; details: (string | RelatedLink)[] };
 
 export type ResolvedDocument = { document: DocumentRef; heading?: string };
-
-export type RelatedLink = { label: string; href: string; detail?: string };
 
 /** Navigation to other views of the same thing (scenario ↔ architecture). */
 export type RelatedGroup = { title: string; links: RelatedLink[]; empty: string };
 
+/** Architecture nodes in the list order, for a pager that follows the kind filter in the URL. */
+export type NodeOrder = { current: string; nodes: (PagerItem & { kind: string })[] };
+
 /** What the inspector shows for one entity. Empty lists come with the reason they are empty. */
 export type Inspection = {
-  /** A document's sections, shown as "이 페이지에서" above the evidence. */
-  outline?: OutlineItem[];
+  /** Set for a scenario step: previous and next step, under the title. */
+  pager?: Pager;
+  /** Set for an architecture node: previous and next node, under the title. */
+  nodeOrder?: NodeOrder;
   kind: string;
   title: string;
   status?: ImplementationStatus;
@@ -79,6 +86,12 @@ const relationLine = (relation: Relation) =>
   `${relation.from} → ${relation.to} · ${
     relation.kind === 'runtime' ? INTERACTION[relation.interaction] : RELATION[relation.kind]
   }`;
+
+/** A relation of `id`, linked to the node at its other end. */
+const relationLink = (id: string, relation: Relation): RelatedLink => ({
+  label: relationLine(relation),
+  href: architectureHref(relation.from === id ? relation.to : relation.from),
+});
 
 const nodeLinks = (ids: string[]): RelatedLink[] =>
   ids.flatMap((id) => {
@@ -213,7 +226,6 @@ const inspectDocument = (entity: Extract<Entity, { section: 'documents' }>): Ins
   return {
     kind: '문서',
     title: record.title,
-    outline: documentOutline(record),
     facts: [
       { term: '주제', details: [record.topic] },
       { term: '인용한 시나리오', details: citing.map((scenario) => scenario.title) },
@@ -267,9 +279,28 @@ const contractLabel = new Map(
 const scenarioTitle = new Map(catalog.scenarios.map((scenario) => [scenario.id, scenario.title]));
 
 /** One step of a scenario: the flow viewer's selection. */
+const stepPager = (scenario: Scenario, step: ScenarioStep) =>
+  pagerOf(
+    '단계',
+    scenario.steps.map((s) => ({ id: s.id, label: s.intent, href: stepHref(scenario.id, s.id) })),
+    step.id,
+  );
+
+/** Nodes in the order the architecture list shows them. */
+const nodeOrder = (current: string): NodeOrder => ({
+  current,
+  nodes: architectureModel().nodes.map(({ id, label, href, nodeKind }) => ({
+    id,
+    label,
+    href,
+    kind: nodeKind,
+  })),
+});
+
 export const inspectStep = (scenario: Scenario, step: ScenarioStep): Inspection => {
   const intentOf = new Map(scenario.steps.map((s) => [s.id, s.intent]));
   return {
+    pager: stepPager(scenario, step),
     kind: `시나리오 단계 · ${scenario.title}`,
     title: step.intent,
     status: step.status,
@@ -317,6 +348,7 @@ const projectPage = (node: ArchitectureNode): RelatedLink[] =>
 export const inspectNode = (node: ArchitectureNode): Inspection => {
   const project = node.kind !== 'external';
   return {
+    nodeOrder: nodeOrder(node.id),
     kind:
       node.kind === 'application'
         ? `애플리케이션 · ${ROLE[node.role]}`
@@ -328,7 +360,7 @@ export const inspectNode = (node: ArchitectureNode): Inspection => {
       { term: '역할', details: [node.summary] },
       ...(project ? [{ term: '스택', details: [node.stack] }] : []),
       { term: '경계', details: boundariesOf(node.id).map((boundary) => boundary.name) },
-      { term: '관계', details: relationsOf(node.id).map(relationLine) },
+      { term: '관계', details: relationsOf(node.id).map((r) => relationLink(node.id, r)) },
       ...(node.standalone ? [{ term: '관계 없음', details: [node.standalone] }] : []),
     ],
     source: project ? [{ path: node.root }, node.manifest] : node.evidence,

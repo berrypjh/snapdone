@@ -73,6 +73,13 @@
   color-scheme: dark;
 }
 
+/* Below `lg` the top bar sticks to the top (min-h-14 plus its border); anchors land below it. */
+@media (width < 64rem) {
+  :root {
+    scroll-padding-top: 3.75rem;
+  }
+}
+
 body {
   background-color: var(--ds-background-default);
   color: var(--ds-text-default);

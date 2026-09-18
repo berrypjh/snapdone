@@ -81,3 +81,48 @@ describe('Inspector without a snapshot commit', () => {
     expect(html).toContain('최신 main에서 보기, 새 창');
   });
 });
+
+describe('step pager', () => {
+  const { scenario } = exchange;
+  const pagerOf = (index: number) => inspectStep(scenario, scenario.steps[index]).pager;
+
+  it('links each step to its neighbours in the scenario order', () => {
+    const last = scenario.steps.length - 1;
+    expect(pagerOf(0)?.previous).toBeUndefined();
+    expect(pagerOf(0)?.next?.label).toBe(scenario.steps[1].intent);
+    expect(pagerOf(last)?.next).toBeUndefined();
+    expect(pagerOf(last)?.previous?.label).toBe(scenario.steps[last - 1].intent);
+  });
+
+  it('is a pair of arrows named after their target, landing on its details', () => {
+    const html = renderToStaticMarkup(createElement(Inspector, { inspection }));
+    const pager = html.match(/<nav aria-label="단계 이동"[\s\S]*?<\/nav>/)?.[0] ?? '';
+    const links = [...pager.matchAll(/<a [^>]*>/g)].map(([tag]) => ({
+      href: tag.match(/href="([^"]+)"/)?.[1],
+      name: tag.match(/aria-label="([^"]+)"/)?.[1],
+    }));
+    const { steps } = exchange.scenario;
+    const at = steps.findIndex((s) => s.id === exchange.step.id);
+    expect(links).toEqual([
+      {
+        href: `/scenarios/${exchange.scenario.id}/steps/${steps[at - 1].id}#devhub-inspector`,
+        name: `이전 단계: ${steps[at - 1].intent}`,
+      },
+      {
+        href: `/scenarios/${exchange.scenario.id}/steps/${steps[at + 1].id}#devhub-inspector`,
+        name: `다음 단계: ${steps[at + 1].intent}`,
+      },
+    ]);
+  });
+
+  it('keeps the missing side as a disabled arrow', () => {
+    const { scenario } = exchange;
+    const first = inspectStep(scenario, scenario.steps[0]);
+    const html = renderToStaticMarkup(createElement(Inspector, { inspection: first }));
+    const pager = html.match(/<nav aria-label="단계 이동"[\s\S]*?<\/nav>/)?.[0] ?? '';
+    expect(pager).toMatch(
+      /<button[^>]*disabled[^>]*aria-label="이전 단계 없음"|<button[^>]*aria-label="이전 단계 없음"[^>]*disabled/,
+    );
+    expect(pager.match(/<a /g)).toHaveLength(1);
+  });
+});

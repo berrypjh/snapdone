@@ -42,7 +42,7 @@ export function ThemeSwitch() {
       value={mode}
       onChange={choose}
       options={OPTIONS}
-      className="w-auto"
+      className="w-auto shrink-0"
     />
   );
 }

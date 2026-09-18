@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { catalog } from '@/data';
 import type { Relation } from '@/domain/model';
 import { architectureHref, findNode, nodeLabel } from '@/lib/architecture';
-import { stepHref } from '@/lib/entities';
+import { entityHref, stepHref } from '@/lib/entities';
 import { INTERACTION, RELATION } from '@/lib/labels';
 
 import { StatusChip } from '../status-chip';
@@ -33,39 +33,48 @@ function NodeLink({ id }: { id: string }) {
 function RelationItem({ relation }: { relation: Relation }) {
   return (
     <li className="flex flex-col gap-1 py-2">
-      <p className="typo-body-small">
-        <NodeLink id={relation.from} /> → <NodeLink id={relation.to} />
-        <span className="text-text-light"> · {relationText(relation)}</span>
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 typo-body-small">
+        <span>
+          <NodeLink id={relation.from} /> → <NodeLink id={relation.to} />
+        </span>
+        <span className="rounded-sm bg-background-default px-1.5 typo-caption-small text-text-light">
+          {relationText(relation)}
+        </span>
       </p>
       <p className="typo-caption-small text-text-light">{relationSummary(relation)}</p>
     </li>
   );
 }
 
-/** Boundaries a new developer should see first, each with the relations that cross it. */
+/**
+ * Boundaries a new developer should see first, each with the relations that cross it, indented
+ * under the boundary so they read as its evidence.
+ */
 export function BoundaryList() {
   return (
     <WorkspaceSection id="architecture-boundaries" title="경계">
-      {catalog.boundaries.map((boundary) => (
-        <section
-          key={boundary.id}
-          id={`boundary-${boundary.id}`}
-          aria-labelledby={`boundary-${boundary.id}-heading`}
-          className="flex flex-col gap-1"
-        >
-          <h3 id={`boundary-${boundary.id}-heading`} className="typo-body-small-strong">
-            {boundary.name}
-          </h3>
-          <p className="typo-body-small">{boundary.summary}</p>
-          <ul className="flex flex-col divide-y divide-stroke-light">
-            {catalog.relations
-              .filter((relation) => boundary.relations.includes(relation.id))
-              .map((relation) => (
-                <RelationItem key={relation.id} relation={relation} />
-              ))}
-          </ul>
-        </section>
-      ))}
+      <div className="flex flex-col divide-y divide-stroke-light">
+        {catalog.boundaries.map((boundary) => (
+          <section
+            key={boundary.id}
+            id={`boundary-${boundary.id}`}
+            aria-labelledby={`boundary-${boundary.id}-heading`}
+            className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0"
+          >
+            <h3 id={`boundary-${boundary.id}-heading`} className="typo-body-small-strong">
+              {boundary.name}
+            </h3>
+            <p className="typo-body-small">{boundary.summary}</p>
+            <ul className="mt-1 flex flex-col divide-y divide-stroke-light border-l-2 border-stroke-light pl-3">
+              {catalog.relations
+                .filter((relation) => boundary.relations.includes(relation.id))
+                .map((relation) => (
+                  <RelationItem key={relation.id} relation={relation} />
+                ))}
+            </ul>
+          </section>
+        ))}
+      </div>
     </WorkspaceSection>
   );
 }
@@ -85,7 +94,8 @@ export function RelationList() {
         return (
           <section key={kind} aria-labelledby={`relations-${kind}`} className="flex flex-col">
             <h3 id={`relations-${kind}`} className="typo-body-small-strong">
-              {RELATION[kind]} {relations.length}
+              {RELATION[kind]}{' '}
+              <span className="typo-caption-small text-text-light">{relations.length}</span>
             </h3>
             <ul className="flex flex-col divide-y divide-stroke-light">
               {relations.map((relation) => (
@@ -108,19 +118,34 @@ export function TargetOnlyList() {
         아래 단계는 문서가 약속하지만 코드가 없다. 현재 아키텍처 그림에 node로 넣지 않았다.
       </p>
       {targets.map((scenario) => (
-        <ul key={scenario.id} className="flex flex-col divide-y divide-stroke-light">
-          {scenario.steps.map((step) => (
-            <li key={step.id} className="flex items-center justify-between gap-3 py-2">
-              <Link
-                href={stepHref(scenario.id, step.id)}
-                className="typo-body-small text-text-link underline-offset-2 hover:underline"
-              >
-                {step.intent}
-              </Link>
-              <StatusChip status={step.status} />
-            </li>
-          ))}
-        </ul>
+        <section
+          key={scenario.id}
+          aria-labelledby={`target-${scenario.id}`}
+          className="flex flex-col gap-1"
+        >
+          <h3 id={`target-${scenario.id}`} className="typo-body-small-strong">
+            <Link
+              href={entityHref({ section: 'scenarios', id: scenario.id })}
+              className="text-text-link underline-offset-2 hover:underline"
+            >
+              {scenario.title}
+            </Link>{' '}
+            <span className="typo-caption-small text-text-light">단계 {scenario.steps.length}</span>
+          </h3>
+          <ul className="flex flex-col divide-y divide-stroke-light border-l-2 border-stroke-light pl-3">
+            {scenario.steps.map((step) => (
+              <li key={step.id} className="flex items-center justify-between gap-3 py-2">
+                <Link
+                  href={stepHref(scenario.id, step.id)}
+                  className="typo-body-small text-text-link underline-offset-2 hover:underline"
+                >
+                  {step.intent}
+                </Link>
+                <StatusChip status={step.status} />
+              </li>
+            ))}
+          </ul>
+        </section>
       ))}
     </WorkspaceSection>
   );

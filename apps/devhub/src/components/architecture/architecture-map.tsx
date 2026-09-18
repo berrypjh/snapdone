@@ -6,6 +6,7 @@ import type { Relation } from '@/domain/model';
 import { ARCH_NODE, type ArchitectureModel, filterModel } from '@/lib/architecture-layout';
 
 import { CanvasEdges } from '../canvas/canvas-edges';
+import type { LegendItem } from '../canvas/canvas-toolbar';
 import { CanvasViewport } from '../canvas/canvas-viewport';
 
 import { ArchitectureNode } from './architecture-node';
@@ -18,6 +19,16 @@ const DASH: Record<Relation['kind'], string | undefined> = {
 };
 
 const AUTH_REDIRECT_DASH = '6 4';
+
+/** Drawn from the same patterns as the edges, so the legend cannot drift from the drawing. */
+const LEGEND: LegendItem[] = [
+  { box: 'solid', label: '저장소 안 프로젝트' },
+  { box: 'dashed', label: '저장소 밖 시스템' },
+  { line: DASH.runtime ?? null, label: '실행 중 호출' },
+  { line: DASH['workspace-dependency'] ?? null, label: 'Nx 의존' },
+  { line: AUTH_REDIRECT_DASH, label: '인증 redirect' },
+  { line: DASH.verification ?? null, label: '검증' },
+];
 
 type ArchitectureMapProps = {
   model: ArchitectureModel;
@@ -61,7 +72,7 @@ export function ArchitectureMap({ model, kind, query = '' }: ArchitectureMapProp
     <CanvasViewport
       label="현재 아키텍처 그림"
       content={{ width: model.width, height: model.height }}
-      help="점선(짧게)은 Nx 의존, 긴 점선은 인증 redirect, 일점쇄선은 검증, 실선은 실행 중 호출입니다."
+      legend={LEGEND}
       summary={summary}
       selected={current && { x: current.x, y: current.y, ...ARCH_NODE }}
     >

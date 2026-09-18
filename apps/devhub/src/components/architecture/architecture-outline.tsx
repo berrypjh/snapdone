@@ -10,7 +10,9 @@ import {
   filterModel,
 } from '@/lib/architecture-layout';
 
+import { Icon } from '../icon';
 import { Term } from '../term';
+import { NODE_KIND_ICON } from '../view-icons';
 
 import { NoNodes } from './architecture-map';
 
@@ -89,7 +91,10 @@ export function ArchitectureOutline({
                     </Link>
                     {node.id === selected && <span className="typo-caption-small"> · 선택됨</span>}
                   </h3>
-                  <span className="shrink-0 typo-caption-small text-text-light">{node.kind}</span>
+                  <span className="flex shrink-0 items-center gap-1.5 typo-caption-small text-text-light">
+                    <Icon name={NODE_KIND_ICON[node.nodeKind]} />
+                    {node.kind}
+                  </span>
                 </div>
                 <p className="devhub-code text-text-light">{node.detail}</p>
                 <p className="typo-body-small">{node.summary}</p>

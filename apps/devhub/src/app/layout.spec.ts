@@ -7,7 +7,10 @@ import { DevHubShell } from '../components/devhub-shell';
 
 import RootLayout from './layout';
 
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => '/',
+}));
 
 describe('skip links', () => {
   it('open the document body, once, outside every route', () => {
@@ -27,7 +30,7 @@ describe('skip links', () => {
       }),
     );
     expect(html).not.toContain('ui-skip-link');
-    expect(html.startsWith('<div class="grid')).toBe(true);
+    expect(html).toMatch(/^<div class="[^"]*\bgrid\b/);
   });
 
   it('keeps every icon decorative and every view named by its words', () => {

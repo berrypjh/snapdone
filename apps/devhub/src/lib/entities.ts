@@ -103,6 +103,18 @@ export const findSection = (id: string): Section | undefined =>
 export const findEntity = (sectionId: string, id: string): Entity | undefined =>
   findSection(sectionId)?.entities.find((entity) => entity.id === id);
 
+/** Route params of every entity page, for `generateStaticParams`. */
+export const entityParams = () =>
+  SECTIONS.flatMap((section) =>
+    section.entities.map((entity) => ({ section: section.id, id: entity.id })),
+  );
+
+/** Route params of every scenario step page, for `generateStaticParams`. */
+export const stepParams = () =>
+  catalog.scenarios.flatMap((scenario) =>
+    scenario.steps.map((step) => ({ section: 'scenarios', id: scenario.id, stepId: step.id })),
+  );
+
 export const sectionHref = (section: SectionId) => `/${section}`;
 
 export const entityHref = (entity: Pick<Entity, 'section' | 'id'>) =>

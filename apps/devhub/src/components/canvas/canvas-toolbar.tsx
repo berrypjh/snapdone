@@ -1,47 +1,160 @@
 'use client';
 
 import { Button } from '@berrypjh/react-ui';
-import type { ReactNode } from 'react';
 
-import { Icon } from '../icon';
+import { Icon, type IconName } from '../icon';
 
-type CanvasToolbarProps = {
+/** One legend entry: a line style (a dash pattern, `null` for solid) or a node box. */
+export type LegendItem = { label: string } & (
+  { line: string | null } | { box: 'solid' | 'dashed' }
+);
+
+function Sample({ item }: { item: LegendItem }) {
+  return (
+    <svg aria-hidden="true" width="28" height="14" className="shrink-0 overflow-visible">
+      {'line' in item ? (
+        <line
+          x1="0"
+          y1="7"
+          x2="28"
+          y2="7"
+          stroke="var(--ds-stroke-dark)"
+          strokeWidth="1.5"
+          strokeDasharray={item.line ?? undefined}
+        />
+      ) : (
+        <rect
+          x="4"
+          y="1"
+          width="20"
+          height="12"
+          rx="2"
+          fill="var(--ds-background-surface)"
+          stroke="var(--ds-stroke-default)"
+          strokeDasharray={item.box === 'dashed' ? '3 2' : undefined}
+        />
+      )}
+    </svg>
+  );
+}
+
+const KEYS: [keys: string[], action: string][] = [
+  [['끌기'], '배경을 끌어 이동'],
+  [['Ctrl', '휠'], '확대 · 축소 (macOS는 ⌘)'],
+  [['←', '↑', '→', '↓'], '항목에 포커스한 채 이동'],
+  [['+', '−'], '확대 · 축소'],
+  [['0'], '화면에 맞추기'],
+];
+
+/**
+ * How to move around and what the lines mean, folded behind "도움말". Hidden until asked, but
+ * still the canvas's description (`aria-describedby` reads hidden content too).
+ */
+export function CanvasHelp({
+  id,
+  open,
+  legend,
+}: {
+  id: string;
+  open: boolean;
+  legend: LegendItem[];
+}) {
+  return (
+    <div
+      id={id}
+      hidden={!open}
+      className="grid gap-4 rounded-md border border-stroke-light bg-background-surface p-3 sm:grid-cols-2"
+    >
+      <div className="flex flex-col gap-2">
+        <p className="typo-caption-small text-text-light">조작</p>
+        <ul className="flex flex-col gap-1 typo-caption-small">
+          {KEYS.map(([keys, action]) => (
+            <li key={action} className="flex items-center gap-2">
+              <span className="flex shrink-0 gap-0.5">
+                {keys.map((key) => (
+                  <kbd
+                    key={key}
+                    className="rounded-sm border border-stroke-light bg-background-default px-1 font-mono"
+                  >
+                    {key}
+                  </kbd>
+                ))}
+              </span>
+              {action}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="flex flex-col gap-2">
+        <p className="typo-caption-small text-text-light">범례</p>
+        <ul className="flex flex-col gap-1 typo-caption-small">
+          {legend.map((item) => (
+            <li key={item.label} className="flex items-center gap-2">
+              <Sample item={item} />
+              {item.label}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function ControlButton({
+  label,
+  icon,
+  onClick,
+}: {
+  label: string;
+  icon: IconName;
+  onClick: () => void;
+}) {
+  return (
+    <Button
+      size="sm"
+      variant="text"
+      color="secondary"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+    >
+      <Icon name={icon} />
+    </Button>
+  );
+}
+
+type CanvasControlsProps = {
   zoom: number;
-  helpId: string;
-  help: ReactNode;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onFit: () => void;
+  /** Opens the canvas at the window's size; absent inside that enlarged view. */
+  onExpand?: () => void;
 };
 
-export function CanvasToolbar({
+/** Zoom and view controls, floating in the canvas's bottom-right corner as map tools do. */
+export function CanvasControls({
   zoom,
-  helpId,
-  help,
   onZoomIn,
   onZoomOut,
   onFit,
-}: CanvasToolbarProps) {
+  onExpand,
+}: CanvasControlsProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <p id={helpId} className="typo-caption-small text-text-light">
-        배경을 끌어 이동 · Ctrl/⌘ + 휠로 확대 · 항목에 포커스한 채 방향키 이동, + − 확대, 0 맞추기.{' '}
-        {help}
-      </p>
-      <div role="group" aria-label="보기 조절" className="flex items-center gap-1">
-        <Button size="sm" variant="outlined" aria-label="축소" onClick={onZoomOut}>
-          <Icon name="minus" />
-        </Button>
-        <output className="min-w-12 text-center typo-caption-small">
+    <div
+      role="group"
+      aria-label="보기 조절"
+      className="absolute right-3 bottom-3 z-10 flex items-center divide-x divide-stroke-light rounded-md border border-stroke-light bg-background-surface shadow-xs"
+    >
+      <div className="flex items-center">
+        <ControlButton label="축소" icon="minus" onClick={onZoomOut} />
+        <output className="min-w-11 text-center typo-caption-small">
           {Math.round(zoom * 100)}%
         </output>
-        <Button size="sm" variant="outlined" aria-label="확대" onClick={onZoomIn}>
-          <Icon name="plus" />
-        </Button>
-        <Button size="sm" variant="outlined" onClick={onFit}>
-          화면에 맞추기
-        </Button>
+        <ControlButton label="확대" icon="plus" onClick={onZoomIn} />
       </div>
+      <ControlButton label="화면에 맞추기" icon="fit" onClick={onFit} />
+      {onExpand && <ControlButton label="크게 보기" icon="expand" onClick={onExpand} />}
     </div>
   );
 }

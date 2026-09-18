@@ -1,23 +1,17 @@
-import { notFound } from 'next/navigation';
-
-import { Inspector } from '@/components/inspector';
-import { findEntity, SECTIONS } from '@/lib/entities';
-import { inspect } from '@/lib/inspection';
+import { EntityHeader } from '@/components/entity-header';
+import { entityParams } from '@/lib/entities';
 
 type Params = Promise<{ section: string; id: string }>;
 
 export const dynamicParams = false;
 
-export const generateStaticParams = () =>
-  SECTIONS.flatMap((section) =>
-    section.entities.map((entity) => ({ section: section.id, id: entity.id })),
-  );
+export const generateStaticParams = entityParams;
 
-/** Inspector for the entity itself. */
+/**
+ * The entity's workspace header. It is the page segment so that after a navigation Next scrolls
+ * to and focuses the top of the workspace, not the inspector (the `@inspector` slot).
+ */
 export default async function EntityPage({ params }: { params: Params }) {
   const { section, id } = await params;
-  const entity = findEntity(section, id);
-  if (!entity) notFound();
-
-  return <Inspector inspection={inspect(entity)} />;
+  return <EntityHeader section={section} id={id} />;
 }

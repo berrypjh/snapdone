@@ -29,7 +29,10 @@ export function SourceActions({ source }: { source: SourceRef }) {
 
   return (
     <div className="flex flex-col gap-1">
-      <span className="devhub-code">{source.path}</span>
+      <div className="flex items-center gap-1">
+        <span className="devhub-code min-w-0">{source.path}</span>
+        <CopyButton variant="icon" text={source.path} label="경로 복사" />
+      </div>
       {source.symbol && <span className="devhub-code text-text-light">symbol {source.symbol}</span>}
       <div className="flex flex-wrap items-center gap-x-3">
         {links.permalink && commit && (
@@ -44,7 +47,6 @@ export function SourceActions({ source }: { source: SourceRef }) {
             <VisuallyHidden> — {source.path}, 새 창</VisuallyHidden>
           </a>
         )}
-        <CopyButton text={source.path} label="경로 복사" />
       </div>
       {links.gap && <span className="typo-caption-small text-text-warning">{GAP[links.gap]}</span>}
     </div>

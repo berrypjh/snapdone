@@ -40,9 +40,8 @@ describe('ScenarioFlow', () => {
 
   it('labels every zoom control', () => {
     const html = render();
-    for (const name of ['축소', '확대'])
+    for (const name of ['축소', '확대', '화면에 맞추기', '크게 보기'])
       expect(html).toMatch(new RegExp(`<button[^>]*aria-label="${name}"`));
-    expect(html).toContain('>화면에 맞추기<');
     expect(html).toContain('<output');
   });
 });

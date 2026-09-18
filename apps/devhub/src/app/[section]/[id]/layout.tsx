@@ -5,9 +5,8 @@ import type { ReactNode } from 'react';
 
 import { DevHubShell } from '@/components/devhub-shell';
 import { EntitySummary } from '@/components/entity-summary';
-import { SECTION_ICON } from '@/components/view-icons';
-import { Workspace } from '@/components/workspace';
-import { findEntity, findSection } from '@/lib/entities';
+import { WorkspaceFrame } from '@/components/workspace';
+import { findEntity } from '@/lib/entities';
 
 type Params = Promise<{ section: string; id: string }>;
 
@@ -19,29 +18,29 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 /**
  * Shell and workspace for one entity. Kept as a layout so the scenario flow keeps its pan/zoom
- * while the child page (the inspector) changes with the selected step.
+ * while the selected step changes. The page (`children`) is the workspace header and the
+ * `@inspector` slot is the right pane: Next scrolls to the page after a navigation, so the page
+ * must be at the top of the workspace.
  */
 export default async function EntityLayout({
   params,
   children,
+  inspector,
 }: {
   params: Params;
   children: ReactNode;
+  inspector: ReactNode;
 }) {
-  const { section: sectionId, id } = await params;
-  const section = findSection(sectionId);
-  const entity = findEntity(sectionId, id);
-  if (!section || !entity) notFound();
+  const { section, id } = await params;
+  const entity = findEntity(section, id);
+  if (!entity) notFound();
 
   return (
-    <DevHubShell selection={{ section: section.id, id: entity.id }} inspector={children}>
-      <Workspace
-        eyebrow={section.title}
-        icon={SECTION_ICON[section.id]}
-        title={entity.section === 'documents' ? entity.record.title : entity.label}
-      >
+    <DevHubShell selection={{ section: entity.section, id: entity.id }} inspector={inspector}>
+      <WorkspaceFrame>
+        {children}
         <EntitySummary entity={entity} />
-      </Workspace>
+      </WorkspaceFrame>
     </DevHubShell>
   );
 }

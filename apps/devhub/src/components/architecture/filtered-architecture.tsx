@@ -20,9 +20,11 @@ export function FilteredArchitecture({ model }: { model: ArchitectureModel }) {
   const query = filterHref('', active, 'kind', active.kind).replace(/^\?/, '');
 
   return (
-    <>
-      <FilterBar basePath={pathname} groups={ARCHITECTURE_FILTERS} active={active} />
-      <ArchitectureViews model={model} kind={active.kind} query={query} />
-    </>
+    <ArchitectureViews
+      model={model}
+      kind={active.kind}
+      query={query}
+      filter={<FilterBar basePath={pathname} groups={ARCHITECTURE_FILTERS} active={active} />}
+    />
   );
 }

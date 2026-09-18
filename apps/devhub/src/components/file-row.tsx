@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 import { VisuallyHidden } from '@berrypjh/react-ui';
 import type { ReactNode } from 'react';
 
@@ -8,7 +6,6 @@ import { hostOf, shortSha } from '@/domain/links';
 import type { FileGroup, ProjectGroup } from '@/lib/reference-groups';
 import { currentSnapshot } from '@/lib/snapshot';
 import { sourceLinks } from '@/lib/source-links';
-import { sourceHref } from '@/lib/source-usage';
 
 import { CopyButton } from './copy-button';
 import { Icon } from './icon';
@@ -114,27 +111,5 @@ export function ByProject<T extends FileGroup>({
         </div>
       ))}
     </div>
-  );
-}
-
-/**
- * A file in the list view: the name opens its page in DevHub (what cites it, and its repository
- * links), the folder is dimmed. No copy or repository links here — the inspector has them.
- */
-export function FileEntry({ file, children }: { file: FileGroup; children?: ReactNode }) {
-  return (
-    <li className="flex flex-col gap-1">
-      <span className="flex flex-wrap items-baseline gap-x-2">
-        <Link
-          href={sourceHref(file.path)}
-          className="typo-body-small-strong text-text-link underline-offset-2 hover:underline"
-        >
-          {file.name}
-          <VisuallyHidden> — {file.path}</VisuallyHidden>
-        </Link>
-        {file.folder && <span className="devhub-code text-text-light">{file.folder}</span>}
-      </span>
-      {children}
-    </li>
   );
 }

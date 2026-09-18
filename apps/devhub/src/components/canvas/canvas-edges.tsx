@@ -1,3 +1,5 @@
+import { useId } from 'react';
+
 export type CanvasEdge = {
   id: string;
   path: string;
@@ -19,6 +21,8 @@ export function CanvasEdges({
   width: number;
   height: number;
 }) {
+  // Per instance: the same canvas can be drawn twice (in the page and in "크게 보기").
+  const markerId = useId();
   return (
     <svg
       aria-hidden="true"
@@ -28,7 +32,7 @@ export function CanvasEdges({
     >
       <defs>
         <marker
-          id="canvas-arrow"
+          id={markerId}
           viewBox="0 0 10 10"
           refX="9"
           refY="5"
@@ -47,7 +51,7 @@ export function CanvasEdges({
           stroke="var(--ds-stroke-dark)"
           strokeWidth={1.5}
           strokeDasharray={edge.dash}
-          markerEnd="url(#canvas-arrow)"
+          markerEnd={`url(#${markerId})`}
         />
       ))}
       {edges.map(

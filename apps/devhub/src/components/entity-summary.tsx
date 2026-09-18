@@ -1,13 +1,12 @@
 import Link from 'next/link';
 
 import { catalog } from '@/data';
-import { documentBlocks } from '@/lib/documents';
 import { type Entity, entityHref } from '@/lib/entities';
 import { flowModel } from '@/lib/flow';
 import { RELATION } from '@/lib/labels';
 
 import { ViewSwitch } from './canvas/view-switch';
-import { DocContent } from './doc/doc-content';
+import { DOCUMENT_COLUMN, DocumentLayout } from './doc/document-layout';
 import { CommandGroupDetail } from './engineering/command';
 import { ScenarioFlow } from './flow/scenario-flow';
 import { ScenarioOutline } from './flow/scenario-outline';
@@ -97,17 +96,13 @@ export function EntitySummary({ entity }: { entity: Entity }) {
       );
     case 'documents':
       return (
-        <>
+        <div className={`${DOCUMENT_COLUMN} flex flex-col gap-5`}>
           <SourceActions source={{ path: entity.record.path }} />
-          <DocContent
-            blocks={documentBlocks(entity.record)}
-            from={entity.record.path}
-            title={entity.record.title}
-          />
+          <DocumentLayout doc={entity.record} />
           <WorkspaceSection id={LIST_ID} title="이 문서를 인용한 시나리오">
             <CitingScenarios documentId={entity.id} />
           </WorkspaceSection>
-        </>
+        </div>
       );
     case 'engineering':
       return <CommandGroupDetail group={entity.record} />;
