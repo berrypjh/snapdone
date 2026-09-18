@@ -1006,11 +1006,11 @@ product-target step에 implemented, 틀린 테스트 제목, 없는 `next`, impl
 ### 구조
 
 ```
-SkipLink "본문으로 건너뛰기" → #main-content
+SkipLink "본문으로 건너뛰기" → #main-content (49절부터 #devhub-main)
 header (banner)            제품명 · owner/name · 기본 브랜치 · 검색(비활성 SearchField) · nav "보기"
 div (lg: 18rem | 1fr | 24rem, 칸마다 따로 스크롤 / lg 미만: 세로로 쌓임)
 ├─ aside "탐색기"          nav "저장소 항목": 개요 + SECTIONS(시나리오 · 애플리케이션 · 라이브러리 · 문서 · 엔지니어링)
-├─ main#main-content       header(eyebrow · h1) · 그림 자리(figure) · 목록(정본)
+├─ main#main-content (49절부터 #devhub-main)  header(eyebrow · h1) · 그림 자리(figure) · 목록(정본)
 └─ aside "상세 정보"       header(종류 · h2 · 상태) · nav "상세 목차" · 개요 · 소스 · 문서 · 테스트
 ```
 
@@ -1248,7 +1248,7 @@ NFC · 소문자로 비교한다. 목록에는 종류별 5개 · 전체 30개까
 
 | 항목          | 전                                                        | 후                                                                                                                                           |
 | ------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| landmark      | banner · 탐색기 aside · main · 상세 정보 aside            | 그대로. 상세 정보 aside에 `id="inspector"` · `tabIndex=-1`                                                                                   |
+| landmark      | banner · 탐색기 aside · main · 상세 정보 aside            | 그대로. 상세 정보 aside에 `id` · `tabIndex=-1`(49절에서 id를 `devhub-inspector`로 바꿈)                                                      |
 | 건너뛰기      | "본문으로 건너뛰기" 하나                                  | "상세 정보로 건너뛰기" 추가. 선택된 노드 바로 뒤에 "이 단계(구성 요소)의 상세 정보로 이동"                                                   |
 | 그림 대안     | 시나리오는 그림 아래 짧은 단계 목록, 아키텍처는 관계 목록 | 그림 · 목록 전환(공용 `SegmentControl`, `aria-pressed`). 목록은 단계마다 실행 위치 · 담당 · 소스 · API · 계약 · 테스트 · 다음, 노드마다 관계 |
 | 선택 표시     | 테두리 · 배경색 + `aria-current`                          | 글자 "· 선택됨" 추가, 그림 위 요약 줄에 "선택: …"                                                                                            |
@@ -1508,6 +1508,17 @@ WebView 로그인 핸드오프 기준: 링크 46 → 37, 전체 경로 반복 20
 - 상세 정보: 묶음 단위(설명 · 명령 · 실행 조건 합집합 · 정의 파일)
 - 섹션 목록(`/engineering`)은 묶음마다 명령 한 줄씩과 "<묶음> 열기" 링크
 - 확인: `engineering/command.spec.ts`(모든 명령이 정확히 한 묶음, 탐색기 항목 = 묶음 5개, 모든 `commandHref`가 실제 묶음 페이지의 실제 카드를 가리킴, 묶음 페이지의 카드 · 복사 · 실행 내용 · 조건, 섹션 목록), `entity-summary.spec.ts`, `entities.spec.ts`. 화면은 이 세션에서 보지 못했다
+
+## 49. 구현 상태 — 문서 화면
+
+`it-tech-blog/apps/accessibility-zone`의 문서 화면(본문 + "이 페이지에서" 목차, 절 앵커, 코드 블록, 표)을 참고해 DevHub의 문서 페이지를 다시 만들었다. 전에는 문서 내용을 보여 주지 않았다(인용한 시나리오 목록과 GitHub 링크뿐). 참고 앱의 코드는 가져오지 않았다 — 그 앱은 TSX로 글을 쓰고 `lucide-react`를 쓰지만, DevHub는 저장소의 마크다운을 그대로 읽는다.
+
+- 마크다운: `lib/markdown.ts`. 새 dependency 없이 문서가 실제로 쓰는 문법만 — 제목 · 문단 · 목록(중첩, 목록 안 코드) · 번호 목록 · 표(GFM, `\|` 이스케이프) · 코드 블록 · 인용 · 구분선, 인라인 코드 · 굵게 · 링크. HTML · 이미지는 없다(문서에 없다). 절 id는 GitHub 방식(`slug`)이라 문서끼리 이미 쓰는 `#…` 링크가 그대로 통한다
+- 링크: `lib/doc-links.ts`. 카탈로그 문서는 DevHub 문서 페이지(`/documents/<id>#절`), 다른 저장소 파일은 스냅샷 고정 링크(새 창), 외부 주소는 새 창 + 아이콘 + "(새 창)", 같은 문서 절은 `#`
+- 화면(`components/doc`): 읽기 폭(46rem) 본문(`.devhub-prose`, 토큰만), 절 제목(h2 위 구분선, 마우스를 올리거나 포커스하면 `#` 링크), 코드 블록(언어 라벨 + 복사 아이콘), 표(공용 `Table` · `TableScroll`, 캡션은 가장 가까운 절 제목), 인용(강조 상자). 페이지 제목은 문서의 `# 제목`, 그 아래 경로와 GitHub 링크, 끝에 "이 문서를 인용한 시나리오"
+- "이 페이지에서": 상세 정보 맨 위(DevHub는 오른쪽 칸이 상세 정보라 목차를 거기 둔다). 스크롤에 따라 읽는 절을 `aria-current="location"`으로 표시
+- id 충돌을 고쳤다: `devhub.md`의 "inspector" 절 id가 상세 정보 aside의 id와 같아 "상세 정보로 건너뛰기"가 본문 절로 갔다. 앱 id를 `devhub-main` · `devhub-inspector`로 바꿨다(문서 제목은 자유 글이라 앱 쪽에 접두어)
+- 확인: `markdown.spec.ts`(문법별, 카탈로그 문서 전부 해석 시 기호가 글자로 새지 않음 · 절 id 유일), `doc-links.spec.ts`, `doc-content.spec.ts`(문서 전부 렌더 — 기호 누출 없음, 절마다 id와 `#` 링크, 목차 = 절 제목, 표마다 캡션, 코드 블록마다 복사, 문서 간 링크가 DevHub 안에 머묾), `document-page.spec.ts`(문서 페이지 전체에서 id가 한 번씩 — 옛 id로 되돌리면 `devhub` 페이지가 실패하는 것을 확인), `devhub:check`의 "document links"(문서 간 링크 · 절 앵커 · 파일이 실제로 있음). 화면은 이 세션에서 보지 못했다
 
 ## 다시 확인하는 명령
 
