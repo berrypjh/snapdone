@@ -15,6 +15,34 @@ if (externalBaseURL && !LOOPBACK_HOSTS.has(new URL(externalBaseURL).hostname)) {
 }
 
 const baseURL = externalBaseURL ?? 'http://localhost:3000';
+const webOrigin = new URL(baseURL).origin;
+const FAKE_API_PORT = 4010;
+
+/** Test-only Go auth API stand-in (src/support/fake-api.mts). */
+const fakeApi = {
+  command: 'node src/support/fake-api.mts',
+  url: `http://127.0.0.1:${FAKE_API_PORT}/__fixture/health`,
+  cwd: import.meta.dirname,
+  reuseExistingServer: false,
+  env: { FAKE_API_PORT: String(FAKE_API_PORT), WEB_ORIGIN: webOrigin },
+};
+
+const webDev = {
+  command: 'pnpm exec next dev --port 3000',
+  url: baseURL,
+  cwd: `${workspaceRoot}/apps/web`,
+  reuseExistingServer: false,
+  timeout: 120_000,
+  env: { API_BASE_URL: `http://127.0.0.1:${FAKE_API_PORT}`, WEB_ORIGIN: webOrigin },
+};
+
+/** auth-faults.spec.ts flips global fake API switches, so it runs alone after the other projects. */
+const FAULTS = /auth-faults\.spec\.ts/;
+const BROWSERS = [
+  ['chromium', devices['Desktop Chrome']],
+  ['firefox', devices['Desktop Firefox']],
+  ['webkit', devices['Desktop Safari']],
+] as const;
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -31,28 +59,21 @@ export default defineConfig({
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
   },
-  /* Run the dev server unless an external server was given */
-  webServer: externalBaseURL
-    ? undefined
-    : {
-        command: 'pnpm exec nx dev web',
-        url: 'http://localhost:3000',
-        reuseExistingServer: true,
-        cwd: workspaceRoot,
-        timeout: 120_000,
-      },
+  /*
+   * The fake auth API always runs. Without BASE_URL, `next dev` is started wired to it; it is not
+   * reused, because a dev server already on :3000 would talk to the real Go API instead.
+   * With BASE_URL, start that server with API_BASE_URL=http://127.0.0.1:4010 yourself.
+   * Both ports are fixed, so the per-file `e2e-ci--*` targets cannot run side by side.
+   */
+  webServer: externalBaseURL ? [fakeApi] : [fakeApi, webDev],
   projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
+    ...BROWSERS.map(([name, use]) => ({ name, use, testIgnore: FAULTS })),
+    ...BROWSERS.map(([name, use], index) => ({
+      name: `faults-${name}`,
+      use,
+      testMatch: FAULTS,
+      dependencies:
+        index === 0 ? BROWSERS.map(([browser]) => browser) : [`faults-${BROWSERS[index - 1][0]}`],
+    })),
   ],
 });

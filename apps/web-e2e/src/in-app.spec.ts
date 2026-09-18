@@ -1,5 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
 
+import { signIn } from './support/fixture';
+
 /**
  * The User-Agent the app's WebView sends: a normal mobile Safari string plus the bridge token
  * `SnapdoneApp/<contract version>` from libs/webview-bridge. Written out literally to pin the wire format.
@@ -34,6 +36,25 @@ test.describe('inside the app WebView', () => {
     await expect
       .poll(() => page.evaluate(() => (window as unknown as AppMessages).__appMessages))
       .toContainEqual(JSON.stringify({ type: 'ready', title: '로그인' }));
+  });
+
+  test('renders a protected page without the web shell for a signed-in WebView', async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await signIn(context, baseURL ?? '');
+    await recordAppMessages(page);
+    await page.goto('/history');
+
+    await expect(page).toHaveURL(/\/history$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('기록');
+    await expect(page.getByRole('banner')).toHaveCount(0);
+    await expect(page.getByRole('complementary')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '로그아웃' })).toHaveCount(0);
+    await expect
+      .poll(() => appMessages(page))
+      .toContainEqual(JSON.stringify({ type: 'ready', title: '기록' }));
   });
 
   /** WebView는 앱에서 세션을 받으므로(핸드오프) 두 번째 OAuth 로그인을 시작하지 않는다. */

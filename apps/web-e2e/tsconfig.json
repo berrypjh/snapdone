@@ -9,6 +9,6 @@
     "sourceMap": false,
     "types": ["node"]
   },
-  "include": ["playwright.config.mts", "src/**/*.ts", "src/**/*.d.ts"],
+  "include": ["playwright.config.mts", "src/**/*.ts", "src/**/*.mts", "src/**/*.d.ts"],
   "exclude": ["out-tsc", "test-output", "eslint.config.mjs"]
 }

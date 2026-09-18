@@ -33,7 +33,7 @@ test.describe('login screen', () => {
   test('shows a callback error from the query', async ({ page }) => {
     await page.goto('/login?error=invalid_callback');
 
-    await expect(page.getByRole('alert')).toHaveText(
+    await expect(page.getByRole('main').getByRole('alert')).toHaveText(
       '로그인을 끝내지 못했습니다. 다시 시도해 주세요.',
     );
   });
@@ -85,7 +85,7 @@ test('refuses a callback that has no matching login in this browser', async ({ p
   await page.goto(`/auth/callback?code=forged&state=${'s'.repeat(43)}`);
 
   await expect(page).toHaveURL(/\/login\?next=%2F&error=invalid_callback$/);
-  await expect(page.getByRole('alert')).toHaveText(
+  await expect(page.getByRole('main').getByRole('alert')).toHaveText(
     '로그인을 끝내지 못했습니다. 다시 시도해 주세요.',
   );
 });
