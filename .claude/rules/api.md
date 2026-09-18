@@ -21,9 +21,9 @@ internal/google/                 Google OIDC authorize URL · token 교환 · ID
 ```
 
 - **Nx 때문에 Go 관례를 바꾸지 않는다.** Nx는 `project.json`의 `nx:run-commands`로 `go` 명령을 감싸기만 한다
-- endpoint는 `GET /health`와 `/v1/auth/{capabilities,session,logout}`, `/v1/auth/oauth/{start,cancel,callback}` · `/v1/auth/exchange`이다.
+- endpoint는 `GET /health`와 `/v1/auth/{capabilities,session,logout}`, `/v1/auth/oauth/{start,cancel,callback}` · `/v1/auth/exchange` · `/v1/auth/handoff/{start,exchange}`(WebView 핸드오프, `internal/auth/handoff.go`)이다.
 - **provider 토큰을 앱 · web으로 보내지 않는다.** callback은 60초 result code만 복귀 URI(서버 설정)로 redirect한다. ID token 서명 생략은 token endpoint에서 TLS로 직접 받은 경우에만 허용하고, 클라이언트가 보낸 토큰에는 쓰지 않는다
-- 외부 HTTP 호출은 timeout · 응답 크기 제한 · redirect 미추적을 둔다. 테스트는 포트를 열지 않고 `http.Client.Transport`로 가짜 응답을 준다(샌드박스가 포트 바인딩을 막는다) 계약은 [api-contract.md](../../docs/features/on01/api-contract.md). DTO 계층을 미리 만들지 않는다. 필요해지면 `handler → service → repository`로 나눈다
+- 외부 HTTP 호출은 timeout · 응답 크기 제한 · redirect 미추적을 둔다. 테스트는 포트를 열지 않고 `http.Client.Transport`로 가짜 응답을 준다(샌드박스가 포트 바인딩을 막는다). DTO 계층을 미리 만들지 않는다. 필요해지면 `handler → service → repository`로 나눈다
 - **스키마 변경은 `internal/database/migrations/`에 번호를 올린 새 SQL 파일로만 한다.** 이미 적용된 파일은 고치지 않는다. 서버는 마이그레이션을 적용하지 않고, 미적용 파일이 있으면 기동을 거부한다. 적용은 `nx run api:migrate`(Nx 내장 `nx migrate`와 다르다)
 - `//go:embed migrations/*.sql` 지시문을 지우지 않는다. 지우면 마이그레이션이 조용히 0개가 된다 (`embed_test.go`가 잡는다)
 - 토큰 · 코드 · state는 해시로만 저장한다. 저장소 함수는 원문을 받지 않는다. 비밀 값은 `auth.Cipher`로 암호화하고 소유 행 식별자를 AAD로 쓴다
@@ -31,7 +31,7 @@ internal/google/                 Google OIDC authorize URL · token 교환 · ID
 
 ## Dependency
 
-**직접 의존성은 `github.com/jackc/pgx/v5` 하나다** (Postgres 드라이버, 2026-09-17 승인). 그 외 외부 의존성을 추가하려면 표준 라이브러리로 안 되는 이유를 먼저 설명하고 사용자 승인을 받는다. 마이그레이션 도구 · JWT · 메일 SDK는 넣지 않았다 ([dependencies.md](../../docs/features/on01/dependencies.md)).
+**직접 의존성은 `github.com/jackc/pgx/v5` 하나다** (Postgres 드라이버, 2026-09-17 승인). 그 외 외부 의존성을 추가하려면 표준 라이브러리로 안 되는 이유를 먼저 설명하고 사용자 승인을 받는다. 마이그레이션 도구 · JWT · 메일 SDK는 넣지 않았다.
 
 ## Config
 

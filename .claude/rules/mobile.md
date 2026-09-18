@@ -25,7 +25,7 @@ Expo managed + React Native. 진입점은 `index.js` → `src/app/App.tsx`.
 - **navigation은 React Navigation native stack이다** (`src/app/App.tsx`, 화면 타입은 `src/app/navigation.ts`). Expo Router는 `@nx/expo` 생성기가 지원하지 않는다 (nrwl/nx#36442). 화면은 `src/screens/`, 파일 이름은 `XxxScreen.tsx`
 - 제목과 상단 inset은 native stack header가 가진다. `AppShell`은 좌우 inset + 스크롤 본문만 준다. bottom navigation은 실제 탭이 생길 때 넣는다
 - **로컬 primitive를 만들지 않는다.** 공용 `@berrypjh/react-native-ui`(`Box` · `Stack` · `Button` · `ThemeProvider` 등)를 조합한다. 앱이 소유하는 것은 `AppShell`, 화면(`src/screens/`), 기능별 제품 조합(`src/components/auth/` 등)뿐이다
-- **인증은 `src/auth/`다.** 화면은 `controller`만 부르고, API는 `api.ts`, 기기 저장 · 암호 · 시스템 인증 브라우저는 `device.ts`(expo-secure-store · expo-crypto · expo-web-browser)만 안다. provider 동의 화면은 `openAuthSessionAsync`로만 열고 제품 WebView에서 열지 않는다. 복귀 URL은 `callback.ts` 하나로 검사한다. credential을 AsyncStorage · route params · 로그 · WebView에 넣지 않는다. native header가 없는 인증 화면은 `AuthShell`이 상하좌우 inset을 가진다 ([ON-01](../../docs/features/on01/architecture.md#mobile-구성-구현됨))
+- **인증은 `src/auth/`다.** 화면은 `controller`만 부르고, API는 `api.ts`, 기기 저장 · 암호 · 시스템 인증 브라우저는 `device.ts`(expo-secure-store · expo-crypto · expo-web-browser)만 안다. provider 동의 화면은 `openAuthSessionAsync`로만 열고 제품 WebView에서 열지 않는다. 복귀 URL은 `callback.ts` 하나로 검사한다. credential을 AsyncStorage · route params · 로그 · WebView에 넣지 않는다. native header가 없는 인증 화면은 `AuthShell`이 상하좌우 inset을 가진다
 
 ## 네이티브 셸 · WebView 호스트
 

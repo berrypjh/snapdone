@@ -84,14 +84,17 @@ pnpm exec nx export mobile
 
 ## 테스트 현황 — 솔직하게
 
-| 프로젝트 | 종류 | 명령        | 상태             |
-| -------- | ---- | ----------- | ---------------- |
-| api      | 단위 | `pnpm test` | Go 6개           |
-| web      | 단위 | `pnpm test` | Vitest 6개       |
-| mobile   | 단위 | `pnpm test` | Vitest 6개       |
-| web-e2e  | E2E  | `pnpm e2e`  | 7개 × 3 브라우저 |
+| 프로젝트 | 종류      | 명령        | 상태                                                                           |
+| -------- | --------- | ----------- | ------------------------------------------------------------------------------ |
+| api      | 단위 · DB | `pnpm test` | Go 111개. 그중 45개는 `TEST_DATABASE_URL`이 있을 때만 돌고 없으면 **skip**한다 |
+| web      | 단위      | `pnpm test` | Vitest 114개 (9 파일)                                                          |
+| mobile   | 단위      | `pnpm test` | Vitest 180개 (12 파일)                                                         |
+| libs     | 단위      | `pnpm test` | `webview-bridge` 16개 · `auth-contracts` 9개                                   |
+| web-e2e  | E2E       | `pnpm e2e`  | 65개 × 3 브라우저 + 오류 주입 2개 × 3                                          |
 
-지금 덮인 것은 **`apps/*/src/lib/api.ts`뿐이다.** 화면 컴포넌트, 디자인 토큰, App Shell에는 단위 테스트가 없다. web의 셸 동작은 E2E가 대신 잡는다.
+`nx test api` 통과가 DB 검증을 뜻하지 않는다. DB까지 보려면 Postgres를 띄우고 `TEST_DATABASE_URL`을 주고 돌린다(아래 Go 절).
+
+덮인 것은 `apps/*/src/lib/**`(api 호출 · 인증 순수 로직)과 Go 인증 전체다. 화면 컴포넌트 · 디자인 토큰 · App Shell에는 단위 테스트가 없고, web의 셸 · 로그인 화면 동작은 E2E가 대신 잡는다. **mobile 화면은 런타임 검증 수단이 없어 코드 판독과 실기기 수동 인수까지가 한계다.**
 
 커밋 도구(`commit-mcp`)는 이 저장소에서 빠져 공용 plugin `berry-commit`으로 옮겨갔다. 그 테스트는 shared-stack이 소유한다.
 
@@ -111,7 +114,9 @@ spec 파일도 `pnpm typecheck`가 검사한다. 생성기가 넣어둔 `*.spec.
 
 ### E2E 범위
 
-`apps/web-e2e`는 부트스트랩 화면과 **반응형 셸 계약**을 고정한다. 유틸리티 클래스 하나만 잘못 고쳐도 잡히는 것들이다.
+`apps/web-e2e`는 부트스트랩 화면, **반응형 셸 계약**, 로그인 흐름을 고정한다.
+
+셸 계약은 유틸리티 클래스 하나만 잘못 고쳐도 깨진다.
 
 - `<html lang="ko">`, `<h1>` 텍스트, 상태 문구
 - 1280px · 768px(경계)에서 사이드바(`complementary` 랜드마크) 노출
@@ -121,7 +126,9 @@ spec 파일도 `pnpm typecheck`가 검사한다. 생성기가 넣어둔 `*.spec.
 
 역할 기반 선택자를 쓰므로 시맨틱 랜드마크까지 함께 검증된다. 자세한 계약은 [design/foundation.md](../design/foundation.md).
 
-**mobile에는 E2E가 없다.** Detox는 시뮬레이터/에뮬레이터가 필요한데 이 환경에 없고(full Xcode·Android SDK 미설치), 검증할 사용자 흐름도 아직 없다. 실제 화면이 생기고 실행 환경이 갖춰지면 그때 판단한다.
+로그인 흐름은 로그인 · 온보딩 화면의 반응형 · 접근성, 보호 경로 redirect와 복귀, 로그아웃, WebView 핸드오프를 본다. 인증 spec은 테스트 전용 가짜 인증 API(`src/support/fake-api.mts`, 별도 프로세스 · `127.0.0.1:4010`)를 Next의 `API_BASE_URL`로 연결해 돈다. 실제 Google에는 접속하지 않고, 운영 바이너리에는 가짜 provider로 바꾸는 스위치가 없다. Playwright가 그 API와 `next dev`를 직접 띄우므로 **실행 전에 `pnpm dev:web`을 끈다**(실제 Go API에 붙은 dev 서버를 재사용하지 않는다). 포트가 고정이라 spec 파일마다 프로세스를 나누는 `e2e-ci--*`는 동시에 돌릴 수 없다.
+
+**mobile에는 E2E가 없다.** Detox는 시뮬레이터/에뮬레이터가 필요한데 이 환경에 없다(full Xcode·Android SDK 미설치). 실행 환경이 갖춰지면 그때 판단한다.
 
 ## Go
 

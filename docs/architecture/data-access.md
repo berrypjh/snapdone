@@ -1,16 +1,18 @@
 # Data Access
 
-앱이 API와 이야기하는 방식의 규칙이다. 지금 존재하는 endpoint는 `GET /health` 하나뿐이므로, 이 문서는 **구현보다 규칙이 앞서 있는 상태**다.
+앱이 API와 이야기하는 방식의 규칙이다. 지금 endpoint는 `GET /health`와 인증(`/v1/auth/*`)뿐이므로, 이 문서는 **구현보다 규칙이 앞서 있는 상태**다.
 
 ## 지금 있는 것
 
-| 위치                                 | 역할                                                   |
-| ------------------------------------ | ------------------------------------------------------ |
-| `apps/web/src/lib/api.ts`            | web이 base URL을 읽고 `/health`를 호출하는 유일한 지점 |
-| `apps/mobile/src/lib/api.ts`         | mobile 쪽 같은 역할                                    |
-| `tools/scripts/check-api-health.mjs` | 개발자용 연결 확인 명령 (`pnpm health`)                |
+| 위치                                 | 역할                                                      |
+| ------------------------------------ | --------------------------------------------------------- |
+| `apps/web/src/lib/api.ts`            | web이 base URL을 읽는 유일한 지점, `/health` 호출         |
+| `apps/web/src/lib/auth/api.ts`       | web 인증 호출 (Server Action · Route Handler · 세션 확인) |
+| `apps/mobile/src/lib/api.ts`         | mobile이 base URL을 읽는 유일한 지점, `/health` 호출      |
+| `apps/mobile/src/auth/api.ts`        | mobile 인증 호출                                          |
+| `tools/scripts/check-api-health.mjs` | 개발자용 연결 확인 명령 (`pnpm health`)                   |
 
-HTTP 클라이언트 라이브러리는 없다. Node 24와 React Native 0.85 모두 `fetch`를 기본 제공하므로 `/health` 하나 때문에 axios를 넣지 않는다.
+HTTP 클라이언트 라이브러리는 없다. Node 24와 React Native 0.85 모두 `fetch`를 기본 제공하므로 axios를 넣지 않는다.
 
 `pnpm health`는 URL을 자기가 조립하지 않고 **web 앱의 `fetchHealth`를 그대로 호출한다.** 스크립트가 통과했다는 것은 앱이 쓰는 코드 경로가 통과했다는 뜻이다. 검증용 사본을 따로 두면 진짜 코드가 깨져도 스크립트는 초록불이 된다.
 
@@ -22,11 +24,11 @@ HTTP 클라이언트 라이브러리는 없다. Node 24와 React Native 0.85 모
 
 **환경변수가 없으면 조용히 넘어가지 않는다.** base URL이 비어 있으면 두 앱 모두 무엇을 복사해야 하는지 알려주는 오류를 던진다. `localhost` fallback을 코드에 박으면 잘못된 설정이 배포될 때까지 드러나지 않는다.
 
-**`any`를 쓰지 않는다.** 응답은 좁은 타입 가드로 확인한다. 지금은 `Health` 하나뿐이며, 이걸 위해 코드 생성기나 공유 contract 패키지를 만들지 않는다.
+**`any`를 쓰지 않는다.** 응답은 좁은 타입 가드로 확인한다. 인증 응답 타입과 가드는 web · mobile이 함께 쓰므로 `libs/auth-contracts`에 둔다. 코드 생성기는 만들지 않는다.
 
 ## Web은 서버에서 호출한다
 
-`apps/web`은 **Server Component에서** Go API를 호출한다. 브라우저는 Go API를 직접 부르지 않는다.
+`apps/web`은 **서버에서** Go API를 호출한다 — 읽기는 Server Component, 로그인 시작 · 로그아웃은 Server Action, OAuth 복귀는 `/auth/callback` Route Handler. 브라우저는 Go API를 직접 부르지 않는다.
 
 그래서:
 
@@ -61,22 +63,24 @@ HTTP 클라이언트 라이브러리는 없다. Node 24와 React Native 0.85 모
 
 ## 앱 WebView에서 열린 web
 
-**결정됨, 아직 구현 안 함.** 구조는 [target-architecture.md](./target-architecture.md#제품-구성--네이티브-셸--웹-콘텐츠).
+구조는 [target-architecture.md](./target-architecture.md#제품-구성--네이티브-셸--웹-콘텐츠).
 
-web 화면이 앱 WebView 안에서 열려도 **데이터 경로는 바뀌지 않는다.** WebView는 브라우저이고, web은 여전히 Server Component에서 Go API를 부른다. CORS · `NEXT_PUBLIC_*` 판단도 위 "Web은 서버에서 호출한다"와 같다.
+web 화면이 앱 WebView 안에서 열려도 **데이터 경로는 바뀌지 않는다.** WebView는 브라우저이고, web은 여전히 서버에서 Go API를 부른다. CORS · `NEXT_PUBLIC_*` 판단도 위 "Web은 서버에서 호출한다"와 같다.
 
 ### WebView 로그인 핸드오프
 
 앱의 로그인 상태는 WebView에 자동으로 넘어가지 않는다. 표준 방식은 일회용 코드 교환이다.
 
-1. 로그인한 앱이 Go API에서 짧게 유효한 **일회용 코드**를 받는다
-2. 앱이 WebView로 `/auth/handoff?code=…&next=<경로>`를 연다
-3. web 서버가 코드를 Go API로 교환하고 **httpOnly 쿠키**를 심은 뒤 `next`로 redirect한다
+1. WebView가 `/auth/handoff/start?next=`를 열면 web 서버가 verifier를 **HttpOnly cookie**에 두고, ready page가 challenge만 앱에 보낸다(`handoff-ready`)
+2. 로그인한 앱이 자기 Bearer와 challenge로 Go API에서 30초 **일회용 코드**를 받는다
+3. 앱이 WebView로 `/auth/handoff?code=…&next=<경로>`를 연다
+4. web 서버가 코드와 cookie의 verifier를 Go API로 교환하고 child 세션 **httpOnly 쿠키**를 심은 뒤 `next`로 redirect한다
 
 - access token을 URL · JS 전역 · `injectJavaScript`로 넘기지 않는다. 코드는 1회용이고 만료가 짧다
 - `next`는 같은 도메인 경로만 허용한다 (open redirect 방지)
 - 브라우저 단독 접속은 web 자체 로그인 흐름을 쓰고, 세션 쿠키 형식은 핸드오프와 같다
-- **인증이 없는 지금은 만들지 않는다.** 인증을 도입할 때 Go API endpoint와 web route를 함께 설계한다
+- verifier가 없는 브라우저로 코드를 열면 교환하지 않는다(login-CSRF 방지). 세션 토큰 · verifier는 bridge · JS로 나가지 않는다
+- 구현됐다. web `src/lib/auth/handoff.ts`, Go `internal/auth/handoff.go`, E2E `auth.spec.ts`의 WebView handoff
 
 ## 앞으로: UI는 API를 직접 모른다
 
@@ -96,7 +100,7 @@ UI (component)
 
 ## Contract 전략
 
-Go와 TypeScript는 언어가 달라 타입을 직접 공유할 수 없다. 지금은 `{ status: string }` 하나뿐이라 각 앱에 작은 타입을 손으로 두었다.
+Go와 TypeScript는 언어가 달라 타입을 직접 공유할 수 없다. `/health`의 `{ status: string }`은 각 앱에 작은 타입을 손으로 두었고, 인증 wire 타입은 `libs/auth-contracts`에 손으로 두었다.
 
 endpoint가 늘어나면 이 방식은 무너진다. 응답 타입을 손으로 베껴 쓰는 파일이 여러 개 생기는 순간이 전략을 도입할 시점이다. 그때 후보는 OpenAPI 스펙에서 TS 타입을 생성하는 방식이며, 생성물을 두는 위치는 `libs/`가 된다.
 

@@ -13,14 +13,14 @@ Nx Workspace (repository root)
 
 ## 현재 상태
 
-| 영역          | 상태                                                                                                                                           |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Nx workspace  | integrated, pnpm workspaces                                                                                                                    |
-| `apps/web`    | Next.js App Router. 홈 · `/history`(빈 기록) 두 화면, 브라우저 셸과 앱 WebView 모드                                                            |
-| `apps/mobile` | Expo. React Navigation native stack — 네이티브 홈 · WebView 콘텐츠 화면                                                                        |
-| `apps/api`    | module `snapdone/api`, `GET /health`, `/v1/auth/*`(session · logout · Google OAuth), Postgres 마이그레이션(`nx run api:migrate`) · 인증 저장소 |
-| `libs/`       | `webview-bridge` — 앱 ↔ WebView 계약 (web · mobile이 둘 다 사용)                                                                               |
-| `docs/`       | 제품 · 아키텍처 · 디자인 · 개발 · 품질                                                                                                         |
+| 영역          | 상태                                                                                                                                                      |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Nx workspace  | integrated, pnpm workspaces                                                                                                                               |
+| `apps/web`    | Next.js App Router. `(product)` 홈 · `/history`, `(auth)` 로그인 · 온보딩 · callback · 핸드오프, 브라우저 셸과 앱 WebView 모드                            |
+| `apps/mobile` | Expo. React Navigation native stack — 로그인 · 온보딩 소개 · 네이티브 홈 · WebView 콘텐츠 화면                                                            |
+| `apps/api`    | module `snapdone/api`, `GET /health`, `/v1/auth/*`(session · logout · Google OAuth · 핸드오프), Postgres 마이그레이션(`nx run api:migrate`) · 인증 저장소 |
+| `libs/`       | `webview-bridge` — 앱 ↔ WebView 계약, `auth-contracts` — 인증 wire 타입 (둘 다 web · mobile이 사용)                                                       |
+| `docs/`       | 제품 · 아키텍처 · 디자인 · 개발 · 품질                                                                                                                    |
 
 버전은 아래 [버전 정책](#버전-정책)에 한 곳으로 모아 두었다.
 
@@ -38,8 +38,9 @@ Nx Workspace (repository root)
 - 앱별 부트스트랩 화면 (서비스명 + 소개 문구 + 상태 문구)
 - 디자인 토큰과 App Shell, web 라이트/다크 테마
 - 네이티브 셸 + 웹 콘텐츠 골격 — mobile native stack, WebView 화면(로딩 · 오류 · 외부 링크), web in-app 모드, `libs/webview-bridge` 계약과 모듈 경계 lint
-- Go `GET /health` 하나
-- Postgres 연결 · 마이그레이션(로컬 Docker)과 인증 기반 — 사용자 · 로그인 수단 · 세션(root/child) · 일회용 grant · OAuth transaction, `GET /v1/auth/session` · `POST /v1/auth/logout` ([ON-01](../features/on01/architecture.md))
+- Go `GET /health`
+- Postgres 연결 · 마이그레이션(로컬 Docker)과 인증 — 사용자 · 로그인 수단 · 세션(root/child) · 일회용 grant · OAuth transaction, `/v1/auth/{capabilities,session,logout}` · `/v1/auth/oauth/{start,cancel,callback}` · `/v1/auth/exchange` · `/v1/auth/handoff/{start,exchange}`
+- Google 로그인 화면과 세션 — mobile 네이티브 흐름, web 로그인 · 온보딩 소개 · HttpOnly 세션 cookie, WebView 로그인 핸드오프. **실계정 · 실기기 인수는 남아 있다**
 - 검증 명령과 문서
 
 아직 구현하지 않은 것:
@@ -80,9 +81,9 @@ web과 mobile은 **코드로 서로 참조하지 않는다.** 앱은 web을 URL�
 4. **링크 · 뒤로 가기** — 같은 도메인은 WebView 안에서, 외부 도메인은 시스템 브라우저로(`onShouldStartLoadWithRequest` → `Linking.openURL`). 뒤로 가기 · 닫기는 네이티브가 담당한다
 5. **URL** — web 경로와 앱 딥링크(Universal Link / App Link) 경로를 같게 둔다. 공유 링크는 앱이 있으면 앱, 없으면 브라우저로 열린다
 
-**구현된 것 (MVP 골격):** `react-native-webview` 13.16.1 · React Navigation native stack, web `isInAppRequest()` · `InAppReady`, mobile `WebContentScreen` · `webViewNavigation`, `libs/webview-bridge`(User-Agent 토큰 · `ready` 메시지), in-app E2E.
+**구현된 것 (MVP 골격):** `react-native-webview` 13.16.1 · React Navigation native stack, web `isInAppRequest()` · `InAppReady`, mobile `WebContentScreen` · `webViewNavigation`, `libs/webview-bridge`(User-Agent 토큰 · `ready` · `auth-required` · `handoff-ready` 메시지), 로그인 핸드오프(web `/auth/handoff*` · Go `/v1/auth/handoff/*`), in-app E2E.
 
-**아직 없는 것:** 로그인 핸드오프 route(인증 도입 때), 앱 → web 메시지, 딥링크 설정, 촬영 · 공유 요청 메시지. 핵심 흐름을 WebView로 옮기지 않는다.
+**아직 없는 것:** 앱 → web 메시지, 딥링크 설정, 촬영 · 공유 요청 메시지. 핵심 흐름을 WebView로 옮기지 않는다.
 
 ## 각 영역의 책임
 
@@ -135,7 +136,7 @@ git remote가 없고 조직명도 정해지지 않았으므로 `github.com/...` 
 
 ### `libs/` — 공유 코드
 
-**지금 lib은 `webview-bridge` 하나다.** web과 mobile이 둘 다 쓰는 앱 ↔ WebView 계약이라 두 번째 사용처 조건을 처음부터 만족한다. 모양과 경계 규칙은 `.claude/rules/libs.md`.
+**지금 lib은 `webview-bridge`와 `auth-contracts` 둘이다.** 앱 ↔ WebView 계약은 처음부터 web · mobile이 함께 썼고, 인증 wire 타입은 web 로그인이 두 번째 사용처가 되면서 mobile에서 옮겨 왔다. 모양과 경계 규칙은 `.claude/rules/libs.md`.
 
 라이브러리는 재사용이 실제로 발생한 뒤에 만든다. 두 번째 사용처가 나타나기 전에는 코드를 쓰는 앱 안에 둔다.
 
@@ -189,7 +190,7 @@ apps/mobile ─→ apps/web     (금지)
 
 `apps/api`(Go)와 TypeScript 앱들은 언어가 다르므로 타입을 직접 공유할 수 없다. 계약은 생성되거나 명시적으로 선언되어야 한다.
 
-현재 endpoint는 `GET /health` 하나뿐이라 각 앱에 작은 타입을 손으로 두었다. endpoint가 늘어나 손으로 베껴 쓰는 파일이 여러 개 생기는 시점이 생성 전략을 도입할 때다.
+현재 endpoint는 `GET /health`와 인증뿐이라 타입을 손으로 둔다 — `/health`는 각 앱에, 인증 wire 타입은 `libs/auth-contracts`에. endpoint가 늘어나 손으로 베껴 쓰는 파일이 여러 개 생기는 시점이 생성 전략을 도입할 때다.
 
 호출 경로와 CORS 판단, 그리고 앞으로의 adapter 규칙은 [data-access.md](./data-access.md)에 있다.
 

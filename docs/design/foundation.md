@@ -72,7 +72,7 @@ layout.tsx
 | caption             | `typo-caption-default`    | `--ds-caption-default-*`    | 14 / 20 / 400               |
 | button              | `typo-body-medium-strong` | `--ds-body-medium-strong-*` | 16 / 24 / 600               |
 
-**line-height는 공용 값을 따른다.** caption은 20/14 ≈ 1.43으로 한국어 기준(1.5 이상)보다 낮다 — 공용 라이브러리 우선 원칙에 따라 그대로 쓰고, 보편 기준 여부는 [upstream-prerequisites.md](../migration/shared-stack/upstream-prerequisites.md)에 올렸다.
+**line-height는 공용 값을 따른다.** caption은 20/14 ≈ 1.43으로 한국어 기준(1.5 이상)보다 낮다 — 공용 라이브러리 우선 원칙에 따라 그대로 쓰고, 보편 기준 여부는 shared-stack upstream 과제로 올렸다.
 
 폰트는 공용 변수의 font stack을 쓴다. **Pretendard는 설치하지 않았으므로** 실제로는 `'Apple SD Gothic Neo'` → `'Malgun Gothic'` → `system-ui`로 떨어진다.
 

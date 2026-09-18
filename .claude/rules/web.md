@@ -33,8 +33,6 @@ Next.js App Router. 소스는 `src/`, alias는 `@/*` → `./src/*`.
 
 ## 인증
 
-구조는 [ON-01 Web 구성](../../docs/features/on01/architecture.md#web-구성-구현됨).
-
 - root layout은 html · theme · CSS만 둔다. 제품 화면은 `app/(product)`(AppShell), 로그인 화면은 `app/(auth)`(nav 없는 단일 main)
 - 보호 page는 page 안에서 `requireSession(returnTo)`를 부른다. layout · proxy만으로 인가를 끝내지 않는다
 - 로그인 뒤 돌아갈 경로는 `src/lib/auth/redirect.ts` allowlist에 추가한다

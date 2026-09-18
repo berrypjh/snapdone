@@ -105,7 +105,7 @@ cd apps/web && pnpm exec vitest
 pnpm exec playwright install chromium firefox webkit
 ```
 
-dev 서버는 Playwright가 알아서 띄운다(`reuseExistingServer: true`라 이미 `pnpm dev:web`이 떠 있으면 그걸 쓴다).
+Playwright가 테스트 전용 가짜 인증 API(`apps/web-e2e/src/support/fake-api.mts`, `127.0.0.1:4010`)와 그 API를 `API_BASE_URL`로 보는 `next dev`(:3000)를 직접 띄운다. 실제 Go API와 연결된 dev 서버를 잘못 재사용하지 않도록 **재사용하지 않으므로, 실행 전에 `pnpm dev:web`을 끈다.** 인증 오류 주입 spec(`auth-faults.spec.ts`)은 다른 브라우저 project가 끝난 뒤 따로 돈다. spec 파일마다 Playwright를 따로 띄우는 `e2e-ci--*` target은 같은 포트를 두고 충돌하므로 `pnpm e2e`(또는 `playwright test <spec>`)로 돌린다.
 
 `pnpm health`는 설정된 주소로 `/health`를 호출해서 200과 `{"status":"ok"}`를 확인한다. 주소를 바꿔서 확인할 수도 있다.
 
@@ -172,11 +172,13 @@ cp apps/mobile/.env.example apps/mobile/.env
 
 지금 API 주소는 앱마다 이름이 다르다.
 
-| 앱     | 변수                       | 이유                                                                |
-| ------ | -------------------------- | ------------------------------------------------------------------- |
-| web    | `API_BASE_URL`             | Server Component에서만 호출한다. 브라우저 번들에 들어갈 이유가 없다 |
-| mobile | `EXPO_PUBLIC_API_BASE_URL` | 앱에 서버가 없어 기기에서 직접 호출한다                             |
-| mobile | `EXPO_PUBLIC_WEB_BASE_URL` | WebView가 여는 web 주소. API와 같은 이유로 기기별 값이 다르다       |
+| 앱     | 변수                        | 이유                                                                   |
+| ------ | --------------------------- | ---------------------------------------------------------------------- |
+| web    | `API_BASE_URL`              | 서버에서만 호출한다. 브라우저 번들에 들어갈 이유가 없다                |
+| web    | `WEB_ORIGIN`                | 이 web의 origin. 로그인 · 로그아웃 Origin 검사, callback redirect 기준 |
+| web    | `TERMS_URL` · `PRIVACY_URL` | 약관 문서. production에서 없으면 로그인 비활성                         |
+| mobile | `EXPO_PUBLIC_API_BASE_URL`  | 앱에 서버가 없어 기기에서 직접 호출한다                                |
+| mobile | `EXPO_PUBLIC_WEB_BASE_URL`  | WebView가 여는 web 주소. API와 같은 이유로 기기별 값이 다르다          |
 
 자세한 배경은 [data-access.md](../architecture/data-access.md).
 
