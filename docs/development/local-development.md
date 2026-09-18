@@ -34,7 +34,7 @@ nvm use
 pnpm install
 ```
 
-`pnpm install`은 Node·pnpm 버전이 고정값과 다르면 경고한다. `prepare` 스크립트가 husky를 설치해 `.husky/`의 훅이 활성화된다. Go 의존성은 없다 (`go.mod`에 `require` 없음).
+`pnpm install`은 Node·pnpm 버전이 고정값과 다르면 경고한다. `prepare` 스크립트가 husky를 설치해 `.husky/`의 훅이 활성화된다. Go 모듈은 `go.mod`에 고정돼 있고 첫 `go` 명령이 받는다(직접 의존성은 pgx · Gin · gin-swagger · swaggo/files, tool은 swag).
 
 ## 실행
 
@@ -52,17 +52,6 @@ pnpm dev:mobile   # Expo (Metro 개발 서버)
 pnpm dev
 ```
 
-### 앱 안 WebView 화면 보기
-
-mobile 홈의 "기록 보기"는 web의 `/history`를 WebView로 연다. **web dev 서버가 떠 있어야 한다.**
-
-1. `apps/mobile/.env`에 `EXPO_PUBLIC_WEB_BASE_URL`을 넣는다 (`.env.example` 참고). iOS 시뮬레이터 `http://localhost:3000` · Android 에뮬레이터 `http://10.0.2.2:3000` · 실기기는 개발 PC LAN IP
-2. 터미널 A: `pnpm dev:web` — 실기기라면 LAN에서 받도록 `pnpm exec nx dev web --hostname 0.0.0.0`
-3. 터미널 B: `pnpm dev:mobile` → `i`(iOS) · `a`(Android). `.env`를 바꿨으면 `pnpm exec nx start mobile --clear`
-4. 홈 → "기록 보기": 네이티브 헤더 제목이 "기록"이고 web의 header · sidebar가 보이지 않아야 한다
-
-브라우저에서 앱 모드를 흉내 내려면 User-Agent 끝에 `SnapdoneApp/1`을 붙인다 (Chrome 개발자도구 → Network conditions).
-
 **mobile은 여기에 포함되지 않는다.** Metro 개발 서버는 QR 코드를 출력하고 `r`(리로드) 같은 키 입력을 받는 대화형 프로세스라, 다른 서버 로그와 한 터미널에 섞이면 쓰기 어렵다. 자기 터미널에서 `pnpm dev:mobile`로 띄운다.
 
 `pnpm dev:mobile`(`nx start mobile`)이 QR과 `i` · `a` 키 입력을 보여주는 것은 `apps/mobile/package.json`의 `nx.targets.start.continuous: false` 덕분이다. Nx는 태스크 하나만 돌릴 때 TUI를 끄고, 그때 **continuous 태스크에는 가상 터미널(PTY)을 주지 않는다.** 그러면 Expo가 stdout을 터미널로 보지 않아 비대화형 모드로 떠서 QR이 사라진다. `@nx/expo` 플러그인이 `start`를 `continuous: true`로 추론하므로 이 덮어쓰기를 지우지 않는다.
@@ -78,13 +67,26 @@ curl -i http://127.0.0.1:8080/health
 # {"status":"ok"}
 ```
 
+### 앱 안 WebView 화면 보기
+
+mobile 홈의 "기록 보기"는 web의 `/history`를 WebView로 연다. **web dev 서버가 떠 있어야 한다.**
+
+홈은 로그인했고 온보딩을 마친 사용자에게만 열린다. 온보딩을 끝내는 단계는 아직 없으므로(소개 화면의 "시작하기"는 비활성) 로컬에서는 그 사용자의 `profiles.onboarding_step`을 직접 `complete`로 바꿔야 홈에 닿는다.
+
+1. `apps/mobile/.env`에 `EXPO_PUBLIC_WEB_BASE_URL`을 넣는다 (`.env.example` 참고). iOS 시뮬레이터 `http://localhost:3000` · Android 에뮬레이터 `http://10.0.2.2:3000` · 실기기는 개발 PC LAN IP
+2. 터미널 A: `pnpm dev:web` — 실기기라면 LAN에서 받도록 `pnpm exec nx dev web --hostname 0.0.0.0`
+3. 터미널 B: `pnpm dev:mobile` → `i`(iOS) · `a`(Android). `.env`를 바꿨으면 `pnpm exec nx start mobile --clear`
+4. 홈 → "기록 보기": 네이티브 헤더 제목이 "기록"이고 web의 header · sidebar가 보이지 않아야 한다
+
+브라우저에서 앱 모드를 흉내 내려면 User-Agent 끝에 `SnapdoneApp/1`을 붙인다 (Chrome 개발자도구 → Network conditions).
+
 ## 검사
 
 ```bash
 pnpm verify      # format:check -> lint -> typecheck -> test -> test:hooks -> build 를 순서대로
-pnpm lint        # eslint(web, mobile, web-e2e, webview-bridge) + go vet + gofmt 검사
-pnpm typecheck   # tsc (web, mobile, web-e2e, webview-bridge)
-pnpm test        # go test(api) + Vitest(web, mobile, webview-bridge) — 한 번 돌고 끝남
+pnpm lint        # eslint(web, mobile, web-e2e, libs, tools/scripts, .claude/hooks) + go vet + gofmt 검사
+pnpm typecheck   # tsc (web, mobile, web-e2e, libs)
+pnpm test        # go test(api) + Vitest(web, mobile, libs) — 한 번 돌고 끝남
 pnpm test:hooks  # .claude/hooks/ 회귀 테스트 (Nx 프로젝트가 아니라 별도)
 pnpm e2e         # Playwright (web-e2e) — verify에 포함되지 않음
 pnpm build       # next build + go build
@@ -117,12 +119,12 @@ API_BASE_URL=http://localhost:9000 pnpm health
 
 각 명령이 실제로 무엇을 도는지:
 
-| script           | 실행되는 것                                                                  |
-| ---------------- | ---------------------------------------------------------------------------- |
-| `pnpm lint`      | `nx run-many -t lint,vet,fmt` — `lint`가 있는 프로젝트와 api의 `vet` · `fmt` |
-| `pnpm typecheck` | `nx run-many -t typecheck`                                                   |
-| `pnpm test`      | `nx run-many -t test`                                                        |
-| `pnpm build`     | `nx run-many -t build --exclude=mobile`                                      |
+| script           | 실행되는 것                                                                                                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`      | `nx run-many -t lint,vet,fmt` — `lint`가 있는 프로젝트와 api의 `vet` · `fmt`, 이어서 루트 `eslint`가 `eslint.config.mjs` · `tools/scripts` · `.claude/hooks`를 본다 |
+| `pnpm typecheck` | `nx run-many -t typecheck`                                                                                                                                          |
+| `pnpm test`      | `nx run-many -t test`                                                                                                                                               |
+| `pnpm build`     | `nx run-many -t build --exclude=mobile`                                                                                                                             |
 
 `nx run-many`는 해당 target이 없는 프로젝트를 조용히 건너뛴다. **어느 프로젝트에 어떤 target이 있는지는 이 표가 아니라 `nx show project <name>`이 기준이다.**
 
@@ -150,11 +152,11 @@ target 이름이 헷갈리면 문서를 믿지 말고 `nx show project <name>`�
 
 앱마다 자기 디렉터리에서 읽는다. 루트에 공용 `.env`는 두지 않는다.
 
-| 앱     | 템플릿                     | 실제 파일             | 로딩 주체                       |
-| ------ | -------------------------- | --------------------- | ------------------------------- |
-| web    | `apps/web/.env.example`    | `apps/web/.env.local` | Next.js가 자동 로드             |
-| mobile | `apps/mobile/.env.example` | `apps/mobile/.env`    | Expo CLI가 자동 로드            |
-| api    | `apps/api/.env.example`    | 없음                  | **자동 로드 안 함** — 아래 참조 |
+| 앱     | 템플릿                     | 실제 파일             | 로딩 주체                      |
+| ------ | -------------------------- | --------------------- | ------------------------------ |
+| web    | `apps/web/.env.example`    | `apps/web/.env.local` | Next.js가 자동 로드            |
+| mobile | `apps/mobile/.env.example` | `apps/mobile/.env`    | Expo CLI가 자동 로드           |
+| api    | `apps/api/.env.example`    | 없음                  | **Go는 읽지 않음** — 아래 참조 |
 
 ```bash
 cp apps/web/.env.example apps/web/.env.local
@@ -172,13 +174,15 @@ cp apps/mobile/.env.example apps/mobile/.env
 
 지금 API 주소는 앱마다 이름이 다르다.
 
-| 앱     | 변수                        | 이유                                                                   |
-| ------ | --------------------------- | ---------------------------------------------------------------------- |
-| web    | `API_BASE_URL`              | 서버에서만 호출한다. 브라우저 번들에 들어갈 이유가 없다                |
-| web    | `WEB_ORIGIN`                | 이 web의 origin. 로그인 · 로그아웃 Origin 검사, callback redirect 기준 |
-| web    | `TERMS_URL` · `PRIVACY_URL` | 약관 문서. production에서 없으면 로그인 비활성                         |
-| mobile | `EXPO_PUBLIC_API_BASE_URL`  | 앱에 서버가 없어 기기에서 직접 호출한다                                |
-| mobile | `EXPO_PUBLIC_WEB_BASE_URL`  | WebView가 여는 web 주소. API와 같은 이유로 기기별 값이 다르다          |
+| 앱     | 변수                                                | 이유                                                                                             |
+| ------ | --------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| web    | `API_BASE_URL`                                      | 서버에서만 호출한다. 브라우저 번들에 들어갈 이유가 없다                                          |
+| web    | `WEB_ORIGIN`                                        | 이 web의 origin. 로그인 · 로그아웃 Origin 검사, callback redirect 기준                           |
+| web    | `TERMS_URL` · `PRIVACY_URL`                         | 약관 문서. production에서 없으면 로그인 비활성                                                   |
+| mobile | `EXPO_PUBLIC_API_BASE_URL`                          | 앱에 서버가 없어 기기에서 직접 호출한다                                                          |
+| mobile | `EXPO_PUBLIC_WEB_BASE_URL`                          | WebView가 여는 web 주소. API와 같은 이유로 기기별 값이 다르다                                    |
+| mobile | `EXPO_PUBLIC_TERMS_URL` · `EXPO_PUBLIC_PRIVACY_URL` | 약관 문서. production 빌드에서 없으면 로그인 비활성                                              |
+| mobile | `EXPO_PUBLIC_AUTH_REDIRECT_URI`                     | 로그인 뒤 앱 복귀 주소. Go `AUTH_MOBILE_REDIRECT_URI`와 같아야 하고, 비우면 Google 로그인 비활성 |
 
 자세한 배경은 [data-access.md](../architecture/data-access.md).
 
@@ -192,6 +196,8 @@ API_PORT=9000 pnpm dev:api
 
 기본값은 `API_HOST=127.0.0.1`, `API_PORT=8080`, `API_ENV=development`다.
 
+**단, Nx가 대신 읽는다.** `pnpm dev:api` · `nx test api`처럼 Nx로 돌리면 Nx가 `apps/api/.env`(있다면)를 프로세스 환경에 넣는다. 그 파일이 있으면 `internal/config` 테스트가 기본값 대신 그 값을 보고 실패한다. 값은 셸에서 export하고 `apps/api/.env`는 만들지 않는다. 이미 있다면 `NX_LOAD_DOT_ENV_FILES=false pnpm exec nx test api`로 비교한다.
+
 ### 로컬 Postgres
 
 `DATABASE_URL`은 기본값이 없다. 로컬은 Docker로 띄운다.
@@ -203,9 +209,18 @@ pnpm exec nx run api:migrate
 pnpm dev:api
 ```
 
-서버는 마이그레이션을 적용하지 않는다. `apps/api/internal/database/migrations`에 미적용 SQL이 있으면 `api refused to start: database: pending migrations`로 기동을 거부하므로 `nx run api:migrate`를 먼저 실행한다(Nx 내장 `nx migrate`와 다른 명령이다). 데이터를 지우려면 `docker compose -f apps/api/compose.yaml down -v`.
+서버는 마이그레이션을 적용하지 않는다. `apps/api/internal/database/migrations`에 미적용 SQL이 있으면 `"msg":"api refused to start; …","err":"database: pending migrations"` 로그(`log/slog` JSON, stderr)를 남기고 기동을 거부하므로 `nx run api:migrate`를 먼저 실행한다(Nx 내장 `nx migrate`와 다른 명령이다). 데이터를 지우려면 `docker compose -f apps/api/compose.yaml down -v`.
 
 `AUTH_*`를 비워 두면 인증이 비활성이고 `/v1/auth/*`는 503을 돌려준다. 일부만 설정하면 서버가 기동하지 않는다. 변수 이름은 `apps/api`의 예시 env 파일에 있다.
+
+### API 문서 (Swagger)
+
+`API_ENV`가 `production`이 아니면 `http://127.0.0.1:8080/swagger/index.html`에서 Swagger UI를 볼 수 있다(스펙 원문은 `/swagger/doc.json`). 핸들러의 swag 주석을 바꿨으면 다시 생성해 함께 커밋한다.
+
+```bash
+pnpm exec nx run api:swagger        # apps/api/docs/swagger 재생성 (go tool swag, go.mod에 고정)
+pnpm exec nx run api:swagger-check  # 최신인지 검사만 한다
+```
 
 ## 실기기에서 API 주소 잡기
 

@@ -37,7 +37,7 @@ CLAUDE.md                     `@AGENTS.md` 한 줄. Claude Code 진입점
 │  ├─ mobile.md               apps/mobile/**
 │  ├─ api.md                  apps/api/**
 │  ├─ ko-ui.md                apps/{web,mobile}/src/**/*.tsx
-│  └─ libs.md                 libs/**            (지금은 비어 있어 로드되지 않는다)
+│  └─ libs.md                 libs/**
 ├─ skills/                    호출하거나 관련성이 판단될 때만 로드
 │  ├─ repo-verify/            변경 영향 범위 판정 + 검증 사다리
 │  └─ frontend-quality/       화면 제품 검수 (references/ 2개는 필요할 때만)
@@ -89,7 +89,7 @@ Skill 본문은 한번 로드되면 이후 턴에도 컨텍스트에 남는다. 
 
 ### 커스텀 agent를 만들지 않은 이유
 
-내장과 역할이 겹치지 않는 **격리된 컨텍스트가 실제로 필요한가**가 기준인데, 지금은 아니다. 제품 소스 전체가 `apps/web` 265줄 · `apps/mobile` 348줄 · `apps/api` 293줄이다. 리뷰어가 전부 읽어도 컨텍스트를 오염시킬 양이 아니다.
+내장과 역할이 겹치지 않는 **격리된 컨텍스트가 실제로 필요한가**가 기준인데, 지금은 아니다. 제품 소스(테스트 · 생성 문서 제외)가 `apps/web` 약 1,100줄 · `apps/mobile` 약 2,000줄 · `apps/api` 약 2,000줄이다(2026-09-18). 한 번의 리뷰는 보통 이 중 한 앱의 일부만 읽으므로 아직 컨텍스트를 밀어낼 양이 아니다.
 
 아래 중 하나가 실제로 관측되면 그때 다시 판단한다. 미리 만들지 않는다.
 
@@ -106,15 +106,15 @@ Skill 본문은 한번 로드되면 이후 턴에도 컨텍스트에 남는다. 
 
 ### 무엇을 막는가
 
-| 분류     | 대상                                                                       |
-| -------- | -------------------------------------------------------------------------- |
-| **deny** | 실제 secret 파일 읽기 (`.env` · `.env.local` · `.env.*.local` · 서명 키류) |
-| **deny** | 스토어 제출 (`nx submit mobile` · `eas submit`) — 되돌릴 수 없다           |
-| **deny** | force push                                                                 |
-| **ask**  | commit · push · merge · rebase · tag · branch 삭제                         |
-| **ask**  | 작업 내용을 지우는 것 (`reset --hard` · `clean` · `checkout --` · `stash`) |
-| **ask**  | EAS 클라우드 빌드 — 계정과 쿼터를 소모한다                                 |
-| **ask**  | 의존성 설치 · Nx 플러그인 추가 · 마이그레이션                              |
+| 분류     | 대상                                                                                   |
+| -------- | -------------------------------------------------------------------------------------- |
+| **deny** | 실제 secret 파일 읽기 (`.env` · `.env.local` · `.env.*.local` · 서명 키류)             |
+| **deny** | 스토어 제출 (`nx submit mobile` · `eas submit`) — 되돌릴 수 없다                       |
+| **deny** | force push                                                                             |
+| **ask**  | commit · push · merge · rebase · tag · branch 삭제                                     |
+| **ask**  | 작업 내용을 지우는 것 (`reset --hard` · `clean` · `checkout --` · `restore` · `stash`) |
+| **ask**  | EAS 클라우드 빌드 — 계정과 쿼터를 소모한다                                             |
+| **ask**  | 의존성 설치 · Nx 플러그인 추가 · `nx migrate` · Go 모듈 변경(`go get` · `go mod`)      |
 
 **`allow` 규칙은 하나도 두지 않았다.** `defaultMode`가 `auto`라 안전한 일상 명령은 분류기가 이미 통과시킨다. allow를 추가하면 ask 규칙과의 우선순위를 매번 따져야 하는데, 그 복잡도를 살 만한 마찰이 관측되지 않았다.
 
@@ -197,7 +197,7 @@ AI 설정과 별개의 층이다. **누가 커밋하든 걸린다**는 점이 �
 | `.husky/commit-msg`    | 메시지 작성 후 | `commitlint` — 커밋 규칙 강제      |
 | `commitlint.config.js` | —              | `@berrypjh/commitlint-config` 상속 |
 
-`lint-staged`는 `package.json`에 있다. TS·JS는 `eslint --fix` + `prettier --write`, JSON·CSS·MD는 `prettier --write`, **Go는 `gofmt -w`**다. Go를 넣은 이유는 `api`에 `lint` 타겟이 없고 `nx fmt api`가 검사만 하기 때문이다. 자동으로 고치는 지점이 여기밖에 없다.
+`lint-staged`는 `package.json`에 있다. TS·JS는 `eslint --fix` + `prettier --write`, JSON·CSS·MD·YAML은 `prettier --write`, **Go는 `gofmt -w`**다. Go를 넣은 이유는 `api`에 `lint` 타겟이 없고 `nx fmt api`가 검사만 하기 때문이다. 자동으로 고치는 지점이 여기밖에 없다.
 
 `commitlint` 규칙(`@berrypjh/commitlint-config`)과 plugin `berry-commit`의 `skills/commit-scope/examples/commit-message-rules.md`는 **같은 내용**이며 둘 다 공용 shared-stack이 소유한다. 문서는 Claude에게 설명하고 config는 강제한다. 바꿔야 하면 이 저장소가 아니라 upstream에서 함께 고친다.
 

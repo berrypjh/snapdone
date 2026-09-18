@@ -31,7 +31,9 @@ layout.tsx
     @utility typo-*                        --ds-* 타이포 변수 조합
   <html suppressHydrationWarning>          data-theme은 head 스크립트가 첫 paint 전에 넣는다
     <head><script>{themeInitScript}</script>   src/lib/theme.ts
-    <body> → AppShell → header의 ThemeSwitch (공용 Switch)
+    <body>
+      (product)/layout.tsx → AppShell → header의 ThemeSwitch (공용 Switch)
+      (auth)/layout.tsx    → 셸 없는 main 하나 (로그인 · 온보딩)
 ```
 
 - **theme은 light / dark 두 가지이고 `<html data-theme>` 하나가 소유한다.** light는 공용 `:root`, dark는 공용 `[data-theme="dark"]` 값이다. body와 모든 공용 컴포넌트가 `<html>` 아래라 한 속성으로 함께 바뀐다
@@ -46,17 +48,17 @@ layout.tsx
 
 **공용 토큰 이름으로만 쓴다.** Tailwind 기본 팔레트는 `--color-*: initial`로 제거했으므로 `bg-blue-500` 같은 클래스는 존재하지 않는다.
 
-| 쓰는 곳                   | Web class / CSS                                                         | 공용 변수                                   | light 값            |
-| ------------------------- | ----------------------------------------------------------------------- | ------------------------------------------- | ------------------- |
-| 페이지 바닥               | `body` `background-color`                                               | `--ds-background-surface`                   | `#FFFFFF`           |
-| 카드, 올라온 면           | `bg-background-surface`                                                 | `--ds-background-surface`                   | `#FFFFFF`           |
-| 사이드바, 보조 블록       | `bg-background-default`                                                 | `--ds-background-default`                   | `#F2F4F7`           |
-| 본문, 제목                | `body` `color` · `text-text-default`                                    | `--ds-text-default`                         | `#101828`           |
-| 설명문 · 캡션 · 상태 문구 | `text-text-light`                                                       | `--ds-text-light`                           | `#475467`           |
-| 구분선, 카드 테두리       | `border-stroke-light`                                                   | `--ds-stroke-light`                         | `#D0D5DD`           |
-| 주요 동작                 | 공용 `Button variant="contained" color="primary"` (아직 화면에서 안 씀) | `--ds-primary-btn-*`                        | `#047857`           |
-| 포커스 링                 | 전역 `:focus-visible`                                                   | `--ds-stroke-primary`                       | `#059669`           |
-| 완료 · 주의 · 실패        | `text-text-success` · `-warning` · `-error`                             | `--ds-text-success` · `-warning` · `-error` | 아직 화면에서 안 씀 |
+| 쓰는 곳                   | Web class / CSS                                                | 공용 변수                                   | light 값                           |
+| ------------------------- | -------------------------------------------------------------- | ------------------------------------------- | ---------------------------------- |
+| 페이지 바닥               | `body` `background-color`                                      | `--ds-background-surface`                   | `#FFFFFF`                          |
+| 카드, 올라온 면           | `bg-background-surface`                                        | `--ds-background-surface`                   | `#FFFFFF`                          |
+| 사이드바, 보조 블록       | `bg-background-default`                                        | `--ds-background-default`                   | `#F2F4F7`                          |
+| 본문, 제목                | `body` `color` · `text-text-default`                           | `--ds-text-default`                         | `#101828`                          |
+| 설명문 · 캡션 · 상태 문구 | `text-text-light`                                              | `--ds-text-light`                           | `#475467`                          |
+| 구분선, 카드 테두리       | `border-stroke-light`                                          | `--ds-stroke-light`                         | `#D0D5DD`                          |
+| 주요 동작                 | 공용 `Button variant="contained"` (로그인 "Google로 계속하기") | `--ds-primary-btn-*`                        | `#047857`                          |
+| 포커스 링                 | 전역 `:focus-visible`                                          | `--ds-stroke-primary`                       | `#059669`                          |
+| 완료 · 주의 · 실패        | `text-text-success` · `-warning` · `-error`                    | `--ds-text-success` · `-warning` · `-error` | `-error`만 로그인 오류 문구에서 씀 |
 
 공용 토큰에 "muted text" 역할이 따로 없어 설명문과 캡션을 모두 `text-text-light`로 쓴다. `text-text-secondary`는 공용 라이브러리에서 **갈색 계열**이라 설명문에 쓰지 않는다.
 
@@ -134,7 +136,7 @@ Mobile은 터치 기반이라 focus 링 대신 pressed 상태와 `accessibilityR
 
 ## Web Shell
 
-`apps/web/src/components/app-shell.tsx`. `layout.tsx`가 모든 페이지를 이걸로 감싼다.
+`apps/web/src/components/app-shell.tsx`. `app/(product)/layout.tsx`가 제품 화면(홈 · 기록)을 이걸로 감싼다. 로그인 · 온보딩(`app/(auth)`)은 셸 없이 가운데 `main` 하나(`max-w-(--container-md)`)다.
 
 ```
 ┌──────────┬─────────────────────────────┐
@@ -149,7 +151,7 @@ Mobile은 터치 기반이라 focus 링 대신 pressed 상태와 `accessibilityR
 - 본문 너비는 48rem. 한국어 본문이 한 줄에 너무 길어지지 않는 폭이다
 - 사이드바에 `nav aria-label="주요 메뉴"`로 **실제 route만** 둔다 — 홈 · 기록. 항목 높이는 `min-h-11`(44px). 없는 route로 가는 링크를 만들지 않는다
 - 767px 이하에는 사이드바가 없으므로, 페이지 안 링크로 같은 route에 닿게 한다 (홈의 "기록 보기")
-- 헤더 오른쪽에는 "다크 모드" 스위치만 있다
+- 헤더 오른쪽에는 "다크 모드" 스위치와, 로그인했을 때만 "로그아웃" 버튼이 있다
 - **폰 폭(320–767px)이 기본 사용 폭이다.** 같은 web이 앱 WebView로도 열리고 WebView는 항상 이 폭이다 ([target-architecture.md](../architecture/target-architecture.md#제품-구성--네이티브-셸--웹-콘텐츠))
 - **앱 WebView(in-app 모드)에서는 셸을 그리지 않는다.** 네이티브가 헤더 · 뒤로 가기를 가지므로 web 헤더 · 사이드바를 숨기고 `main` 본문만 렌더링한다. 판별은 서버에서 User-Agent로 하므로 첫 HTML부터 적용된다 (`AppShell inApp`). SkipLink도 없다 — 건너뛸 셸이 없다
 - in-app 화면과 네이티브 화면은 **같은 공용 토큰과 같은 시스템 theme**을 따른다. in-app 모드에는 헤더(다크 모드 스위치)가 없으므로 WebView 안의 web은 시스템 설정만 따른다
@@ -173,7 +175,8 @@ Mobile은 터치 기반이라 focus 링 대신 pressed 상태와 `accessibilityR
 ```
 
 - **데스크톱 사이드바를 모바일에 복제하지 않는다.** 헤더 + 스크롤 본문 구조다
-- 헤더는 native stack이 그린다. 색은 `navigationTheme`이 공용 토큰에서 만든다 — 배경 `background.surface`, 제목 `text.default`, 뒤로 가기 `text.primary`, 구분선 `stroke.light`. 글꼴은 플랫폼 기본이다. WebView 화면 제목은 web의 `ready` 메시지가 바꾼다
+- 헤더는 native stack이 그린다. 색은 `navigationTheme`이 공용 토큰에서 만든다 — 배경 `background.surface`, 제목 `text.default`, 뒤로 가기 `text.primary`, 구분선 `stroke.light`. 글꼴은 플랫폼 기본이다. WebView 화면 제목은 web의 `ready` 메시지가 바꾼다. 홈 헤더 오른쪽에 "로그아웃"(`components/auth/LogoutButton`)이 있다
+- 복원 · 로그인 · 온보딩 소개 화면은 native header 없이 `components/auth/AuthShell`이 상하좌우 inset을 모두 가진다
 - `AppShell`의 `SafeAreaView` `edges`는 `['left','right']`다. top은 header가 가져간다. **bottom을 일부러 뺐다** — 나중에 bottom navigation이 하단 inset을 직접 가져가야 이중 패딩이 안 생긴다
 - `android.edgeToEdgeEnabled: true`이므로 Safe Area 처리는 선택이 아니라 필수다
 - **가짜 탭을 만들지 않는다.** 실제 화면이 생길 때 bottom navigation을 넣는다
@@ -195,18 +198,20 @@ Mobile은 터치 기반이라 focus 링 대신 pressed 상태와 `accessibilityR
 
 ## Primitives
 
-**Web에는 로컬 primitive가 없다.** 공용 라이브러리 컴포넌트를 `@berrypjh/react-ui`에서 바로 가져와 조합한다. 제품 셸 `AppShell`만 앱이 소유한다.
+**Web에는 로컬 primitive가 없다.** 공용 라이브러리 컴포넌트를 `@berrypjh/react-ui`에서 바로 가져와 조합한다. 앱이 소유하는 것은 제품 셸 `AppShell`과 기능별 제품 조합(`components/auth/` · `in-app-*` · `theme-switch`)뿐이다.
 
-| 쓰는 것                                            | 어디서                        | 무엇에                                                                                                                                    |
-| -------------------------------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `Box` `p="xl" bg="background.surface" radius="lg"` | `app/page.tsx`                | 카드 면. border(`border-semanticBorder-divider border-stroke-light`)와 `shadow-xs`는 class로 더한다 — `Box`에 border · shadow prop이 없다 |
-| `Stack gap="xl"`                                   | `app/page.tsx`                | 제목 묶음과 카드를 세로로 쌓는다 (기본 방향 `column`)                                                                                     |
-| `SkipLink targetId="main-content"`                 | `components/app-shell.tsx`    | 첫 키보드 정지점 "본문으로 건너뛰기". `<main id="main-content" tabIndex={-1}>`이 포커스를 받는다                                          |
-| `Switch`                                           | `components/theme-switch.tsx` | 헤더의 "다크 모드". 라벨이 접근 이름이다                                                                                                  |
+| 쓰는 것                                            | 어디서                                  | 무엇에                                                                                                                                    |
+| -------------------------------------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `Box` `p="xl" bg="background.surface" radius="lg"` | `app/(product)/page.tsx`                | 카드 면. border(`border-semanticBorder-divider border-stroke-light`)와 `shadow-xs`는 class로 더한다 — `Box`에 border · shadow prop이 없다 |
+| `Stack gap="xl"`                                   | `app/(product)/page.tsx`                | 제목 묶음과 카드를 세로로 쌓는다 (기본 방향 `column`)                                                                                     |
+| `SkipLink targetId="main-content"`                 | `components/app-shell.tsx`              | 첫 키보드 정지점 "본문으로 건너뛰기". `<main id="main-content" tabIndex={-1}>`이 포커스를 받는다                                          |
+| `Switch`                                           | `components/theme-switch.tsx`           | 헤더의 "다크 모드". 라벨이 접근 이름이다                                                                                                  |
+| `Button variant="contained"`                       | `components/auth/google-login-form.tsx` | 로그인 "Google로 계속하기"                                                                                                                |
+| `Button variant="text" size="sm"`                  | `components/app-shell.tsx`              | 헤더 "로그아웃"                                                                                                                           |
 
 - `main` · `aside` · `header`는 `Box`로 바꾸지 않는다. 시맨틱 랜드마크가 우선이다
 - 셸의 반응형 방향(`flex-col md:flex-row`)은 `Stack`에 반응형 prop이 없어 class로 둔다
-- 버튼이 필요해지면 공용 `Button`을 쓴다. 로컬 primary는 `variant="contained" color="primary"`에 대응하고, 로컬 secondary를 공용 `color="secondary"`(보조 palette)로 자동 대응시키지 않는다
+- 버튼은 공용 `Button`을 쓴다. 로컬 primary는 `variant="contained" color="primary"`에 대응하고, 로컬 secondary를 공용 `color="secondary"`(보조 palette)로 자동 대응시키지 않는다
 
 **Mobile도 로컬 primitive가 없다.** `@berrypjh/react-native-ui`에서 가져와 조합한다.
 

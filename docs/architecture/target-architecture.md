@@ -38,7 +38,7 @@ Nx Workspace (repository root)
 - 앱별 부트스트랩 화면 (서비스명 + 소개 문구 + 상태 문구)
 - 디자인 토큰과 App Shell, web 라이트/다크 테마
 - 네이티브 셸 + 웹 콘텐츠 골격 — mobile native stack, WebView 화면(로딩 · 오류 · 외부 링크), web in-app 모드, `libs/webview-bridge` 계약과 모듈 경계 lint
-- Go `GET /health`
+- Go `GET /health`, Gin HTTP 경계와 swag로 생성한 Swagger 2.0 문서
 - Postgres 연결 · 마이그레이션(로컬 Docker)과 인증 — 사용자 · 로그인 수단 · 세션(root/child) · 일회용 grant · OAuth transaction, `/v1/auth/{capabilities,session,logout}` · `/v1/auth/oauth/{start,cancel,callback}` · `/v1/auth/exchange` · `/v1/auth/handoff/{start,exchange}`
 - Google 로그인 화면과 세션 — mobile 네이티브 흐름, web 로그인 · 온보딩 소개 · HttpOnly 세션 cookie, WebView 로그인 핸드오프. **실계정 · 실기기 인수는 남아 있다**
 - 검증 명령과 문서
@@ -111,7 +111,7 @@ web과 mobile은 **코드로 서로 참조하지 않는다.** 앱은 web을 URL�
 
 담지 않는 것: web과 동일한 화면 구조를 억지로 맞추는 일. 결과는 같고 구현은 각자에 맞게 한다. web 콘텐츠 화면을 RN으로 다시 만드는 일.
 
-**네비게이션은 React Navigation native stack이다.** `src/app/App.tsx`가 `Home`(네이티브) · `WebContent`(WebView) 두 화면을 가진다. bottom navigation은 실제 탭이 생길 때 넣는다. 가짜 탭을 미리 만들지 않는다 ([foundation.md](../design/foundation.md)의 Mobile Shell).
+**네비게이션은 React Navigation native stack이다.** `src/app/App.tsx`가 인증 상태에 따라 등록할 화면을 고른다 — 복원(`Restoring` · `RestoreFailed`), 로그인(`Auth`), 온보딩 소개(`OnboardingIntro`), 온보딩을 마친 뒤 `Home`(네이티브) · `WebContent`(WebView). bottom navigation은 실제 탭이 생길 때 넣는다. 가짜 탭을 미리 만들지 않는다 ([foundation.md](../design/foundation.md)의 Mobile Shell).
 
 ### `apps/api` — Go
 
@@ -122,7 +122,7 @@ web과 mobile은 **코드로 서로 참조하지 않는다.** 앱은 web을 URL�
 - 외부 서비스 연동 (캘린더, 저장소 등)
 - 인증, 저장, 사용자 데이터
 
-**표준 Go 프로젝트 구조를 유지한다.** Nx에 맞추려고 Go 관례를 벗어난 배치를 하지 않는다. Nx에는 target을 연결해 `build` · `test` · `lint`를 orchestration에 참여시킨다.
+**표준 Go 프로젝트 구조를 유지한다.** Nx에 맞추려고 Go 관례를 벗어난 배치를 하지 않는다. Nx에는 target을 연결해 `build` · `test` · `vet` · `fmt`를 orchestration에 참여시킨다(`lint` target은 없다).
 
 **Nx 연결 방식 (결정 완료):** 서드파티 Go 플러그인을 쓰지 않고 `apps/api/project.json`의 `nx:run-commands` target으로 연결한다. Nx에 first-party Go 플러그인이 없고, 서드파티를 넣으면 Go 관례를 플러그인 규약에 맞춰 변형해야 하기 때문이다. Nx는 `go` 명령을 감싸기만 하고 Go 쪽 구조에는 관여하지 않는다.
 
@@ -131,6 +131,8 @@ web과 mobile은 **코드로 서로 참조하지 않는다.** 앱은 web을 URL�
 git remote가 없고 조직명도 정해지지 않았으므로 `github.com/...` 주소를 임의로 확정하지 않았다. 도메인이 없는 module path는 외부에서 `go get`으로 가져갈 수 없는데, 지금 단계에서는 그게 맞는 상태다. 저장소 이름 `snapdone`, npm scope `@snapdone/`과 같은 이름을 쓴다.
 
 배포 대상이 정해지고 remote가 생기면 그때 `go mod edit -module <새 경로>`로 한 번에 바꾼다. 내부 import 경로가 함께 바뀌므로 미루지 말고 remote 확정 시점에 처리한다.
+
+**HTTP 경계 (결정 완료, 2026-09-18):** 수명주기(timeout · graceful shutdown)는 `net/http.Server`가 갖고, 그 `Handler`로 Gin engine을 쓴다. Gin은 `internal/httpserver` 안에서만 쓰며 `auth` · `database` · `google` · `config`는 Gin을 모른다. 요청 · 응답은 `internal/httpserver/dto.go`의 DTO로 주고받고, 도메인 오류는 경계에서 상태 코드와 `{"error": "<code>"}`로 바뀐다. DB 접근은 그대로 pgx이고 ORM · repository 계층은 두지 않는다. API 문서는 swag 주석에서 생성한 Swagger 2.0(`apps/api/docs/swagger/`)이고, route와 문서의 일치는 Go 테스트가 검사한다. 세부 규칙은 `.claude/rules/api.md`.
 
 **빌드 산출물:** `dist/apps/api/api`. 소스 디렉터리에 바이너리를 남기지 않으며 `dist/`는 git ignore 대상이다.
 
@@ -165,6 +167,9 @@ git remote가 없고 조직명도 정해지지 않았으므로 `github.com/...` 
 
 - `docs/product/` — 제품 판단 기준
 - `docs/architecture/` — 구조와 경계
+- `docs/design/` — 디자인 토큰 조합과 App Shell
+- `docs/development/` — 로컬 실행 · 환경변수
+- `docs/engineering/` — 검증 · 의존성 · 보안
 
 구현 결정이 문서와 어긋나면 둘 중 하나를 고친다. 어긋난 채로 두지 않는다.
 

@@ -10,15 +10,15 @@ pnpm verify
 
 `format:check → lint → typecheck → test → test:hooks → build` 순으로 돌고, 하나라도 실패하면 거기서 멈춘다. 하나씩 돌리려면 아래를 쓴다.
 
-| 명령                | 실제로 도는 것                          | 대상                                                         |
-| ------------------- | --------------------------------------- | ------------------------------------------------------------ |
-| `pnpm format:check` | `prettier --check .`                    | 저장소 전체 (`.prettierignore` 제외)                         |
-| `pnpm lint`         | `nx run-many -t lint,vet,fmt`           | web · mobile · web-e2e는 eslint, api는 `go vet` + gofmt 검사 |
-| `pnpm typecheck`    | `nx run-many -t typecheck`              | web · mobile · web-e2e                                       |
-| `pnpm test`         | `nx run-many -t test`                   | api는 `go test`, web · mobile은 Vitest                       |
-| `pnpm test:hooks`   | `node --test tools/scripts/*.test.mjs`  | `.claude/hooks/` — Nx 프로젝트가 아니라 별도 명령이다        |
-| `pnpm build`        | `nx run-many -t build --exclude=mobile` | web · api                                                    |
-| `pnpm e2e`          | `nx run-many -t e2e`                    | web-e2e — **`verify`에 포함되지 않는다**                     |
+| 명령                | 실제로 도는 것                                 | 대상                                                                                                                 |
+| ------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `pnpm format:check` | `prettier --check .`                           | 저장소 전체 (`.prettierignore` 제외)                                                                                 |
+| `pnpm lint`         | `nx run-many -t lint,vet,fmt` 뒤 루트 `eslint` | web · mobile · web-e2e · libs는 eslint, api는 `go vet` + gofmt 검사, 루트 eslint는 `tools/scripts` · `.claude/hooks` |
+| `pnpm typecheck`    | `nx run-many -t typecheck`                     | web · mobile · web-e2e · libs                                                                                        |
+| `pnpm test`         | `nx run-many -t test`                          | api는 `go test`, web · mobile · libs는 Vitest                                                                        |
+| `pnpm test:hooks`   | `node --test tools/scripts/*.test.mjs`         | `.claude/hooks/` — Nx 프로젝트가 아니라 별도 명령이다                                                                |
+| `pnpm build`        | `nx run-many -t build --exclude=mobile`        | web · api                                                                                                            |
+| `pnpm e2e`          | `nx run-many -t e2e`                           | web-e2e — **`verify`에 포함되지 않는다**                                                                             |
 
 `test:hooks`는 Node 24 내장 러너를 쓴다. 의존성이 없다.
 
@@ -86,7 +86,7 @@ pnpm exec nx export mobile
 
 | 프로젝트 | 종류      | 명령        | 상태                                                                           |
 | -------- | --------- | ----------- | ------------------------------------------------------------------------------ |
-| api      | 단위 · DB | `pnpm test` | Go 111개. 그중 45개는 `TEST_DATABASE_URL`이 있을 때만 돌고 없으면 **skip**한다 |
+| api      | 단위 · DB | `pnpm test` | Go 122개. 그중 46개는 `TEST_DATABASE_URL`이 있을 때만 돌고 없으면 **skip**한다 |
 | web      | 단위      | `pnpm test` | Vitest 114개 (9 파일)                                                          |
 | mobile   | 단위      | `pnpm test` | Vitest 180개 (12 파일)                                                         |
 | libs     | 단위      | `pnpm test` | `webview-bridge` 16개 · `auth-contracts` 9개                                   |
@@ -94,7 +94,7 @@ pnpm exec nx export mobile
 
 `nx test api` 통과가 DB 검증을 뜻하지 않는다. DB까지 보려면 Postgres를 띄우고 `TEST_DATABASE_URL`을 주고 돌린다(아래 Go 절).
 
-덮인 것은 `apps/*/src/lib/**`(api 호출 · 인증 순수 로직)과 Go 인증 전체다. 화면 컴포넌트 · 디자인 토큰 · App Shell에는 단위 테스트가 없고, web의 셸 · 로그인 화면 동작은 E2E가 대신 잡는다. **mobile 화면은 런타임 검증 수단이 없어 코드 판독과 실기기 수동 인수까지가 한계다.**
+덮인 것은 web `src/lib/**` · mobile `src/lib/**` · `src/auth/**`(api 호출 · 인증 순수 로직), `libs/*`, Go 인증 전체다. 화면 컴포넌트 · 디자인 토큰 · App Shell에는 단위 테스트가 없고, web의 셸 · 로그인 화면 동작은 E2E가 대신 잡는다. **mobile 화면은 런타임 검증 수단이 없어 코드 판독과 실기기 수동 인수까지가 한계다.**
 
 커밋 도구(`commit-mcp`)는 이 저장소에서 빠져 공용 plugin `berry-commit`으로 옮겨갔다. 그 테스트는 shared-stack이 소유한다.
 
@@ -137,9 +137,12 @@ pnpm exec nx fmt api     # gofmt 위반 시 실패
 pnpm exec nx vet api     # go vet ./...
 pnpm exec nx test api    # go test ./...
 pnpm exec nx build api   # dist/apps/api/api
+pnpm exec nx run api:swagger-check   # docs/swagger가 주석과 일치하는지 (파일을 고쳐 쓰지 않는다)
 ```
 
-앞의 셋은 `pnpm lint`와 `pnpm test`에 이미 포함되어 있다.
+앞의 셋은 `pnpm lint`와 `pnpm test`에 이미 포함되어 있다. `swagger-check`는 아직 어느 묶음 명령에도 없다(CI가 생기면 넣는다). 대신 `go test`의 `TestEveryRouteIsDocumentedInSwagger`가 등록된 route와 생성 문서의 operation을 비교해, 주석 없는 endpoint를 `pnpm test`에서 잡는다.
+
+HTTP 테스트는 `httptest`로 실제 Gin router를 부르고, `http.Server` 동작(본문 상한 뒤 연결 종료 · graceful shutdown)은 `net.Pipe` listener로 포트 없이 확인한다.
 
 `fmt` target은 파일을 고쳐 쓰지 않고 **검사만 한다.** CI가 소스를 바꾸면 안 되기 때문이다. 위반이 나오면 로컬에서 `gofmt -w .`로 고친다.
 
@@ -166,7 +169,7 @@ pnpm health
 부트스트랩에서 실제로 적용된 예:
 
 - `/health` 하나 때문에 axios를 넣지 않았다. Node 24와 RN 0.85 모두 `fetch`를 기본 제공한다
-- Go health endpoint에 Gin/Echo/Chi를 넣지 않았다. Go 1.22+ `http.ServeMux`의 메서드 라우팅으로 충분하다
+- Go API는 부트스트랩 때 `http.ServeMux`로 시작했고, `/health`를 포함한 endpoint가 10개로 늘어 DTO · binding · route group · Swagger 문서가 필요해진 시점(2026-09-18)에 Gin · swaggo를 승인받아 넣었다. Gin은 HTTP 경계에만 쓰고 `http.Server` · pgx · 마이그레이션은 그대로다. request ID · 로그 · recovery는 표준 라이브러리로 짰다
 - `react-native-safe-area-context`는 넣었다. RN의 `SafeAreaView`가 deprecated이고 Android edge-to-edge를 처리하지 못해서다
 
 ### mobile에 패키지를 추가할 때
@@ -189,17 +192,17 @@ node -e "console.log(require('expo/bundledNativeModules.json')['패키지명'])"
 
 - 실제 secret을 커밋하지 않는다
 - `.env`, `.env.local`, `.env.*.local`은 git에서 제외된다. `.env.example`은 추적된다
-- **`.env.example`에는 예시 값만 둔다.** 지금 들어 있는 값은 전부 localhost 개발 주소다
+- **`.env.example`에는 예시 값만 둔다.** 지금 채워진 값은 localhost 개발 주소와 개발 기본값뿐이고, 인증 키 · OAuth 클라이언트 값은 비어 있다
 
 ### 클라이언트에 노출되는 값
 
 - `NEXT_PUBLIC_*`는 브라우저 번들에, `EXPO_PUBLIC_*`는 앱 번들에 **인라인된다.** 접두사가 붙은 값은 공개된 값이다
 - 이 접두사 뒤에 secret을 두지 않는다. 모바일 앱에는 서버가 없으므로 앱이 아는 값은 전부 공개값이다
-- web의 API 주소는 `API_BASE_URL`이다. 접두사가 없다 — Server Component에서만 쓰이므로 브라우저에 갈 이유가 없다
+- web의 API 주소는 `API_BASE_URL`이다. 접두사가 없다 — 서버(Server Component · Server Action · Route Handler)에서만 쓰이므로 브라우저에 갈 이유가 없다
 
 ### Backend
 
-- **오류 응답에 내부 정보를 담지 않는다.** 스택, 파일 경로, SQL, 내부 식별자 모두 밖으로 내보내지 않는다. 현재 클라이언트로 나가는 경로는 `writeJSON` 하나뿐이다
+- **오류 응답에 내부 정보를 담지 않는다.** 스택, 파일 경로, SQL, 내부 식별자 모두 밖으로 내보내지 않는다. 오류 응답은 `writeError`가 만드는 `{"error": "<code>"}` 하나뿐이다
 - 서버 설정은 환경변수로 받는다. 하드코딩하지 않는다
 - CORS는 **필요해질 때** 넣는다. 지금은 cross-origin 요청 주체가 없어 CORS 코드가 아예 없다
 - CORS를 넣게 되면 허용 origin을 설정으로 관리하고 dev/production을 분리한다. **production에서 `*`를 쓰지 않는다**
@@ -210,7 +213,7 @@ node -e "console.log(require('expo/bundledNativeModules.json')['패키지명'])"
 
 - 토큰, 비밀번호, 개인정보, **이미지 내용**을 로그에 남기지 않는다
 - 이 제품의 입력은 스크린샷이다. 이름·전화번호·계좌번호가 흔히 들어 있다. 이미지나 그 분석 결과 원문을 로그로 뱉지 않는다
-- 현재 Go 로그는 수명주기 이벤트(리스닝 주소, 종료, 서버 오류)뿐이다
+- 현재 Go 로그(`log/slog`)는 수명주기 이벤트, 요청 한 줄(request_id · method · route template · status · latency), 인증 저장소 오류, panic 타입뿐이다. 원문 URL · query · 헤더 · 본문은 남기지 않는다
 
 ### 앱 코드의 `console`
 

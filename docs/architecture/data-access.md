@@ -104,4 +104,6 @@ Go와 TypeScript는 언어가 달라 타입을 직접 공유할 수 없다. `/he
 
 endpoint가 늘어나면 이 방식은 무너진다. 응답 타입을 손으로 베껴 쓰는 파일이 여러 개 생기는 순간이 전략을 도입할 시점이다. 그때 후보는 OpenAPI 스펙에서 TS 타입을 생성하는 방식이며, 생성물을 두는 위치는 `libs/`가 된다.
 
+Go API의 Swagger 2.0 스펙은 이미 생성된다(`apps/api/docs/swagger/swagger.json`, 개발 환경 UI `/swagger/index.html`). route와 문서가 어긋나면 `go test`가 실패하므로 그 스펙이 wire 계약의 기준이다. **TS 클라이언트 · 타입은 아직 생성하지 않는다** — 위 시점이 오면 이 스펙을 입력으로 쓴다.
+
 **그 전까지 각 앱이 응답 타입을 임의로 늘려 쓰지 않는다.**

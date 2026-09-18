@@ -12,7 +12,7 @@ Next.js App Router. 소스는 `src/`, alias는 `@/*` → `./src/*`.
 - **App Router만 쓴다.** `pages/`를 만들지 않는다
 - **Server Component가 기본이다.** `'use client'`는 브라우저 상호작용이 실제로 필요한 컴포넌트에만 붙인다. 루트 `layout.tsx`에는 붙이지 않는다
 - 파일 이름은 **kebab-case**(`app-shell.tsx`), export는 PascalCase
-- **로컬 primitive를 만들지 않는다.** 공용 `@berrypjh/react-ui` 컴포넌트(`Box` · `Stack` · `SkipLink` · `Switch` 등)를 가져와 조합한다. 앱이 소유하는 것은 제품 셸 `AppShell`뿐이다
+- **로컬 primitive를 만들지 않는다.** 공용 `@berrypjh/react-ui` 컴포넌트(`Box` · `Stack` · `SkipLink` · `Switch` 등)를 가져와 조합한다. 앱이 소유하는 것은 제품 셸 `AppShell`과 기능별 제품 조합(`components/auth/` · `in-app-*` · `theme-switch`)뿐이다
 - `main` · `aside` · `header`를 `Box`로 바꾸지 않는다. `SkipLink`는 `<main id="main-content" tabIndex={-1}>`을 가리킨다
 - semantic landmark를 쓴다. 클릭 가능한 것은 `<button>` 또는 `<a>`다
 

@@ -27,26 +27,30 @@ nx show projects --affected --files=<바뀐 파일, 쉼표 구분>
 
 이 저장소에서 실측한 매핑:
 
-| 바꾼 파일                                                                    | affected             |
-| ---------------------------------------------------------------------------- | -------------------- |
-| `apps/web/**`                                                                | `web`, **`web-e2e`** |
-| `apps/mobile/**`                                                             | `mobile`             |
-| `apps/api/**`                                                                | `api`                |
-| `nx.json` · `tsconfig.base.json` · 루트 `package.json` · `eslint.config.mjs` | **전부 4개**         |
-| `docs/**` · `.claude/**`                                                     | 없음 (`[]`)          |
+| 바꾼 파일                                                                    | affected                            |
+| ---------------------------------------------------------------------------- | ----------------------------------- |
+| `apps/web/**`                                                                | `web`, **`web-e2e`**                |
+| `apps/mobile/**`                                                             | `mobile`                            |
+| `apps/api/**`                                                                | `api`                               |
+| `libs/<lib>/**`                                                              | `<lib>`, `web`, `mobile`, `web-e2e` |
+| `nx.json` · `tsconfig.base.json` · 루트 `package.json` · `eslint.config.mjs` | **전부 6개**                        |
+| `docs/**` · `.claude/**` · `tools/scripts/**`                                | 없음 (`[]`)                         |
 
 `web` 변경이 `web-e2e`까지 끌어오는 것은 `implicitDependencies` 때문이며 의도된 동작이다.
+
+affected가 비어 있어도 `.claude/hooks/**` · `tools/scripts/**`를 고쳤으면 `pnpm test:hooks`와 `pnpm exec eslint .claude/hooks tools/scripts`를 돌린다. Nx 프로젝트가 아니라 `pnpm lint` 끝의 루트 eslint만 이 경로를 본다.
 
 ## 3. 그 프로젝트에 target이 있는지 확인한다
 
 target 이름은 프로젝트마다 다르다.
 
-| project   | 있는 target                                                  |
-| --------- | ------------------------------------------------------------ |
-| `web`     | `lint` `typecheck` `test` `build`                            |
-| `mobile`  | `lint` `typecheck` `test` — `build`는 EAS 클라우드           |
-| `api`     | **`vet` `fmt` `test` `build`** — `lint`도 `typecheck`도 없다 |
-| `web-e2e` | `lint` `typecheck` `e2e`                                     |
+| project                             | 있는 target                                                                  |
+| ----------------------------------- | ---------------------------------------------------------------------------- |
+| `web`                               | `lint` `typecheck` `test` `build`                                            |
+| `mobile`                            | `lint` `typecheck` `test` — `build`는 EAS 클라우드                           |
+| `api`                               | **`vet` `fmt` `test` `build` `swagger-check`** — `lint`도 `typecheck`도 없다 |
+| `web-e2e`                           | `lint` `typecheck` `e2e`                                                     |
+| `webview-bridge` · `auth-contracts` | `lint` `typecheck` `test`                                                    |
 
 확실하지 않으면 `nx show project <이름>`으로 본다. `nx affected -t <target>`은 그 target이 없는 프로젝트를 **조용히 건너뛴다**(`No tasks were run`). 없는 target 때문에 실패하지 않으므로 target을 묶어서 넘겨도 된다.
 
@@ -72,7 +76,7 @@ nx affected -t lint,typecheck,test --files=<바뀐 파일>
 
 **Level 3 — 교차 변경**
 
-두 앱에 걸친 쌍(`apps/*/src/lib/api.ts`)을 고쳤으면 **양쪽 앱을 모두** 범위에 넣는다. 디자인 토큰은 두 앱 모두 공용 라이브러리(web `@berrypjh/react-ui`, mobile `@berrypjh/react-native-ui`)가 소유해 앱 안에 짝 파일이 없다. affected는 파일 기준이라 "짝이 되는 파일을 안 고친 것"은 잡아주지 못한다.
+두 앱에 걸친 쌍(`apps/*/src/lib/api.ts`)을 고쳤으면 **양쪽 앱을 모두** 범위에 넣는다. `libs/`를 고치면 affected가 양쪽 앱을 알아서 끌어온다. Go 응답 모양을 바꿨으면 `libs/auth-contracts`의 손으로 쓴 타입도 함께 본다. 디자인 토큰은 두 앱 모두 공용 라이브러리(web `@berrypjh/react-ui`, mobile `@berrypjh/react-native-ui`)가 소유해 앱 안에 짝 파일이 없다. affected는 파일 기준이라 "짝이 되는 파일을 안 고친 것"은 잡아주지 못한다.
 
 **Level 4 — 빌드**
 
@@ -102,6 +106,10 @@ nx affected -t vet,fmt,test --files=<바뀐 Go 파일>
 ```
 
 `fmt`는 **검사만 하고 파일을 고쳐 쓰지 않는다.** 위반이 나오면 `apps/api`에서 `gofmt -w .`로 직접 고친다.
+
+핸들러 · DTO · swag 주석을 바꿨으면 `nx run api:swagger`로 문서를 다시 만들고 `nx run api:swagger-check`로 확인한다. `swagger-check`는 `affected`의 묶음 target에 넣지 않았으므로 따로 돌린다.
+
+`nx test api`는 Nx가 `apps/api/.env`(있다면)를 환경에 넣어 `internal/config` 테스트가 실패할 수 있다. 의심되면 `NX_LOAD_DOT_ENV_FILES=false`로 다시 돌려 비교한다([local-development.md](../../../docs/development/local-development.md#go-api는-env를-읽지-않는다)).
 
 ## 6. 이 환경에서 실행할 수 없는 것
 

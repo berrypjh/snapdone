@@ -9,7 +9,7 @@
 | `apps/web`    | Next.js 16 (App Router)    |
 | `apps/mobile` | Expo SDK 56 + React Native |
 | `apps/api`    | Go                         |
-| `libs/`       | 공유 코드 (아직 비어 있음) |
+| `libs/`       | web · mobile 공유 계약     |
 | `tools/`      | 개발 도구                  |
 
 Nx가 작업 orchestration을 담당한다.
@@ -39,6 +39,8 @@ pnpm dev:mobile   # Expo (Metro)
 ```
 
 `pnpm dev`는 web과 api를 함께 띄운다. mobile은 대화형 프로세스라 따로 실행한다.
+
+api는 Postgres(`DATABASE_URL`)와 마이그레이션이 있어야 기동한다. 순서는 [local-development.md](docs/development/local-development.md#로컬-postgres).
 
 ## 검증
 

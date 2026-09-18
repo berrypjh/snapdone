@@ -14,7 +14,7 @@
 grep -rn "'use client'" apps/web/src
 ```
 
-- 현재는 **`components/theme-switch.tsx` 하나다** (change 핸들러 · `useSyncExternalStore` · `localStorage`). 새로 생겼다면 그 컴포넌트에 실제로 브라우저 상호작용(이벤트 핸들러 · `useState` · `useEffect` · 브라우저 API)이 있는지 확인한다
+- 현재는 셋이다 — `components/theme-switch.tsx`(change 핸들러 · `useSyncExternalStore` · `localStorage`), `components/auth/google-login-form.tsx`(`useActionState`), `components/in-app-message.tsx`(WebView `postMessage`). 새로 생겼다면 그 컴포넌트에 실제로 브라우저 상호작용(이벤트 핸들러 · `useState` · `useEffect` · 브라우저 API)이 있는지 확인한다
 - **`layout.tsx`와 `page.tsx`에는 붙이지 않는다.** 필요한 leaf 컴포넌트로 내린다
 - Client Component에서 `process.env.API_BASE_URL`을 읽고 있지 않은가 — 서버 전용 값이라 브라우저에서 `undefined`가 된다
 
@@ -79,8 +79,8 @@ grep -rn 'console\.' apps/web/src
 
 ## Safe Area
 
-- `SafeAreaView`의 `edges`를 바꾸지 않았는가. 현재는 `['top','left','right']`이고 **`bottom`은 일부러 빠져 있다** — bottom navigation이 하단 inset을 직접 가져가야 이중 패딩이 안 생긴다
-- 새 화면이 `AppShell` 밖에서 자기 `SafeAreaView`를 또 만들지 않았는가
+- `SafeAreaView`의 `edges`를 바꾸지 않았는가. `AppShell`은 `['left','right']`다 — top은 native stack header가 가지고, **`bottom`은 일부러 빠져 있다**(bottom navigation이 하단 inset을 직접 가져가야 이중 패딩이 안 생긴다). header가 없는 인증 화면의 `AuthShell`만 네 방향을 모두 가진다
+- 새 화면이 `AppShell` · `AuthShell` 밖에서 자기 `SafeAreaView`를 또 만들지 않았는가
 - `android.edgeToEdgeEnabled: true`이므로 하단 콘텐츠가 시스템 제스처 영역에 깔리지 않는지 본다
 
 ## Status Bar

@@ -17,7 +17,7 @@ argument-hint: '<dir|files> (생략 시 git 변경분의 web·mobile 화면)'
 
 ### 1. 재사용 — 새로 만들기 전에 있는 것을 썼는가
 
-- **web**: 로컬 primitive 없음. 공용 `@berrypjh/react-ui`(`Box` · `Stack` · `SkipLink` · `Switch` …)를 조합하고 제품 셸 `AppShell`만 앱이 소유한다
+- **web**: 로컬 primitive 없음. 공용 `@berrypjh/react-ui`(`Box` · `Stack` · `SkipLink` · `Switch` · `Button` …)를 조합하고 제품 셸 `AppShell`과 기능별 제품 조합만 앱이 소유한다
 - **mobile**: 로컬 primitive 없음. 공용 `@berrypjh/react-native-ui`(`Box` · `Stack` · `Button` · `ThemeProvider` …)를 조합하고 `AppShell`과 화면만 앱이 소유한다
 
 - 새 컴포넌트를 만들기 전에 **설치된 공용 패키지에 이미 있는지 CLI로 조회했는가** — web `pnpm --dir apps/web exec berry-react-ui find <query>`, mobile `pnpm --dir apps/mobile exec berry-react-native-ui find <query>` → `api <Symbol>` (순서는 `.claude/rules/web.md` · `mobile.md`의 "공용 UI API 조회")
