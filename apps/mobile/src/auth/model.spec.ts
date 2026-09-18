@@ -170,6 +170,8 @@ describe('destinationFor', () => {
     [initialAuthState, 'restoring'],
     [anonymous, 'sign-in'],
     [{ status: 'recoverable-error', generation: 0, error: 'network' }, 'sign-in'],
+    [{ status: 'restore-failed', generation: 0, error: 'network' }, 'restore-failed'],
+    [run([submitGoogle('r1')], anonymous), 'sign-in'],
   ])('maps %j to %s', (state, destination) => {
     expect(destinationFor(state)).toBe(destination);
   });
