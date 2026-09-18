@@ -29,11 +29,12 @@ const (
 // 앱이 만든 PKCE challenge · state 모양. proof 모듈은 32바이트 base64url(43자)을 만든다.
 var proofValue = regexp.MustCompile(`^[A-Za-z0-9_-]{43,128}$`)
 
-type StartRequest struct {
-	Provider  string `json:"provider"`
-	Challenge string `json:"challenge"`
-	State     string `json:"state"`
-	Platform  string `json:"platform"`
+// 로그인 시작 입력. 모양 검사는 Start가 한다.
+type StartInput struct {
+	Provider  string
+	Challenge string
+	State     string
+	Platform  string
 }
 
 // 로그인 결과를 돌려보낼 곳. 서버 설정에서만 오고 요청으로 바꿀 수 없다.
@@ -67,7 +68,7 @@ func (o *OAuth) Providers() []string {
 
 // transaction을 저장하고 Google 동의 화면 주소를 돌려준다.
 // Google state · verifier · nonce는 앱 값과 별개로 서버가 새로 만든다.
-func (o *OAuth) Start(ctx context.Context, req StartRequest) (string, error) {
+func (o *OAuth) Start(ctx context.Context, req StartInput) (string, error) {
 	purpose, ok := map[string]Purpose{"mobile": PurposeMobileLogin, "web": PurposeWebLogin}[req.Platform]
 	if !ok || req.Provider != "google" || o.google == nil ||
 		!proofValue.MatchString(req.Challenge) || !proofValue.MatchString(req.State) {

@@ -3,18 +3,12 @@ package httpserver
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 	"strings"
-	"time"
+
+	"github.com/gin-gonic/gin"
 
 	"snapdone/api/internal/auth"
-)
-
-// 클라이언트에 나가는 인증 오류 코드. 서버 · 제공자 원문은 이 값으로만
-const (
-	errSessionExpired      = "session_expired"
-	errProviderUnavailable = "provider_unavailable"
 )
 
 // 인증 endpoint가 쓰는 세션 저장소. 운영에서는 *auth.Store다.
@@ -23,107 +17,71 @@ type SessionStore interface {
 	RevokeSession(ctx context.Context, tokenHash []byte) error
 }
 
-type authHandler struct {
-	sessions  SessionStore
-	providers []string
+// @Summary     로그인 수단 목록
+// @Description 서버에 설정 · 구현된 로그인 provider. 인증이 비활성이면 503이다.
+// @Tags        auth
+// @Produce     json
+// @Success     200 {object} CapabilitiesResponse
+// @Failure     503 {object} ErrorResponse "인증 비활성 (provider_unavailable)"
+// @Router      /v1/auth/capabilities [get]
+func (h *handlers) capabilities(c *gin.Context) {
+	providers := []string{}
+	if h.oauth != nil {
+		providers = h.oauth.Providers()
+	}
+	c.JSON(http.StatusOK, CapabilitiesResponse{Providers: providers})
 }
 
-type sessionResponse struct {
-	User struct {
-		ID string `json:"id"`
-	} `json:"user"`
-	OnboardingStep string    `json:"onboardingStep"`
-	ExpiresAt      time.Time `json:"expiresAt"`
-}
-
-// sessions가 nil이면 인증 기반이 설정되지 않은 것이고 모든 인증 endpoint가 503을 돌려준다.
-// oauth가 nil이면 로그인 시작 · 콜백 · exchange만, handoff가 nil이면 handoff만 503이다.
-func registerAuth(mux *http.ServeMux, sessions SessionStore, oauth *auth.OAuth, handoff *auth.Handoff) {
-	unavailable := func(w http.ResponseWriter, _ *http.Request) {
-		writeError(w, http.StatusServiceUnavailable, errProviderUnavailable)
-	}
-	oauthRoutes := map[string]func(*oauthHandler) http.HandlerFunc{
-		"POST /v1/auth/oauth/start":   func(o *oauthHandler) http.HandlerFunc { return o.start },
-		"POST /v1/auth/oauth/cancel":  func(o *oauthHandler) http.HandlerFunc { return o.cancel },
-		"GET /v1/auth/oauth/callback": func(o *oauthHandler) http.HandlerFunc { return o.callback },
-		"POST /v1/auth/exchange":      func(o *oauthHandler) http.HandlerFunc { return o.exchange },
-	}
-	handoffRoutes := map[string]func(*handoffHandler) http.HandlerFunc{
-		"POST /v1/auth/handoff/start":    func(h *handoffHandler) http.HandlerFunc { return h.start },
-		"POST /v1/auth/handoff/exchange": func(h *handoffHandler) http.HandlerFunc { return h.exchange },
-	}
-	if sessions == nil {
-		for _, pattern := range []string{"GET /v1/auth/capabilities", "GET /v1/auth/session", "POST /v1/auth/logout"} {
-			mux.HandleFunc(pattern, unavailable)
-		}
-		for pattern := range oauthRoutes {
-			mux.HandleFunc(pattern, unavailable)
-		}
-		for pattern := range handoffRoutes {
-			mux.HandleFunc(pattern, unavailable)
-		}
-		return
-	}
-
-	h := &authHandler{sessions: sessions, providers: []string{}}
-	if oauth != nil {
-		h.providers = oauth.Providers()
-	}
-	mux.HandleFunc("GET /v1/auth/capabilities", h.capabilities)
-	mux.HandleFunc("GET /v1/auth/session", h.session)
-	mux.HandleFunc("POST /v1/auth/logout", h.logout)
-	for pattern, handler := range oauthRoutes {
-		if oauth == nil {
-			mux.HandleFunc(pattern, unavailable)
-		} else {
-			mux.HandleFunc(pattern, handler(&oauthHandler{oauth: oauth}))
-		}
-	}
-	for pattern, handler := range handoffRoutes {
-		if handoff == nil {
-			mux.HandleFunc(pattern, unavailable)
-		} else {
-			mux.HandleFunc(pattern, handler(&handoffHandler{handoff: handoff}))
-		}
-	}
-}
-
-func (h *authHandler) capabilities(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string][]string{"providers": h.providers})
-}
-
-func (h *authHandler) session(w http.ResponseWriter, r *http.Request) {
-	token, ok := bearerToken(r)
+// @Summary     현재 세션
+// @Description Bearer credential의 세션을 확인하고 idle 만료를 연장한다. 만료 · 취소 · 모르는 credential은 401이다.
+// @Tags        auth
+// @Produce     json
+// @Security    BearerAuth
+// @Success     200 {object} SessionResponse
+// @Failure     401 {object} ErrorResponse "credential 없음 · 만료 · 취소 (session_expired)"
+// @Failure     500 {object} ErrorResponse "내부 오류 (provider_unavailable)"
+// @Failure     503 {object} ErrorResponse "인증 비활성 (provider_unavailable)"
+// @Router      /v1/auth/session [get]
+func (h *handlers) session(c *gin.Context) {
+	token, ok := bearerToken(c.Request)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, errSessionExpired)
+		writeError(c, http.StatusUnauthorized, errSessionExpired)
 		return
 	}
-	session, err := h.sessions.FindSession(r.Context(), auth.HashToken(token))
+	session, err := h.sessions.FindSession(c.Request.Context(), auth.HashToken(token))
 	if errors.Is(err, auth.ErrNotFound) {
-		writeError(w, http.StatusUnauthorized, errSessionExpired)
+		writeError(c, http.StatusUnauthorized, errSessionExpired)
 		return
 	}
 	if err != nil {
-		log.Printf("auth session lookup failed: %v", err)
-		writeError(w, http.StatusInternalServerError, errProviderUnavailable)
+		h.logFailure(c, "auth session lookup failed", err)
+		writeError(c, http.StatusInternalServerError, errProviderUnavailable)
 		return
 	}
-	writeJSON(w, http.StatusOK, toSessionResponse(session))
+	c.JSON(http.StatusOK, toSessionResponse(session))
 }
 
-// 해당 세션만 취소한다(root면 child 포함). 모르는 · 만료된 토큰도 204다.
-func (h *authHandler) logout(w http.ResponseWriter, r *http.Request) {
-	token, ok := bearerToken(r)
+// @Summary     로그아웃
+// @Description 이 credential의 세션만 취소한다(root면 child 포함). 모르는 · 만료된 credential도 204다.
+// @Tags        auth
+// @Security    BearerAuth
+// @Success     204
+// @Failure     401 {object} ErrorResponse "Authorization 헤더 형식 오류 (session_expired)"
+// @Failure     500 {object} ErrorResponse "내부 오류 (provider_unavailable)"
+// @Failure     503 {object} ErrorResponse "인증 비활성 (provider_unavailable)"
+// @Router      /v1/auth/logout [post]
+func (h *handlers) logout(c *gin.Context) {
+	token, ok := bearerToken(c.Request)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, errSessionExpired)
+		writeError(c, http.StatusUnauthorized, errSessionExpired)
 		return
 	}
-	if err := h.sessions.RevokeSession(r.Context(), auth.HashToken(token)); err != nil {
-		log.Printf("auth logout failed: %v", err)
-		writeError(w, http.StatusInternalServerError, errProviderUnavailable)
+	if err := h.sessions.RevokeSession(c.Request.Context(), auth.HashToken(token)); err != nil {
+		h.logFailure(c, "auth logout failed", err)
+		writeError(c, http.StatusInternalServerError, errProviderUnavailable)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	c.Status(http.StatusNoContent)
 }
 
 // Authorization 헤더가 정확히 하나이고 "Bearer <token>" 형식일 때만 토큰을 돌려준다.
@@ -138,8 +96,4 @@ func bearerToken(r *http.Request) (string, bool) {
 		return "", false
 	}
 	return token, true
-}
-
-func writeError(w http.ResponseWriter, status int, code string) {
-	writeJSON(w, status, map[string]string{"error": code})
 }

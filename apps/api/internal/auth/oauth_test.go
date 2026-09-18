@@ -15,9 +15,9 @@ func TestOAuthRejectsMalformedInputBeforeStorage(t *testing.T) {
 	oauth := NewOAuth(nil, nil, google.NewClient("id", "secret", "https://api.example.com/cb"), ReturnURIs{}, Consent{})
 	ctx := context.Background()
 	proof := strings.Repeat("a", 43)
-	valid := StartRequest{Provider: "google", Challenge: proof, State: proof, Platform: "mobile"}
+	valid := StartInput{Provider: "google", Challenge: proof, State: proof, Platform: "mobile"}
 
-	for name, req := range map[string]StartRequest{
+	for name, req := range map[string]StartInput{
 		"unknown provider": {Provider: "kakao", Challenge: proof, State: proof, Platform: "mobile"},
 		"email provider":   {Provider: "email", Challenge: proof, State: proof, Platform: "mobile"},
 		"unknown platform": {Provider: "google", Challenge: proof, State: proof, Platform: "ios"},

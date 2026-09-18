@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -70,6 +71,7 @@ type oauthFixture struct {
 	pool    *pgxpool.Pool
 	handler http.Handler
 	google  *fakeGoogle
+	logs    *bytes.Buffer
 }
 
 func newOAuthFixture(t *testing.T) *oauthFixture {
@@ -88,7 +90,14 @@ func newOAuthFixture(t *testing.T) *oauthFixture {
 	oauth := auth.NewOAuth(store, cipher, client,
 		auth.ReturnURIs{Mobile: mobileReturnURI, Web: webReturnURI},
 		auth.Consent{TermsVersion: "t1", PrivacyVersion: "p1"})
-	return &oauthFixture{pool: pool, handler: NewHandler(store, oauth, auth.NewHandoff(store)), google: fake}
+	logs := &bytes.Buffer{}
+	handler := NewRouter(Deps{
+		Logger:   slog.New(slog.NewTextHandler(logs, nil)),
+		Sessions: store,
+		OAuth:    oauth,
+		Handoff:  auth.NewHandoff(store),
+	})
+	return &oauthFixture{pool: pool, handler: handler, google: fake, logs: logs}
 }
 
 func (f *oauthFixture) do(method, target string, body any) *httptest.ResponseRecorder {
@@ -207,7 +216,7 @@ func TestOAuthGoogleMobileLogin(t *testing.T) {
 	}
 	assertNoStore(t, e)
 	var login struct {
-		Session    sessionResponse `json:"session"`
+		Session    SessionResponse `json:"session"`
 		Credential string          `json:"credential"`
 	}
 	if err := json.NewDecoder(e.Body).Decode(&login); err != nil {
@@ -241,7 +250,7 @@ func TestOAuthGoogleReturningUserOnWeb(t *testing.T) {
 		_, base, query := f.callback(t, url.Values{"state": {s.googleState}, "code": {"c"}})
 		e := f.exchange(query.Get("code"), appVerifier, s.appState)
 		var body struct {
-			Session sessionResponse `json:"session"`
+			Session SessionResponse `json:"session"`
 		}
 		_ = json.NewDecoder(e.Body).Decode(&body)
 		return base, body.Session.User.ID
@@ -472,5 +481,26 @@ func TestCapabilitiesListGoogleWhenConfigured(t *testing.T) {
 	r := f.do(http.MethodGet, "/v1/auth/capabilities", nil)
 	if got := strings.TrimSpace(r.Body.String()); got != `{"providers":["google"]}` {
 		t.Errorf("capabilities = %s", got)
+	}
+}
+
+// 유효한 시작 요청도 본문이 4 KiB를 넘으면 binding 전에 끊겨 400이다.
+func TestOAuthStartRejectsOversizedBody(t *testing.T) {
+	f := newOAuthFixture(t)
+	body := func(size int) map[string]string {
+		req := map[string]string{
+			"provider": "google", "challenge": auth.ChallengeS256(appVerifier), "state": appState(t), "platform": "mobile",
+		}
+		encoded, _ := json.Marshal(req)
+		req["pad"] = strings.Repeat("a", size-len(encoded)-len(`,"pad":""`))
+		return req
+	}
+
+	if r := f.do(http.MethodPost, "/v1/auth/oauth/start", body(maxAuthBody)); r.Code != http.StatusOK {
+		t.Errorf("body at the limit: status %d, want 200", r.Code)
+	}
+	r := f.do(http.MethodPost, "/v1/auth/oauth/start", body(maxAuthBody+1))
+	if r.Code != http.StatusBadRequest || errorCode(t, r) != "provider_unavailable" {
+		t.Errorf("body over the limit: status %d, want 400", r.Code)
 	}
 }

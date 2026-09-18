@@ -50,6 +50,23 @@
         "command": "go vet ./..."
       }
     },
+    "swagger": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "apps/api",
+        "command": "go tool swag init -q -g cmd/server/main.go --parseInternal -o docs/swagger --packageName swagger"
+      }
+    },
+    "swagger-check": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["default"],
+      "options": {
+        "cwd": "apps/api",
+        "command": "tmp=$(mktemp -d \"${TMPDIR:-/tmp}/swagger.XXXXXX\") && trap 'rm -rf \"$tmp\"' EXIT && go tool swag init -q -g cmd/server/main.go --parseInternal -o \"$tmp\" --packageName swagger && { diff -r docs/swagger \"$tmp\" || { echo 'docs/swagger is stale; run nx run api:swagger'; exit 1; }; }"
+      }
+    },
     "fmt": {
       "executor": "nx:run-commands",
       "cache": true,

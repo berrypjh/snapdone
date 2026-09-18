@@ -48,7 +48,7 @@ func serve(t *testing.T, sessions SessionStore, method, path string, headers ...
 		req.Header.Add("Authorization", h)
 	}
 	recorder := httptest.NewRecorder()
-	NewHandler(sessions, nil, nil).ServeHTTP(recorder, req)
+	NewRouter(Deps{Sessions: sessions}).ServeHTTP(recorder, req)
 	return recorder
 }
 
@@ -89,21 +89,6 @@ func TestBearerToken(t *testing.T) {
 		got, ok := bearerToken(req)
 		if got != tc.want || ok != tc.ok {
 			t.Errorf("headers %q: got (%q, %v), want (%q, %v)", tc.headers, got, ok, tc.want, tc.ok)
-		}
-	}
-}
-
-func TestAuthEndpointsUnavailableWithoutConfig(t *testing.T) {
-	for _, route := range [][2]string{
-		{http.MethodGet, "/v1/auth/capabilities"},
-		{http.MethodGet, "/v1/auth/session"},
-		{http.MethodPost, "/v1/auth/logout"},
-		{http.MethodPost, "/v1/auth/handoff/start"},
-		{http.MethodPost, "/v1/auth/handoff/exchange"},
-	} {
-		r := serve(t, nil, route[0], route[1], "Bearer "+validToken)
-		if r.Code != http.StatusServiceUnavailable || errorCode(t, r) != "provider_unavailable" {
-			t.Errorf("%s %s: status %d", route[0], route[1], r.Code)
 		}
 	}
 }

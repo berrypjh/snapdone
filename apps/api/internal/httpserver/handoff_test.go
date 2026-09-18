@@ -24,7 +24,7 @@ const (
 
 // Bearer 확인과 입력 검사는 DB 없이 끝난다.
 func TestHandoffStartRejectsWithoutDatabase(t *testing.T) {
-	handler := NewHandler(&fakeSessions{}, nil, auth.NewHandoff(nil))
+	handler := NewRouter(Deps{Sessions: &fakeSessions{}, Handoff: auth.NewHandoff(nil)})
 	post := func(body string, authorization ...string) *httptest.ResponseRecorder {
 		req := httptest.NewRequest(http.MethodPost, "/v1/auth/handoff/start", bytes.NewBufferString(body))
 		for _, h := range authorization {
@@ -61,7 +61,7 @@ func newHandoffFixture(t *testing.T) *handoffFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &handoffFixture{pool: pool, store: store, handler: NewHandler(store, nil, auth.NewHandoff(store)), user: user}
+	return &handoffFixture{pool: pool, store: store, handler: NewRouter(Deps{Sessions: store, Handoff: auth.NewHandoff(store)}), user: user}
 }
 
 // session은 kind 세션을 만들고 credential 원문을 돌려준다.
@@ -120,7 +120,7 @@ func (f *handoffFixture) sessionStatus(credential string) int {
 
 func credentialOf(t *testing.T, r *httptest.ResponseRecorder) string {
 	t.Helper()
-	var body loginResponse
+	var body LoginResponse
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Credential == "" {
 		t.Fatalf("exchange body: %v", err)
 	}

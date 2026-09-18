@@ -2,67 +2,78 @@ package httpserver
 
 import (
 	"errors"
-	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 
 	"snapdone/api/internal/auth"
 )
 
-type handoffHandler struct {
-	handoff *auth.Handoff
-}
-
-// 앱이 자기 Bearer로 WebView용 일회용 코드를 받는다. root mobile 세션만 받는다.
-func (h *handoffHandler) start(w http.ResponseWriter, r *http.Request) {
-	noStore(w)
-	token, ok := bearerToken(r)
+// @Summary     WebView 핸드오프 코드 발급
+// @Description 앱이 자기 Bearer로 WebView용 30초 일회용 코드를 받는다. root mobile 세션만 받는다.
+// @Description challenge는 web 서버가 가진 verifier의 S256이고, next는 허용 목록(/ · /history) 안이어야 한다.
+// @Tags        handoff
+// @Accept      json
+// @Produce     json
+// @Security    BearerAuth
+// @Param       request body HandoffStartRequest true "web verifier의 challenge · 이동할 web 경로"
+// @Success     200 {object} HandoffStartResponse
+// @Failure     400 {object} ErrorResponse "잘못된 요청 · challenge · next (invalid_callback)"
+// @Failure     401 {object} ErrorResponse "credential 없음 · 무효 · root mobile 세션 아님 (session_expired)"
+// @Failure     500 {object} ErrorResponse "내부 오류 (provider_unavailable)"
+// @Failure     503 {object} ErrorResponse "인증 비활성 (provider_unavailable)"
+// @Router      /v1/auth/handoff/start [post]
+func (h *handlers) handoffStart(c *gin.Context) {
+	token, ok := bearerToken(c.Request)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, errSessionExpired)
+		writeError(c, http.StatusUnauthorized, errSessionExpired)
 		return
 	}
-	var req struct {
-		Challenge string `json:"challenge"`
-		Next      string `json:"next"`
-	}
-	if !decodeBody(w, r, &req) {
-		writeError(w, http.StatusBadRequest, errInvalidCallback)
+	var req HandoffStartRequest
+	if c.ShouldBindJSON(&req) != nil {
+		writeError(c, http.StatusBadRequest, errInvalidCallback)
 		return
 	}
-	code, err := h.handoff.Start(r.Context(), token, req.Challenge, req.Next)
+	code, err := h.handoff.Start(c.Request.Context(), token, req.Challenge, req.Next)
 	switch {
 	case errors.Is(err, auth.ErrInvalidCallback):
-		writeError(w, http.StatusBadRequest, errInvalidCallback)
+		writeError(c, http.StatusBadRequest, errInvalidCallback)
 	case errors.Is(err, auth.ErrNotFound):
-		writeError(w, http.StatusUnauthorized, errSessionExpired)
+		writeError(c, http.StatusUnauthorized, errSessionExpired)
 	case err != nil:
-		log.Printf("auth handoff start failed: %v", err)
-		writeError(w, http.StatusInternalServerError, errProviderUnavailable)
+		h.logFailure(c, "auth handoff start failed", err)
+		writeError(c, http.StatusInternalServerError, errProviderUnavailable)
 	default:
-		writeJSON(w, http.StatusOK, map[string]string{"code": code})
+		c.JSON(http.StatusOK, HandoffStartResponse{Code: code})
 	}
 }
 
-// web 서버가 verifier cookie와 코드로 child web 세션을 받는다.
-func (h *handoffHandler) exchange(w http.ResponseWriter, r *http.Request) {
-	noStore(w)
-	var req struct {
-		Code     string `json:"code"`
-		Verifier string `json:"verifier"`
-		Next     string `json:"next"`
-	}
-	if !decodeBody(w, r, &req) {
-		writeError(w, http.StatusBadRequest, errInvalidCallback)
+// @Summary     WebView 핸드오프 교환
+// @Description web 서버가 verifier cookie와 코드로 앱 세션 아래 child web 세션을 받는다. 코드는 한 번만 쓸 수 있다.
+// @Tags        handoff
+// @Accept      json
+// @Produce     json
+// @Param       request body HandoffExchangeRequest true "handoff 코드 · web verifier · next"
+// @Success     200 {object} LoginResponse
+// @Failure     400 {object} ErrorResponse "잘못된 요청 · 틀린 proof · 만료 · 재사용 · parent 취소 (invalid_callback)"
+// @Failure     500 {object} ErrorResponse "내부 오류 (provider_unavailable)"
+// @Failure     503 {object} ErrorResponse "인증 비활성 (provider_unavailable)"
+// @Router      /v1/auth/handoff/exchange [post]
+func (h *handlers) handoffExchange(c *gin.Context) {
+	var req HandoffExchangeRequest
+	if c.ShouldBindJSON(&req) != nil {
+		writeError(c, http.StatusBadRequest, errInvalidCallback)
 		return
 	}
-	session, credential, err := h.handoff.Exchange(r.Context(), req.Code, req.Verifier, req.Next)
+	session, credential, err := h.handoff.Exchange(c.Request.Context(), req.Code, req.Verifier, req.Next)
 	if errors.Is(err, auth.ErrInvalidCallback) {
-		writeError(w, http.StatusBadRequest, errInvalidCallback)
+		writeError(c, http.StatusBadRequest, errInvalidCallback)
 		return
 	}
 	if err != nil {
-		log.Printf("auth handoff exchange failed: %v", err)
-		writeError(w, http.StatusInternalServerError, errProviderUnavailable)
+		h.logFailure(c, "auth handoff exchange failed", err)
+		writeError(c, http.StatusInternalServerError, errProviderUnavailable)
 		return
 	}
-	writeJSON(w, http.StatusOK, loginResponse{Session: toSessionResponse(session), Credential: credential})
+	c.JSON(http.StatusOK, toLoginResponse(session, credential))
 }

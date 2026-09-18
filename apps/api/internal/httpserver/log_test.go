@@ -1,11 +1,8 @@
 package httpserver
 
 import (
-	"bytes"
-	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -13,19 +10,9 @@ import (
 	"snapdone/api/internal/auth"
 )
 
-// captureLog는 테스트 동안 표준 logger 출력을 모은다.
-func captureLog(t *testing.T) *bytes.Buffer {
-	t.Helper()
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
-	t.Cleanup(func() { log.SetOutput(os.Stderr) })
-	return &buf
-}
-
 // 로그를 남기는 인증 실패 경로(Google 오류 · DB 장애)를 지나도 query · code · state · verifier · credential 원문이 남지 않는다.
 func TestAuthLogsCarryNoSecrets(t *testing.T) {
 	f := newOAuthFixture(t)
-	logs := captureLog(t)
 	var secrets []string
 
 	for _, status := range []int{http.StatusServiceUnavailable, http.StatusBadRequest} {
@@ -61,7 +48,7 @@ func TestAuthLogsCarryNoSecrets(t *testing.T) {
 	handoff.post("/v1/auth/logout", credential, nil)
 	secrets = append(secrets, lostState, lostCode, webVerifier, auth.ChallengeS256(webVerifier))
 
-	output := logs.String()
+	output := f.logs.String()
 	for _, want := range []string{"oauth start failed", "callback failed", "auth exchange failed", "handoff start failed", "handoff exchange failed", "session lookup failed", "logout failed"} {
 		if !strings.Contains(output, want) {
 			t.Errorf("log has no %q line; the failure path was not exercised:\n%s", want, output)
@@ -74,5 +61,8 @@ func TestAuthLogsCarryNoSecrets(t *testing.T) {
 	}
 	if strings.Contains(output, "?") || strings.Contains(output, "Bearer") {
 		t.Errorf("log contains a query string or header:\n%s", output)
+	}
+	if !strings.Contains(output, "route=/v1/auth/oauth/callback") {
+		t.Errorf("request log has no callback route line:\n%s", output)
 	}
 }
