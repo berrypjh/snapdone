@@ -2,8 +2,9 @@ import type { ReactNode } from 'react';
 
 import { Icon, type IconName } from './icon';
 
-export const MAIN_CONTENT_ID = 'main-content';
-export const INSPECTOR_ID = 'inspector';
+/** App ids carry a prefix: document headings are free text and could take a bare name. */
+export const MAIN_CONTENT_ID = 'devhub-main';
+export const INSPECTOR_ID = 'devhub-inspector';
 
 /** Center pane frame: where the selected thing is named and summarised. */
 export function Workspace({

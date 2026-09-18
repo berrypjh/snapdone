@@ -60,7 +60,7 @@ describe('ArchitectureMap summary and selection', () => {
     expect(html).toContain(`선택: ${node.label}`);
     expect(html).toContain('· 선택됨');
     expect(html).toContain('aria-current="page"');
-    expect(html).toContain('href="#inspector"');
+    expect(html).toContain('href="#devhub-inspector"');
   });
 });
 

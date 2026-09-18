@@ -35,7 +35,11 @@ export default async function EntityLayout({
 
   return (
     <DevHubShell selection={{ section: section.id, id: entity.id }} inspector={children}>
-      <Workspace eyebrow={section.title} icon={SECTION_ICON[section.id]} title={entity.label}>
+      <Workspace
+        eyebrow={section.title}
+        icon={SECTION_ICON[section.id]}
+        title={entity.section === 'documents' ? entity.record.title : entity.label}
+      >
         <EntitySummary entity={entity} />
       </Workspace>
     </DevHubShell>

@@ -16,6 +16,7 @@ import {
   type ProjectGroup,
 } from '@/lib/reference-groups';
 
+import { DocToc } from './doc/doc-toc';
 import { ByProject, FileRow, Symbols } from './file-row';
 import { Icon, type IconName } from './icon';
 import { StatusChip } from './status-chip';
@@ -23,6 +24,7 @@ import { INSPECTOR_ID } from './workspace';
 
 type SectionMeta = { id: string; title: string; icon: IconName };
 
+const OUTLINE: SectionMeta = { id: 'inspector-outline', title: '이 페이지에서', icon: 'document' };
 const OVERVIEW: SectionMeta = { id: 'inspector-overview', title: '개요', icon: 'overview' };
 const SOURCE: SectionMeta = { id: 'inspector-source', title: '소스', icon: 'source' };
 const DOCS: SectionMeta = { id: 'inspector-docs', title: '문서', icon: 'document' };
@@ -208,8 +210,17 @@ function RelatedGroups({ groups }: { groups: RelatedGroup[] }) {
   );
 }
 
-function Contents({ apis, related }: { apis: boolean; related: boolean }) {
+function Contents({
+  apis,
+  related,
+  outline,
+}: {
+  apis: boolean;
+  related: boolean;
+  outline: boolean;
+}) {
   const sections = [
+    ...(outline ? [OUTLINE] : []),
     OVERVIEW,
     SOURCE,
     DOCS,
@@ -255,9 +266,18 @@ export function Inspector({ inspection }: { inspection?: Inspection }) {
             <p className="typo-caption-small text-text-light">{inspection.kind}</p>
             <h2 className="typo-body-medium-strong">{inspection.title}</h2>
             {inspection.status && <StatusChip status={inspection.status} />}
-            <Contents apis={!!inspection.apis?.length} related={!!inspection.related} />
+            <Contents
+              apis={!!inspection.apis?.length}
+              related={!!inspection.related}
+              outline={!!inspection.outline?.length}
+            />
           </header>
 
+          {inspection.outline && inspection.outline.length > 0 && (
+            <InspectorSection meta={OUTLINE} count={inspection.outline.length}>
+              <DocToc items={inspection.outline} />
+            </InspectorSection>
+          )}
           <InspectorSection meta={OVERVIEW}>
             <Facts facts={inspection.facts} />
           </InspectorSection>

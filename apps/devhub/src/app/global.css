@@ -85,3 +85,55 @@ body {
   outline: var(--ds-semantic-border-default) solid var(--ds-stroke-primary);
   outline-offset: 2px;
 }
+
+/* Reading width text for repository documents (components/doc). Tokens only; utilities still win. */
+@layer components {
+  .devhub-prose {
+    color: var(--ds-text-default);
+    font-size: var(--ds-paragraph-default-font-size);
+    line-height: var(--ds-paragraph-default-line-height);
+    letter-spacing: var(--ds-paragraph-default-letter-spacing);
+    overflow-wrap: break-word;
+  }
+
+  .devhub-prose > * + * {
+    margin-top: var(--ds-spacing-lg);
+  }
+
+  .devhub-prose strong {
+    font-weight: var(--ds-font-weight-semi-bold);
+  }
+
+  .devhub-prose a:not([data-plain]) {
+    color: var(--ds-text-link);
+    text-decoration: underline;
+    text-underline-offset: var(--ds-spacing-2xs);
+  }
+
+  .devhub-prose :not(pre) > code {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    padding: 0 var(--ds-spacing-2xs);
+    border-radius: var(--ds-radius-xs);
+    background-color: var(--ds-field-surface-subtle);
+  }
+
+  .devhub-prose ul {
+    list-style: disc;
+    padding-left: 1.25rem;
+  }
+
+  .devhub-prose ol {
+    list-style: decimal;
+    padding-left: 1.5rem;
+  }
+
+  .devhub-prose li + li,
+  .devhub-prose li > * + * {
+    margin-top: var(--ds-spacing-xs);
+  }
+
+  .devhub-prose [id] {
+    scroll-margin-top: var(--ds-spacing-xl);
+  }
+}

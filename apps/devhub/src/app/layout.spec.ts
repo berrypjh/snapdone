@@ -14,7 +14,7 @@ describe('skip links', () => {
     const html = renderToStaticMarkup(createElement(RootLayout, null, createElement('p')));
     const body = html.slice(html.indexOf('<body>') + '<body>'.length);
     expect(body).toMatch(
-      /^<a href="#main-content" class="ui-skip-link">본문으로 건너뛰기<\/a><a href="#inspector" class="ui-skip-link">상세 정보로 건너뛰기<\/a>/,
+      /^<a href="#devhub-main" class="ui-skip-link">본문으로 건너뛰기<\/a><a href="#devhub-inspector" class="ui-skip-link">상세 정보로 건너뛰기<\/a>/,
     );
   });
 

@@ -25,6 +25,7 @@ import {
   stepNodeIds,
   stepsTouching,
 } from './architecture';
+import { documentOutline, type OutlineItem } from './documents';
 import { commandHref, type Entity, stepHref } from './entities';
 import { CONSTRAINT, GAP, INTERACTION, RELATION, ROLE, TRACK } from './labels';
 import type { SourceUsage } from './source-usage';
@@ -40,6 +41,8 @@ export type RelatedGroup = { title: string; links: RelatedLink[]; empty: string 
 
 /** What the inspector shows for one entity. Empty lists come with the reason they are empty. */
 export type Inspection = {
+  /** A document's sections, shown as "이 페이지에서" above the evidence. */
+  outline?: OutlineItem[];
   kind: string;
   title: string;
   status?: ImplementationStatus;
@@ -210,6 +213,7 @@ const inspectDocument = (entity: Extract<Entity, { section: 'documents' }>): Ins
   return {
     kind: '문서',
     title: record.title,
+    outline: documentOutline(record),
     facts: [
       { term: '주제', details: [record.topic] },
       { term: '인용한 시나리오', details: citing.map((scenario) => scenario.title) },

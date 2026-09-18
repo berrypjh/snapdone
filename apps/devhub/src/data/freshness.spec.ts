@@ -5,7 +5,9 @@ import { describe, expect, it } from 'vitest';
 
 import { encodePath, isCanonicalPath } from '../domain/links';
 import type { ApplicationRef, LibraryRef, RepositorySnapshot } from '../domain/model';
+import { resolveDocLink } from '../lib/doc-links';
 import { flowModel } from '../lib/flow';
+import { type Block, type Inline, parseMarkdown } from '../lib/markdown';
 import { linksFor } from '../lib/source-links';
 import { citedRefs } from '../test-support/cited-refs';
 import { nxCallsIn, nxProjectTargets } from '../test-support/nx-workspace';
@@ -147,6 +149,50 @@ describe('product statement', () => {
     const end = lines.findIndex((line, index) => index > start && /^#{1,6} /.test(line));
     expect(start).toBeGreaterThanOrEqual(0);
     expect(lines.slice(start + 1, end === -1 ? undefined : end)).toContain(text);
+  });
+});
+
+describe('document links', () => {
+  const linksIn = (blocks: Block[]): string[] =>
+    blocks.flatMap((block) => {
+      const inline = (nodes: Inline[]): string[] =>
+        nodes.flatMap((node) =>
+          node.kind === 'link'
+            ? [node.href, ...inline(node.children)]
+            : node.kind === 'strong'
+              ? inline(node.children)
+              : [],
+        );
+      switch (block.kind) {
+        case 'heading':
+        case 'paragraph':
+          return inline(block.inline);
+        case 'list':
+          return block.items.flatMap(linksIn);
+        case 'table':
+          return [...block.head, ...block.rows.flat()].flatMap(inline);
+        case 'quote':
+          return linksIn(block.blocks);
+        default:
+          return [];
+      }
+    });
+  const headingIds = (path: string) =>
+    new Set(parseMarkdown(read(path)).flatMap((b) => (b.kind === 'heading' ? [b.id] : [])));
+
+  it('point at documents, files, and headings that exist', () => {
+    const broken = catalog.documents.flatMap((doc) =>
+      linksIn(parseMarkdown(read(doc.path))).flatMap((href) => {
+        const link = resolveDocLink(doc.path, href);
+        const ok =
+          link.kind === 'external' ||
+          (link.kind === 'anchor' && headingIds(doc.path).has(link.anchor)) ||
+          (link.kind === 'document' && (!link.anchor || headingIds(link.path).has(link.anchor))) ||
+          (link.kind === 'file' && exists(link.path));
+        return ok ? [] : [`${doc.path} → ${href}`];
+      }),
+    );
+    expect(broken).toEqual([]);
   });
 });
 
