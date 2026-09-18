@@ -1008,7 +1008,7 @@ product-target step에 implemented, 틀린 테스트 제목, 없는 `next`, impl
 ```
 SkipLink "본문으로 건너뛰기" → #main-content (49절부터 #devhub-main)
 header (banner)            제품명 · owner/name · 기본 브랜치 · 검색(비활성 SearchField) · nav "보기"
-div (lg: 18rem | 1fr | 24rem, 칸마다 따로 스크롤 / lg 미만: 세로로 쌓임)
+div (lg: 15rem | 1fr | 20rem, xl: 18rem | 1fr | 24rem, 칸마다 따로 스크롤 / lg 미만: 세로로 쌓임)
 ├─ aside "탐색기"          nav "저장소 항목": 개요 + SECTIONS(시나리오 · 애플리케이션 · 라이브러리 · 문서 · 엔지니어링)
 ├─ main#main-content (49절부터 #devhub-main)  header(eyebrow · h1) · 그림 자리(figure) · 목록(정본)
 └─ aside "상세 정보"       header(종류 · h2 · 상태) · nav "상세 목차" · 개요 · 소스 · 문서 · 테스트
@@ -1516,9 +1516,79 @@ WebView 로그인 핸드오프 기준: 링크 46 → 37, 전체 경로 반복 20
 - 마크다운: `lib/markdown.ts`. 새 dependency 없이 문서가 실제로 쓰는 문법만 — 제목 · 문단 · 목록(중첩, 목록 안 코드) · 번호 목록 · 표(GFM, `\|` 이스케이프) · 코드 블록 · 인용 · 구분선, 인라인 코드 · 굵게 · 링크. HTML · 이미지는 없다(문서에 없다). 절 id는 GitHub 방식(`slug`)이라 문서끼리 이미 쓰는 `#…` 링크가 그대로 통한다
 - 링크: `lib/doc-links.ts`. 카탈로그 문서는 DevHub 문서 페이지(`/documents/<id>#절`), 다른 저장소 파일은 스냅샷 고정 링크(새 창), 외부 주소는 새 창 + 아이콘 + "(새 창)", 같은 문서 절은 `#`
 - 화면(`components/doc`): 읽기 폭(46rem) 본문(`.devhub-prose`, 토큰만), 절 제목(h2 위 구분선, 마우스를 올리거나 포커스하면 `#` 링크), 코드 블록(언어 라벨 + 복사 아이콘), 표(공용 `Table` · `TableScroll`, 캡션은 가장 가까운 절 제목), 인용(강조 상자). 페이지 제목은 문서의 `# 제목`, 그 아래 경로와 GitHub 링크, 끝에 "이 문서를 인용한 시나리오"
-- "이 페이지에서": 상세 정보 맨 위(DevHub는 오른쪽 칸이 상세 정보라 목차를 거기 둔다). 스크롤에 따라 읽는 절을 `aria-current="location"`으로 표시
+- "이 페이지에서": (51절에서 본문 안으로 옮김) 상세 정보 맨 위(DevHub는 오른쪽 칸이 상세 정보라 목차를 거기 둔다). 스크롤에 따라 읽는 절을 `aria-current="location"`으로 표시
 - id 충돌을 고쳤다: `devhub.md`의 "inspector" 절 id가 상세 정보 aside의 id와 같아 "상세 정보로 건너뛰기"가 본문 절로 갔다. 앱 id를 `devhub-main` · `devhub-inspector`로 바꿨다(문서 제목은 자유 글이라 앱 쪽에 접두어)
 - 확인: `markdown.spec.ts`(문법별, 카탈로그 문서 전부 해석 시 기호가 글자로 새지 않음 · 절 id 유일), `doc-links.spec.ts`, `doc-content.spec.ts`(문서 전부 렌더 — 기호 누출 없음, 절마다 id와 `#` 링크, 목차 = 절 제목, 표마다 캡션, 코드 블록마다 복사, 문서 간 링크가 DevHub 안에 머묾), `document-page.spec.ts`(문서 페이지 전체에서 id가 한 번씩 — 옛 id로 되돌리면 `devhub` 페이지가 실패하는 것을 확인), `devhub:check`의 "document links"(문서 간 링크 · 절 앵커 · 파일이 실제로 있음). 화면은 이 세션에서 보지 못했다
+
+## 50. 구현 상태 — 반응형 칸 폭과 탐색기 서랍
+
+- 칸 폭: `lg`에서 `15rem | 1fr | 20rem`, `xl`부터 `18rem | 1fr | 24rem`. 전에는 `lg`부터 18rem · 24rem 고정이라 1024px에서 본문이 352px로 폰(390px)보다 좁았다. 이제 1024px에서 464px, 1280px에서 608px
+- 본문 여백: `sm` 미만 16px(`p-4`), 이상 24px(`p-6`). 320px에서 여백이 겹쳐 글 폭이 216px까지 줄던 것을 줄였다
+- 탐색기(`lg` 미만): 본문 위에 펼쳐지던 접기 목록(`NarrowDisclosure`)을 왼쪽에서 들어오는 서랍으로 바꿨다(`explorer-drawer.tsx`). 여는 버튼은 상단 바 맨 앞 메뉴 아이콘(공용 `IconButton`, 이름 "탐색기", `aria-expanded` · `aria-controls`), 서랍 안에 "탐색기 닫기" 아이콘. 뒤는 `neutral-ne900` 50%로 어둡게, 서랍은 `shadow-4`
+- 공용 UI에 drawer · dialog가 없어(`berry-react-ui find drawer|dialog|modal|sheet|overlay` 결과 없음) 직접 만들었다. 포커스를 가두는 모달이 아니라 펼침(disclosure)이다 — Escape · 닫기 버튼 · 어두운 배경 · 포커스가 서랍 밖으로 나가면 닫히고, 경로가 바뀌면(항목 선택) 닫힌다. 열 때 현재 항목(없으면 첫 링크)으로, Escape · 닫기로 닫을 때 버튼으로 포커스를 돌린다. 닫힌 서랍은 `invisible`이라 Tab에 걸리지 않는다. 움직임 줄이기 설정이면 전환 없음
+- `lg` 이상은 전과 같은 왼쪽 칸이고 버튼은 없다
+- 상단 바(`lg` 미만): 전에는 제품명 · 저장소 · 스냅샷 · 검색 · 보기 5개 · 테마가 줄바꿈되며 여러 줄을 차지했고 스크롤하면 사라졌다. 이제 한 줄을 화면 위에 고정한다(`sticky`) — 메뉴(탐색기 서랍) · 제품명(좁으면 말줄임) · 검색 아이콘 · 테마. 보기 nav는 숨긴다: 탐색기 서랍에 개요 · 아키텍처 · 시나리오 · 문서 · 엔지니어링이 모두 있다. 저장소 · 스냅샷 줄도 숨긴다: 개요 페이지에 같은 줄이 있다. 검색은 아이콘이나 ⌘K로 둘째 줄(전체 폭)에 열리고, 결과를 고르면 닫힌다. 고정 바가 앵커를 가리지 않게 `scroll-padding-top`(3.75rem)을 준다. `lg` 이상은 전과 같다
+  - 확인: E2E `shell.spec.ts` 세 건(고정된 한 줄 · 보기 nav 숨김, 검색 열기 · ⌘K · 결과 선택 후 닫힘, 320px까지 가로 넘침 없음)과 좁은 화면 이동 테스트를 서랍 경유로 고침. 실행하지 못했다
+- 상단 바(`lg` 이상): 줄바꿈(`flex-wrap`)이 남아 있어 1530px에서 테마 버튼만 둘째 줄로 내려갔다 — 제품명 · 저장소/스냅샷 · 검색 `w-96` · 보기 5개 · 테마 · 간격의 합(약 1,680px)이 화면보다 넓었다. 이제 한 줄에 고정한다(`lg:flex-nowrap`): 저장소/스냅샷 줄은 `xl`부터 보이고 모자라면 말줄임으로 먼저 줄어든다(`shrink-[4]` · `truncate`), 검색은 18rem을 기준으로 10rem~24rem 사이에서 늘고 줄며, 보기 · 테마는 줄지 않는다. 확인: E2E "stays on one row from 1024px up…"(1024 · 1280 · 1530 · 1920px, 실행 못 함)
+- 좁은 화면에서 상단 "아키텍처"나 탐색기 항목으로 가면 화면이 상세 정보까지 내려가 있었다
+  - 원인: Next(16.1.7)는 이동 뒤 새 **page segment**의 첫 요소로 스크롤하고(`router-reducer/ppr-navigations.js`가 leaf segment만 모은다) 그 요소에 `focus()`를 건다(`layout-router.js` `handlePotentialScroll`). 캔버스를 유지하는 두 레이아웃(`[section]/[id]` · `architecture`)은 page가 상세 정보 aside였다. `lg` 미만에서는 aside가 본문 아래라 그 위치로 스크롤됐고, 넓은 화면에서도 aside(`tabIndex=-1`)에 포커스가 가서 다음 Tab이 "본문으로 건너뛰기"가 아니었다. 42절의 "이동 후 포커스는 셸 div"는 page가 셸 전체를 그리는 route에만 맞았다
+  - 고침: 상세 정보를 parallel route 슬롯 `@inspector`로 옮기고, page(`children`)는 본문 머리(`WorkspaceHeader`)만 그린다. 레이아웃은 `WorkspaceFrame` 안에 page를 맨 앞에 둔다. 두 슬롯 모두 모든 URL에 대응하고, Next 규칙대로 `default.tsx`(404)를 둔다. `useSelectedLayoutSegment(s)`는 `children` 기준이라 page 쪽 경로(`steps/[stepId]` · `[nodeId]`)를 그대로 유지했다
+  - 확인: `route-segments.spec.ts`(네 page의 첫 요소가 `header` — 옛 page(aside)로 돌리면 실패하는 것을 확인), E2E `shell.spec.ts` 두 건(넓은 화면: 캔버스 보기로 이동 뒤 상세 정보에 포커스 없음 · 다음 Tab이 건너뛰기 / 좁은 화면: 이동 뒤 `scrollY` 0 · 제목이 화면 안). E2E와 `nx build devhub`는 이 세션에서 실행하지 못했다
+- 넘김: 좁은 화면에서는 상세 정보가 본문 아래라, 다음 단계 · 구성 요소로 가려면 그림까지 다시 올라가야 했다. 상세 정보 첫 줄(종류 글자) 오른쪽 끝에 ‹ › 화살표 한 쌍을 둔다 — 단계는 `nav "단계 이동"`(`scenario.steps` 순서 = 흐름 번호), 구성 요소는 `nav "구성 요소 이동"`(아키텍처 목록 순서). 글자 버튼 · 글자 링크는 상세 정보 안에서 이질적이어서, 메일 · 이슈 뷰어처럼 제목 줄 끝의 아이콘 화살표로 바꿨다. 공용 `IconButton`은 `component`를 받지 않아 라우터 링크가 될 수 없으므로(`href`만 주면 전체 새로고침), `component`를 받는 공용 `Button`(sm · text · secondary, 아이콘만)에 `Link`를 얹었다. 서버 컴포넌트는 함수(`Link`)를 client 컴포넌트에 넘길 수 없어 `components/pager.tsx`는 `'use client'`다. 이웃이 없는 쪽은 같은 모양의 비활성 버튼("이전 단계 없음")으로 자리를 지킨다. 접근 이름은 "다음 단계: <의도>", 마우스를 올리면 `title`로 "다음 단계"
+  - 링크는 `#devhub-inspector`를 붙여(`components/workspace.tsx` `detailsHref`), 이동 뒤 Next가 새 상세 정보로 스크롤하고 포커스한다 — 넘김 버튼 자리에 머문다
+  - 구성 요소 넘김은 URL의 종류 필터(`?kind=`) 안에서 돌고 링크에 필터를 유지한다(`architecture/node-pager.tsx`, client — 정적 fallback은 전체 순서). 필터 밖 노드(관계로 들어온 경우)는 전체 순서로 넘긴다
+  - 관계: 구성 요소 상세 정보의 "관계" 줄(`web → api · HTTP` 등)이 상대 노드로 가는 링크다. 같은 `detailsHref`라 구조를 따라 읽어도 상세 정보에 머문다
+  - 순서 계산은 `lib/pager.ts` `pagerOf` 하나다
+  - 확인: `pager.spec.ts`, `architecture/node-pager.spec.ts`(목록 순서와 같음, 필터 안 넘김 · 필터 유지, 필터 밖은 전체, 관계 링크), `inspector.spec.ts` "step pager"(화살표의 주소 · 접근 이름, 이웃 없는 쪽은 비활성), E2E `shell.spec.ts` 두 건(실행 못 함)
+- 시나리오 목록 보기: 단계마다 시스템 동작 · 실행 위치 · 담당 · 소스 · API · 계약 · 테스트 · 다음 · 경유를 모두 펼쳐, 단계를 고르면 나오는 상세 정보와 내용이 같았다(21절 "목록은 단계마다 … 테스트 · 다음"을 바꾼다). 목록은 요약, 상세 정보는 근거로 나눴다(목록-상세). 목록은 흐름 그림이 보여 주는 만큼만 글로 — 번호 · 의도(단계 링크) · 상태 · "실행 위치 · 담당 · API n · 계약 n · 테스트 n" 한 줄, 바로 아래 단계가 아닌 다음 단계가 있으면 "다음 n단계". 고른 단계는 목록에서도 `aria-current` · 배경 · "· 선택됨" 글자로 표시한다(`useSelectedLayoutSegments`, client). 소스 · API · 계약 · 테스트 파일 · 경유는 상세 정보에만 있다. 목록에서만 쓰던 `FileEntry`는 지웠다. 확인: `scenario-outline.spec.ts`(모든 단계 · 요약 한 줄 · 파일 링크와 `dl` 없음 · 다음 표시 규칙 · 선택 표시), E2E `canvas.spec.ts` "shows the scenario as step summaries…"(실행 못 함)
+- 문서 · 소스 페이지의 "경로 복사"(`SourceActions`)도 글자 버튼에서 경로 옆 복사 아이콘으로 바꿔 `FileRow`와 맞췄다. 접근 이름은 그대로 "경로 복사: <전체 경로>"
+- 확인: 단위 테스트(당시 258개) · lint · typecheck 통과. E2E `shell.spec.ts` "opens the explorer as a drawer…"(왼쪽 끝에서 열림, 현재 항목 포커스, Escape로 닫히고 버튼으로 복귀, 닫기 버튼, 항목 선택 시 닫힘)를 더했지만 이 세션에서는 실행하지 못했다. 화면도 보지 못했다
+
+## 51. 구현 상태 — "이 페이지에서"를 본문 안으로
+
+상세 정보 맨 위에 두었던 목차는 좁은 화면에서 본문 아래(상세 정보는 본문 뒤에 쌓인다)로 밀려 쓰기 불편했다. 참고 문서 앱(`accessibility-zone`의 `DocLayout`)처럼 목차를 본문 영역 안에 둔다(`components/doc/document-layout.tsx`).
+
+- 본문 영역이 넓으면(컨테이너 48rem 이상) 본문 오른쪽에 목차 열. 스크롤을 따라오고(`sticky`), 길면 그 안에서 스크롤된다
+- 좁으면 본문 맨 위에 접힌 "이 페이지에서"(`<details>`, 기본 접힘, 절 수 표시). 참고 앱은 좁을 때 목차를 숨기지만, 그러면 좁은 화면에서 절로 갈 방법이 없어 접어 둔다
+- 기준은 화면 폭이 아니라 본문 영역 폭(컨테이너 쿼리 `@container` · `@3xl`)이다. 좌우 칸이 화면 폭마다 다른 몫을 가져가기 때문이다
+- 상세 정보의 목차 섹션과 `Inspection.outline`은 뺐다
+- 문서 페이지는 가운데 열에 둔다(`DOCUMENT_COLUMN`, 최대 61rem = 본문 46rem + 목차 열). 제목(`WorkspaceHeader`의 `className`) · 경로와 링크 · 본문 · 인용한 시나리오가 같은 열이라 왼쪽 끝이 맞는다. 참고 앱의 `mx-auto` · 최대 폭 방식이다
+- 확인: `doc-content.spec.ts`(본문 안에 접힌 목차와 옆 열 목차가 있고 둘 다 절 제목과 같은 항목, 접힌 목차가 본문보다 앞, 상세 정보에는 없음), E2E `document.spec.ts`(1920px에서 옆 열이 보이고 스크롤해도 보임 · 문서 열의 좌우 여백이 같음, 390px에서 접힌 목차를 키보드로 펼쳐 절로 이동), `doc-content.spec.ts`의 "document page column"(제목과 본문 묶음이 같은 열). E2E와 화면은 이 세션에서 보지 못했다
+
+## 52. 구현 상태 — 사이트 좌우 여백 · 그림 크게 보기
+
+참고 문서 앱(`accessibility-zone`)을 다시 보고 두 가지를 맞췄다.
+
+- 사이트 좌우 여백: 그 앱은 셸 전체를 최대 1440px로 묶어 가운데 둔다(`max-w-[1440px] mx-auto`). DevHub는 옆 칸이 둘(18rem + 24rem)이라 같은 값이면 본문이 768px로 줄어, 그 앱이 본문에 남기는 폭(약 1160px)을 기준으로 셸을 최대 115rem(1840px)으로 묶고 가운데 둔다. 그보다 넓은 화면에서만 셸 좌우에 옅은 선(`min-[115rem]:border-x`)
+- 본문 안쪽 좌우 여백: 그 앱처럼 `sm`부터 32px(`sm:px-8`, 전에는 24px). 폰(16px)과 위아래 여백은 50절 그대로
+- 그림 크게 보기: 시나리오 흐름 · 아키텍처 그림의 보기 조절에 "크게 보기"(확대 모서리 아이콘, 공용 `Button` outlined, 이름 "크게 보기"). 누르면 같은 그림을 창 전체를 채우는 모달 `<dialog>`로 연다 — Escape로 닫힘, 뒤는 비활성, 닫으면 버튼으로 포커스 복귀가 브라우저 기본 동작이다. 머리에 제목과 "닫기". 창이 열린 뒤에 그림을 그려 창 크기에 맞춰 맞추기(fit)를 한다. 안에서 단계 · 노드를 고르면 창은 열린 채 선택만 바뀌고, "상세 정보로 이동" 같은 페이지 안 링크는 창을 먼저 닫고 이동한다
+- 전체 화면 API(`requestFullscreen`)는 쓰지 않았다: iPhone Safari가 요소 전체 화면을 지원하지 않는다. `<dialog>`는 모든 브라우저에서 창 크기만큼 연다. 공용 UI에 dialog가 없어 브라우저 기본을 쓴다(새 dependency 없음)
+- 고친 것 — "크게 보기"가 열리자마자 닫혔다(`pnpm dev:devhub`에서). App Router는 `next.config`에 `reactStrictMode`가 없으면 StrictMode를 켜고(`next/dist/build/define-env.js`), 개발 모드에서 effect를 실행 → 정리 → 재실행한다. 정리에서 부른 `dialog.close()`가 `close` 이벤트를 큐에 넣고(HTML 사양상 비동기), 그 이벤트가 다시 연 뒤에 도착해 `onClose`로 창을 내렸다. 정리에서 닫지 않고, 이미 열려 있으면 다시 열지 않는다(`openModal`). 창이 페이지에서 빠지면 브라우저가 모달 층에서 걷어 낸다. 확인: `canvas-viewport.spec.ts` "openModal"(두 번 불러도 `showModal` 한 번). E2E `canvas-expand.spec.ts`가 개발 서버에서 돌았다면 잡았을 문제다 — 이 세션에서는 실행하지 못했다
+- 화살표 표식 id를 그림마다 따로(`useId`) 둔다. 크게 보기로 같은 그림이 두 번 그려질 때 `canvas-arrow` id가 겹쳤다
+- 확인: `canvas/canvas-viewport.spec.ts`(크게 보기 버튼 · 처음엔 dialog 없음, 두 그림의 표식 id가 다름), E2E `canvas-expand.spec.ts`(키보드로 열어 더 큰 그림, Escape로 닫고 버튼 포커스, 닫기 버튼, 안에서 단계 선택 후에도 열림, 2560px에서 셸 1840px · 가운데). `layout.spec.ts`의 셸 첫 요소 검사를 클래스 순서와 상관없게 고쳤다. E2E와 화면은 이 세션에서 보지 못했다
+
+## 53. 구현 상태 — 그림 조작 도구 정돈
+
+- 그림 위의 긴 안내 문장을 걷어 냈다. 위 줄에는 요약(개수 · 선택)과 오른쪽 "도움말" 버튼만 둔다. 도움말은 누를 때 펼치는 패널이고 "조작"(`kbd` 키 목록)과 "범례"(실제 선 · 상자 모양 견본)로 나뉜다. 닫혀 있어도 그림의 `aria-describedby`에 남아 스크린 리더는 그대로 읽는다
+- 범례 견본은 그림이 쓰는 dash 값을 그대로 쓴다. 시나리오는 코드 있는/없는 단계 상자와 앞 단계로 돌아가는 점선, 아키텍처는 `DASH` · `AUTH_REDIRECT_DASH`에서 만든다. 선 모양을 바꾸면 범례도 따라 바뀐다
+- 확대 도구는 지도 앱처럼 그림 오른쪽 아래에 떠 있는 한 묶음("보기 조절")이다: 축소 · 배율 · 확대 | 화면에 맞추기 | 크게 보기. 모두 아이콘 버튼이고 `aria-label`과 `title`(툴팁)을 가진다. 페이지 순서상 그림의 항목보다 앞에 둬 키보드가 먼저 닿는다. "크게 보기" 창 안에서는 크게 보기 버튼이 없다
+- 확인: `canvas/canvas-viewport.spec.ts`(도움말이 처음엔 `hidden` · `aria-expanded="false"`, 그림 설명에 포함, 범례 견본의 dash, 도구 묶음의 네 버튼과 100%), `flow/scenario-flow.spec.ts`(네 도구의 이름). 기존 E2E(`canvas.spec.ts` "보기 조절" 그룹 · 버튼 이름 · `status`)와 호환된다. E2E와 화면은 이 세션에서 보지 못했다
+
+## 54. 구현 상태 — 셸과 바깥 여백의 배경 구분
+
+- 참고 문서 앱처럼 셸 전체(상단 바 · 탐색기 · 작업 영역 · 상세 정보)를 `background-surface`로, 셸 밖 여백(`body`)을 `background-default`로 둔다. 두 토큰은 한 단계 차이(라이트 `#FFFFFF` / `#F2F4F7`, 다크 `#1D2939` / `#101828`)라 넓은 화면에서 본문 영역이 미세하게 떠 보인다
+- 전에는 셸에 배경이 없어 작업 영역 · 탐색기가 바깥과 같은 회색이었고, 상단 바 · 상세 정보만 흰색이었다
+- 따라 바꾼 것: 탐색기 항목 hover를 `background-default`로(상단 바 탭과 같은 방식, surface 위에서 보이도록), 아직 그리지 않은 관계 그림 자리를 캔버스와 같은 `background-default`로. 코드 블록 · 명령 칸 · 캔버스 같은 안쪽 영역은 원래 `background-default`라 surface 위에서 구분된다
+- 확인: lint · typecheck · test. 화면은 이 세션에서 보지 못했다
+
+## 55. 구현 상태 — 아키텍처 화면 정돈 · 하단 여백
+
+- 그림과 목록을 시나리오 화면처럼 "구성 요소와 관계" 섹션 카드 안에 둔다. 종류 필터와 그림/목록 전환을 한 줄에 놓는다(`ViewSwitch`의 `tools`: 필터 왼쪽, 전환 오른쪽). 개수는 필터가 걸린 값을 보여 주는 그림 요약에만 둔다 — 섹션 제목에 두면 필터를 걸었을 때 두 숫자가 어긋난다
+- 그림의 구성 요소에 종류 아이콘을 붙였다(애플리케이션 · 라이브러리는 탐색 아이콘, 외부는 지구본 `globe`, `NODE_KIND_ICON`). 저장소 밖 시스템은 점선 테두리로 그리고 범례에 "저장소 안 프로젝트 / 저장소 밖 시스템" 상자 견본을 더했다. 목록 보기의 종류 표시에도 같은 아이콘을 쓴다
+- 관계 한 줄은 "A → B" 뒤에 관계 이름을 태그(`background-default`, `text-light` 약 7:1)로 붙인다. 경계는 구분선으로 나누고, 경계를 넘는 관계는 왼쪽 선으로 들여 그 경계의 근거로 읽히게 했다. 관계 목록 제목의 개수는 캡션으로 낮췄다
+- "문서에만 있는 구성"은 시나리오마다 제목(시나리오 링크 · 단계 수)을 달고 단계를 그 아래 들여 둔다
+- 모든 화면의 아래쪽 여백: 작업 영역 `pb-12`(3rem) · `sm:pb-16`(4rem), 상세 정보 · 탐색기 `pb-12`. 참고 문서 앱은 본문 위아래를 2rem, `lg`부터 3rem 띄운다. `<main>`은 `WorkspaceFrame` 하나뿐이라 모든 화면에 적용된다
+- 확인: `architecture-map.spec.ts`(외부만 점선, 범례 상자), `architecture-sections.spec.ts`(관계 태그, 목표 시나리오 제목 링크). 기존 E2E의 필터 · 목록 · 선택 흐름은 이름과 역할을 바꾸지 않았다. E2E와 화면은 이 세션에서 보지 못했다
 
 ## 다시 확인하는 명령
 

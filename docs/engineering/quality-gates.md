@@ -92,8 +92,8 @@ pnpm exec nx export mobile
 | mobile     | 단위             | `pnpm test` | Vitest 180개 (12 파일)                                                          |
 | libs       | 단위             | `pnpm test` | `webview-bridge` 16개 · `auth-contracts` 9개                                    |
 | web-e2e    | E2E              | `pnpm e2e`  | 65개 × 3 브라우저 + 오류 주입 2개 × 3                                           |
-| devhub     | 단위 · freshness | `pnpm test` | Vitest 258개 (27 파일). catalog ↔ 저장소 검사는 `pnpm devhub:check`로 따로 돈다 |
-| devhub-e2e | E2E              | `pnpm e2e`  | 22개 × Chromium. 이 저장소에서 아직 실행 결과가 없다                            |
+| devhub     | 단위 · freshness | `pnpm test` | Vitest 281개 (32 파일). catalog ↔ 저장소 검사는 `pnpm devhub:check`로 따로 돈다 |
+| devhub-e2e | E2E              | `pnpm e2e`  | 36개 × Chromium. 이 저장소에서 아직 실행 결과가 없다                            |
 
 `nx test api` 통과가 DB 검증을 뜻하지 않는다. DB까지 보려면 Postgres를 띄우고 `TEST_DATABASE_URL`을 주고 돌린다(아래 Go 절).
 
