@@ -80,7 +80,9 @@ test.describe('scenario flow', () => {
 });
 
 test.describe('structured list', () => {
-  test('shows the scenario as steps with runtime, source, API, and tests', async ({ page }) => {
+  test('shows the scenario as step summaries, with the evidence in the inspector', async ({
+    page,
+  }) => {
     await page.goto(`/scenarios/${SCENARIO.id}`);
     await enterMain(page);
 
@@ -94,15 +96,9 @@ test.describe('structured list', () => {
     const steps = page.getByRole('list', { name: `${SCENARIO.title} 단계` }).getByRole('article');
     await expect(steps).toHaveCount(SCENARIO.steps);
     const exchange = steps.nth(4);
-    for (const term of ['실행 위치', '담당', '소스', 'API', '테스트']) {
-      await expect(exchange.getByRole('term').filter({ hasText: term })).toHaveCount(1);
-    }
-    const sourceFile = exchange.getByRole('link', { name: /— apps\// }).first();
-    await expect(sourceFile).toBeVisible();
-    await expect(sourceFile).toHaveAttribute('href', /^\/source\?path=apps%2F/);
-    await expect(exchange.getByRole('definition').filter({ hasText: /POST \/v1\// })).toHaveCount(
-      1,
-    );
+    await expect(exchange).toContainText(/담당 [^ ]+ · API \d+ · .*테스트 \d+/);
+    await expect(exchange.getByRole('term')).toHaveCount(0);
+    await expect(exchange.getByRole('link')).toHaveCount(1);
 
     const title = exchange.getByRole('heading', { level: 3 }).getByRole('link');
     await tabTo(page, title);
@@ -110,6 +106,9 @@ test.describe('structured list', () => {
     await expect(page).toHaveURL(/\/steps\/exchange$/);
     await expect(asList).toHaveAttribute('aria-pressed', 'true');
     await expect(inspector(page).getByRole('heading', { level: 2 })).toHaveText(/세션으로 바꾼다/);
+    await expect(title).toHaveAttribute('aria-current', 'page');
+    await expect(exchange).toContainText('· 선택됨');
+    await expect(inspector(page).getByRole('region', { name: /^소스/ })).toBeVisible();
   });
 
   test('shows the architecture as a list with the kind filter applied', async ({ page }) => {
