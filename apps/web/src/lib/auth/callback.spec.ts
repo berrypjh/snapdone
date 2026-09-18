@@ -11,9 +11,10 @@ const NOW = Date.parse('2026-09-18T00:00:00Z');
 const preauth = { state: STATE, verifier: VERIFIER, returnTo: '/history' };
 const session = {
   user: { id: 'user-1' },
-  onboardingStep: 'intro',
+  onboardingStep: 'complete',
   expiresAt: '2026-09-18T12:00:00Z',
 };
+const newUser = { ...session, onboardingStep: 'intro' };
 
 const query = (params: string) => new URLSearchParams(params);
 
@@ -99,6 +100,14 @@ describe('completeLogin', () => {
       verifier: VERIFIER,
       state: STATE,
     });
+  });
+
+  it('sends a user who has not finished onboarding to the onboarding page', async () => {
+    stubExchange({ session: newUser, credential: 'cred' });
+
+    await expect(
+      completeLogin(query(`code=c&state=${STATE}`), preauth, NOW),
+    ).resolves.toMatchObject({ type: 'signed-in', location: '/onboarding' });
   });
 
   it('reports a failed exchange', async () => {
