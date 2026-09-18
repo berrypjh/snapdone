@@ -1,0 +1,63 @@
+{
+  "name": "@snapdone/devhub",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "name": "devhub",
+    "projectType": "application",
+    "tags": [
+      "type:app"
+    ],
+    "targets": {
+      "typecheck": {
+        "executor": "nx:run-commands",
+        "cache": true,
+        "inputs": [
+          "{projectRoot}/**/*.ts",
+          "{projectRoot}/**/*.tsx",
+          "{projectRoot}/tsconfig.json",
+          "{workspaceRoot}/tsconfig.base.json"
+        ],
+        "options": {
+          "cwd": "apps/devhub",
+          "command": "tsc --noEmit -p tsconfig.json"
+        }
+      },
+      "test": {
+        "cache": false
+      },
+      "build": {
+        "cache": false
+      },
+      "devhub-check": {
+        "executor": "nx:run-commands",
+        "cache": false,
+        "options": {
+          "cwd": "apps/devhub",
+          "command": "vitest run src/data src/domain src/lib/snapshot src/lib/architecture.spec"
+        }
+      },
+      "dev": {
+        "options": {
+          "command": "next dev --port 3100"
+        }
+      },
+      "start": {
+        "options": {
+          "command": "next start --port 3100"
+        }
+      },
+      "serve-static": {
+        "options": {
+          "command": "next start --port 3100"
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "@berrypjh/react-ui": "^1.1.2",
+    "next": "~16.1.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  }
+}

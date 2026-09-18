@@ -1,0 +1,87 @@
+@import 'tailwindcss';
+@config '../../tailwind.config.mjs';
+
+@theme {
+  --color-*: initial;
+  --text-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+}
+
+@utility typo-heading-h5 {
+  font-family: var(--ds-heading-h5-font-family);
+  font-size: var(--ds-heading-h5-font-size);
+  font-weight: var(--ds-heading-h5-font-weight);
+  line-height: var(--ds-heading-h5-line-height);
+  letter-spacing: var(--ds-heading-h5-letter-spacing);
+}
+
+@utility typo-body-medium-strong {
+  font-family: var(--ds-body-medium-strong-font-family);
+  font-size: var(--ds-body-medium-strong-font-size);
+  font-weight: var(--ds-body-medium-strong-font-weight);
+  line-height: var(--ds-body-medium-strong-line-height);
+  letter-spacing: var(--ds-body-medium-strong-letter-spacing);
+}
+
+@utility typo-body-small {
+  font-family: var(--ds-body-small-font-family);
+  font-size: var(--ds-body-small-font-size);
+  font-weight: var(--ds-body-small-font-weight);
+  line-height: var(--ds-body-small-line-height);
+  letter-spacing: var(--ds-body-small-letter-spacing);
+}
+
+@utility typo-body-small-strong {
+  font-family: var(--ds-body-small-strong-font-family);
+  font-size: var(--ds-body-small-strong-font-size);
+  font-weight: var(--ds-body-small-strong-font-weight);
+  line-height: var(--ds-body-small-strong-line-height);
+  letter-spacing: var(--ds-body-small-strong-letter-spacing);
+}
+
+@utility typo-caption-small {
+  font-family: var(--ds-caption-small-font-family);
+  font-size: var(--ds-caption-small-font-size);
+  font-weight: var(--ds-caption-small-font-weight);
+  line-height: var(--ds-caption-small-line-height);
+  letter-spacing: var(--ds-caption-small-letter-spacing);
+}
+
+/* Paths, symbols, and commands. No shared monospace token exists, so this uses Tailwind's stack. */
+@utility devhub-code {
+  font-family: var(--font-mono);
+  font-size: var(--ds-caption-small-font-size);
+  line-height: var(--ds-caption-small-line-height);
+  overflow-wrap: anywhere;
+}
+
+/* Faint grid for the diagram area, drawn from the shared stroke token. */
+@utility devhub-grid {
+  background-image:
+    linear-gradient(var(--ds-stroke-light) 1px, transparent 1px),
+    linear-gradient(90deg, var(--ds-stroke-light) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* The tokens switch on data-theme but set no color-scheme; native controls and scrollbars need it. */
+:root {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--ds-background-default);
+  color: var(--ds-text-default);
+  font-family: var(--ds-body-small-font-family);
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+:focus-visible {
+  outline: var(--ds-semantic-border-default) solid var(--ds-stroke-primary);
+  outline-offset: 2px;
+}

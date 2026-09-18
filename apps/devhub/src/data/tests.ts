@@ -1,0 +1,654 @@
+import type { CommandConstraint, TestRef } from '../domain/model';
+
+const E2E: CommandConstraint[] = ['port-binding', 'browser-binaries'];
+const DB: CommandConstraint[] = ['database'];
+
+const vitest = (id: string, path: string, ...title: string[]): TestRef => ({
+  id,
+  runner: 'vitest',
+  source: { path },
+  title,
+  requires: [],
+});
+
+const playwright = (id: string, file: string, ...title: string[]): TestRef => ({
+  id,
+  runner: 'playwright',
+  source: { path: `apps/web-e2e/src/${file}` },
+  title,
+  requires: E2E,
+});
+
+const goTest = (
+  id: string,
+  path: string,
+  name: string,
+  requires: CommandConstraint[],
+): TestRef => ({
+  id,
+  runner: 'go-test',
+  source: { path, symbol: name },
+  requires,
+});
+
+const WEB = 'apps/web/src/lib/auth';
+const MOBILE = 'apps/mobile/src/auth';
+const HTTP = 'apps/api/internal/httpserver';
+const AUTH = 'apps/api/internal/auth';
+
+/** Tests cited as scenario evidence. Titles and function names are written exactly as in the file. */
+export const tests: TestRef[] = [
+  // web — Vitest
+  vitest(
+    'web-start-google',
+    `${WEB}/actions.spec.ts`,
+    'startGoogleLogin',
+    'stores the proof in a short HttpOnly cookie and redirects to Google',
+  ),
+  vitest(
+    'web-start-refused',
+    `${WEB}/actions.spec.ts`,
+    'startGoogleLogin',
+    'returns only an error code when Go refuses',
+  ),
+  vitest(
+    'web-logout-revokes',
+    `${WEB}/actions.spec.ts`,
+    'logout',
+    'revokes the session in Go and expires the cookie',
+  ),
+  vitest(
+    'web-logout-unreachable',
+    `${WEB}/actions.spec.ts`,
+    'logout',
+    'still clears the cookie when Go is unreachable',
+  ),
+  vitest(
+    'web-logout-origin',
+    `${WEB}/actions.spec.ts`,
+    'logout',
+    'ignores a request from another origin',
+  ),
+  vitest(
+    'web-require-session-login',
+    `${WEB}/actions.spec.ts`,
+    'requireSession',
+    'sends a visitor without a cookie to login with the return path',
+  ),
+  vitest(
+    'web-require-session-rejected',
+    `${WEB}/actions.spec.ts`,
+    'requireSession',
+    'sends a visitor with a rejected cookie to login',
+  ),
+  vitest(
+    'web-require-session-complete',
+    `${WEB}/actions.spec.ts`,
+    'requireSession',
+    'returns the session Go accepts for a user who finished onboarding',
+  ),
+  vitest(
+    'web-require-session-onboarding',
+    `${WEB}/actions.spec.ts`,
+    'requireSession',
+    'sends a user who has not finished onboarding to /onboarding',
+  ),
+  vitest(
+    'web-api-network',
+    `${WEB}/api.spec.ts`,
+    'request errors',
+    'reports network when Go does not answer',
+  ),
+  vitest(
+    'web-api-capabilities',
+    `${WEB}/api.spec.ts`,
+    'fetchCapabilities',
+    'keeps only providers this client knows',
+  ),
+  vitest(
+    'web-api-session-rejected',
+    `${WEB}/api.spec.ts`,
+    'fetchSession',
+    'returns null when Go rejects the credential',
+  ),
+  vitest(
+    'web-callback-exchange',
+    `${WEB}/callback.spec.ts`,
+    'completeLogin',
+    'exchanges the code with the stored verifier and state',
+  ),
+  vitest(
+    'web-callback-cancelled',
+    `${WEB}/callback.spec.ts`,
+    'completeLogin',
+    'returns quietly to login when the user cancelled',
+  ),
+  vitest(
+    'web-callback-failed-exchange',
+    `${WEB}/callback.spec.ts`,
+    'completeLogin',
+    'reports a failed exchange',
+  ),
+  vitest(
+    'web-callback-onboarding',
+    `${WEB}/callback.spec.ts`,
+    'completeLogin',
+    'sends a user who has not finished onboarding to the onboarding page',
+  ),
+  vitest(
+    'web-callback-cookie',
+    `${WEB}/callback.spec.ts`,
+    'handleOAuthCallback',
+    'sets the session cookie and drops the code from the URL',
+  ),
+  vitest(
+    'web-proof',
+    `${WEB}/proof.spec.ts`,
+    'createLoginProof',
+    'makes a 32-byte verifier and state in the shape Go accepts',
+  ),
+  vitest('web-return-path', `${WEB}/redirect.spec.ts`, 'safeReturnPath'),
+  vitest(
+    'web-handoff-start',
+    `${WEB}/handoff.spec.ts`,
+    'handleHandoffStart',
+    'keeps the verifier in a short HttpOnly cookie and sends only the path onward',
+  ),
+  vitest(
+    'web-handoff-challenge',
+    `${WEB}/handoff.spec.ts`,
+    'handoffChallenge',
+    'derives the S256 challenge and never returns the verifier',
+  ),
+  vitest(
+    'web-handoff-exchange',
+    `${WEB}/handoff.spec.ts`,
+    'completeHandoff',
+    'exchanges the code with this browser verifier and returns to next',
+  ),
+  vitest(
+    'web-handoff-refused',
+    `${WEB}/handoff.spec.ts`,
+    'completeHandoff',
+    'sends a refused exchange to login, where the app is asked to hand off again',
+  ),
+  vitest(
+    'web-handoff-cookie',
+    `${WEB}/handoff.spec.ts`,
+    'handleHandoff',
+    'replaces the previous session cookie and drops the code from the URL',
+  ),
+  vitest(
+    'web-handoff-no-verifier',
+    `${WEB}/handoff.spec.ts`,
+    'handleHandoff',
+    'sets no session without the verifier cookie (another browser opened the link)',
+  ),
+
+  // mobile — Vitest
+  vitest(
+    'mobile-restore-anonymous',
+    `${MOBILE}/controller.spec.ts`,
+    'restore',
+    'becomes anonymous with no stored credential',
+  ),
+  vitest(
+    'mobile-restore-accepted',
+    `${MOBILE}/controller.spec.ts`,
+    'restore',
+    'restores a stored credential the server still accepts',
+  ),
+  vitest(
+    'mobile-restore-rejected',
+    `${MOBILE}/controller.spec.ts`,
+    'restore',
+    'deletes a credential the server rejected and signs out',
+  ),
+  vitest(
+    'mobile-restore-storage',
+    `${MOBILE}/controller.spec.ts`,
+    'restore',
+    'treats an unreadable secure store as a retryable failure, not as signed out',
+  ),
+  vitest(
+    'mobile-restore-unreachable',
+    `${MOBILE}/controller.spec.ts`,
+    'restore',
+    'keeps the credential when the server cannot be reached',
+  ),
+  vitest(
+    'mobile-restore-retry',
+    `${MOBILE}/controller.spec.ts`,
+    'restore',
+    'retries a failed restore with the kept credential',
+  ),
+  vitest(
+    'mobile-revalidate-401',
+    `${MOBILE}/controller.spec.ts`,
+    'revalidate (foreground)',
+    'deletes the credential and shows session expired on 401',
+  ),
+  vitest(
+    'mobile-revalidate-offline',
+    `${MOBILE}/controller.spec.ts`,
+    'revalidate (foreground)',
+    'stays signed in while offline',
+  ),
+  vitest(
+    'mobile-start-handoff',
+    `${MOBILE}/controller.spec.ts`,
+    'startHandoff',
+    'asks Go for a code with the stored credential',
+  ),
+  vitest(
+    'mobile-start-handoff-expired',
+    `${MOBILE}/controller.spec.ts`,
+    'startHandoff',
+    'signs out when Go no longer accepts the session',
+  ),
+  vitest(
+    'mobile-availability',
+    `${MOBILE}/controller.spec.ts`,
+    'provider availability',
+    'is checking until capabilities load, and unavailable if they fail',
+  ),
+  vitest(
+    'mobile-sign-in-save',
+    `${MOBILE}/controller.spec.ts`,
+    'sign-in',
+    'saves the credential before showing the session',
+  ),
+  vitest(
+    'mobile-sign-in-cancel',
+    `${MOBILE}/controller.spec.ts`,
+    'sign-in',
+    'returns to sign-in when the user cancels in the provider',
+  ),
+  vitest(
+    'mobile-sign-in-save-fails',
+    `${MOBILE}/controller.spec.ts`,
+    'sign-in',
+    'does not authenticate when saving fails; it revokes the new session and shows a retryable error',
+  ),
+  vitest(
+    'mobile-logout',
+    `${MOBILE}/controller.spec.ts`,
+    'logout',
+    'revokes, deletes, and signs out',
+  ),
+  vitest(
+    'mobile-logout-unreachable',
+    `${MOBILE}/controller.spec.ts`,
+    'logout',
+    'still deletes locally when the server cannot be reached',
+  ),
+  vitest(
+    'mobile-logout-delete-fails',
+    `${MOBILE}/controller.spec.ts`,
+    'logout',
+    'reports a failed delete and stays signed in',
+  ),
+  vitest(
+    'mobile-resume-cold-start',
+    `${MOBILE}/controller.spec.ts`,
+    'resume (cold start)',
+    'signs in with a result finished from the launch URL',
+  ),
+  vitest(
+    'mobile-google-flow',
+    `${MOBILE}/google.spec.ts`,
+    'createGoogleSignIn',
+    'sends only the challenge and state, opens the system session, and exchanges with the verifier',
+  ),
+  vitest(
+    'mobile-google-cancel',
+    `${MOBILE}/google.spec.ts`,
+    'createGoogleSignIn',
+    'treats a closed browser as cancel, discards the proof, and asks the server to drop the start',
+  ),
+  vitest(
+    'mobile-google-server-error',
+    `${MOBILE}/google.spec.ts`,
+    'createGoogleSignIn',
+    'returns the server error carried back to the app',
+  ),
+  vitest(
+    'mobile-google-state-mismatch',
+    `${MOBILE}/google.spec.ts`,
+    'createGoogleSignIn',
+    'rejects a return whose state does not match the pending proof',
+  ),
+  vitest(
+    'mobile-callback-parse',
+    `${MOBILE}/callback.spec.ts`,
+    'parseOAuthCallback',
+    'reads a result code and the app state',
+  ),
+  vitest(
+    'mobile-destination-onboarding',
+    `${MOBILE}/model.spec.ts`,
+    'destinationFor',
+    'sends a new profile to onboarding',
+  ),
+  vitest(
+    'mobile-destination-home',
+    `${MOBILE}/model.spec.ts`,
+    'destinationFor',
+    'sends only completed users home',
+  ),
+  vitest(
+    'mobile-restore-failed-state',
+    `${MOBILE}/model.spec.ts`,
+    'restoring',
+    'keeps a failed restore retryable instead of showing sign-in',
+  ),
+  vitest(
+    'mobile-webcontent-initial',
+    `${MOBILE}/webHandoff.spec.ts`,
+    'initialWebContent',
+    'starts with a handoff for a login this WebView has not received',
+  ),
+  vitest(
+    'mobile-webcontent-handoff-once',
+    `${MOBILE}/webHandoff.spec.ts`,
+    'receiveMessage',
+    'starts the handoff once for the ready page it opened',
+  ),
+  vitest(
+    'mobile-webcontent-title',
+    `${MOBILE}/webHandoff.spec.ts`,
+    'receiveMessage',
+    'passes the title of a web page',
+  ),
+  vitest(
+    'mobile-webcontent-foreign-origin',
+    `${MOBILE}/webHandoff.spec.ts`,
+    'receiveMessage',
+    'ignores any message from a page outside the web origin',
+  ),
+  vitest(
+    'mobile-webcontent-auth-required',
+    `${MOBILE}/webHandoff.spec.ts`,
+    'receiveMessage',
+    'revalidates the app session when the web asks for login',
+  ),
+  vitest(
+    'mobile-webcontent-exchange-url',
+    `${MOBILE}/webHandoff.spec.ts`,
+    'retries',
+    'opens the exchange URL with the code and the same path',
+  ),
+  vitest(
+    'mobile-webcontent-retry-limit',
+    `${MOBILE}/webHandoff.spec.ts`,
+    'retries',
+    'hands off again only once, then fails',
+  ),
+  vitest(
+    'mobile-webcontent-retry-after-failure',
+    `${MOBILE}/webHandoff.spec.ts`,
+    'retries',
+    'starts over when the user retries after a failed handoff',
+  ),
+  vitest(
+    'mobile-webview-navigation',
+    'apps/mobile/src/lib/web.spec.ts',
+    'with a web base URL',
+    'webViewNavigation',
+  ),
+  vitest(
+    'mobile-copy-errors',
+    'apps/mobile/src/components/auth/authCopy.spec.ts',
+    'auth copy',
+    'has a polite message for every error except cancel',
+  ),
+  vitest(
+    'mobile-copy-logout',
+    'apps/mobile/src/components/auth/authCopy.spec.ts',
+    'restore and logout copy',
+    'tells a device-only logout apart from a failed logout',
+  ),
+
+  // libs — Vitest
+  vitest(
+    'bridge-user-agent',
+    'libs/webview-bridge/src/lib/bridge.spec.ts',
+    'in-app User-Agent',
+    'recognizes the token the app appends',
+  ),
+  vitest(
+    'bridge-ready',
+    'libs/webview-bridge/src/lib/bridge.spec.ts',
+    'web to app messages',
+    'round-trips a ready message',
+  ),
+  vitest(
+    'bridge-auth-messages',
+    'libs/webview-bridge/src/lib/bridge.spec.ts',
+    'auth messages',
+    'round-trips auth-required and handoff-ready',
+  ),
+  vitest(
+    'auth-contracts-session',
+    'libs/auth-contracts/src/lib/auth.spec.ts',
+    'parseSession',
+    'keeps only the three session fields',
+  ),
+
+  // api — go test (DB tests skip without TEST_DATABASE_URL)
+  goTest(
+    'go-capabilities',
+    `${HTTP}/oauth_test.go`,
+    'TestCapabilitiesListGoogleWhenConfigured',
+    DB,
+  ),
+  goTest(
+    'go-oauth-web-returning',
+    `${HTTP}/oauth_test.go`,
+    'TestOAuthGoogleReturningUserOnWeb',
+    DB,
+  ),
+  goTest('go-oauth-mobile-login', `${HTTP}/oauth_test.go`, 'TestOAuthGoogleMobileLogin', DB),
+  goTest(
+    'go-oauth-callback-errors',
+    `${HTTP}/oauth_test.go`,
+    'TestOAuthCallbackReturnsErrorsToTheApp',
+    [],
+  ),
+  goTest(
+    'go-oauth-exchange-once',
+    `${HTTP}/oauth_test.go`,
+    'TestOAuthExchangeChecksProofAndRunsOnce',
+    DB,
+  ),
+  goTest('go-oauth-cancel', `${HTTP}/oauth_test.go`, 'TestOAuthCancelDiscardsTransaction', DB),
+  goTest(
+    'go-auth-not-configured',
+    `${HTTP}/router_test.go`,
+    'TestAuthRoutesAnswer503WhenNotConfigured',
+    [],
+  ),
+  goTest(
+    'go-session-public-fields',
+    `${HTTP}/auth_test.go`,
+    'TestSessionReturnsPublicFieldsOnly',
+    [],
+  ),
+  goTest(
+    'go-session-rejects-unknown',
+    `${HTTP}/auth_test.go`,
+    'TestSessionRejectsMissingOrUnknownToken',
+    [],
+  ),
+  goTest(
+    'go-logout-revokes',
+    `${HTTP}/auth_test.go`,
+    'TestLogoutRevokesTokenHashAndIgnoresUnknown',
+    [],
+  ),
+  goTest(
+    'go-handoff-child-session',
+    `${HTTP}/handoff_test.go`,
+    'TestHandoffCreatesChildWebSession',
+    DB,
+  ),
+  goTest(
+    'go-handoff-root-mobile-only',
+    `${HTTP}/handoff_test.go`,
+    'TestHandoffStartOnlyFromRootMobileSession',
+    DB,
+  ),
+  goTest('go-handoff-proof', `${HTTP}/handoff_test.go`, 'TestHandoffExchangeChecksProof', DB),
+  goTest('go-user-starts-at-intro', `${AUTH}/store_test.go`, 'TestCreateUserStartsAtIntro', DB),
+  goTest('go-session-expired', `${AUTH}/session_test.go`, 'TestFindSessionIgnoresExpired', DB),
+  goTest(
+    'go-revoke-root-children',
+    `${AUTH}/session_test.go`,
+    'TestRevokeRootInvalidatesChildren',
+    DB,
+  ),
+
+  // web-e2e — Playwright (fake auth API + next dev)
+  playwright('e2e-home', 'home.spec.ts', 'renders the bootstrap page in Korean'),
+  playwright(
+    'e2e-login-screen',
+    'login.spec.ts',
+    'login screen',
+    'shows the sign-in copy and exactly one Google button, without navigation',
+  ),
+  playwright(
+    'e2e-login-callback-error',
+    'login.spec.ts',
+    'login screen',
+    'shows a callback error from the query',
+  ),
+  playwright(
+    'e2e-login-from-onboarding',
+    'login.spec.ts',
+    'login screen',
+    'sends a signed-out visitor from onboarding to login',
+  ),
+  playwright(
+    'e2e-login-protected-redirect',
+    'login.spec.ts',
+    'sends a signed-out visitor from a protected page to login and back to that page',
+  ),
+  playwright('e2e-login-outside-return', 'login.spec.ts', 'ignores an outside return path'),
+  playwright(
+    'e2e-login-no-preauth',
+    'login.spec.ts',
+    'refuses a callback that has no matching login in this browser',
+  ),
+  playwright(
+    'e2e-new-user-onboarding',
+    'auth.spec.ts',
+    'a new Google user lands on onboarding with an HttpOnly session cookie',
+  ),
+  playwright(
+    'e2e-returning-user',
+    'auth.spec.ts',
+    'a returning user goes back to the protected page they asked for',
+  ),
+  playwright(
+    'e2e-google-closed',
+    'auth.spec.ts',
+    'closing the Google screen returns to login quietly, ready to try again',
+  ),
+  playwright(
+    'e2e-stale-cookie',
+    'auth.spec.ts',
+    'treats a session cookie Go no longer accepts as signed out',
+  ),
+  playwright(
+    'e2e-protected-direct',
+    'auth.spec.ts',
+    'signed in',
+    'opens a protected page directly',
+  ),
+  playwright(
+    'e2e-onboarding-redirect',
+    'auth.spec.ts',
+    'signed in',
+    'sends a user who has not finished onboarding to onboarding',
+  ),
+  playwright(
+    'e2e-logout',
+    'auth.spec.ts',
+    'signed in',
+    'logs out, revokes the session, and cannot go back to the protected page',
+  ),
+  playwright(
+    'e2e-handoff-replace',
+    'auth.spec.ts',
+    'WebView handoff',
+    'replaces the WebView session with the app user and drops the code from the URL',
+  ),
+  playwright(
+    'e2e-handoff-once',
+    'auth.spec.ts',
+    'WebView handoff',
+    'refuses a handoff code the second time',
+  ),
+  playwright(
+    'e2e-inapp-shell',
+    'in-app.spec.ts',
+    'inside the app WebView',
+    'renders only the page content, without the web shell',
+  ),
+  playwright(
+    'e2e-inapp-ready',
+    'in-app.spec.ts',
+    'inside the app WebView',
+    'tells the app the page title once it is ready',
+  ),
+  playwright(
+    'e2e-inapp-protected',
+    'in-app.spec.ts',
+    'inside the app WebView',
+    'renders a protected page without the web shell for a signed-in WebView',
+  ),
+  playwright(
+    'e2e-inapp-login',
+    'in-app.spec.ts',
+    'inside the app WebView',
+    'does not offer Google login inside the app and asks the app for a session',
+  ),
+  playwright(
+    'e2e-inapp-challenge',
+    'in-app.spec.ts',
+    'inside the app WebView',
+    'hands the app only a challenge, keeping the verifier in an HttpOnly cookie',
+  ),
+  playwright(
+    'e2e-inapp-no-verifier',
+    'in-app.spec.ts',
+    'inside the app WebView',
+    'asks the app to start over when the ready page has no verifier',
+  ),
+  playwright(
+    'e2e-inapp-other-browser',
+    'in-app.spec.ts',
+    'inside the app WebView',
+    'refuses a handoff code from another browser without setting a session',
+  ),
+  playwright(
+    'e2e-start-failure',
+    'auth-faults.spec.ts',
+    'shows a failed start, keeps keyboard focus, and lets the user try again',
+  ),
+  playwright(
+    'e2e-callback-alert',
+    'auth-accessibility.spec.ts',
+    'reads a callback error once, as an alert',
+  ),
+  playwright(
+    'e2e-cancel-no-error',
+    'auth-accessibility.spec.ts',
+    'shows no error for a cancelled login',
+  ),
+  playwright(
+    'e2e-onboarding-decorations',
+    'auth-accessibility.spec.ts',
+    'hides the decorative arrows and check marks from assistive technology',
+  ),
+];
