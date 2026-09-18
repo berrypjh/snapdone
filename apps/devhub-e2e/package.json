@@ -1,0 +1,14 @@
+{
+  "name": "@snapdone/devhub-e2e",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "name": "devhub-e2e",
+    "tags": [
+      "type:e2e"
+    ],
+    "implicitDependencies": [
+      "devhub"
+    ]
+  }
+}

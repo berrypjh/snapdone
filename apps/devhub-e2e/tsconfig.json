@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["es2022", "dom"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "outDir": "out-tsc/playwright",
+    "sourceMap": false,
+    "types": ["node"]
+  },
+  "include": ["playwright.config.mts", "src/**/*.ts", "src/**/*.d.ts"],
+  "exclude": ["out-tsc", "test-output", "eslint.config.mjs"]
+}
