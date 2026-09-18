@@ -44,9 +44,10 @@ pnpm install
 pnpm dev:web      # Next.js  → http://localhost:3000
 pnpm dev:api      # Go API   → http://127.0.0.1:8080
 pnpm dev:mobile   # Expo (Metro 개발 서버)
+pnpm dev:devhub    # DevHub → http://localhost:3100 (저장소를 보는 내부 도구)
 ```
 
-`pnpm dev` 하나로 **web과 api를 함께** 띄울 수도 있다.
+`pnpm dev` 하나로 **web · api · devhub를 함께** 띄울 수도 있다. devhub는 3100에 고정돼 web(3000)과 부딪히지 않는다.
 
 ```bash
 pnpm dev
@@ -84,12 +85,13 @@ mobile 홈의 "기록 보기"는 web의 `/history`를 WebView로 연다. **web d
 
 ```bash
 pnpm verify      # format:check -> lint -> typecheck -> test -> test:hooks -> build 를 순서대로
-pnpm lint        # eslint(web, mobile, web-e2e, libs, tools/scripts, .claude/hooks) + go vet + gofmt 검사
-pnpm typecheck   # tsc (web, mobile, web-e2e, libs)
-pnpm test        # go test(api) + Vitest(web, mobile, libs) — 한 번 돌고 끝남
+pnpm lint        # eslint(web, mobile, web-e2e, devhub, devhub-e2e, libs, tools/scripts, .claude/hooks) + go vet + gofmt 검사
+pnpm typecheck   # tsc (web, mobile, web-e2e, devhub, devhub-e2e, libs)
+pnpm test        # go test(api) + Vitest(web, mobile, devhub, libs) — 한 번 돌고 끝남
 pnpm test:hooks  # .claude/hooks/ 회귀 테스트 (Nx 프로젝트가 아니라 별도)
-pnpm e2e         # Playwright (web-e2e) — verify에 포함되지 않음
-pnpm build       # next build + go build
+pnpm e2e         # Playwright (web-e2e, devhub-e2e) — verify에 포함되지 않음
+pnpm build       # next build(web, devhub) + go build
+pnpm devhub:check # DevHub catalog이 지금 저장소와 맞는지 (pnpm test에도 포함)
 pnpm format      # prettier 적용 (TS/JS/JSON/MD)
 pnpm format:check
 pnpm health      # 개발자용 API 연결 확인 (제품 화면 아님)
@@ -273,7 +275,7 @@ pnpm install
 
 **포트 충돌**
 
-Next는 3000, Go API는 8080, Metro는 8081을 쓴다. 점유 중이면:
+web(Next)은 3000, Go API는 8080, Metro는 8081, DevHub는 3100을 쓴다. 점유 중이면:
 
 ```bash
 lsof -nP -iTCP:8080 -sTCP:LISTEN

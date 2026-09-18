@@ -10,12 +10,14 @@
 
 Nx integrated monorepo. package manager는 **pnpm**(`package.json`의 `packageManager`로 고정). 기본 locale은 `ko-KR`.
 
-| project   | 위치           | 스택                 | 역할                                                   |
-| --------- | -------------- | -------------------- | ------------------------------------------------------ |
-| `web`     | `apps/web`     | Next.js + TypeScript | 브라우저 단독 서비스 · 앱 WebView 콘텐츠 화면          |
-| `mobile`  | `apps/mobile`  | Expo + React Native  | **주 제품** — 네이티브 셸 · 핵심 흐름 · WebView 호스트 |
-| `api`     | `apps/api`     | Go                   | 서버 로직 · 외부 연동                                  |
-| `web-e2e` | `apps/web-e2e` | Playwright           | web E2E                                                |
+| project      | 위치              | 스택                 | 역할                                                                          |
+| ------------ | ----------------- | -------------------- | ----------------------------------------------------------------------------- |
+| `web`        | `apps/web`        | Next.js + TypeScript | 브라우저 단독 서비스 · 앱 WebView 콘텐츠 화면                                 |
+| `mobile`     | `apps/mobile`     | Expo + React Native  | **주 제품** — 네이티브 셸 · 핵심 흐름 · WebView 호스트                        |
+| `api`        | `apps/api`        | Go                   | 서버 로직 · 외부 연동                                                         |
+| `web-e2e`    | `apps/web-e2e`    | Playwright           | web E2E                                                                       |
+| `devhub`     | `apps/devhub`     | Next.js + TypeScript | 내부 도구 — 저장소의 시나리오 · 구조 · 근거 탐색. 제품 앱을 import하지 않는다 |
+| `devhub-e2e` | `apps/devhub-e2e` | Playwright           | devhub E2E                                                                    |
 
 `libs/`에는 `webview-bridge`(앱 ↔ WebView 계약)와 `auth-contracts`(인증 wire 타입)가 있다. 경계는 tag(`type:app` · `type:lib` · `type:e2e`)와 루트 `eslint.config.mjs`가 강제한다. `docs/`는 제품 · 아키텍처 문서다.
 

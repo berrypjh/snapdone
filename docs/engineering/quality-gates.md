@@ -15,10 +15,11 @@ pnpm verify
 | `pnpm format:check` | `prettier --check .`                           | 저장소 전체 (`.prettierignore` 제외)                                                                                 |
 | `pnpm lint`         | `nx run-many -t lint,vet,fmt` 뒤 루트 `eslint` | web · mobile · web-e2e · libs는 eslint, api는 `go vet` + gofmt 검사, 루트 eslint는 `tools/scripts` · `.claude/hooks` |
 | `pnpm typecheck`    | `nx run-many -t typecheck`                     | web · mobile · web-e2e · libs                                                                                        |
-| `pnpm test`         | `nx run-many -t test`                          | api는 `go test`, web · mobile · libs는 Vitest                                                                        |
+| `pnpm test`         | `nx run-many -t test`                          | api는 `go test`, web · mobile · libs · devhub는 Vitest. devhub는 캐시하지 않는다                                     |
 | `pnpm test:hooks`   | `node --test tools/scripts/*.test.mjs`         | `.claude/hooks/` — Nx 프로젝트가 아니라 별도 명령이다                                                                |
-| `pnpm build`        | `nx run-many -t build --exclude=mobile`        | web · api                                                                                                            |
-| `pnpm e2e`          | `nx run-many -t e2e`                           | web-e2e — **`verify`에 포함되지 않는다**                                                                             |
+| `pnpm build`        | `nx run-many -t build --exclude=mobile`        | web · api · devhub. devhub는 git 스냅샷을 페이지에 넣으므로 캐시하지 않는다                                          |
+| `pnpm e2e`          | `nx run-many -t e2e`                           | web-e2e · devhub-e2e — **`verify`에 포함되지 않는다**                                                                |
+| `pnpm devhub:check` | `nx run devhub:devhub-check`                   | DevHub catalog이 지금 저장소와 맞는지만 본다. 같은 검사가 `pnpm test`에도 들어 있다                                  |
 
 `test:hooks`는 Node 24 내장 러너를 쓴다. 의존성이 없다.
 
@@ -84,13 +85,15 @@ pnpm exec nx export mobile
 
 ## 테스트 현황 — 솔직하게
 
-| 프로젝트 | 종류      | 명령        | 상태                                                                           |
-| -------- | --------- | ----------- | ------------------------------------------------------------------------------ |
-| api      | 단위 · DB | `pnpm test` | Go 122개. 그중 46개는 `TEST_DATABASE_URL`이 있을 때만 돌고 없으면 **skip**한다 |
-| web      | 단위      | `pnpm test` | Vitest 114개 (9 파일)                                                          |
-| mobile   | 단위      | `pnpm test` | Vitest 180개 (12 파일)                                                         |
-| libs     | 단위      | `pnpm test` | `webview-bridge` 16개 · `auth-contracts` 9개                                   |
-| web-e2e  | E2E       | `pnpm e2e`  | 65개 × 3 브라우저 + 오류 주입 2개 × 3                                          |
+| 프로젝트   | 종류             | 명령        | 상태                                                                            |
+| ---------- | ---------------- | ----------- | ------------------------------------------------------------------------------- |
+| api        | 단위 · DB        | `pnpm test` | Go 122개. 그중 46개는 `TEST_DATABASE_URL`이 있을 때만 돌고 없으면 **skip**한다  |
+| web        | 단위             | `pnpm test` | Vitest 114개 (9 파일)                                                           |
+| mobile     | 단위             | `pnpm test` | Vitest 180개 (12 파일)                                                          |
+| libs       | 단위             | `pnpm test` | `webview-bridge` 16개 · `auth-contracts` 9개                                    |
+| web-e2e    | E2E              | `pnpm e2e`  | 65개 × 3 브라우저 + 오류 주입 2개 × 3                                           |
+| devhub     | 단위 · freshness | `pnpm test` | Vitest 199개 (23 파일). catalog ↔ 저장소 검사는 `pnpm devhub:check`로 따로 돈다 |
+| devhub-e2e | E2E              | `pnpm e2e`  | 22개 × Chromium. 이 저장소에서 아직 실행 결과가 없다                            |
 
 `nx test api` 통과가 DB 검증을 뜻하지 않는다. DB까지 보려면 Postgres를 띄우고 `TEST_DATABASE_URL`을 주고 돌린다(아래 Go 절).
 

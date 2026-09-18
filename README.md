@@ -36,9 +36,10 @@ cp apps/mobile/.env.example apps/mobile/.env
 pnpm dev:web      # http://localhost:3000
 pnpm dev:api      # http://127.0.0.1:8080
 pnpm dev:mobile   # Expo (Metro)
+pnpm dev:devhub    # DevHub (내부 도구) http://localhost:3100
 ```
 
-`pnpm dev`는 web과 api를 함께 띄운다. mobile은 대화형 프로세스라 따로 실행한다.
+`pnpm dev`는 web · api · devhub를 함께 띄운다. mobile은 대화형 프로세스라 따로 실행한다.
 
 api는 Postgres(`DATABASE_URL`)와 마이그레이션이 있어야 기동한다. 순서는 [local-development.md](docs/development/local-development.md#로컬-postgres).
 

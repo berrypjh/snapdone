@@ -17,6 +17,12 @@
     },
     {
       "path": "./libs/auth-contracts"
+    },
+    {
+      "path": "./apps/devhub"
+    },
+    {
+      "path": "./apps/devhub-e2e"
     }
   ]
 }

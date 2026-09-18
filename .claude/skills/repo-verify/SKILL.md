@@ -27,16 +27,21 @@ nx show projects --affected --files=<바뀐 파일, 쉼표 구분>
 
 이 저장소에서 실측한 매핑:
 
-| 바꾼 파일                                                                    | affected                            |
-| ---------------------------------------------------------------------------- | ----------------------------------- |
-| `apps/web/**`                                                                | `web`, **`web-e2e`**                |
-| `apps/mobile/**`                                                             | `mobile`                            |
-| `apps/api/**`                                                                | `api`                               |
-| `libs/<lib>/**`                                                              | `<lib>`, `web`, `mobile`, `web-e2e` |
-| `nx.json` · `tsconfig.base.json` · 루트 `package.json` · `eslint.config.mjs` | **전부 6개**                        |
-| `docs/**` · `.claude/**` · `tools/scripts/**`                                | 없음 (`[]`)                         |
+| 바꾼 파일                                     | affected                            |
+| --------------------------------------------- | ----------------------------------- |
+| `apps/web/**`                                 | `web`, **`web-e2e`**                |
+| `apps/mobile/**`                              | `mobile`                            |
+| `apps/api/**`                                 | `api`                               |
+| `libs/<lib>/**`                               | `<lib>`, `web`, `mobile`, `web-e2e` |
+| `apps/devhub/**`                              | `devhub`, `devhub-e2e`              |
+| `apps/devhub-e2e/**`                          | `devhub-e2e`                        |
+| `nx.json` · `tsconfig.base.json`              | **전부 8개**                        |
+| 루트 `package.json` · `eslint.config.mjs`     | `api`를 뺀 7개                      |
+| `docs/**` · `.claude/**` · `tools/scripts/**` | 없음 (`[]`)                         |
 
 `web` 변경이 `web-e2e`까지 끌어오는 것은 `implicitDependencies` 때문이며 의도된 동작이다.
+
+**DevHub는 affected가 모른다.** `devhub`의 catalog은 `apps/*` · `libs/*` · `docs/` · 루트 `package.json` · Nx target을 경로와 이름으로 인용하지만 Nx 의존이 아니라서, `apps/web`이나 `docs/`만 바꾸면 affected에 `devhub`가 없다. 파일을 옮기거나 지웠거나, 문서 heading · 루트 script · Nx target · export 이름을 바꿨으면 `pnpm devhub:check`를 함께 돌린다(2초 남짓, 캐시하지 않는다).
 
 affected가 비어 있어도 `.claude/hooks/**` · `tools/scripts/**`를 고쳤으면 `pnpm test:hooks`와 `pnpm exec eslint .claude/hooks tools/scripts`를 돌린다. Nx 프로젝트가 아니라 `pnpm lint` 끝의 루트 eslint만 이 경로를 본다.
 
@@ -51,6 +56,8 @@ target 이름은 프로젝트마다 다르다.
 | `api`                               | **`vet` `fmt` `test` `build` `swagger-check`** — `lint`도 `typecheck`도 없다 |
 | `web-e2e`                           | `lint` `typecheck` `e2e`                                                     |
 | `webview-bridge` · `auth-contracts` | `lint` `typecheck` `test`                                                    |
+| `devhub`                            | `lint` `typecheck` `test` `build` `devhub-check` — test · build는 캐시 안 함 |
+| `devhub-e2e`                        | `lint` `typecheck` `e2e`                                                     |
 
 확실하지 않으면 `nx show project <이름>`으로 본다. `nx affected -t <target>`은 그 target이 없는 프로젝트를 **조용히 건너뛴다**(`No tasks were run`). 없는 target 때문에 실패하지 않으므로 target을 묶어서 넘겨도 된다.
 
@@ -115,16 +122,16 @@ nx affected -t vet,fmt,test --files=<바뀐 Go 파일>
 
 돌리지 못한 것을 돌렸다고 말하지 않는다.
 
-| 항목                     | 이유                                                                       |
-| ------------------------ | -------------------------------------------------------------------------- |
-| `pnpm e2e`, `pnpm dev:*` | 포트 바인딩이 샌드박스에서 차단된다                                        |
-| `nx build web`           | Turbopack의 PostCSS 워커가 포트를 연다. 같은 이유로 막힌다                 |
-| `nx build mobile`        | 로컬 빌드가 아니라 **EAS 클라우드 빌드**다. 로컬 번들은 `nx export mobile` |
-| mobile 런타임 검증       | 시뮬레이터 · Detox · Maestro가 없다. **수단 자체가 없다**                  |
+| 항목                               | 이유                                                                       |
+| ---------------------------------- | -------------------------------------------------------------------------- |
+| `pnpm e2e`, `pnpm dev:*`           | 포트 바인딩이 샌드박스에서 차단된다                                        |
+| `nx build web` · `nx build devhub` | Turbopack의 PostCSS 워커가 포트를 연다. 같은 이유로 막힌다                 |
+| `nx build mobile`                  | 로컬 빌드가 아니라 **EAS 클라우드 빌드**다. 로컬 번들은 `nx export mobile` |
+| mobile 런타임 검증                 | 시뮬레이터 · Detox · Maestro가 없다. **수단 자체가 없다**                  |
 
 앞의 셋은 **AI 세션에서만** 막힌다. 사용자 터미널에서는 정상 동작하므로 실행을 요청하면 된다. 마지막 하나는 이 머신에 수단 자체가 없다.
 
-`pnpm build`는 `api`까지 통과하고 `web`에서 멈춘다. "web 빌드는 확인하지 못했다"고 적고 사용자에게 요청한다. 결과를 받았으면 `.next/BUILD_ID`와 `routes-manifest.json` 존재로 성공을 확인할 수 있다.
+`pnpm build`는 `api`까지 통과하고 `web` · `devhub`에서 멈춘다(캐시가 있으면 `web`은 재생될 수 있지만 `devhub`는 캐시하지 않는다). "web · devhub 빌드는 확인하지 못했다"고 적고 사용자에게 요청한다. 결과를 받았으면 `.next/BUILD_ID`와 `routes-manifest.json` 존재로 성공을 확인할 수 있다.
 
 ## 7. 마지막
 
