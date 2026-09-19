@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { AccessibilityInfo, StyleSheet, Text } from 'react-native';
 
 import { Box, Button, getColor, Stack, useTheme } from '@berrypjh/react-native-ui';
 
@@ -7,11 +8,25 @@ import { AuthShell } from '../components/auth/AuthShell';
 import { LogoutButton } from '../components/auth/LogoutButton';
 import { textStyle } from '../theme/text';
 
-/** ON-02 원문 예시. 입력 → 끝난 일. */
 const EXAMPLES = [
-  { source: '영수증', detail: '6,500원', result: '지출 기록 완료' },
-  { source: '공연 포스터', detail: '8월 25일', result: '캘린더 등록' },
-  { source: '맛집 캡처', detail: '성수 ○○카페', result: '서울 맛집 저장' },
+  {
+    source: '영수증',
+    detail: '6,500원',
+    result: '지출 기록 완료',
+    spokenResult: '지출 기록 완료',
+  },
+  {
+    source: '공연 포스터',
+    detail: '8월 25일',
+    result: '캘린더 등록',
+    spokenResult: '캘린더 등록 완료',
+  },
+  {
+    source: '맛집 캡처',
+    detail: '성수 ○○카페',
+    result: '서울 맛집 저장',
+    spokenResult: '서울 맛집 저장 완료',
+  },
 ] as const;
 
 /**
@@ -21,15 +36,23 @@ const EXAMPLES = [
 export const OnboardingIntroScreen = ({ controller }: { controller: AuthController }) => {
   const theme = useTheme();
   const { typography } = theme.tokens;
+  const titleRef = useRef<Text>(null);
   const text = { color: getColor(theme, 'text.default') };
   const muted = { color: getColor(theme, 'text.light') };
+  const done = { color: getColor(theme, 'text.success') };
+
+  useEffect(() => {
+    if (titleRef.current) AccessibilityInfo.sendAccessibilityEvent(titleRef.current, 'focus');
+  }, []);
 
   return (
     <AuthShell>
-      <Stack gap="2xl">
+      <Stack gap="xl">
         <Text
+          ref={titleRef}
           accessibilityRole="header"
-          style={[textStyle(typography.heading.h2), text, styles.center]}
+          lineBreakStrategyIOS="hangul-word"
+          style={[textStyle(typography.heading.h3), text, styles.center]}
         >
           사진 한 장으로{'\n'}해야 할 일을 끝내세요.
         </Text>
@@ -38,26 +61,26 @@ export const OnboardingIntroScreen = ({ controller }: { controller: AuthControll
           {EXAMPLES.map((example) => (
             <Box
               key={example.source}
+              accessible
+              accessibilityLabel={`${example.source}, ${example.detail}, ${example.spokenResult}`}
               p="lg"
               radius="lg"
               bg="background.surface"
               style={[styles.card, { borderColor: getColor(theme, 'stroke.light') }]}
             >
-              <View
-                accessible
-                accessibilityLabel={`${example.source} ${example.detail}, ${example.result}`}
+              <Text style={[textStyle(typography.caption.default), muted, styles.center]}>
+                {example.source}
+              </Text>
+              <Text style={[textStyle(typography.body.medium), text, styles.center]}>
+                {example.detail}
+              </Text>
+              <Text style={[textStyle(typography.caption.default), muted, styles.center]}>↓</Text>
+              <Text
+                lineBreakStrategyIOS="hangul-word"
+                style={[textStyle(typography.body.largeStrong), text, styles.center]}
               >
-                <Text style={[textStyle(typography.caption.default), muted, styles.center]}>
-                  {example.source}
-                </Text>
-                <Text style={[textStyle(typography.body.mediumStrong), text, styles.center]}>
-                  {example.detail}
-                </Text>
-                <Text style={[textStyle(typography.caption.default), muted, styles.center]}>↓</Text>
-                <Text style={[textStyle(typography.paragraph.default), text, styles.center]}>
-                  {example.result} ✓
-                </Text>
-              </View>
+                {example.result} <Text style={done}>✓</Text>
+              </Text>
             </Box>
           ))}
         </Stack>
