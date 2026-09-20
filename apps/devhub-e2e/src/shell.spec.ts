@@ -33,7 +33,7 @@ test.describe('shell', () => {
     await page.goto('/');
     const skip = page.getByRole('link', { name: '본문으로 건너뛰기' });
 
-    for (const view of ['시나리오', '아키텍처', '문서', '엔지니어링', '개요']) {
+    for (const view of ['시나리오', '아키텍처', '문서', '기록', '엔지니어링', '개요']) {
       const link = page
         .getByRole('navigation', { name: '보기' })
         .getByRole('link', { name: view, exact: true });

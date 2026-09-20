@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { SCENARIO, tabTo } from './support/keyboard';
+import { enterMain, SCENARIO, tabTo } from './support/keyboard';
 
 const flowName = `${SCENARIO.title} 흐름 그림`;
 
@@ -10,6 +10,7 @@ test.describe('크게 보기', () => {
     const inPage = await page.getByRole('group', { name: flowName }).boundingBox();
     const expand = page.getByRole('button', { name: '크게 보기' });
 
+    await enterMain(page);
     await tabTo(page, expand);
     await page.keyboard.press('Enter');
     const dialog = page.getByRole('dialog', { name: `${flowName} — 크게 보기` });

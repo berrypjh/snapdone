@@ -1,19 +1,12 @@
 import { expect, type Page, test } from '@playwright/test';
 
-import { SCENARIO, tabTo } from './support/keyboard';
+import { enterMain, SCENARIO, tabTo } from './support/keyboard';
 
 const READY = { id: 'ready', intent: '(자동) web이 앱에 challenge를 알린다' };
 const LAST = { id: 'open-page', order: 6, intent: '요청했던 화면을 로그인된 상태로 본다' };
 
 const flow = (page: Page) => page.getByRole('group', { name: `${SCENARIO.title} 흐름 그림` });
 const inspector = (page: Page) => page.getByRole('complementary', { name: '상세 정보' });
-
-/** Skip link into <main>, the way a keyboard user starts on a page. */
-async function enterMain(page: Page) {
-  await page.keyboard.press('Tab');
-  await page.keyboard.press('Enter');
-  await expect(page.getByRole('main')).toBeFocused();
-}
 
 test.describe('scenario flow', () => {
   test('selects a step, reads it in the inspector, and reaches its source link', async ({
@@ -119,7 +112,7 @@ test.describe('structured list', () => {
     await page.keyboard.press('Enter');
 
     const nodes = page.getByRole('list', { name: '구성 요소' }).getByRole('article');
-    await expect(nodes).toHaveCount(2);
+    await expect(nodes).toHaveCount(3);
     const link = nodes.first().getByRole('heading').getByRole('link');
     await expect(link).toHaveAttribute('href', /\?kind=library$/);
 
