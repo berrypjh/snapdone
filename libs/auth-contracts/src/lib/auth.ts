@@ -17,7 +17,13 @@ export const AUTH_ERROR_CODES = [
 
 export type AuthErrorCode = (typeof AUTH_ERROR_CODES)[number];
 
-export type OnboardingStep = 'intro' | 'complete';
+/** 온보딩 단계(서버 순서). `complete`가 아니면 온보딩 화면으로 보낸다. */
+export const ONBOARDING_STEPS = ['intro', 'purpose', 'first-image', 'complete'] as const;
+
+export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
+
+export const toOnboardingStep = (value: unknown): OnboardingStep | undefined =>
+  ONBOARDING_STEPS.find((step) => step === value);
 
 /** UI가 볼 수 있는 세션 필드 전부. credential은 함께 다니지 않는다. */
 export type Session = {
@@ -37,7 +43,24 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 export const parseSession = (value: unknown): Session | null => {
   if (!isRecord(value) || !isRecord(value.user)) return null;
   const { user, onboardingStep, expiresAt } = value;
-  if (typeof user.id !== 'string' || typeof expiresAt !== 'string') return null;
-  if (onboardingStep !== 'intro' && onboardingStep !== 'complete') return null;
-  return { user: { id: user.id }, onboardingStep, expiresAt };
+  const step = toOnboardingStep(onboardingStep);
+  if (typeof user.id !== 'string' || typeof expiresAt !== 'string' || !step) return null;
+  return { user: { id: user.id }, onboardingStep: step, expiresAt };
+};
+
+/** 로그인 응답(`/v1/auth/exchange` · `/v1/auth/handoff/exchange`). credential은 opaque 세션 토큰이다. */
+export type LoginResponse = { session: Session; credential: string };
+
+/** 로그인 응답 본문에서 세션과 credential만 꺼낸다. 모양이 틀리면 `null`이다. */
+export const parseLoginResponse = (value: unknown): LoginResponse | null => {
+  if (!isRecord(value)) return null;
+  const session = parseSession(value.session);
+  if (!session || typeof value.credential !== 'string' || value.credential === '') return null;
+  return { session, credential: value.credential };
+};
+
+/** 로그인 수단 응답에서 이 클라이언트가 아는 provider만 꺼낸다. */
+export const parseProviders = (value: unknown): AuthProvider[] => {
+  const providers = isRecord(value) && Array.isArray(value.providers) ? value.providers : [];
+  return AUTH_PROVIDERS.filter((provider) => providers.includes(provider));
 };
