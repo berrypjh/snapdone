@@ -17,8 +17,13 @@ export const boundaries: Boundary[] = [
     id: 'api',
     name: 'API 경계',
     summary:
-      'Go API를 부르는 것은 web의 Next 서버와 mobile 앱뿐이다. 브라우저는 직접 부르지 않아 CORS가 없다. 응답 모양은 auth-contracts와 Swagger가 정한다',
-    relations: ['web-calls-api', 'mobile-calls-api', 'api-persists-to-postgres'],
+      'Go API를 부르는 것은 web의 Next 서버와 mobile 앱뿐이다. 브라우저는 직접 부르지 않아 CORS가 없다. 응답 모양은 auth-contracts · onboarding과 Swagger가 정한다. 이미지 분류 모델은 api만 부른다',
+    relations: [
+      'web-calls-api',
+      'mobile-calls-api',
+      'api-persists-to-postgres',
+      'api-calls-image-model',
+    ],
     docs: [
       { document: 'data-access', heading: 'Web은 서버에서 호출한다' },
       { document: 'data-access', heading: 'Mobile은 항상 직접 호출한다' },

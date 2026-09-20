@@ -33,7 +33,7 @@ export const runtimes: RuntimeRef[] = [
   {
     id: 'go-api',
     name: 'Go API 서버',
-    summary: 'Gin 라우터 뒤의 인증 · 세션 처리',
+    summary: 'Gin 라우터 뒤의 인증 · 세션 · 온보딩 진행 · 사진 처리',
     node: 'api',
   },
 ];

@@ -16,8 +16,9 @@ describe('skip links', () => {
   it('open the document body, once, outside every route', () => {
     const html = renderToStaticMarkup(createElement(RootLayout, null, createElement('p')));
     const body = html.slice(html.indexOf('<body>') + '<body>'.length);
+    // Only the navigation focus spot comes first, so the next Tab after a navigation is a skip link.
     expect(body).toMatch(
-      /^<a href="#devhub-main" class="ui-skip-link">본문으로 건너뛰기<\/a><a href="#devhub-inspector" class="ui-skip-link">상세 정보로 건너뛰기<\/a>/,
+      /^<div tabindex="-1" class="outline-none"><\/div><a href="#devhub-main" class="ui-skip-link">본문으로 건너뛰기<\/a><a href="#devhub-inspector" class="ui-skip-link">상세 정보로 건너뛰기<\/a>/,
     );
   });
 

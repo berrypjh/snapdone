@@ -19,11 +19,6 @@ export const browserGoogleLogin: Scenario = {
       kind: 'external-unverified',
       note: '실제 Google 계정으로 인수하지 않았다. E2E는 가짜 인증 API로 돈다',
     },
-    {
-      kind: 'failing-test',
-      note: '온보딩 전 신규 사용자의 로그인 직후 이동은 onboarding-intro 시나리오의 불일치다',
-      tests: ['web-callback-onboarding'],
-    },
   ],
   steps: [
     step({
@@ -80,7 +75,7 @@ export const browserGoogleLogin: Scenario = {
       id: 'callback',
       intent: '(자동) Google이 브라우저를 API로 돌려보낸다',
       behavior:
-        'Go가 state를 확인하고 Google token을 교환해 사용자를 찾거나 만든 뒤, 60초 일회용 result code만 붙여 web /auth/callback으로 redirect한다',
+        'Go가 state를 확인하고 Google token을 교환해 사용자를 찾거나 만든 뒤, 60초 일회용 result code만 붙여 web /auth/callback으로 redirect한다. 실패 로그는 원인에 따라 남긴다 — 사용자 취소는 Info, 맞지 않거나 이미 쓴 state는 Warn, Google · DB 장애는 Error',
       runtime: 'go-api',
       owner: 'api',
       status: 'implemented',
@@ -91,7 +86,7 @@ export const browserGoogleLogin: Scenario = {
         { path: 'apps/api/internal/auth/store.go', symbol: 'Store.FindOrCreateUser' },
       ],
       apis: ['get-auth-oauth-callback'],
-      tests: ['go-oauth-web-returning', 'go-oauth-callback-errors'],
+      tests: ['go-oauth-web-returning', 'go-oauth-callback-errors', 'go-callback-log-level'],
       next: ['exchange'],
     }),
     step({

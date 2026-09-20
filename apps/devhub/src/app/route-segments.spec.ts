@@ -9,11 +9,6 @@ import StepPage from './[section]/[id]/steps/[stepId]/page';
 import ArchitectureNodePage from './architecture/[nodeId]/page';
 import ArchitecturePage from './architecture/page';
 
-/**
- * After a navigation Next scrolls to and focuses the first element of the new page segment. In
- * the layouts that keep a canvas mounted, that segment must be the workspace header: were it the
- * inspector, a narrow screen (inspector below the workspace) would open scrolled down to it.
- */
 const firstTag = async (page: ReactNode | Promise<ReactNode>) =>
   renderToStaticMarkup(await page).match(/^<([a-z0-9]+)/)?.[1];
 

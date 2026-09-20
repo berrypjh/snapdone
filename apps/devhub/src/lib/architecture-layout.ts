@@ -12,8 +12,9 @@ import { INTERACTION, RELATION, ROLE } from './labels';
  *   row 1  browser   web              google-oidc
  *   row 2  webview-  (empty: WebView   api              postgres
  *          bridge     edges pass here)
- *   row 3  auth-     mobile
+ *   row 3  auth-     mobile                            image-model
  *          contracts
+ *   row 4  onboarding (web's edge bends between auth-contracts and mobile)
  */
 const GRID: Record<string, [column: number, row: number]> = {
   'web-e2e': [1, 0],
@@ -27,6 +28,8 @@ const GRID: Record<string, [column: number, row: number]> = {
   postgres: [3, 2],
   'auth-contracts': [0, 3],
   mobile: [1, 3],
+  onboarding: [0, 4],
+  'image-model': [3, 3],
 };
 
 /** Curve direction for relations that share a pair of nodes, so parallel edges don't overlap. */
@@ -40,6 +43,7 @@ const BEND: Record<string, number> = {
   'devhub-e2e-depends-on-devhub': -1,
   'devhub-verified-by-devhub-e2e': -1,
   'mobile-opens-google': -0.5,
+  'web-depends-on-onboarding': -0.5,
 };
 
 export const ARCH_NODE = { width: 208, height: 116 } as const;

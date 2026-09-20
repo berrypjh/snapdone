@@ -44,19 +44,9 @@ function ScenarioList({ track }: { track: Scenario['track'] }) {
 
 /** What the product is for, quoted from its document, and which flows exist in code today. */
 function ProductSummary() {
-  const { text, source } = catalog.product;
   return (
     <WorkspaceSection id="overview-product" title="제품">
-      <blockquote className="typo-body-small">
-        <p>{text}</p>
-        <footer className="typo-caption-small text-text-light">
-          출처:{' '}
-          <Link href={entityHref({ section: 'documents', id: source.document })} className={LINK}>
-            {source.document}
-          </Link>{' '}
-          · {source.heading}
-        </footer>
-      </blockquote>
+      <p className="typo-body-small">{catalog.product.text}</p>
       <ScenarioList track="current" />
       <ScenarioList track="product-target" />
     </WorkspaceSection>

@@ -4,11 +4,11 @@ import { step } from './step';
 
 const PRODUCT_SOURCE = ['apps/mobile/src', 'apps/web/src', 'apps/api/internal', 'libs'];
 
-/** `action` is not searched: it matches `transaction` (OAuth transactions) and proves nothing. */
-const API_SURFACE: AbsenceCheck = {
-  terms: ['image', 'upload'],
+/** `action` is not searched: it matches `transaction` (OAuth transactions) and `suggestedAction`. */
+const ACTION_SURFACE: AbsenceCheck = {
+  terms: ['execute', '/actions'],
   scope: ['apps/api/docs/swagger/swagger.json', 'apps/api/internal/database/migrations'],
-  meaning: 'API route와 DB 스키마에 이미지 · 업로드가 없다(인증 route · 테이블뿐)',
+  meaning: '행동을 실행하는 API route · 테이블이 없다(사진 분류 결과까지만 있다)',
 };
 
 /**
@@ -28,7 +28,7 @@ export const finishTaskFromImage: Scenario = {
   gaps: [
     {
       kind: 'code-not-found',
-      note: 'Capture → Understand → Route → Act → Learn 중 어느 단계도 코드 · 의존성 · API · 스키마에 없다. 온보딩 소개의 예시(영수증 · 공연 포스터 · 맛집 캡처)는 고정 문구다',
+      note: 'Capture · Understand는 온보딩 첫 사진 한 장에만 있다 — 앱이나 web이 사진을 올리면 api가 설정된 모델로 분류해 결과를 돌려준다(/v1/processing-jobs). Route → Act → Learn은 코드 · API · 스키마에 없다. 온보딩 소개의 예시(영수증 · 공연 포스터 · 맛집 캡처)는 고정 문구다',
     },
   ],
   steps: [
@@ -45,15 +45,10 @@ export const finishTaskFromImage: Scenario = {
       ],
       absence: [
         {
-          terms: [
-            'expo-image-picker',
-            'expo-camera',
-            'expo-media-library',
-            'expo-document-picker',
-            'expo-sharing',
-          ],
+          terms: ['expo-camera', 'expo-media-library', 'expo-document-picker', 'expo-sharing'],
           scope: ['pnpm-lock.yaml'],
-          meaning: '카메라 · 사진 · 문서 선택 · 공유 패키지가 설치돼 있지 않다',
+          meaning:
+            '앱 안 카메라 화면 · 사진 라이브러리 관리 · 문서 선택 · 공유 패키지가 없다. 온보딩 첫 사진만 expo-image-picker의 시스템 카메라 · 사진 선택기를 쓴다',
         },
         {
           terms: ['camera', 'photo', 'capture', 'share'],
@@ -73,9 +68,10 @@ export const finishTaskFromImage: Scenario = {
       docs: [{ document: 'target-architecture', heading: '`apps/web` — Next.js' }],
       absence: [
         {
-          terms: ['type="file"', 'onPaste', 'onDrop', 'DataTransfer'],
+          terms: ['onPaste', 'onDrop', 'DataTransfer'],
           scope: ['apps/web/src'],
-          meaning: 'web에 파일 입력 · 붙여넣기 · 드롭 처리 코드가 없다',
+          meaning:
+            'web에 붙여넣기 · 드롭 처리 코드가 없다. 파일 선택은 온보딩 첫 사진(first-image-flow)에만 있다',
         },
       ],
       next: ['understand'],
@@ -93,17 +89,11 @@ export const finishTaskFromImage: Scenario = {
       ],
       absence: [
         {
-          terms: [
-            '@anthropic-ai',
-            'openai',
-            '@google/generative-ai',
-            '@google/genai',
-            'generative-ai-go',
-          ],
-          scope: ['pnpm-lock.yaml', 'apps/api/go.mod'],
-          meaning: '모델 SDK가 어느 쪽에도 없다',
+          terms: ['@anthropic-ai', 'openai', '@google/generative-ai', '@google/genai'],
+          scope: ['pnpm-lock.yaml'],
+          meaning:
+            '앱 쪽에는 모델 SDK가 없다. 모델 호출은 api만 하고(Claude SDK 또는 OpenAI 호환 HTTP, 설정으로 선택) 온보딩 첫 사진에만 쓰인다',
         },
-        API_SURFACE,
       ],
       next: ['route'],
     }),
@@ -119,7 +109,7 @@ export const finishTaskFromImage: Scenario = {
         { document: 'product-principles', heading: '신뢰 UX — Undo, Why, Confirmation' },
         { document: 'product-principles', heading: 'AI보다 Action 결과를 우선한다' },
       ],
-      absence: [API_SURFACE],
+      absence: [ACTION_SURFACE],
       next: ['act'],
     }),
     step({
@@ -137,11 +127,12 @@ export const finishTaskFromImage: Scenario = {
           meaning: '캘린더 · 알림 패키지가 없다',
         },
         {
-          terms: ['Calendar', 'calendar', 'Receipt'],
+          terms: ['Calendar', 'Receipt', 'Expense'],
           scope: PRODUCT_SOURCE,
-          meaning: '캘린더 · 영수증을 다루는 코드가 없다(한글 예시 문구 제외)',
+          meaning:
+            '캘린더 등록 · 지출 기록을 하는 코드(타입 · 함수)가 없다. 분류 결과의 값 이름(add_to_calendar · record_expense)과 한글 예시 문구만 있다',
         },
-        API_SURFACE,
+        ACTION_SURFACE,
       ],
       next: ['result'],
     }),

@@ -180,11 +180,19 @@ describe('relations', () => {
   });
 
   it('name only API paths that appear in their evidence files', () => {
-    const pathOf = new Map(catalog.apis.map((api) => [api.id, api.path]));
+    // A `{param}` segment is written in the caller as a template placeholder: `/jobs/${id}`.
+    const callPattern = (path: string) =>
+      new RegExp(
+        path
+          .split(/\{[^}]+\}/)
+          .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+          .join('\\$\\{[^`]+?\\}'),
+      );
+    const patternOf = new Map(catalog.apis.map((api) => [api.id, callPattern(api.path)]));
     for (const relation of catalog.relations) {
       if (relation.kind !== 'runtime' || relation.interaction !== 'http-call') continue;
       const evidence = relation.evidence.map((ref) => read(ref.path)).join('\n');
-      const missing = relation.apis.filter((id) => !evidence.includes(String(pathOf.get(id))));
+      const missing = relation.apis.filter((id) => !patternOf.get(id)?.test(evidence));
       expect(missing).toEqual([]);
     }
   });

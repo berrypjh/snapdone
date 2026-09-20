@@ -17,12 +17,12 @@ export const onboardingIntro: Scenario = {
   gaps: [
     {
       kind: 'code-not-found',
-      note: '온보딩을 끝내는 API · 화면이 없다. 실제 사용자는 홈에 닿지 못하고, 로컬에서는 profiles.onboarding_step을 직접 바꿔야 한다',
+      note: '온보딩을 끝내는 API가 없다. 앱과 web 모두 소개 → 목적 선택 → 첫 사진 → 처리까지 가지만 첫 결과 화면이 없어 그 뒤로 가지 못한다. 실제 사용자는 홈에 닿지 못하고, 로컬에서는 profiles.onboarding_step을 직접 바꿔야 한다',
     },
     {
-      kind: 'failing-test',
-      note: '로그인 직후 신규 사용자를 /onboarding으로 보내길 기대하는 web 단위 테스트가 HEAD에서 실패한다. 같은 기대의 E2E도 있으나 이 환경에서 실행하지 못해 결과를 확인하지 않았다',
-      tests: ['web-callback-onboarding', 'e2e-new-user-onboarding'],
+      kind: 'runtime-unverified',
+      note: '신규 사용자가 로그인 직후 /onboarding에 닿는 E2E는 이 환경에서 실행하지 못했다',
+      tests: ['e2e-new-user-onboarding'],
     },
   ],
   steps: [
@@ -46,12 +46,18 @@ export const onboardingIntro: Scenario = {
     step({
       id: 'route-app',
       intent: '앱에서 로그인을 마친다',
-      behavior: 'onboardingStep이 complete가 아니면 앱은 홈 대신 온보딩 소개 화면만 등록한다',
+      behavior:
+        'onboardingStep이 complete가 아니면 앱은 홈 대신 온보딩 흐름을 등록한다. 서버에 저장된 진행 단계(web에서 하던 진행 포함)에서 이어서 연다',
       runtime: 'mobile-app',
       owner: 'mobile',
       status: 'implemented',
-      source: [{ path: 'apps/mobile/src/auth/model.ts', symbol: 'destinationFor' }],
-      tests: ['mobile-destination-onboarding'],
+      source: [
+        { path: 'apps/mobile/src/auth/model.ts', symbol: 'destinationFor' },
+        { path: 'apps/mobile/src/app/OnboardingFlow.tsx', symbol: 'OnboardingFlow' },
+        { path: 'apps/mobile/src/onboarding/progressApi.ts', symbol: 'progressApi' },
+      ],
+      apis: ['get-onboarding', 'put-onboarding'],
+      tests: ['mobile-destination-onboarding', 'go-onboarding-progress', 'go-onboarding-store'],
       next: ['intro-app'],
     }),
     step({
@@ -69,10 +75,10 @@ export const onboardingIntro: Scenario = {
       id: 'route-web-after-login',
       intent: '브라우저에서 로그인을 막 마친다',
       behavior:
-        'completeLogin은 온보딩 단계와 무관하게 복귀 경로로 보낸다. 복귀 경로가 보호 page면 거기서 /onboarding으로 가지만, 기본 복귀 경로 /는 보호되지 않아 소개 화면에 닿지 않는다',
+        'completeLogin은 온보딩을 마치지 않은 사용자를 /onboarding으로, 마친 사용자를 복귀 경로로 보낸다',
       runtime: 'next-server',
       owner: 'web',
-      status: 'partial',
+      status: 'implemented',
       source: [
         { path: 'apps/web/src/lib/auth/callback.ts', symbol: 'completeLogin' },
         { path: 'apps/web/src/app/(product)/page.tsx', symbol: 'Index' },
@@ -80,9 +86,9 @@ export const onboardingIntro: Scenario = {
       tests: ['web-callback-onboarding', 'e2e-new-user-onboarding'],
       gaps: [
         {
-          kind: 'failing-test',
-          note: 'web-callback-onboarding는 /onboarding을 기대하지만 /history를 받아 실패한다(2026-09-18 HEAD 4940176에서 실행)',
-          tests: ['web-callback-onboarding'],
+          kind: 'runtime-unverified',
+          note: '같은 기대의 E2E는 이 환경에서 실행하지 못했다',
+          tests: ['e2e-new-user-onboarding'],
         },
       ],
       next: ['intro-web'],
@@ -91,7 +97,7 @@ export const onboardingIntro: Scenario = {
       id: 'intro-app',
       intent: '앱에서 서비스 소개를 본다',
       behavior:
-        '예시 3장(입력 → 끝난 일)과 비활성 "시작하기" · "다음 단계는 준비 중입니다" · 로그아웃을 보인다',
+        '예시 3장(입력 → 끝난 일) · "시작하기" · 로그아웃을 보인다. 시작하기는 목적 선택 → 첫 사진 → 사진 확인으로 이어진다',
       runtime: 'mobile-app',
       owner: 'mobile',
       status: 'implemented',
@@ -112,20 +118,32 @@ export const onboardingIntro: Scenario = {
         },
       ],
       next: ['finish'],
+      via: ['onboarding-first-photo'],
     }),
     step({
       id: 'intro-web',
-      intent: '브라우저나 앱 WebView에서 서비스 소개를 본다',
+      intent: '브라우저에서 서비스 소개를 보고 온보딩을 진행한다',
       behavior:
-        '앱과 같은 예시와 비활성 "시작하기"를 보인다. 앱 WebView 안에서는 로그아웃 버튼을 숨긴다',
+        '앱과 같은 예시와 "시작하기"를 보인다. 시작하기는 목적 선택 → 첫 사진(파일 선택) → 사진 확인 → 처리로 이어지고, 진행은 서버에 저장돼 다시 열면 그 단계로 간다. 앱 WebView 안에서는 로그아웃 버튼을 숨긴다',
       runtime: 'next-server',
       owner: 'web',
       status: 'implemented',
       source: [
         { path: 'apps/web/src/app/(auth)/onboarding/page.tsx', symbol: 'OnboardingPage' },
+        { path: 'apps/web/src/lib/onboarding/actions.ts', symbol: 'startOnboarding' },
+        {
+          path: 'apps/web/src/components/onboarding/first-image-flow.tsx',
+          symbol: 'FirstImageFlow',
+        },
         { path: SESSION, symbol: 'requireSignedIn' },
       ],
-      tests: ['e2e-login-from-onboarding', 'e2e-onboarding-decorations'],
+      apis: ['get-onboarding', 'put-onboarding', 'post-processing-jobs', 'get-processing-job'],
+      tests: [
+        'e2e-login-from-onboarding',
+        'e2e-onboarding-decorations',
+        'e2e-web-onboarding-flow',
+        'e2e-web-onboarding-resume',
+      ],
       gaps: [
         {
           kind: 'code-not-found',
@@ -133,20 +151,22 @@ export const onboardingIntro: Scenario = {
         },
       ],
       next: ['finish'],
+      via: ['onboarding-first-photo'],
     }),
     step({
       id: 'finish',
-      intent: '"시작하기"를 눌러 온보딩을 끝내고 홈으로 간다',
-      behavior: '버튼은 disabled이고, onboarding_step을 complete로 바꾸는 코드 · endpoint가 없다',
+      intent: '온보딩을 끝내고 홈으로 간다',
+      behavior:
+        '앱과 web 모두 첫 사진 처리 뒤 "다음 단계는 준비 중입니다."에서 멈춘다. 진행 저장(PUT /v1/onboarding)은 intro · purpose · first-image만 받고, onboarding_step을 complete로 바꾸는 코드 · endpoint가 없다',
       runtime: 'go-api',
       owner: 'api',
       status: 'not-found',
       docs: [{ document: 'local-development', heading: '앱 안 WebView 화면 보기' }],
       absence: [
         {
-          terms: ['UPDATE profiles', 'SET onboarding_step'],
+          terms: ["onboarding_step = 'complete'"],
           scope: ['apps/api/internal'],
-          meaning: 'API 코드 어디에도 onboarding_step을 바꾸는 SQL이 없다',
+          meaning: 'API 코드 어디에도 onboarding_step을 complete로 바꾸는 SQL이 없다',
         },
       ],
     }),

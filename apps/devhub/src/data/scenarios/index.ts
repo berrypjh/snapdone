@@ -7,6 +7,7 @@ import { finishTaskFromImage } from './finish-task-from-image';
 import { logoutSessionRevocation } from './logout-session-revocation';
 import { mobileGoogleLogin } from './mobile-google-login';
 import { mobileHistoryWebView } from './mobile-history-webview';
+import { onboardingFirstPhoto } from './onboarding-first-photo';
 import { onboardingIntro } from './onboarding-intro';
 import { protectedHistoryAccess } from './protected-history-access';
 import { webViewAuthHandoff } from './webview-auth-handoff';
@@ -18,6 +19,7 @@ export const scenarios: Scenario[] = [
   browserGoogleLogin,
   mobileGoogleLogin,
   onboardingIntro,
+  onboardingFirstPhoto,
   mobileHistoryWebView,
   webViewAuthHandoff,
   protectedHistoryAccess,

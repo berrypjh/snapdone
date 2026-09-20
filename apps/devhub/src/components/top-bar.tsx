@@ -12,7 +12,6 @@ import { SECTION_ICON, VIEW_ICON } from './view-icons';
 
 const PRODUCT_NAME = 'Snapdone DevHub';
 
-/** Top-level views (devhub.md 20.1). Each view opens the explorer sections it covers. */
 const VIEWS: { label: string; href: string; icon: IconName; sections: SectionId[] }[] = [
   { label: '개요', href: '/', icon: VIEW_ICON.overview, sections: [] },
   { label: '시나리오', href: '/scenarios', icon: SECTION_ICON.scenarios, sections: ['scenarios'] },
@@ -34,16 +33,9 @@ const VIEWS: { label: string; href: string; icon: IconName; sections: SectionId[
 type TopBarProps = {
   repository: RepositoryRef;
   activeSection?: SectionId;
-  /** Set on routes that belong to a view without an explorer section (`/architecture`). */
   activeView?: 'architecture' | 'source';
 };
 
-/**
- * From `lg`: one row that never wraps — product, repository and snapshot (from `xl`, cut with an
- * ellipsis first), search (grows up to 24rem, shrinks down to 10rem), views, theme.
- * Below `lg`: one row that sticks to the top — menu (the explorer drawer, which lists the views),
- * product, search button, theme — with the search field opening as a second row.
- */
 export function TopBar({ repository, activeSection, activeView }: TopBarProps) {
   const isActive = (view: (typeof VIEWS)[number]) =>
     activeView

@@ -84,7 +84,7 @@ export type ExternalSystemRef = {
 
 export type ArchitectureNode = ApplicationRef | LibraryRef | ExternalSystemRef;
 
-export type HttpMethod = 'GET' | 'POST';
+export type HttpMethod = 'GET' | 'POST' | 'PUT';
 
 export type ApiRef = {
   id: string;

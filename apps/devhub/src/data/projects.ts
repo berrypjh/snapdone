@@ -89,6 +89,17 @@ export const libraries: LibraryRef[] = [
   },
   {
     kind: 'library',
+    id: 'onboarding',
+    root: 'libs/onboarding',
+    manifest: { path: 'libs/onboarding/package.json' },
+    packageName: '@snapdone/onboarding',
+    nxTags: ['type:lib'],
+    stack: 'TypeScript 소스 패키지',
+    summary: '온보딩 규칙과 wire 타입 — 사용 목적 · 저장된 진행 · 사진 처리 작업과 조회 흐름',
+    docs: [{ document: 'target-architecture', heading: '`libs/` — 공유 코드' }],
+  },
+  {
+    kind: 'library',
     id: 'webview-bridge',
     root: 'libs/webview-bridge',
     manifest: { path: 'libs/webview-bridge/package.json' },

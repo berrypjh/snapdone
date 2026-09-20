@@ -83,8 +83,10 @@ export function ExplorerPane({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!open) return;
-    const pane = paneRef.current;
-    pane?.querySelector<HTMLElement>(`#${ITEMS_ID} [aria-current="page"], #${ITEMS_ID} a`)?.focus();
+    const items = paneRef.current?.querySelector(`#${ITEMS_ID}`);
+    (
+      items?.querySelector<HTMLElement>('[aria-current="page"]') ?? items?.querySelector('a')
+    )?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') close(true);
     };
@@ -113,8 +115,11 @@ export function ExplorerPane({ children }: { children: ReactNode }) {
         className={[
           'relative bg-background-surface lg:overflow-y-auto lg:border-r lg:border-stroke-light',
           'max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-40 max-lg:w-[min(20rem,85vw)] max-lg:overflow-y-auto max-lg:shadow-4',
-          'max-lg:transition-[translate,visibility] max-lg:duration-200 motion-reduce:transition-none',
-          open ? '' : 'max-lg:invisible max-lg:-translate-x-full',
+          'max-lg:duration-200 max-lg:motion-reduce:transition-none',
+          // Opening shows the pane at once so its item can take focus; closing hides it after the slide.
+          open
+            ? 'max-lg:transition-[translate]'
+            : 'max-lg:invisible max-lg:-translate-x-full max-lg:transition-[translate,visibility]',
         ].join(' ')}
       >
         <div className="flex items-center justify-between border-b border-stroke-light p-3 lg:hidden">

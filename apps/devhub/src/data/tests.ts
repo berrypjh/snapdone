@@ -35,6 +35,11 @@ const WEB = 'apps/web/src/lib/auth';
 const MOBILE = 'apps/mobile/src/auth';
 const HTTP = 'apps/api/internal/httpserver';
 const AUTH = 'apps/api/internal/auth';
+const WEB_ONBOARDING = 'apps/web/src/lib/onboarding';
+const MOBILE_ONBOARDING = 'apps/mobile/src/onboarding';
+const LIB_ONBOARDING = 'libs/onboarding/src/lib';
+const PROCESSING = 'apps/api/internal/processing';
+const ONBOARDING = 'apps/api/internal/onboarding/onboarding_test.go';
 
 /** Tests cited as scenario evidence. Titles and function names are written exactly as in the file. */
 export const tests: TestRef[] = [
@@ -185,6 +190,36 @@ export const tests: TestRef[] = [
     'sets no session without the verifier cookie (another browser opened the link)',
   ),
 
+  vitest(
+    'web-onboarding-save',
+    `${WEB_ONBOARDING}/api.spec.ts`,
+    'progress',
+    'saves with PUT and a JSON body',
+  ),
+  vitest(
+    'web-onboarding-save-conflict',
+    `${WEB_ONBOARDING}/api.spec.ts`,
+    'progress',
+    'reports a conflict when the server moved on first',
+  ),
+  vitest(
+    'web-processing-upload',
+    `${WEB_ONBOARDING}/api.spec.ts`,
+    'processing',
+    'uploads the image as the multipart field image',
+  ),
+  vitest(
+    'web-processing-too-large',
+    `${WEB_ONBOARDING}/processing-port.spec.ts`,
+    'createProcessingPort',
+    'refuses a photo over the Go limit without uploading it',
+  ),
+  vitest(
+    'web-processing-signed-out',
+    `${WEB_ONBOARDING}/processing-port.spec.ts`,
+    'createProcessingPort',
+    'stops and tells the page when the session is gone',
+  ),
   // mobile — Vitest
   vitest(
     'mobile-restore-anonymous',
@@ -409,6 +444,60 @@ export const tests: TestRef[] = [
     'tells a device-only logout apart from a failed logout',
   ),
 
+  vitest(
+    'mobile-onboarding-resume-web',
+    `${MOBILE_ONBOARDING}/controller.spec.ts`,
+    'load',
+    'resumes the saved progress, including progress made on the web',
+  ),
+  vitest(
+    'mobile-onboarding-saves',
+    `${MOBILE_ONBOARDING}/controller.spec.ts`,
+    'dispatch',
+    'publishes and saves each change',
+  ),
+  vitest(
+    'mobile-onboarding-save-fails',
+    `${MOBILE_ONBOARDING}/controller.spec.ts`,
+    'dispatch',
+    'keeps going when saving fails, and the next launch resumes the last saved step',
+  ),
+  vitest(
+    'mobile-purpose-answer',
+    `${MOBILE_ONBOARDING}/model.spec.ts`,
+    'purpose answer',
+    'keeps chosen purposes once each in the fixed order and moves to the first image',
+  ),
+  vitest(
+    'mobile-purpose-skip',
+    `${MOBILE_ONBOARDING}/model.spec.ts`,
+    'purpose answer',
+    'records a skip and moves to the first image',
+  ),
+  vitest(
+    'mobile-capture-cancel',
+    `${MOBILE_ONBOARDING}/capture.spec.ts`,
+    'toCaptureResult',
+    'treats a cancel as a normal end, not an error',
+  ),
+  vitest(
+    'mobile-capture-permission',
+    `${MOBILE_ONBOARDING}/capture.spec.ts`,
+    'createImageCapture',
+    'does not open the camera when the permission is refused',
+  ),
+  vitest(
+    'mobile-processing-upload',
+    `${MOBILE_ONBOARDING}/processingApi.spec.ts`,
+    'start',
+    'uploads the photo with the bearer credential',
+  ),
+  vitest(
+    'mobile-processing-network',
+    `${MOBILE_ONBOARDING}/processingApi.spec.ts`,
+    'start',
+    'reports network when the request never completes',
+  ),
   // libs — Vitest
   vitest(
     'bridge-user-agent',
@@ -435,6 +524,48 @@ export const tests: TestRef[] = [
     'keeps only the three session fields',
   ),
 
+  vitest(
+    'onboarding-toggle-unsure',
+    `${LIB_ONBOARDING}/purposes.spec.ts`,
+    'togglePurpose',
+    'leaves only unsure when unsure is chosen',
+  ),
+  vitest(
+    'onboarding-selection-mixed-unsure',
+    `${LIB_ONBOARDING}/purposes.spec.ts`,
+    'isPurposeSelection',
+    'rejects unsure mixed with another purpose',
+  ),
+  vitest(
+    'onboarding-saved-skip',
+    `${LIB_ONBOARDING}/progress.spec.ts`,
+    'parseSavedProgress',
+    'keeps a skip apart from an unanswered purpose',
+  ),
+  vitest(
+    'onboarding-run-polls',
+    `${LIB_ONBOARDING}/processing.spec.ts`,
+    'runProcessing',
+    'polls a running job until it completes',
+  ),
+  vitest(
+    'onboarding-run-rejected-upload',
+    `${LIB_ONBOARDING}/processing.spec.ts`,
+    'runProcessing',
+    'turns a rejected upload into a reason the user can act on',
+  ),
+  vitest(
+    'onboarding-run-network',
+    `${LIB_ONBOARDING}/processing.spec.ts`,
+    'runProcessing',
+    'stops with network when a poll cannot reach the server',
+  ),
+  vitest(
+    'onboarding-run-server-failure',
+    `${LIB_ONBOARDING}/processing.spec.ts`,
+    'runProcessing',
+    'ends with the server failure',
+  ),
   // api — go test (DB tests skip without TEST_DATABASE_URL)
   goTest(
     'go-capabilities',
@@ -500,6 +631,56 @@ export const tests: TestRef[] = [
   ),
   goTest('go-handoff-proof', `${HTTP}/handoff_test.go`, 'TestHandoffExchangeChecksProof', DB),
   goTest('go-user-starts-at-intro', `${AUTH}/store_test.go`, 'TestCreateUserStartsAtIntro', DB),
+  goTest('go-onboarding-progress', `${HTTP}/onboarding_test.go`, 'TestOnboardingProgress', []),
+  goTest('go-onboarding-store', ONBOARDING, 'TestStoreSavesProgress', DB),
+  goTest('go-onboarding-store-rejects', ONBOARDING, 'TestStoreRejects', DB),
+  goTest('go-onboarding-validate', ONBOARDING, 'TestValidate', []),
+  goTest('go-onboarding-can-move', ONBOARDING, 'TestCanMove', []),
+  goTest('go-onboarding-rejects', `${HTTP}/onboarding_test.go`, 'TestOnboardingRejects', []),
+  goTest('go-processing-create', `${HTTP}/processing_test.go`, 'TestCreateProcessingJob', []),
+  goTest(
+    'go-processing-create-rejects',
+    `${HTTP}/processing_test.go`,
+    'TestCreateProcessingJobRejects',
+    [],
+  ),
+  goTest(
+    'go-processing-slow-upload',
+    `${HTTP}/server_test.go`,
+    'TestServerAcceptsPhotoUploadSlowerThanDefaultTimeouts',
+    [],
+  ),
+  goTest('go-processing-find', `${HTTP}/processing_test.go`, 'TestProcessingJob', []),
+  goTest('go-processing-disabled', `${HTTP}/processing_test.go`, 'TestProcessingDisabled', []),
+  goTest(
+    'go-processor-background',
+    `${PROCESSING}/processor_test.go`,
+    'TestStartCompletesInBackground',
+    [],
+  ),
+  goTest(
+    'go-processor-fails',
+    `${PROCESSING}/processor_test.go`,
+    'TestStartFailsWhenClassifyFails',
+    [],
+  ),
+  goTest('go-claude-request', `${PROCESSING}/claude_test.go`, 'TestClassifyRequestShape', []),
+  goTest('go-openai-request', `${PROCESSING}/openai_test.go`, 'TestOpenAIClassifyRequestShape', []),
+  goTest(
+    'go-result-contract',
+    `${PROCESSING}/result_test.go`,
+    'TestParseResultRejectsOutsideTheContract',
+    [],
+  ),
+  goTest(
+    'go-processing-config',
+    'apps/api/internal/config/processing_test.go',
+    'TestProcessingProviders',
+    [],
+  ),
+  goTest('go-job-stale', `${PROCESSING}/store_test.go`, 'TestStaleRunningJobReadsAsFailed', DB),
+  goTest('go-job-owner', `${PROCESSING}/store_test.go`, 'TestFindHidesOtherJobs', DB),
+  goTest('go-callback-log-level', `${HTTP}/log_test.go`, 'TestCallbackLogLevel', []),
   goTest('go-session-expired', `${AUTH}/session_test.go`, 'TestFindSessionIgnoresExpired', DB),
   goTest(
     'go-revoke-root-children',
@@ -650,5 +831,20 @@ export const tests: TestRef[] = [
     'e2e-onboarding-decorations',
     'auth-accessibility.spec.ts',
     'hides the decorative arrows and check marks from assistive technology',
+  ),
+  playwright(
+    'e2e-web-onboarding-flow',
+    'onboarding.spec.ts',
+    'a browser user goes from the intro through purposes to the first photo',
+  ),
+  playwright(
+    'e2e-web-onboarding-unsure-skip',
+    'onboarding.spec.ts',
+    'unsure stays alone and a skip also reaches the first photo',
+  ),
+  playwright(
+    'e2e-web-onboarding-resume',
+    'onboarding.spec.ts',
+    'reopening onboarding resumes the saved step',
   ),
 ];

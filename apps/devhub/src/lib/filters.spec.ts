@@ -27,7 +27,7 @@ describe('filterScenarios', () => {
     const ids = (active: Record<string, string>) =>
       filterScenarios(catalog.scenarios, active).map((s) => s.id);
     expect(ids({ track: 'product-target' })).toEqual(['finish-task-from-image']);
-    expect(ids({ status: 'partial' })).toEqual(['onboarding-intro']);
+    expect(ids({ status: 'partial' })).toEqual(['onboarding-intro', 'onboarding-first-photo']);
     expect(ids({ runtime: 'system-auth-browser' })).toEqual(['mobile-google-login']);
     expect(ids({})).toHaveLength(catalog.scenarios.length);
   });
