@@ -47,6 +47,12 @@ pnpm dev:mobile   # Expo (Metro 개발 서버)
 pnpm dev:devhub    # DevHub → http://localhost:3100 (저장소를 보는 내부 도구)
 ```
 
+**DevHub의 "에디터에서 열기"는 개발 서버에서만 보인다.** 파일 경로 옆의 그 링크는 이 컴퓨터의 절대 경로를 쓰므로 빌드된 페이지에는 들어가지 않는다. 기본 에디터는 VS Code이고, 다른 에디터는 `DEVHUB_EDITOR`로 고른다 — `antigravity` · `cursor` · `vscode` · `windsurf` · `zed` · `idea` · `webstorm`, 또는 `{path}`가 들어간 URL 형식을 직접 적는다. 설정은 이 머신에만 남는 로컬 env 파일에 한 줄로 둔다 — `apps/devhub/.env.example`을 복사해서 쓴다.
+
+```bash
+cp apps/devhub/.env.example apps/devhub/.env.local
+```
+
 `pnpm dev` 하나로 **web · api · devhub를 함께** 띄울 수도 있다. devhub는 3100에 고정돼 web(3000)과 부딪히지 않는다.
 
 ```bash
@@ -72,7 +78,7 @@ curl -i http://127.0.0.1:8080/health
 
 mobile 홈의 "기록 보기"는 web의 `/history`를 WebView로 연다. **web dev 서버가 떠 있어야 한다.**
 
-홈은 로그인했고 온보딩을 마친 사용자에게만 열린다. 온보딩을 끝내는 단계는 아직 없으므로(소개 화면의 "시작하기"는 비활성) 로컬에서는 그 사용자의 `profiles.onboarding_step`을 직접 `complete`로 바꿔야 홈에 닿는다.
+홈은 로그인했고 온보딩을 마친 사용자에게만 열린다. 온보딩을 끝내는 단계(결과 화면 · 완료 API)는 아직 없으므로 로컬에서는 그 사용자의 `profiles.onboarding_step`을 직접 `complete`로 바꿔야 홈에 닿는다.
 
 1. `apps/mobile/.env`에 `EXPO_PUBLIC_WEB_BASE_URL`을 넣는다 (`.env.example` 참고). iOS 시뮬레이터 `http://localhost:3000` · Android 에뮬레이터 `http://10.0.2.2:3000` · 실기기는 개발 PC LAN IP
 2. 터미널 A: `pnpm dev:web` — 실기기라면 LAN에서 받도록 `pnpm exec nx dev web --hostname 0.0.0.0`
@@ -80,6 +86,20 @@ mobile 홈의 "기록 보기"는 web의 `/history`를 WebView로 연다. **web d
 4. 홈 → "기록 보기": 네이티브 헤더 제목이 "기록"이고 web의 header · sidebar가 보이지 않아야 한다
 
 브라우저에서 앱 모드를 흉내 내려면 User-Agent 끝에 `SnapdoneApp/1`을 붙인다 (Chrome 개발자도구 → Network conditions).
+
+### 온보딩 처음부터 보기
+
+온보딩 진행(단계 · 목적)은 **서버의 `profiles`에** 저장된다(`onboarding_step` · `onboarding_purposes`). 그래서 앱에서 하던 진행을 web에서, web에서 하던 진행을 앱에서 이어 간다. 처음부터 보려면 그 사용자의 진행을 되돌리거나 로컬 DB의 사용자를 지운다. 사용자를 지우면 세션 · 프로필 · 처리 작업이 `ON DELETE CASCADE`로 함께 지워져 다음 로그인이 새 사용자가 된다.
+
+```bash
+docker compose -f apps/api/compose.yaml exec postgres psql -U snapdone -d snapdone -c "UPDATE profiles SET onboarding_step = 'intro', onboarding_purposes = NULL;"
+```
+
+```bash
+docker compose -f apps/api/compose.yaml exec postgres psql -U snapdone -d snapdone -c 'DELETE FROM users;'
+```
+
+사용자를 지운 뒤 앱을 다시 열면 저장된 로그인이 거부되어 로그인 화면이 나온다. 사진 처리까지 보려면 `pnpm dev:api`를 띄우는 셸에 `PROCESSING_*`(Claude · GPT · 로컬 Ollama 예시는 api의 `.env.example`)를 export하고, 새 마이그레이션이 있으면 `nx run api:migrate`를 먼저 실행한다.
 
 ## 검사
 

@@ -23,6 +23,9 @@
     },
     {
       "path": "./apps/devhub-e2e"
+    },
+    {
+      "path": "./libs/onboarding"
     }
   ]
 }

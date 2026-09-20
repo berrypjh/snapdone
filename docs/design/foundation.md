@@ -175,8 +175,8 @@ Mobile은 터치 기반이라 focus 링 대신 pressed 상태와 `accessibilityR
 ```
 
 - **데스크톱 사이드바를 모바일에 복제하지 않는다.** 헤더 + 스크롤 본문 구조다
-- 헤더는 native stack이 그린다. 색은 `navigationTheme`이 공용 토큰에서 만든다 — 배경 `background.surface`, 제목 `text.default`, 뒤로 가기 `text.primary`, 구분선 `stroke.light`. 글꼴은 플랫폼 기본이다. WebView 화면 제목은 web의 `ready` 메시지가 바꾼다. 홈 헤더 오른쪽에 "로그아웃"(`components/auth/LogoutButton`)이 있다
-- 복원 · 로그인 · 온보딩 소개 화면은 native header 없이 `components/auth/AuthShell`이 상하좌우 inset을 모두 가진다
+- 헤더는 native stack이 그린다. 색은 `navigationTheme`이 공용 토큰에서 만든다 — 배경 `background.surface`, 제목 `text.default`, 뒤로 가기 `text.primary`, 구분선 `stroke.light`. 글꼴은 플랫폼 기본이다. WebView 화면 제목은 web의 `ready` 메시지가 바꾼다. 홈 헤더 오른쪽에 "로그아웃"(`components/auth/LogoutButton`)이 있다. 온보딩은 소개 화면 본문에 두고, 이어서 열어 소개로 돌아갈 수 없는 단계에서는 헤더 오른쪽에 둔다
+- 복원 · 로그인 · 온보딩 소개 화면은 native header 없이 `components/auth/AuthShell`이 상하좌우 inset을 모두 가진다. 온보딩 목적 선택은 뒤로 가기용 native header(제목 없음 · 구분선 없음)를 보이고 `AuthShell edges`에서 top을 뺀다
 - `AppShell`의 `SafeAreaView` `edges`는 `['left','right']`다. top은 header가 가져간다. **bottom을 일부러 뺐다** — 나중에 bottom navigation이 하단 inset을 직접 가져가야 이중 패딩이 안 생긴다
 - `android.edgeToEdgeEnabled: true`이므로 Safe Area 처리는 선택이 아니라 필수다
 - **가짜 탭을 만들지 않는다.** 실제 화면이 생길 때 bottom navigation을 넣는다
@@ -215,13 +215,14 @@ Mobile은 터치 기반이라 focus 링 대신 pressed 상태와 `accessibilityR
 
 **Mobile도 로컬 primitive가 없다.** `@berrypjh/react-native-ui`에서 가져와 조합한다.
 
-| 쓰는 것 (mobile)                                                           | 어디서                         | 무엇에                   |
-| -------------------------------------------------------------------------- | ------------------------------ | ------------------------ |
-| `ThemeProvider mode`                                                       | `app/App.tsx`                  | 시스템 라이트/다크       |
-| `Stack gap="xl"`                                                           | `components/AppShell.tsx`      | 화면 본문 세로 배치      |
-| `Box p="xl" bg="background.surface" radius="lg"` + hairline `stroke.light` | `screens/HomeScreen.tsx`       | 상태 문구 카드           |
-| `Button variant="outlined"`                                                | `screens/HomeScreen.tsx`       | "기록 보기"              |
-| `Button variant="contained"`                                               | `screens/WebContentScreen.tsx` | WebView 오류 "다시 시도" |
+| 쓰는 것 (mobile)                                                             | 어디서                                | 무엇에                   |
+| ---------------------------------------------------------------------------- | ------------------------------------- | ------------------------ |
+| `ThemeProvider mode`                                                         | `app/App.tsx`                         | 시스템 라이트/다크       |
+| `Stack gap="xl"`                                                             | `components/AppShell.tsx`             | 화면 본문 세로 배치      |
+| `Box p="xl" bg="background.surface" radius="lg"` + hairline `stroke.light`   | `screens/HomeScreen.tsx`              | 상태 문구 카드           |
+| `Button variant="outlined"`                                                  | `screens/HomeScreen.tsx`              | "기록 보기"              |
+| `Button variant="contained"`                                                 | `screens/WebContentScreen.tsx`        | WebView 오류 "다시 시도" |
+| `Checkbox` + hairline `stroke.light`(선택 시 `stroke.primary`) · `radius.lg` | `screens/OnboardingPurposeScreen.tsx` | 온보딩 목적 복수 선택    |
 
 **Modal · Dropdown · Tabs · Toast · Bottom Sheet · Form wrapper는 만들지 않았다.** 필요해지면 공용 라이브러리 컴포넌트를 바로 import해 쓴다.
 

@@ -32,6 +32,9 @@ importers:
       expo-crypto:
         specifier: ~56.0.4
         version: 56.0.5(expo@56.0.19)
+      expo-image-picker:
+        specifier: ~56.0.23
+        version: 56.0.25(expo@56.0.19)
       expo-secure-store:
         specifier: ~56.0.4
         version: 56.0.4(expo@56.0.19)
@@ -251,6 +254,9 @@ importers:
       '@snapdone/auth-contracts':
         specifier: workspace:*
         version: link:../../libs/auth-contracts
+      '@snapdone/onboarding':
+        specifier: workspace:*
+        version: link:../../libs/onboarding
       '@snapdone/webview-bridge':
         specifier: workspace:*
         version: link:../../libs/webview-bridge
@@ -260,6 +266,9 @@ importers:
       expo-crypto:
         specifier: '*'
         version: 56.0.5(expo@56.0.19)
+      expo-image-picker:
+        specifier: '*'
+        version: 56.0.25(expo@56.0.19)
       expo-secure-store:
         specifier: '*'
         version: 56.0.4(expo@56.0.19)
@@ -308,6 +317,9 @@ importers:
       '@snapdone/auth-contracts':
         specifier: workspace:*
         version: link:../../libs/auth-contracts
+      '@snapdone/onboarding':
+        specifier: workspace:*
+        version: link:../../libs/onboarding
       '@snapdone/webview-bridge':
         specifier: workspace:*
         version: link:../../libs/webview-bridge
@@ -324,6 +336,12 @@ importers:
   apps/web-e2e: {}
 
   libs/auth-contracts: {}
+
+  libs/onboarding:
+    dependencies:
+      '@snapdone/auth-contracts':
+        specifier: workspace:*
+        version: link:../auth-contracts
 
   libs/webview-bridge: {}
 
@@ -4858,6 +4876,16 @@ packages:
       expo: '*'
       react: '*'
       react-native: '*'
+
+  expo-image-loader@56.0.3:
+    resolution: {integrity: sha512-JgUo4fUeU1ZC+z8iBFj8v7yoGQnZrLbOVPyNE+DWVrld55F2F6R1ck+rmdm/8TNWLz1LhNQfD7c3XYP1ZikxXA==}
+    peerDependencies:
+      expo: '*'
+
+  expo-image-picker@56.0.25:
+    resolution: {integrity: sha512-RSQgyMqSvJnAdoXio7gHF9uDI1duNzkxycE7b86zH7Loq2JmOfSGZpamfwDJJJyKgpD0dwlngD+lHo5L1PRXiw==}
+    peerDependencies:
+      expo: '*'
 
   expo-keep-awake@56.0.3:
     resolution: {integrity: sha512-CLMJXtEiMKknD3Rpm8CRwE6ZJUzu2yCEmRk1sgfHAJ1zIbuEWY3dpPDubtsnuzWm+2k6Sru+yaFbYsvPWmTiBA==}
@@ -14383,6 +14411,15 @@ snapshots:
       fontfaceobserver: 2.3.0
       react: 19.2.3
       react-native: 0.85.3(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3)
+
+  expo-image-loader@56.0.3(expo@56.0.19):
+    dependencies:
+      expo: 56.0.19(@babel/core@7.29.7)(@expo/dom-webview@56.0.6)(@expo/metro-runtime@56.0.19)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.85.3(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
+
+  expo-image-picker@56.0.25(expo@56.0.19):
+    dependencies:
+      expo: 56.0.19(@babel/core@7.29.7)(@expo/dom-webview@56.0.6)(@expo/metro-runtime@56.0.19)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.85.3(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
+      expo-image-loader: 56.0.3(expo@56.0.19)
 
   expo-keep-awake@56.0.3(expo@56.0.19)(react@19.2.3):
     dependencies:

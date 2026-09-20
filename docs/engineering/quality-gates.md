@@ -85,19 +85,19 @@ pnpm exec nx export mobile
 
 ## 테스트 현황 — 솔직하게
 
-| 프로젝트   | 종류             | 명령        | 상태                                                                            |
-| ---------- | ---------------- | ----------- | ------------------------------------------------------------------------------- |
-| api        | 단위 · DB        | `pnpm test` | Go 122개. 그중 46개는 `TEST_DATABASE_URL`이 있을 때만 돌고 없으면 **skip**한다  |
-| web        | 단위             | `pnpm test` | Vitest 114개 (9 파일)                                                           |
-| mobile     | 단위             | `pnpm test` | Vitest 180개 (12 파일)                                                          |
-| libs       | 단위             | `pnpm test` | `webview-bridge` 16개 · `auth-contracts` 9개                                    |
-| web-e2e    | E2E              | `pnpm e2e`  | 65개 × 3 브라우저 + 오류 주입 2개 × 3                                           |
-| devhub     | 단위 · freshness | `pnpm test` | Vitest 281개 (32 파일). catalog ↔ 저장소 검사는 `pnpm devhub:check`로 따로 돈다 |
-| devhub-e2e | E2E              | `pnpm e2e`  | 36개 × Chromium. 이 저장소에서 아직 실행 결과가 없다                            |
+| 프로젝트   | 종류             | 명령        | 상태                                                                                                                                       |
+| ---------- | ---------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| api        | 단위 · DB        | `pnpm test` | Go 테스트 함수 115개(하위 테스트 포함 181회 실행, `go test -v` 기준). 그중 42개는 `TEST_DATABASE_URL`이 있을 때만 돌고 없으면 **skip**한다 |
+| web        | 단위             | `pnpm test` | Vitest 114개 (9 파일)                                                                                                                      |
+| mobile     | 단위             | `pnpm test` | Vitest 279개 (20 파일)                                                                                                                     |
+| libs       | 단위             | `pnpm test` | `webview-bridge` 16개 · `auth-contracts` 9개                                                                                               |
+| web-e2e    | E2E              | `pnpm e2e`  | 65개 × 3 브라우저 + 오류 주입 2개 × 3                                                                                                      |
+| devhub     | 단위 · freshness | `pnpm test` | Vitest 305개 (34 파일). catalog ↔ 저장소 검사는 `pnpm devhub:check`로 따로 돈다                                                            |
+| devhub-e2e | E2E              | `pnpm e2e`  | 36개 × Chromium. 이 저장소에서 아직 실행 결과가 없다                                                                                       |
 
 `nx test api` 통과가 DB 검증을 뜻하지 않는다. DB까지 보려면 Postgres를 띄우고 `TEST_DATABASE_URL`을 주고 돌린다(아래 Go 절).
 
-덮인 것은 web `src/lib/**` · mobile `src/lib/**` · `src/auth/**`(api 호출 · 인증 순수 로직), `libs/*`, Go 인증 전체다. 화면 컴포넌트 · 디자인 토큰 · App Shell에는 단위 테스트가 없고, web의 셸 · 로그인 화면 동작은 E2E가 대신 잡는다. **mobile 화면은 런타임 검증 수단이 없어 코드 판독과 실기기 수동 인수까지가 한계다.**
+덮인 것은 web `src/lib/**` · mobile `src/lib/**` · `src/auth/**` · `src/onboarding/**`(api 호출 · 인증 · 온보딩 진행 · 사진 처리 순수 로직), `libs/*`, Go 인증 · 사진 처리 전체다. 사진 처리의 Claude 호출은 가짜 HTTP 응답으로만 검사하고 실제 API는 부르지 않는다. 화면 컴포넌트 · 디자인 토큰 · App Shell에는 단위 테스트가 없고, web의 셸 · 로그인 화면 동작은 E2E가 대신 잡는다. **mobile 화면은 런타임 검증 수단이 없어 코드 판독과 실기기 수동 인수까지가 한계다.**
 
 커밋 도구(`commit-mcp`)는 이 저장소에서 빠져 공용 plugin `berry-commit`으로 옮겨갔다. 그 테스트는 shared-stack이 소유한다.
 

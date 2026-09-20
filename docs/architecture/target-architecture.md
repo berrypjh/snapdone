@@ -13,14 +13,14 @@ Nx Workspace (repository root)
 
 ## 현재 상태
 
-| 영역          | 상태                                                                                                                                                      |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Nx workspace  | integrated, pnpm workspaces                                                                                                                               |
-| `apps/web`    | Next.js App Router. `(product)` 홈 · `/history`, `(auth)` 로그인 · 온보딩 · callback · 핸드오프, 브라우저 셸과 앱 WebView 모드                            |
-| `apps/mobile` | Expo. React Navigation native stack — 로그인 · 온보딩 소개 · 네이티브 홈 · WebView 콘텐츠 화면                                                            |
-| `apps/api`    | module `snapdone/api`, `GET /health`, `/v1/auth/*`(session · logout · Google OAuth · 핸드오프), Postgres 마이그레이션(`nx run api:migrate`) · 인증 저장소 |
-| `libs/`       | `webview-bridge` — 앱 ↔ WebView 계약, `auth-contracts` — 인증 wire 타입 (둘 다 web · mobile이 사용)                                                       |
-| `docs/`       | 제품 · 아키텍처 · 디자인 · 개발 · 품질                                                                                                                    |
+| 영역          | 상태                                                                                                                                                                                                                                                                                                                                |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Nx workspace  | integrated, pnpm workspaces                                                                                                                                                                                                                                                                                                         |
+| `apps/web`    | Next.js App Router. `(product)` 홈 · `/history`, `(auth)` 로그인 · 온보딩 · callback · 핸드오프, 브라우저 셸과 앱 WebView 모드                                                                                                                                                                                                      |
+| `apps/mobile` | Expo. React Navigation native stack — 로그인 · 온보딩 소개 · 네이티브 홈 · WebView 콘텐츠 화면                                                                                                                                                                                                                                      |
+| `apps/api`    | module `snapdone/api`, `GET /health`, `/v1/auth/*`(session · logout · Google OAuth · 핸드오프), `/v1/onboarding`(온보딩 진행 — 단계 · 사용 목적), `/v1/processing-jobs`(사진 분류. 모델은 `PROCESSING_*` 설정으로 Claude · OpenAI 호환(GPT · 로컬 Ollama) 중에서 고른다), Postgres 마이그레이션(`nx run api:migrate`) · 인증 저장소 |
+| `libs/`       | `webview-bridge` — 앱 ↔ WebView 계약, `auth-contracts` — 인증 wire 타입 (둘 다 web · mobile이 사용)                                                                                                                                                                                                                                 |
+| `docs/`       | 제품 · 아키텍처 · 디자인 · 개발 · 품질                                                                                                                                                                                                                                                                                              |
 
 버전은 아래 [버전 정책](#버전-정책)에 한 곳으로 모아 두었다.
 
@@ -40,14 +40,14 @@ Nx Workspace (repository root)
 - 네이티브 셸 + 웹 콘텐츠 골격 — mobile native stack, WebView 화면(로딩 · 오류 · 외부 링크), web in-app 모드, `libs/webview-bridge` 계약과 모듈 경계 lint
 - Go `GET /health`, Gin HTTP 경계와 swag로 생성한 Swagger 2.0 문서
 - Postgres 연결 · 마이그레이션(로컬 Docker)과 인증 — 사용자 · 로그인 수단 · 세션(root/child) · 일회용 grant · OAuth transaction, `/v1/auth/{capabilities,session,logout}` · `/v1/auth/oauth/{start,cancel,callback}` · `/v1/auth/exchange` · `/v1/auth/handoff/{start,exchange}`
-- Google 로그인 화면과 세션 — mobile 네이티브 흐름, web 로그인 · 온보딩 소개 · HttpOnly 세션 cookie, WebView 로그인 핸드오프. **실계정 · 실기기 인수는 남아 있다**
+- Google 로그인 화면과 세션 — mobile 네이티브 흐름, web 로그인 · HttpOnly 세션 cookie, WebView 로그인 핸드오프. **실계정 · 실기기 인수는 남아 있다**
+- 온보딩 소개 → 사용 목적 → 첫 사진 → 처리 — mobile(네이티브)과 web(브라우저 단독, 파일 선택)이 같은 순서로 간다. 진행은 서버(`/v1/onboarding`)에 있어 어느 쪽에서든 이어 간다. 첫 결과 화면 · 온보딩 완료는 아직 없다
 - 검증 명령과 문서
 
 아직 구현하지 않은 것:
 
 - 로그인 수단은 Google만 (코드만 있고 실계정 검증 전). Apple · 네이버 · 카카오는 나중에 추가
-- 실제 이미지 업로드
-- AI 분석
+- 온보딩 첫 사진 밖의 이미지 업로드 · AI 분석 — 지금은 온보딩 첫 사진 한 장을 올려 분류 결과를 받는 데까지만 있다(사진은 저장하지 않는다)
 - 장소
 - 캘린더
 - 영수증
@@ -111,7 +111,7 @@ web과 mobile은 **코드로 서로 참조하지 않는다.** 앱은 web을 URL�
 
 담지 않는 것: web과 동일한 화면 구조를 억지로 맞추는 일. 결과는 같고 구현은 각자에 맞게 한다. web 콘텐츠 화면을 RN으로 다시 만드는 일.
 
-**네비게이션은 React Navigation native stack이다.** `src/app/App.tsx`가 인증 상태에 따라 등록할 화면을 고른다 — 복원(`Restoring` · `RestoreFailed`), 로그인(`Auth`), 온보딩 소개(`OnboardingIntro`), 온보딩을 마친 뒤 `Home`(네이티브) · `WebContent`(WebView). bottom navigation은 실제 탭이 생길 때 넣는다. 가짜 탭을 미리 만들지 않는다 ([foundation.md](../design/foundation.md)의 Mobile Shell).
+**네비게이션은 React Navigation native stack이다.** `src/app/App.tsx`가 인증 상태에 따라 등록할 화면을 고른다 — 복원(`Restoring` · `RestoreFailed`), 로그인(`Auth`), 온보딩(`Onboarding` — 안쪽 native stack `src/app/OnboardingFlow.tsx`: 소개 · 목적 선택 · 첫 사진 · 사진 확인 · 처리. 결과 화면은 아직 없다. 진행은 서버 `/v1/onboarding`에 저장해 web과 이어진다), 온보딩을 마친 뒤 `Home`(네이티브) · `WebContent`(WebView). bottom navigation은 실제 탭이 생길 때 넣는다. 가짜 탭을 미리 만들지 않는다 ([foundation.md](../design/foundation.md)의 Mobile Shell).
 
 ### `apps/api` — Go
 
@@ -138,7 +138,7 @@ git remote가 없고 조직명도 정해지지 않았으므로 `github.com/...` 
 
 ### `libs/` — 공유 코드
 
-**지금 lib은 `webview-bridge`와 `auth-contracts` 둘이다.** 앱 ↔ WebView 계약은 처음부터 web · mobile이 함께 썼고, 인증 wire 타입은 web 로그인이 두 번째 사용처가 되면서 mobile에서 옮겨 왔다. 모양과 경계 규칙은 `.claude/rules/libs.md`.
+**지금 lib은 `webview-bridge` · `auth-contracts` · `onboarding` 셋이다.** 앱 ↔ WebView 계약은 처음부터 web · mobile이 함께 썼고, 인증 wire 타입은 web 로그인이, 온보딩 규칙(사용 목적 · 저장된 진행 · 사진 처리 작업과 조회 흐름)은 web 온보딩이 두 번째 사용처가 되면서 mobile에서 옮겨 왔다. 모양과 경계 규칙은 `.claude/rules/libs.md`.
 
 라이브러리는 재사용이 실제로 발생한 뒤에 만든다. 두 번째 사용처가 나타나기 전에는 코드를 쓰는 앱 안에 둔다.
 

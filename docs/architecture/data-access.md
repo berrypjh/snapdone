@@ -1,16 +1,19 @@
 # Data Access
 
-앱이 API와 이야기하는 방식의 규칙이다. 지금 endpoint는 `GET /health`와 인증(`/v1/auth/*`)뿐이므로, 이 문서는 **구현보다 규칙이 앞서 있는 상태**다.
+앱이 API와 이야기하는 방식의 규칙이다. 지금 endpoint는 `GET /health`, 인증(`/v1/auth/*`), 온보딩 진행(`/v1/onboarding`), 사진 처리(`/v1/processing-jobs`)뿐이므로, 이 문서는 **구현보다 규칙이 앞서 있는 상태**다.
 
 ## 지금 있는 것
 
-| 위치                                 | 역할                                                      |
-| ------------------------------------ | --------------------------------------------------------- |
-| `apps/web/src/lib/api.ts`            | web이 base URL을 읽는 유일한 지점, `/health` 호출         |
-| `apps/web/src/lib/auth/api.ts`       | web 인증 호출 (Server Action · Route Handler · 세션 확인) |
-| `apps/mobile/src/lib/api.ts`         | mobile이 base URL을 읽는 유일한 지점, `/health` 호출      |
-| `apps/mobile/src/auth/api.ts`        | mobile 인증 호출                                          |
-| `tools/scripts/check-api-health.mjs` | 개발자용 연결 확인 명령 (`pnpm health`)                   |
+| 위치                                          | 역할                                                                                                      |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `apps/web/src/lib/api.ts`                     | web이 base URL을 읽는 유일한 지점, `/health` 호출                                                         |
+| `apps/web/src/lib/auth/api.ts`                | web 인증 호출 (Server Action · Route Handler · 세션 확인)                                                 |
+| `apps/mobile/src/lib/api.ts`                  | mobile이 base URL을 읽는 유일한 지점, `/health` 호출                                                      |
+| `apps/mobile/src/auth/api.ts`                 | mobile 인증 호출                                                                                          |
+| `apps/web/src/lib/onboarding/api.ts`          | web 온보딩 진행 · 사진 처리 호출. Server Action(`actions.ts`)이 서버에서 부른다                           |
+| `apps/mobile/src/onboarding/progressApi.ts`   | mobile 온보딩 진행 호출                                                                                   |
+| `apps/mobile/src/onboarding/processingApi.ts` | mobile 사진 처리 호출 (multipart 업로드 · 작업 조회). credential은 `AuthController.authorized`로만 받는다 |
+| `tools/scripts/check-api-health.mjs`          | 개발자용 연결 확인 명령 (`pnpm health`)                                                                   |
 
 HTTP 클라이언트 라이브러리는 없다. Node 24와 React Native 0.85 모두 `fetch`를 기본 제공하므로 axios를 넣지 않는다.
 
@@ -49,6 +52,8 @@ HTTP 클라이언트 라이브러리는 없다. Node 24와 React Native 0.85 모
 3. development와 production origin을 나눠서 관리
 4. credential 정책을 명시 (쿠키를 보낼 것인가)
 5. **production에서 `*`를 쓰지 않는다**
+
+**온보딩 첫 사진(2026-09-19)은 이 전환 없이 Server Action으로 올린다.** 사진 한 장(최대 7,500,000 byte)을 한 번 받는 흐름이라 두 번 전송하는 비용보다 CORS · 브라우저 credential 정책을 새로 여는 비용이 크다. Server Action 본문 상한은 `next.config.js`의 `experimental.serverActions.bodySizeLimit`(`8mb`)이고, 브라우저는 상한을 넘는 파일을 보내기 전에 거절한다. 여러 장 · 반복 업로드가 생기면 위 절차로 다시 본다.
 
 **지금 미리 만들지 않는다.** 쓰이지 않는 CORS middleware는 잘못된 설정을 숨긴 채 통과시키는 통로가 되기 쉽다.
 

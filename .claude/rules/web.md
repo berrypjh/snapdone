@@ -70,7 +70,8 @@ Tailwind v4 + `@berrypjh/react-ui`. 색 · 타입 스케일 · radius · shadow�
 ## Data
 
 - API 주소를 아는 파일은 `src/lib/api.ts` **하나뿐이다.** component에 URL 문자열을 쓰지 않는다
-- 서버에서 호출한다 — 읽기는 Server Component, mutation은 Server Action · Route Handler. 브라우저가 Go API를 직접 부르지 않으므로 CORS 설정이 없다. 인증 endpoint 호출은 `src/lib/auth/api.ts`에 모은다
+- 서버에서 호출한다 — 읽기는 Server Component, mutation은 Server Action · Route Handler. 브라우저가 Go API를 직접 부르지 않으므로 CORS 설정이 없다. 인증 endpoint 호출은 `src/lib/auth/api.ts`에, 온보딩 진행 · 사진 처리 호출은 `src/lib/onboarding/api.ts`에 모은다
+- 온보딩 첫 사진은 Server Action으로 올린다(본문 상한 `next.config.js` `experimental.serverActions.bodySizeLimit`). 처리 Action은 오류를 던지지 않고 값(`JobResponse`)으로 돌려준다 — production에서 Action 오류 내용은 가려진다
 - `app/api/*` route를 만들지 않는다. 브라우저 직접 호출이 필요해지면 [data-access.md](../../docs/architecture/data-access.md)의 전환 절차를 먼저 읽는다
 - 환경변수는 `API_BASE_URL`이다. `NEXT_PUBLIC_` 접두사가 없는 것은 의도적이다
 - 응답은 좁은 타입 가드로 확인한다. `any`를 쓰지 않는다
