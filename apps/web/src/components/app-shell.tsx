@@ -1,10 +1,10 @@
 import Link from 'next/link';
 
-import { Button, SkipLink } from '@berrypjh/react-ui';
+import { SkipLink } from '@berrypjh/react-ui';
 import type { ReactNode } from 'react';
 
+import { LogoutButton } from '@/components/auth/logout-button';
 import { ThemeSwitch } from '@/components/theme-switch';
-import { logout } from '@/lib/auth/actions';
 
 const PRODUCT_NAME = '이미지 액션 라우터';
 const MAIN_CONTENT_ID = 'main-content';
@@ -56,13 +56,7 @@ export function AppShell({ inApp, signedIn, children }: AppShellProps) {
           <span className="typo-body-medium-strong md:hidden">{PRODUCT_NAME}</span>
           <div className="ml-auto flex items-center gap-4">
             <ThemeSwitch />
-            {signedIn && (
-              <form action={logout}>
-                <Button type="submit" variant="text" size="sm">
-                  로그아웃
-                </Button>
-              </form>
-            )}
+            {signedIn && <LogoutButton />}
           </div>
         </header>
 

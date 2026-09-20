@@ -3,10 +3,12 @@ import { redirect } from 'next/navigation';
 import { Box, Button, Stack } from '@berrypjh/react-ui';
 import type { Metadata } from 'next';
 
+import { LogoutButton } from '@/components/auth/logout-button';
 import { InAppReady } from '@/components/in-app-ready';
-import { logout } from '@/lib/auth/actions';
 import { requireSignedIn } from '@/lib/auth/session';
 import { isInAppRequest } from '@/lib/in-app';
+import { startOnboarding } from '@/lib/onboarding/actions';
+import { onboardingPath } from '@/lib/onboarding/paths';
 
 const TITLE = '서비스 소개';
 
@@ -19,10 +21,13 @@ const EXAMPLES = [
 
 export const metadata: Metadata = { title: TITLE };
 
-/** ON-02. 다음 단계(ON-03)가 없어 시작하기는 준비 중이다. 이 page를 봤다고 온보딩을 끝내지 않는다. */
+/**
+ * ON-02 서비스 소개. 진행은 서버에 있어 mobile에서 더 진행했다면 그 단계로 보낸다.
+ * 시작하기가 목적 선택(ON-03)으로 넘긴다.
+ */
 export default async function OnboardingPage() {
   const session = await requireSignedIn('/onboarding');
-  if (session.onboardingStep === 'complete') redirect('/');
+  if (session.onboardingStep !== 'intro') redirect(onboardingPath(session.onboardingStep));
   const inApp = await isInAppRequest();
 
   return (
@@ -56,22 +61,13 @@ export default async function OnboardingPage() {
         ))}
       </ul>
 
-      <Stack gap="sm">
-        <Button type="button" disabled fullWidth>
+      <form action={startOnboarding}>
+        <Button type="submit" variant="contained" size="lg" fullWidth>
           시작하기
         </Button>
-        <p className="text-center typo-caption-default text-text-light">
-          다음 단계는 준비 중입니다.
-        </p>
-      </Stack>
+      </form>
 
-      {!inApp && (
-        <form action={logout} className="flex justify-center">
-          <Button type="submit" variant="text" size="sm">
-            로그아웃
-          </Button>
-        </form>
-      )}
+      {!inApp && <LogoutButton className="flex justify-center" />}
 
       <InAppReady title={TITLE} />
     </Stack>

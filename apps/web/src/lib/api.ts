@@ -15,14 +15,19 @@ export const getApiBaseUrl = (): string => {
 };
 
 const isHealth = (value: unknown): value is Health =>
-  typeof value === 'object' &&
-  value !== null &&
-  typeof (value as Record<string, unknown>).status === 'string';
+  isRecord(value) && typeof value.status === 'string';
+
+/** Go API를 서버에서 부른다. 응답은 캐시하지 않는다. */
+export const apiFetch = (path: string, init: RequestInit = {}): Promise<Response> =>
+  fetch(`${getApiBaseUrl()}${path}`, { ...init, cache: 'no-store' });
+
+export const bearer = (credential: string) => ({ Authorization: `Bearer ${credential}` });
+
+export const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
 
 export const fetchHealth = async (): Promise<Health> => {
-  const response = await fetch(`${getApiBaseUrl()}/health`, {
-    cache: 'no-store',
-  });
+  const response = await apiFetch('/health');
 
   if (!response.ok) {
     throw new Error(`health 요청이 ${response.status}로 실패했습니다.`);

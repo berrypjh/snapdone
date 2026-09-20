@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import type { AuthErrorCode } from '@snapdone/auth-contracts';
 
 import { AuthApiError, exchangeHandoffCode } from './api';
-import { type CallbackOutcome, loginPage, single } from './callback';
+import { type CallbackOutcome, noStore, redirectWithOutcome, single } from './callback';
 import { getWebOrigin } from './config';
 import {
   authCookies,
@@ -12,13 +12,7 @@ import {
   secondsUntil,
 } from './cookies';
 import { challengeS256, createLoginProof } from './proof';
-import { safeReturnPath } from './redirect';
-
-const noStore = (response: NextResponse) => {
-  response.headers.set('Cache-Control', 'no-store');
-  response.headers.set('Referrer-Policy', 'no-referrer');
-  return response;
-};
+import { loginPage, safeReturnPath } from './redirect';
 
 /**
  * `GET /auth/handoff/start?next=`. 이 WebView만 가진 verifier를 HttpOnly cookie에 두고
@@ -80,13 +74,5 @@ export const handleHandoff = async (request: NextRequest): Promise<NextResponse>
   const verifier = decodeHandoffVerifier(request.cookies.get(cookies.handoff)?.value);
   const outcome = await completeHandoff(request.nextUrl.searchParams, verifier);
 
-  const response = NextResponse.redirect(new URL(outcome.location, getWebOrigin()), 303);
-  response.cookies.set(cookies.handoff, '', { ...cookies.options, maxAge: 0 });
-  if (outcome.type === 'signed-in') {
-    response.cookies.set(cookies.session, outcome.credential, {
-      ...cookies.options,
-      maxAge: outcome.maxAge,
-    });
-  }
-  return noStore(response);
+  return redirectWithOutcome(outcome, cookies.handoff);
 };

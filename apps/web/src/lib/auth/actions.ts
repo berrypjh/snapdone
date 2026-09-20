@@ -1,20 +1,18 @@
 'use server';
 
-import { cookies, headers } from 'next/headers';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import type { AuthErrorCode } from '@snapdone/auth-contracts';
 
 import { AuthApiError, revokeSession, startGoogleOAuth } from './api';
-import { getLegalLinks, isAllowedOrigin, isSignUpAllowed } from './config';
+import { getLegalLinks, isSignUpAllowed } from './config';
 import { authCookies, encodePreauth, PREAUTH_MAX_AGE_SECONDS } from './cookies';
 import { createLoginProof } from './proof';
 import { safeReturnPath } from './redirect';
-import { readCredential } from './session';
+import { fromAllowedOrigin, readCredential } from './session';
 
 export type LoginFormState = { error: AuthErrorCode | null };
-
-const fromAllowedOrigin = async () => isAllowedOrigin((await headers()).get('origin'));
 
 export async function startGoogleLogin(
   _previous: LoginFormState,

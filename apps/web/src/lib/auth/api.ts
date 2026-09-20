@@ -1,13 +1,15 @@
 import {
-  AUTH_PROVIDERS,
   type AuthErrorCode,
   type AuthProvider,
+  type LoginResponse,
+  parseLoginResponse,
+  parseProviders,
   parseSession,
   type Session,
   toAuthErrorCode,
 } from '@snapdone/auth-contracts';
 
-import { getApiBaseUrl } from '../api';
+import { apiFetch, bearer, isRecord } from '../api';
 
 export class AuthApiError extends Error {
   constructor(readonly code: AuthErrorCode) {
@@ -16,22 +18,18 @@ export class AuthApiError extends Error {
   }
 }
 
-export type LoginResult = { session: Session; credential: string };
-
 const request = async (path: string, init: RequestInit = {}): Promise<Response> => {
   let response: Response;
   try {
-    response = await fetch(`${getApiBaseUrl()}${path}`, { ...init, cache: 'no-store' });
+    response = await apiFetch(path, init);
   } catch {
     throw new AuthApiError('network');
   }
   if (response.ok || response.status === 401) return response;
 
   const body: unknown = await response.json().catch(() => null);
-  throw new AuthApiError(toAuthErrorCode((body as { error?: unknown } | null)?.error));
+  throw new AuthApiError(toAuthErrorCode(isRecord(body) ? body.error : undefined));
 };
-
-const bearer = (credential: string) => ({ Authorization: `Bearer ${credential}` });
 
 const postJson = (path: string, body: unknown) =>
   request(path, {
@@ -40,17 +38,12 @@ const postJson = (path: string, body: unknown) =>
     body: JSON.stringify(body),
   });
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
-
 const isHttpsUrl = (value: unknown): value is string =>
   typeof value === 'string' && URL.parse(value)?.protocol === 'https:';
 
 /** 서버가 제공하는 로그인 수단 중 이 클라이언트가 아는 것만. */
 export const fetchCapabilities = async (): Promise<AuthProvider[]> => {
-  const body: unknown = await (await request('/v1/auth/capabilities')).json();
-  const providers = isRecord(body) && Array.isArray(body.providers) ? body.providers : [];
-  return AUTH_PROVIDERS.filter((provider) => providers.includes(provider));
+  return parseProviders(await (await request('/v1/auth/capabilities')).json());
 };
 
 /** credential의 세션. 서버가 더는 받지 않으면 `null`이다. */
@@ -84,15 +77,12 @@ export const startGoogleOAuth = async (proof: {
   return body.authorizeUrl;
 };
 
-const parseLogin = async (response: Response): Promise<LoginResult> => {
+const parseLogin = async (response: Response): Promise<LoginResponse> => {
   if (response.status === 401) throw new AuthApiError('invalid_callback');
 
-  const body: unknown = await response.json();
-  const session = isRecord(body) ? parseSession(body.session) : null;
-  if (!session || !isRecord(body) || typeof body.credential !== 'string' || !body.credential) {
-    throw new AuthApiError('provider_unavailable');
-  }
-  return { session, credential: body.credential };
+  const login = parseLoginResponse(await response.json());
+  if (!login) throw new AuthApiError('provider_unavailable');
+  return login;
 };
 
 /** 일회용 result code를 세션으로 바꾼다. code마다 최대 한 번만 성공한다. */
@@ -100,11 +90,11 @@ export const exchangeResultCode = async (proof: {
   code: string;
   verifier: string;
   state: string;
-}): Promise<LoginResult> => parseLogin(await postJson('/v1/auth/exchange', proof));
+}): Promise<LoginResponse> => parseLogin(await postJson('/v1/auth/exchange', proof));
 
 /** 앱이 받은 핸드오프 code를 이 브라우저의 verifier로 child web 세션으로 바꾼다. */
 export const exchangeHandoffCode = async (proof: {
   code: string;
   verifier: string;
   next: string;
-}): Promise<LoginResult> => parseLogin(await postJson('/v1/auth/handoff/exchange', proof));
+}): Promise<LoginResponse> => parseLogin(await postJson('/v1/auth/handoff/exchange', proof));
