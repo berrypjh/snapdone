@@ -13,10 +13,10 @@ export const records: RecordRef[] = [
     date: '2026-09-20',
     summary: '경로를 복사해 에디터에서 다시 찾던 한 단계를 없앴다 — 개발 서버에서만 보인다',
     sources: [
-      { path: 'apps/devhub/src/lib/editor-link.ts', symbol: 'editorHref' },
-      { path: 'apps/devhub/src/components/editor-link.tsx' },
-      { path: 'apps/devhub/src/components/source-actions.tsx' },
-      { path: 'apps/devhub/src/components/file-row.tsx' },
+      { path: 'apps/devhub/src/lib/repository/editor-link.ts', symbol: 'editorHref' },
+      { path: 'apps/devhub/src/components/source/editor-link.tsx' },
+      { path: 'apps/devhub/src/components/source/source-actions.tsx' },
+      { path: 'apps/devhub/src/components/source/file-row.tsx' },
     ],
     docs: [{ document: 'devhub', heading: '22. Source-link policy' }],
     tests: [
@@ -56,7 +56,7 @@ export const records: RecordRef[] = [
     sources: [
       { path: 'apps/devhub/src/data/repository.ts' },
       { path: 'apps/devhub/src/domain/links.ts', symbol: 'browseUrl' },
-      { path: 'apps/devhub/src/lib/source-links.ts' },
+      { path: 'apps/devhub/src/lib/repository/source-links.ts' },
     ],
     docs: [{ document: 'devhub' }],
     tests: [],

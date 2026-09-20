@@ -3,16 +3,16 @@ import { notFound } from 'next/navigation';
 
 import type { Metadata } from 'next';
 
-import { DevHubShell } from '@/components/devhub-shell';
 import { CommandGroups } from '@/components/engineering/command';
-import { FilterBar } from '@/components/filter-bar';
-import { Inspector } from '@/components/inspector';
-import { RecordList } from '@/components/record-list';
-import { SectionSummary } from '@/components/section-summary';
-import { SECTION_ICON } from '@/components/view-icons';
-import { Workspace, WorkspaceSection } from '@/components/workspace';
-import { findSection, SECTIONS } from '@/lib/entities';
-import { filterScenarios, parseScenarioFilters, SCENARIO_FILTERS } from '@/lib/filters';
+import { FilterBar } from '@/components/entity/filter-bar';
+import { Inspector } from '@/components/entity/inspector';
+import { RecordList } from '@/components/entity/record-list';
+import { SectionSummary } from '@/components/entity/section-summary';
+import { DevHubShell } from '@/components/shell/devhub-shell';
+import { Workspace, WorkspaceSection } from '@/components/shell/workspace';
+import { SECTION_ICON } from '@/components/ui/view-icons';
+import { findSection, SECTIONS } from '@/lib/catalog/entities';
+import { filterScenarios, parseScenarioFilters, SCENARIO_FILTERS } from '@/lib/catalog/filters';
 
 type Params = Promise<{ section: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;

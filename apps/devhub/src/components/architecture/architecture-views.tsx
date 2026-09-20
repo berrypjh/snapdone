@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 
-import type { ArchitectureModel } from '@/lib/architecture-layout';
+import type { ArchitectureModel } from '@/lib/catalog/architecture-layout';
 
 import { ViewSwitch } from '../canvas/view-switch';
 

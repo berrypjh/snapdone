@@ -1,8 +1,8 @@
-import { DevHubShell } from '@/components/devhub-shell';
-import { Inspector } from '@/components/inspector';
-import { RepositoryOverview } from '@/components/repository-overview';
-import { VIEW_ICON } from '@/components/view-icons';
-import { Workspace } from '@/components/workspace';
+import { Inspector } from '@/components/entity/inspector';
+import { RepositoryOverview } from '@/components/overview/repository-overview';
+import { DevHubShell } from '@/components/shell/devhub-shell';
+import { Workspace } from '@/components/shell/workspace';
+import { VIEW_ICON } from '@/components/ui/view-icons';
 import { catalog } from '@/data';
 
 export default function OverviewPage() {

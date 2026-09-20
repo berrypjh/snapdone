@@ -1,5 +1,5 @@
-import { EntityHeader } from '@/components/entity-header';
-import { entityParams } from '@/lib/entities';
+import { EntityHeader } from '@/components/entity/entity-header';
+import { entityParams } from '@/lib/catalog/entities';
 
 type Params = Promise<{ section: string; id: string }>;
 

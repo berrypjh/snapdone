@@ -2,8 +2,8 @@ import { notFound } from 'next/navigation';
 
 import type { Metadata } from 'next';
 
-import { EntityHeader } from '@/components/entity-header';
-import { findStep, stepParams } from '@/lib/entities';
+import { EntityHeader } from '@/components/entity/entity-header';
+import { findStep, stepParams } from '@/lib/catalog/entities';
 
 type Params = Promise<{ section: string; id: string; stepId: string }>;
 

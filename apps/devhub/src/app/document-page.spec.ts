@@ -3,13 +3,13 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
-import { DevHubShell } from '../components/devhub-shell';
-import { EntitySummary } from '../components/entity-summary';
-import { Inspector } from '../components/inspector';
-import { INSPECTOR_ID, MAIN_CONTENT_ID, Workspace } from '../components/workspace';
+import { EntitySummary } from '../components/entity/entity-summary';
+import { Inspector } from '../components/entity/inspector';
+import { DevHubShell } from '../components/shell/devhub-shell';
+import { INSPECTOR_ID, MAIN_CONTENT_ID, Workspace } from '../components/shell/workspace';
 import { catalog } from '../data';
-import { findEntity } from '../lib/entities';
-import { inspect } from '../lib/inspection';
+import { findEntity } from '../lib/catalog/entities';
+import { inspect } from '../lib/catalog/inspection';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),

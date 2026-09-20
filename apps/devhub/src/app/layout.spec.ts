@@ -3,7 +3,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
-import { DevHubShell } from '../components/devhub-shell';
+import { DevHubShell } from '../components/shell/devhub-shell';
 
 import RootLayout from './layout';
 

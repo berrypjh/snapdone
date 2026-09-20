@@ -5,9 +5,9 @@ import { useSelectedLayoutSegments } from 'next/navigation';
 
 import { catalog } from '@/data';
 import type { Scenario, ScenarioStep } from '@/domain/model';
-import { stepHref } from '@/lib/entities';
+import { stepHref } from '@/lib/catalog/entities';
 
-import { StatusChip } from '../status-chip';
+import { StatusChip } from '../entity/status-chip';
 
 const LINK = 'text-text-link underline-offset-2 hover:underline';
 

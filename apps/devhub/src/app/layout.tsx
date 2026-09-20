@@ -1,9 +1,9 @@
 import { SkipLink } from '@berrypjh/react-ui';
 import type { Metadata } from 'next';
 
-import { NavigationFocus } from '@/components/navigation-focus';
-import { INSPECTOR_ID, MAIN_CONTENT_ID } from '@/components/workspace';
-import { themeScript } from '@/lib/theme';
+import { NavigationFocus } from '@/components/shell/navigation-focus';
+import { INSPECTOR_ID, MAIN_CONTENT_ID } from '@/components/shell/workspace';
+import { themeScript } from '@/lib/browser/theme';
 
 import '@berrypjh/react-ui/styles.css';
 import './global.css';

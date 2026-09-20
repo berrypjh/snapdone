@@ -16,7 +16,7 @@ import {
 
 import { swaggerDocument } from './apis';
 import { RUNNER_COMMAND } from './commands';
-import { catalog } from './index';
+import { catalog } from '.';
 
 /** 정리해 둔 catalog를 그것이 설명하는 저장소 파일과 대조한다. */
 

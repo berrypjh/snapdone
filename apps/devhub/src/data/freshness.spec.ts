@@ -5,10 +5,10 @@ import { describe, expect, it } from 'vitest';
 
 import { encodePath, isCanonicalPath } from '../domain/links';
 import type { ApplicationRef, LibraryRef, RepositorySnapshot } from '../domain/model';
-import { resolveDocLink } from '../lib/doc-links';
-import { flowModel } from '../lib/flow';
-import { type Block, type Inline, parseMarkdown } from '../lib/markdown';
-import { linksFor } from '../lib/source-links';
+import { flowModel } from '../lib/catalog/flow';
+import { resolveDocLink } from '../lib/markdown/doc-links';
+import { type Block, type Inline, parseMarkdown } from '../lib/markdown/markdown';
+import { linksFor } from '../lib/repository/source-links';
 import { citedRefs } from '../test-support/cited-refs';
 import { nxCallsIn, nxProjectTargets } from '../test-support/nx-workspace';
 import {
@@ -20,7 +20,7 @@ import {
   symbolPattern,
 } from '../test-support/repository-files';
 
-import { catalog } from './index';
+import { catalog } from '.';
 
 /**
  * 신선도: 카탈로그를 지금의 저장소와 맞춰 본다. 여기서 실패하면 DevHub가 저장소에 더 이상 없는

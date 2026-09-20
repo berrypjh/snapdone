@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import { catalog } from '../../data';
 import { commandLine } from '../../domain/links';
-import { COMMAND_GROUPS, commandHref, findEntity, findSection } from '../../lib/entities';
+import { COMMAND_GROUPS, commandHref, findEntity, findSection } from '../../lib/catalog/entities';
 import { readJson } from '../../test-support/repository-files';
 
 import { CommandGroupDetail, CommandGroups } from './command';

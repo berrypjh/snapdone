@@ -34,7 +34,7 @@
         "cache": false,
         "options": {
           "cwd": "apps/devhub",
-          "command": "vitest run src/data src/domain src/lib/snapshot src/lib/architecture.spec"
+          "command": "vitest run src/data src/domain src/lib/repository/snapshot src/lib/catalog/architecture.spec"
         }
       },
       "dev": {

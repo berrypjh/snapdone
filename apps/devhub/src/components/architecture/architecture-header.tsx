@@ -1,5 +1,5 @@
-import { VIEW_ICON } from '../view-icons';
-import { WorkspaceHeader } from '../workspace';
+import { WorkspaceHeader } from '../shell/workspace';
+import { VIEW_ICON } from '../ui/view-icons';
 
 /** 아키텍처 화면의 작업 영역 헤더. 구성 요소 선택 여부와 상관없이 같다. */
 export function ArchitectureHeader() {

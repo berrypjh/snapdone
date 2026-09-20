@@ -2,12 +2,12 @@ import Link from 'next/link';
 
 import { catalog } from '@/data';
 import type { Relation } from '@/domain/model';
-import { architectureHref, findNode, nodeLabel } from '@/lib/architecture';
-import { entityHref, stepHref } from '@/lib/entities';
-import { INTERACTION, RELATION } from '@/lib/labels';
+import { architectureHref, findNode, nodeLabel } from '@/lib/catalog/architecture';
+import { entityHref, stepHref } from '@/lib/catalog/entities';
+import { INTERACTION, RELATION } from '@/lib/catalog/labels';
 
-import { StatusChip } from '../status-chip';
-import { WorkspaceSection } from '../workspace';
+import { StatusChip } from '../entity/status-chip';
+import { WorkspaceSection } from '../shell/workspace';
 
 const relationText = (relation: Relation) =>
   relation.kind === 'runtime' ? INTERACTION[relation.interaction] : RELATION[relation.kind];

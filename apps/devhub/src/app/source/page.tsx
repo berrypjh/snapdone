@@ -2,14 +2,14 @@ import { notFound } from 'next/navigation';
 
 import type { Metadata } from 'next';
 
-import { DevHubShell } from '@/components/devhub-shell';
-import { Inspector } from '@/components/inspector';
-import { SourceActions } from '@/components/source-actions';
-import { SourceUsageSummary } from '@/components/source-usage-summary';
-import { VIEW_ICON } from '@/components/view-icons';
-import { Workspace } from '@/components/workspace';
-import { inspectSource } from '@/lib/inspection';
-import { sourceUsage } from '@/lib/source-usage';
+import { Inspector } from '@/components/entity/inspector';
+import { DevHubShell } from '@/components/shell/devhub-shell';
+import { Workspace } from '@/components/shell/workspace';
+import { SourceActions } from '@/components/source/source-actions';
+import { SourceUsageSummary } from '@/components/source/source-usage-summary';
+import { VIEW_ICON } from '@/components/ui/view-icons';
+import { inspectSource } from '@/lib/catalog/inspection';
+import { sourceUsage } from '@/lib/repository/source-usage';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 

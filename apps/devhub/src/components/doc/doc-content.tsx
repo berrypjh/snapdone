@@ -2,12 +2,12 @@ import Link from 'next/link';
 
 import { Table, TableScroll, VisuallyHidden } from '@berrypjh/react-ui';
 
-import { resolveDocLink } from '@/lib/doc-links';
-import type { Block, Inline } from '@/lib/markdown';
-import { sourceLinks } from '@/lib/source-links';
+import { resolveDocLink } from '@/lib/markdown/doc-links';
+import type { Block, Inline } from '@/lib/markdown/markdown';
+import { sourceLinks } from '@/lib/repository/source-links';
 
-import { CopyButton } from '../copy-button';
-import { Icon } from '../icon';
+import { CopyButton } from '../source/copy-button';
+import { Icon } from '../ui/icon';
 
 type Context = { from: string; caption: string };
 

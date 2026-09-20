@@ -2,7 +2,7 @@
 
 import { Button } from '@berrypjh/react-ui';
 
-import { Icon, type IconName } from '../icon';
+import { Icon, type IconName } from '../ui/icon';
 
 /** 범례 항목 하나. 선 모양(dash 패턴, 실선이면 `null`)이거나 노드 상자다. */
 export type LegendItem = { label: string } & (

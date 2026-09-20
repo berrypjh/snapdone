@@ -3,7 +3,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
-import { architectureModel, filterModel } from '../../lib/architecture-layout';
+import { architectureModel, filterModel } from '../../lib/catalog/architecture-layout';
 
 import { ArchitectureMap } from './architecture-map';
 import { ArchitectureOutline } from './architecture-outline';

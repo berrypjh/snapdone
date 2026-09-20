@@ -1,7 +1,7 @@
-import { documentBlocks, documentOutline, type ReadableDoc } from '@/lib/documents';
+import { documentBlocks, documentOutline, type ReadableDoc } from '@/lib/markdown/documents';
 
-import { AnchorFlash } from '../anchor-flash';
-import { Icon } from '../icon';
+import { AnchorFlash } from '../ui/anchor-flash';
+import { Icon } from '../ui/icon';
 
 import { DocContent } from './doc-content';
 import { DocToc } from './doc-toc';

@@ -4,9 +4,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
 import { catalog } from '../../data';
-import { findNode } from '../../lib/architecture';
-import { architectureModel } from '../../lib/architecture-layout';
-import { inspectNode } from '../../lib/inspection';
+import { findNode } from '../../lib/catalog/architecture';
+import { architectureModel } from '../../lib/catalog/architecture-layout';
+import { inspectNode } from '../../lib/catalog/inspection';
 
 import { NodePager } from './node-pager';
 

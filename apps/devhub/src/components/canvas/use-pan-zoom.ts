@@ -19,7 +19,7 @@ import {
   type Size,
   type View,
   zoomAt,
-} from '@/lib/viewport';
+} from '@/lib/browser/viewport';
 
 const STEP = 48;
 const ZOOM_STEP = 1.2;

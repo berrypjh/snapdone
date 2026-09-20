@@ -2,13 +2,18 @@ import Link from 'next/link';
 
 import { commandLine } from '@/domain/links';
 import type { CommandConstraint, CommandRef } from '@/domain/model';
-import { definitionOf, definitionSource } from '@/lib/command-definition';
-import { COMMAND_GROUPS, type CommandGroupEntry, commandHref, entityHref } from '@/lib/entities';
-import { CONSTRAINT } from '@/lib/labels';
+import { definitionOf, definitionSource } from '@/lib/catalog/command-definition';
+import {
+  COMMAND_GROUPS,
+  type CommandGroupEntry,
+  commandHref,
+  entityHref,
+} from '@/lib/catalog/entities';
+import { CONSTRAINT } from '@/lib/catalog/labels';
 
-import { CopyButton } from '../copy-button';
-import { Icon } from '../icon';
-import { WorkspaceSection } from '../workspace';
+import { WorkspaceSection } from '../shell/workspace';
+import { CopyButton } from '../source/copy-button';
+import { Icon } from '../ui/icon';
 
 const LINK = 'text-text-link underline-offset-2 hover:underline';
 

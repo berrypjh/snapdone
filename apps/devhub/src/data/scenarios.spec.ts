@@ -10,7 +10,7 @@ import {
   symbolPattern,
 } from '../test-support/repository-files';
 
-import { catalog } from './index';
+import { catalog } from '.';
 
 /** 시나리오 추적을 검사한다: 참조가 풀리는지, 상태가 근거를 따르는지, 부재가 유지되는지. */
 

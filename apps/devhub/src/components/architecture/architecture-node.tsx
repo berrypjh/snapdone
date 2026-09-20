@@ -4,11 +4,11 @@ import Link from 'next/link';
 
 import { SkipLink } from '@berrypjh/react-ui';
 
-import { ARCH_NODE, type ArchNode } from '@/lib/architecture-layout';
+import { ARCH_NODE, type ArchNode } from '@/lib/catalog/architecture-layout';
 
-import { Icon } from '../icon';
-import { NODE_KIND_ICON } from '../view-icons';
-import { INSPECTOR_ID } from '../workspace';
+import { INSPECTOR_ID } from '../shell/workspace';
+import { Icon } from '../ui/icon';
+import { NODE_KIND_ICON } from '../ui/view-icons';
 
 type ArchitectureNodeProps = {
   node: ArchNode;

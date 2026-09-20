@@ -4,9 +4,9 @@ import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 
 import { Button } from '@berrypjh/react-ui';
 
-import type { Rect, Size } from '@/lib/viewport';
+import type { Rect, Size } from '@/lib/browser/viewport';
 
-import { Icon } from '../icon';
+import { Icon } from '../ui/icon';
 
 import { CanvasControls, CanvasHelp, type LegendItem } from './canvas-toolbar';
 import { usePanZoom } from './use-pan-zoom';

@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
 import { catalog } from '../../data';
-import { flowModel } from '../../lib/flow';
+import { flowModel } from '../../lib/catalog/flow';
 
 import { ScenarioFlow } from './scenario-flow';
 

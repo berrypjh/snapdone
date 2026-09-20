@@ -2,10 +2,10 @@
 
 import { usePathname, useSearchParams } from 'next/navigation';
 
-import type { ArchitectureModel } from '@/lib/architecture-layout';
-import { ARCHITECTURE_FILTERS, filterHref, parseArchitectureFilters } from '@/lib/filters';
+import type { ArchitectureModel } from '@/lib/catalog/architecture-layout';
+import { ARCHITECTURE_FILTERS, filterHref, parseArchitectureFilters } from '@/lib/catalog/filters';
 
-import { FilterBar } from '../filter-bar';
+import { FilterBar } from '../entity/filter-bar';
 
 import { ArchitectureViews } from './architecture-views';
 

@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
 import { ArchitectureHeader } from '@/components/architecture/architecture-header';
-import { findNode, nodeLabel, nodeParams } from '@/lib/architecture';
+import { findNode, nodeLabel, nodeParams } from '@/lib/catalog/architecture';
 
 type Params = Promise<{ nodeId: string }>;
 

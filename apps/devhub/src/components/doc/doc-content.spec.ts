@@ -5,12 +5,12 @@ import { describe, expect, it } from 'vitest';
 
 import { catalog } from '../../data';
 import type { DocumentRef } from '../../domain/model';
-import { documentBlocks, documentOutline } from '../../lib/documents';
-import { findEntity } from '../../lib/entities';
-import { inspect } from '../../lib/inspection';
-import { EntityHeader } from '../entity-header';
-import { EntitySummary } from '../entity-summary';
-import { Inspector } from '../inspector';
+import { findEntity } from '../../lib/catalog/entities';
+import { inspect } from '../../lib/catalog/inspection';
+import { documentBlocks, documentOutline } from '../../lib/markdown/documents';
+import { EntityHeader } from '../entity/entity-header';
+import { EntitySummary } from '../entity/entity-summary';
+import { Inspector } from '../entity/inspector';
 
 import { DocContent } from './doc-content';
 import { DOCUMENT_COLUMN, DocumentLayout } from './document-layout';

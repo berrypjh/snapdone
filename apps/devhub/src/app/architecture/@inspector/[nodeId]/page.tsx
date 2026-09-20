@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation';
 
-import { Inspector } from '@/components/inspector';
-import { findNode, nodeParams } from '@/lib/architecture';
-import { inspectNode } from '@/lib/inspection';
+import { Inspector } from '@/components/entity/inspector';
+import { findNode, nodeParams } from '@/lib/catalog/architecture';
+import { inspectNode } from '@/lib/catalog/inspection';
 
 type Params = Promise<{ nodeId: string }>;
 

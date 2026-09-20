@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation';
 
-import { Inspector } from '@/components/inspector';
-import { entityParams, findEntity } from '@/lib/entities';
-import { inspect } from '@/lib/inspection';
+import { Inspector } from '@/components/entity/inspector';
+import { entityParams, findEntity } from '@/lib/catalog/entities';
+import { inspect } from '@/lib/catalog/inspection';
 
 type Params = Promise<{ section: string; id: string }>;
 

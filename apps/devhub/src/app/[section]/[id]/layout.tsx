@@ -3,10 +3,10 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
-import { DevHubShell } from '@/components/devhub-shell';
-import { EntitySummary } from '@/components/entity-summary';
-import { WorkspaceFrame } from '@/components/workspace';
-import { findEntity } from '@/lib/entities';
+import { EntitySummary } from '@/components/entity/entity-summary';
+import { DevHubShell } from '@/components/shell/devhub-shell';
+import { WorkspaceFrame } from '@/components/shell/workspace';
+import { findEntity } from '@/lib/catalog/entities';
 
 type Params = Promise<{ section: string; id: string }>;
 

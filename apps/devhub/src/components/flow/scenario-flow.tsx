@@ -2,8 +2,8 @@
 
 import { useSelectedLayoutSegments } from 'next/navigation';
 
-import type { FlowModel } from '@/lib/flow';
-import { NODE } from '@/lib/flow';
+import type { FlowModel } from '@/lib/catalog/flow';
+import { NODE } from '@/lib/catalog/flow';
 
 import { CanvasEdges } from '../canvas/canvas-edges';
 import type { LegendItem } from '../canvas/canvas-toolbar';

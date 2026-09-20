@@ -3,7 +3,7 @@
 import { useSelectedLayoutSegment } from 'next/navigation';
 
 import type { Relation } from '@/domain/model';
-import { ARCH_NODE, type ArchitectureModel, filterModel } from '@/lib/architecture-layout';
+import { ARCH_NODE, type ArchitectureModel, filterModel } from '@/lib/catalog/architecture-layout';
 
 import { CanvasEdges } from '../canvas/canvas-edges';
 import type { LegendItem } from '../canvas/canvas-toolbar';

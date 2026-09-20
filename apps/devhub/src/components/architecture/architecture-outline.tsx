@@ -8,11 +8,11 @@ import {
   type ArchitectureModel,
   type ArchNode,
   filterModel,
-} from '@/lib/architecture-layout';
+} from '@/lib/catalog/architecture-layout';
 
-import { Icon } from '../icon';
-import { Term } from '../term';
-import { NODE_KIND_ICON } from '../view-icons';
+import { Icon } from '../ui/icon';
+import { Term } from '../ui/term';
+import { NODE_KIND_ICON } from '../ui/view-icons';
 
 import { NoNodes } from './architecture-map';
 
