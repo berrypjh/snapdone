@@ -38,6 +38,14 @@
         {
           "faceIDPermission": false
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "고른 사진으로 해야 할 일을 정리하려고 사진에 접근합니다.",
+          "cameraPermission": "사진을 찍어 해야 할 일을 정리하려고 카메라를 사용합니다.",
+          "microphonePermission": false
+        }
       ]
     ]
   }

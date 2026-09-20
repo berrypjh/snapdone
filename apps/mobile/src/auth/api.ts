@@ -1,12 +1,14 @@
 import {
-  AUTH_PROVIDERS,
   type AuthProvider,
+  type LoginResponse,
+  parseLoginResponse,
+  parseProviders,
   parseSession,
   type Session,
   toAuthErrorCode,
 } from '@snapdone/auth-contracts';
 
-import { getApiBaseUrl } from '../lib/api';
+import { bearer, getApiBaseUrl, isRecord } from '../lib/api';
 
 import type { AuthErrorCode } from './model';
 
@@ -17,6 +19,10 @@ export class AuthApiError extends Error {
   }
 }
 
+/** 오류를 사용자에게 보일 코드로. 인증 API 오류가 아니면 `provider_unavailable`이다. */
+export const errorCodeOf = (error: unknown): AuthErrorCode =>
+  error instanceof AuthApiError ? error.code : 'provider_unavailable';
+
 export type OAuthStartRequest = {
   provider: AuthProvider;
   challenge: string;
@@ -24,7 +30,7 @@ export type OAuthStartRequest = {
   platform: 'mobile';
 };
 
-export type LoginResponse = { session: Session; credential: string };
+export type { LoginResponse };
 
 export type AuthApi = {
   capabilities: () => Promise<AuthProvider[]>;
@@ -50,10 +56,8 @@ const request = async (path: string, init?: RequestInit): Promise<Response> => {
   if (response.ok || response.status === 401) return response;
 
   const body: unknown = await response.json().catch(() => null);
-  throw new AuthApiError(toAuthErrorCode((body as { error?: unknown } | null)?.error));
+  throw new AuthApiError(toAuthErrorCode(isRecord(body) ? body.error : undefined));
 };
-
-const bearer = (credential: string) => ({ Authorization: `Bearer ${credential}` });
 
 const postJson = (path: string, body: unknown, headers: Record<string, string> = {}) =>
   request(path, {
@@ -62,14 +66,9 @@ const postJson = (path: string, body: unknown, headers: Record<string, string> =
     body: JSON.stringify(body),
   });
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
-
 export const authApi: AuthApi = {
   capabilities: async () => {
-    const body: unknown = await (await request('/v1/auth/capabilities')).json();
-    const providers = isRecord(body) && Array.isArray(body.providers) ? body.providers : [];
-    return AUTH_PROVIDERS.filter((provider) => providers.includes(provider));
+    return parseProviders(await (await request('/v1/auth/capabilities')).json());
   },
 
   session: async (credential) => {
@@ -102,18 +101,11 @@ export const authApi: AuthApi = {
   },
 
   exchange: async (exchangeRequest) => {
-    const response = await postJson('/v1/auth/exchange', exchangeRequest);
-    const body: unknown = await response.json();
-    const session = isRecord(body) ? parseSession(body.session) : null;
-    if (
-      !session ||
-      !isRecord(body) ||
-      typeof body.credential !== 'string' ||
-      body.credential === ''
-    ) {
-      throw new AuthApiError('provider_unavailable');
-    }
-    return { session, credential: body.credential };
+    const login = parseLoginResponse(
+      await (await postJson('/v1/auth/exchange', exchangeRequest)).json(),
+    );
+    if (!login) throw new AuthApiError('provider_unavailable');
+    return login;
   },
 
   handoffStart: async (credential, handoffRequest) => {

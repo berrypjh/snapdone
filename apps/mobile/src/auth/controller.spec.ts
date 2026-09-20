@@ -250,6 +250,46 @@ describe('revalidate (foreground)', () => {
   });
 });
 
+describe('authorized', () => {
+  it('passes the stored credential to the request and returns its result', async () => {
+    const { controller } = await setup({
+      storage: fakeStorage({ status: 'found', credential: 'c' }),
+    });
+    const request = vi.fn(async (credential: string) => `ok:${credential}`);
+
+    await expect(controller.authorized(request)).resolves.toBe('ok:c');
+    expect(controller.getSnapshot().auth.status).toBe('authenticated');
+  });
+
+  it('signs out when Go no longer accepts the session', async () => {
+    const storage = fakeStorage({ status: 'found', credential: 'c' });
+    const { controller } = await setup({ storage });
+
+    await expect(controller.authorized(async () => null)).resolves.toBeNull();
+    expect(storage.deleteCredential).toHaveBeenCalled();
+    expect(controller.getSnapshot().auth).toMatchObject({ error: 'session_expired' });
+  });
+
+  it('lets request errors through without signing out', async () => {
+    const { controller } = await setup({
+      storage: fakeStorage({ status: 'found', credential: 'c' }),
+    });
+
+    await expect(
+      controller.authorized(() => Promise.reject(new AuthApiError('network'))),
+    ).rejects.toThrow('network');
+    expect(controller.getSnapshot().auth.status).toBe('authenticated');
+  });
+
+  it('does not call the request when signed out', async () => {
+    const { controller } = await setup();
+    const request = vi.fn(async () => 'ok');
+
+    await expect(controller.authorized(request)).resolves.toBeNull();
+    expect(request).not.toHaveBeenCalled();
+  });
+});
+
 describe('startHandoff', () => {
   const challenge = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
 

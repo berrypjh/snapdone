@@ -4,60 +4,25 @@ import { AppState, Linking, useColorScheme } from 'react-native';
 import { ThemeProvider, useTheme } from '@berrypjh/react-native-ui';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { randomUUID } from 'expo-crypto';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { authApi } from '../auth/api';
-import { parseOAuthCallback } from '../auth/callback';
-import { type AuthController, createAuthController, useAuthSnapshot } from '../auth/controller';
-import { expoProofCrypto, secureAuthStorage, systemAuthBrowser } from '../auth/device';
-import { createGoogleSignIn, finishGoogleSignIn, type GoogleSignInDeps } from '../auth/google';
+import { useAuthSnapshot } from '../auth/controller';
 import { destinationFor } from '../auth/model';
 import { createHandoffMemory } from '../auth/webHandoff';
 import { AuthRestoreFailed } from '../components/auth/AuthRestoreFailed';
 import { AuthRestoring } from '../components/auth/AuthRestoring';
 import { LogoutButton } from '../components/auth/LogoutButton';
-import { getLegalLinks, isSignUpAllowed } from '../lib/legal';
 import { AuthScreen } from '../screens/AuthScreen';
 import { HomeScreen } from '../screens/HomeScreen';
-import { OnboardingIntroScreen } from '../screens/OnboardingIntroScreen';
 import { WebContentScreen } from '../screens/WebContentScreen';
 import { navigationTheme } from '../theme/navigationTheme';
 
+import { createAppAuthController, legalLinks, resumeFromLaunchUrl } from './appAuth';
 import type { RootStackParamList } from './navigation';
+import { OnboardingFlow } from './OnboardingFlow';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-
-const legalLinks = getLegalLinks();
-
-const authRedirectUri = process.env.EXPO_PUBLIC_AUTH_REDIRECT_URI;
-
-const googleSignInDeps: GoogleSignInDeps | null = authRedirectUri
-  ? {
-      api: authApi,
-      storage: secureAuthStorage,
-      crypto: expoProofCrypto,
-      browser: systemAuthBrowser,
-      redirectUri: authRedirectUri,
-      now: Date.now,
-    }
-  : null;
-
-const createAppAuthController = () =>
-  createAuthController({
-    api: authApi,
-    storage: secureAuthStorage,
-    signIn: googleSignInDeps ? { google: createGoogleSignIn(googleSignInDeps) } : {},
-    signUpAllowed: isSignUpAllowed(legalLinks, __DEV__),
-    newRequestId: randomUUID,
-  });
-
-const resumeFromLaunchUrl = async (controller: AuthController) => {
-  const url = await Linking.getInitialURL();
-  if (!googleSignInDeps || !url || !parseOAuthCallback(url, googleSignInDeps.redirectUri)) return;
-  await controller.resume('google', () => finishGoogleSignIn(googleSignInDeps, url));
-};
 
 const AppNavigator = () => {
   const theme = useTheme();
@@ -108,9 +73,9 @@ const AppNavigator = () => {
             )}
           </Stack.Screen>
         )}
-        {destination === 'onboarding' && (
-          <Stack.Screen name="OnboardingIntro" options={{ headerShown: false }}>
-            {() => <OnboardingIntroScreen controller={controller} />}
+        {destination === 'onboarding' && auth.status === 'authenticated' && (
+          <Stack.Screen name="Onboarding" options={{ headerShown: false }}>
+            {() => <OnboardingFlow controller={controller} />}
           </Stack.Screen>
         )}
         {destination === 'home' && (

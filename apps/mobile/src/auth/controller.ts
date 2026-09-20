@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 
 import type { AuthProvider, Session } from '@snapdone/auth-contracts';
 
-import { type AuthApi, AuthApiError } from './api';
+import { type AuthApi, AuthApiError, errorCodeOf } from './api';
 import {
   type AuthErrorCode,
   type AuthEvent,
@@ -40,9 +40,6 @@ export type AuthControllerDeps = {
   newRequestId: () => string;
 };
 
-const errorCodeOf = (error: unknown): AuthErrorCode =>
-  error instanceof AuthApiError ? error.code : 'provider_unavailable';
-
 export const createAuthController = (deps: AuthControllerDeps) => {
   const { api, storage } = deps;
   let snapshot: AuthSnapshot = { auth: initialAuthState, capabilities: { status: 'loading' } };
@@ -79,7 +76,7 @@ export const createAuthController = (deps: AuthControllerDeps) => {
 
   const loadCapabilities = async () => {
     try {
-      // Await before spreading: `snapshot` must be read after restore may have changed it.
+      // 기다린 뒤에 펼친다: 그사이 복원이 `snapshot`을 바꿨을 수 있다.
       const providers = await api.capabilities();
       publish({ ...snapshot, capabilities: { status: 'ready', providers } });
     } catch (error) {
@@ -123,20 +120,9 @@ export const createAuthController = (deps: AuthControllerDeps) => {
     dispatch({ type: 'session-expired', generation });
   };
 
+  /** 서버가 세션을 거부하면 만료시킨다. 서버 · 기기 저장소에 닿지 못하면(오프라인) 로그인 상태를 유지한다. */
   const checkSession = async () => {
-    if (snapshot.auth.status !== 'authenticated') return;
-    const { generation } = snapshot.auth;
-    const stored = await storage.readCredential();
-    if (stored.status === 'unavailable') return;
-    if (stored.status === 'empty') {
-      await expire(generation);
-      return;
-    }
-    try {
-      if (!(await api.session(stored.credential))) await expire(generation);
-    } catch {
-      // 서버에 닿지 못했다. 오프라인은 로그인 상태를 유지한다.
-    }
+    await authorized((credential) => api.session(credential)).catch(() => undefined);
   };
 
   let revalidating: Promise<void> | null = null;
@@ -153,24 +139,37 @@ export const createAuthController = (deps: AuthControllerDeps) => {
   const startHandoff = async (challenge: string, next: string): Promise<HandoffResult> => {
     if (snapshot.auth.status !== 'authenticated') return { ok: false, error: 'session_expired' };
     const { generation } = snapshot.auth;
-    const stored = await storage.readCredential();
-    if (stored.status === 'unavailable') return { ok: false, error: 'storage_unavailable' };
-    if (stored.status === 'empty') {
-      await expire(generation);
-      return { ok: false, error: 'session_expired' };
-    }
     try {
-      const code = await api.handoffStart(stored.credential, { challenge, next });
-      if (!code) {
-        await expire(generation);
-        return { ok: false, error: 'session_expired' };
-      }
-      return isCurrentSession(generation)
+      const code = await authorized((credential) =>
+        api.handoffStart(credential, { challenge, next }),
+      );
+      // 받는 사이에 로그아웃 · 다른 로그인이 일어났으면 코드를 넘기지 않는다.
+      return code && isCurrentSession(generation)
         ? { ok: true, code }
         : { ok: false, error: 'session_expired' };
     } catch (error) {
       return { ok: false, error: errorCodeOf(error) };
     }
+  };
+
+  /**
+   * 로그인 세션으로 API를 부른다. credential은 request에만 넘기고 밖으로 내보내지 않는다.
+   * 서버가 세션을 거부하면(request가 `null`) 로그인을 만료시키고 `null`을 돌려준다.
+   */
+  const authorized = async <T>(
+    request: (credential: string) => Promise<T | null>,
+  ): Promise<T | null> => {
+    if (snapshot.auth.status !== 'authenticated') return null;
+    const { generation } = snapshot.auth;
+    const stored = await storage.readCredential();
+    if (stored.status === 'unavailable') throw new AuthApiError('storage_unavailable');
+    if (stored.status === 'empty') {
+      await expire(generation);
+      return null;
+    }
+    const result = await request(stored.credential);
+    if (result === null) await expire(generation);
+    return result;
   };
 
   const run = async (provider: AuthProvider, port: SignInPort) => {
@@ -245,6 +244,7 @@ export const createAuthController = (deps: AuthControllerDeps) => {
     retryRestore,
     revalidate,
     startHandoff,
+    authorized,
     availability,
     signIn,
     resume,

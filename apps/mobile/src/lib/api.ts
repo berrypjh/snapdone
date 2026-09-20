@@ -14,10 +14,13 @@ export const getApiBaseUrl = (): string => {
   return value.replace(/\/+$/, '');
 };
 
+export const bearer = (credential: string) => ({ Authorization: `Bearer ${credential}` });
+
+export const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
 const isHealth = (value: unknown): value is Health =>
-  typeof value === 'object' &&
-  value !== null &&
-  typeof (value as Record<string, unknown>).status === 'string';
+  isRecord(value) && typeof value.status === 'string';
 
 export const fetchHealth = async (): Promise<Health> => {
   const response = await fetch(`${getApiBaseUrl()}/health`);

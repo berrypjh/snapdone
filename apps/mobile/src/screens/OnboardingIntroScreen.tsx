@@ -1,11 +1,11 @@
-import { useEffect, useRef } from 'react';
-import { AccessibilityInfo, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
 import { Box, Button, getColor, Stack, useTheme } from '@berrypjh/react-native-ui';
 
 import type { AuthController } from '../auth/controller';
 import { AuthShell } from '../components/auth/AuthShell';
 import { LogoutButton } from '../components/auth/LogoutButton';
+import { OnboardingTitle } from '../components/onboarding/OnboardingTitle';
 import { textStyle } from '../theme/text';
 
 const EXAMPLES = [
@@ -29,33 +29,23 @@ const EXAMPLES = [
   },
 ] as const;
 
+type OnboardingIntroScreenProps = { controller: AuthController; onStart: () => void };
+
 /**
- * ON-02 서비스 소개. 다음 단계(ON-03)가 없어 시작하기는 준비 중이다.
+ * ON-02 서비스 소개. 시작하기는 목적 선택으로 간다.
  * 이 화면을 봤다고 온보딩을 완료 처리하거나 Home으로 보내지 않는다.
  */
-export const OnboardingIntroScreen = ({ controller }: { controller: AuthController }) => {
+export const OnboardingIntroScreen = ({ controller, onStart }: OnboardingIntroScreenProps) => {
   const theme = useTheme();
   const { typography } = theme.tokens;
-  const titleRef = useRef<Text>(null);
   const text = { color: getColor(theme, 'text.default') };
   const muted = { color: getColor(theme, 'text.light') };
   const done = { color: getColor(theme, 'text.success') };
 
-  useEffect(() => {
-    if (titleRef.current) AccessibilityInfo.sendAccessibilityEvent(titleRef.current, 'focus');
-  }, []);
-
   return (
     <AuthShell>
       <Stack gap="xl">
-        <Text
-          ref={titleRef}
-          accessibilityRole="header"
-          lineBreakStrategyIOS="hangul-word"
-          style={[textStyle(typography.heading.h3), text, styles.center]}
-        >
-          사진 한 장으로{'\n'}해야 할 일을 끝내세요.
-        </Text>
+        <OnboardingTitle>사진 한 장으로{'\n'}해야 할 일을 끝내세요.</OnboardingTitle>
 
         <Stack gap="md">
           {EXAMPLES.map((example) => (
@@ -85,20 +75,9 @@ export const OnboardingIntroScreen = ({ controller }: { controller: AuthControll
           ))}
         </Stack>
 
-        <Stack gap="sm">
-          <Button
-            variant="contained"
-            size="lg"
-            fullWidth
-            disabled
-            accessibilityHint="준비 중입니다"
-          >
-            시작하기
-          </Button>
-          <Text style={[textStyle(typography.caption.default), muted, styles.center]}>
-            다음 단계는 준비 중입니다.
-          </Text>
-        </Stack>
+        <Button variant="contained" size="lg" fullWidth onPress={onStart}>
+          시작하기
+        </Button>
 
         <Stack align="center">
           <LogoutButton controller={controller} />

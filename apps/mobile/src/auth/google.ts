@@ -1,4 +1,4 @@
-import { type AuthApi, AuthApiError } from './api';
+import { type AuthApi, errorCodeOf } from './api';
 import { parseOAuthCallback } from './callback';
 import type { SignInResult } from './controller';
 import type { AuthErrorCode } from './model';
@@ -17,15 +17,12 @@ export type GoogleSignInDeps = {
   storage: AuthStorage;
   crypto: ProofCrypto;
   browser: AuthBrowser;
-  /** Must equal the server's AUTH_MOBILE_REDIRECT_URI. */
+  /** 서버 `AUTH_MOBILE_REDIRECT_URI`와 정확히 같아야 한다. */
   redirectUri: string;
   now: () => number;
 };
 
 const failed = (error: AuthErrorCode): SignInResult => ({ type: 'failed', error });
-
-const errorCodeOf = (error: unknown): AuthErrorCode =>
-  error instanceof AuthApiError ? error.code : 'provider_unavailable';
 
 export const finishGoogleSignIn = async (
   deps: GoogleSignInDeps,
@@ -58,7 +55,7 @@ const discardPending = async (deps: GoogleSignInDeps, state: string) => {
   await deps.api.oauthCancel(state).catch(() => undefined);
 };
 
-/** Google sign-in port: proof → server start → system browser → server return → exchange. */
+/** Google 로그인 port: proof → 서버 시작 → 시스템 브라우저 → 서버 복귀 → 교환. */
 export const createGoogleSignIn = (deps: GoogleSignInDeps) => async (): Promise<SignInResult> => {
   const proof = await createProof(deps.crypto);
   try {

@@ -23,6 +23,9 @@
       "path": "../../libs/webview-bridge/tsconfig.lib.json"
     },
     {
+      "path": "../../libs/onboarding/tsconfig.lib.json"
+    },
+    {
       "path": "../../libs/auth-contracts/tsconfig.lib.json"
     }
   ]
