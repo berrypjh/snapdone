@@ -15,8 +15,8 @@ import (
 const (
 	requestIDKey    = "request_id"
 	requestIDHeader = "X-Request-ID"
-	// 인증 요청 본문 상한. 가장 큰 요청도 수백 바이트다.
-	maxAuthBody = 4 << 10
+	// JSON 요청(인증 · 온보딩) 본문 상한. 가장 큰 요청도 수백 바이트다.
+	maxJSONBody = 4 << 10
 )
 
 // 요청마다 새 ID를 만들어 응답 헤더와 로그에 쓴다. 클라이언트가 보낸 값은 믿지 않는다.
@@ -67,19 +67,21 @@ func recovery(log *slog.Logger) gin.HandlerFunc {
 	}
 }
 
-// 인증 응답은 캐시 · Referer로 새지 않게 한다.
+// 세션 · 개인 데이터가 담긴 응답은 캐시 · Referer로 새지 않게 한다.
 func noStore(c *gin.Context) {
 	c.Header("Cache-Control", "no-store")
 	c.Header("Referrer-Policy", "no-referrer")
 	c.Next()
 }
 
-// 본문을 읽는 binding보다 먼저 상한을 건다. 넘으면 binding이 실패해 400이 된다.
+// 본문을 읽는 binding보다 먼저 상한을 건다. 넘으면 binding · multipart 읽기가 실패해 400 · 413이 된다.
 // net/http의 원래 writer를 넘겨야 상한을 넘긴 연결을 서버가 응답 뒤 닫는다.
-func limitBody(c *gin.Context) {
-	w := c.Writer.(interface{ Unwrap() http.ResponseWriter }).Unwrap()
-	c.Request.Body = http.MaxBytesReader(w, c.Request.Body, maxAuthBody)
-	c.Next()
+func limitBody(limit int64) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		w := c.Writer.(interface{ Unwrap() http.ResponseWriter }).Unwrap()
+		c.Request.Body = http.MaxBytesReader(w, c.Request.Body, limit)
+		c.Next()
+	}
 }
 
 // 의존성이 설정되지 않은 endpoint는 route를 남겨 둔 채 503을 돌려준다.

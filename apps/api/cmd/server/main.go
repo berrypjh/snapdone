@@ -20,7 +20,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"snapdone/api/internal/auth"
@@ -28,6 +27,8 @@ import (
 	"snapdone/api/internal/database"
 	"snapdone/api/internal/google"
 	"snapdone/api/internal/httpserver"
+	"snapdone/api/internal/onboarding"
+	"snapdone/api/internal/processing"
 )
 
 // 종료 신호를 받은 뒤 진행 중인 요청을 기다리는 최대 시간.
@@ -35,8 +36,7 @@ const shutdownTimeout = 10 * time.Second
 
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
-	// Gin의 debug 출력(route 목록 · 경고)을 구조화 로그와 섞지 않는다.
-	gin.SetMode(gin.ReleaseMode)
+	httpserver.UseReleaseMode()
 
 	cfg, err := config.Load()
 	if err != nil {
@@ -95,6 +95,7 @@ func fatal(logger *slog.Logger, msg string, err error) {
 }
 
 // 인증 설정이 없으면 인증 의존성을 비워 인증 endpoint를 503으로 둔다.
+// 사진 처리는 로그인 세션이 필요하므로 인증과 PROCESSING_*가 모두 있을 때만 켠다.
 // Swagger UI는 production이 아닐 때만 연다.
 func newDeps(logger *slog.Logger, cfg config.Config, pool *pgxpool.Pool) (httpserver.Deps, error) {
 	deps := httpserver.Deps{Logger: logger, Swagger: cfg.Environment != "production"}
@@ -118,5 +119,21 @@ func newDeps(logger *slog.Logger, cfg config.Config, pool *pgxpool.Pool) (httpse
 		Web:    strings.TrimRight(cfg.Auth.WebOrigin, "/") + "/auth/callback",
 	}, auth.Consent{TermsVersion: cfg.Auth.TermsVersion, PrivacyVersion: cfg.Auth.PrivacyVersion})
 	deps.Handoff = auth.NewHandoff(store)
+	deps.Onboarding = onboarding.NewStore(pool)
+	if cfg.Processing == nil {
+		logger.Info("api processing is disabled: PROCESSING_* is not set")
+		return deps, nil
+	}
+	deps.Processing = processing.NewProcessor(processing.NewStore(pool), newClassifier(*cfg.Processing), logger)
+	logger.Info("api processing model", "provider", cfg.Processing.Provider, "model", cfg.Processing.Model)
 	return deps, nil
+}
+
+// 설정이 고른 공급자의 분류기. 모델을 바꿀 때 코드를 고치지 않고 PROCESSING_*만 바꾼다.
+func newClassifier(p config.Processing) processing.Classifier {
+	httpClient := processing.NewHTTPClient()
+	if p.Provider == config.ProviderAnthropic {
+		return processing.NewClaudeClassifier(p.APIKey, p.Model, httpClient)
+	}
+	return processing.NewOpenAIClassifier(p.BaseURL, p.Model, p.APIKey, httpClient)
 }

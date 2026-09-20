@@ -14,27 +14,38 @@ import (
 
 // 클라이언트에 나가는 오류 코드. 서버 · 제공자 원문은 이 값으로만 바뀌어 나간다.
 const (
-	errSessionExpired      = "session_expired"
-	errProviderUnavailable = "provider_unavailable"
-	errInvalidCallback     = "invalid_callback"
+	errSessionExpired       = "session_expired"
+	errProviderUnavailable  = "provider_unavailable"
+	errInvalidCallback      = "invalid_callback"
+	errInvalidImage         = "invalid_image"
+	errImageTooLarge        = "image_too_large"
+	errUnsupportedImage     = "unsupported_image"
+	errJobNotFound          = "job_not_found"
+	errInvalidOnboarding    = "invalid_onboarding"
+	errOnboardingComplete   = "onboarding_complete"
+	errOnboardingOutOfOrder = "onboarding_out_of_order"
 )
 
-// Router가 쓰는 의존성. Sessions · OAuth · Handoff가 nil이면 해당 endpoint는 503이다.
+// Router가 쓰는 의존성. Sessions · OAuth · Handoff · Processing · Onboarding이 nil이면 해당 endpoint는 503이다.
 type Deps struct {
-	Logger   *slog.Logger
-	Sessions SessionStore
-	OAuth    *auth.OAuth
-	Handoff  *auth.Handoff
+	Logger     *slog.Logger
+	Sessions   SessionStore
+	OAuth      *auth.OAuth
+	Handoff    *auth.Handoff
+	Processing ProcessingService
+	Onboarding OnboardingStore
 	// Swagger UI(/swagger/*)를 연다. production에서는 끈다.
 	Swagger bool
 }
 
 // Gin은 이 패키지 안의 HTTP 경계에만 쓴다. 핸들러 밖으로 gin.Context를 넘기지 않는다.
 type handlers struct {
-	log      *slog.Logger
-	sessions SessionStore
-	oauth    *auth.OAuth
-	handoff  *auth.Handoff
+	log             *slog.Logger
+	sessions        SessionStore
+	oauth           *auth.OAuth
+	handoff         *auth.Handoff
+	processing      ProcessingService
+	onboardingStore OnboardingStore
 }
 
 // Gin의 debug 출력(route 목록 · 경고)을 끈다. 구조화 로그와 섞이지 않게 main이 시작할 때 한 번 부른다.
@@ -48,7 +59,10 @@ func NewRouter(deps Deps) *gin.Engine {
 	if deps.Logger == nil {
 		deps.Logger = slog.New(slog.DiscardHandler)
 	}
-	h := &handlers{log: deps.Logger, sessions: deps.Sessions, oauth: deps.OAuth, handoff: deps.Handoff}
+	h := &handlers{
+		log: deps.Logger, sessions: deps.Sessions, oauth: deps.OAuth, handoff: deps.Handoff,
+		processing: deps.Processing, onboardingStore: deps.Onboarding,
+	}
 
 	router := gin.New()
 	router.HandleMethodNotAllowed = true
@@ -61,7 +75,7 @@ func NewRouter(deps Deps) *gin.Engine {
 	get(&router.RouterGroup, "/health", health)
 
 	v1 := router.Group("/v1")
-	authGroup := v1.Group("/auth", noStore, limitBody, requireConfigured(deps.Sessions != nil))
+	authGroup := v1.Group("/auth", noStore, limitBody(maxJSONBody), requireConfigured(deps.Sessions != nil))
 	get(authGroup, "/capabilities", h.capabilities)
 	get(authGroup, "/session", h.session)
 	authGroup.POST("/logout", h.logout)
@@ -76,6 +90,15 @@ func NewRouter(deps Deps) *gin.Engine {
 	handoff := authGroup.Group("/handoff", requireConfigured(deps.Handoff != nil))
 	handoff.POST("/start", h.handoffStart)
 	handoff.POST("/exchange", h.handoffExchange)
+
+	// 처리는 로그인 세션이 필요하다. 사진 본문은 인증 요청보다 큰 상한을 쓴다.
+	jobs := v1.Group("/processing-jobs", noStore, requireConfigured(deps.Sessions != nil && deps.Processing != nil))
+	jobs.POST("", extendDeadline(uploadTimeout), limitBody(maxUploadBody), h.createProcessingJob)
+	get(jobs, "/:jobId", h.processingJob)
+
+	onboardingGroup := v1.Group("/onboarding", noStore, limitBody(maxJSONBody), requireConfigured(deps.Sessions != nil && deps.Onboarding != nil))
+	get(onboardingGroup, "", h.onboarding)
+	onboardingGroup.PUT("", h.saveOnboarding)
 
 	if deps.Swagger {
 		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -106,4 +129,10 @@ func writeError(c *gin.Context, status int, code string) {
 // 내부 오류 원인을 요청 ID와 함께 남긴다. 요청 값은 넣지 않는다.
 func (h *handlers) logFailure(c *gin.Context, msg string, err error) {
 	h.log.Error(msg, requestIDKey, c.GetString(requestIDKey), "err", err)
+}
+
+// 내부 오류를 남기고 원인을 숨긴 500을 돌려준다.
+func (h *handlers) internalError(c *gin.Context, msg string, err error) {
+	h.logFailure(c, msg, err)
+	writeError(c, http.StatusInternalServerError, errProviderUnavailable)
 }

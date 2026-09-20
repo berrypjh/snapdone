@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"snapdone/api/internal/auth"
+	"snapdone/api/internal/onboarding"
+	"snapdone/api/internal/processing"
 )
 
 // HTTP 요청 · 응답 본문. JSON 필드 이름이 web · mobile과의 계약이다.
@@ -14,7 +16,7 @@ type HealthResponse struct {
 
 // 모든 오류 응답의 모양. 값은 클라이언트가 아는 오류 코드뿐이다.
 type ErrorResponse struct {
-	Error string `json:"error" example:"session_expired" enums:"session_expired,provider_unavailable,invalid_callback"`
+	Error string `json:"error" example:"session_expired" enums:"session_expired,provider_unavailable,invalid_callback,invalid_image,image_too_large,unsupported_image,job_not_found,invalid_onboarding,onboarding_complete,onboarding_out_of_order"`
 }
 
 type CapabilitiesResponse struct {
@@ -27,7 +29,7 @@ type UserResponse struct {
 
 type SessionResponse struct {
 	User           UserResponse `json:"user"`
-	OnboardingStep string       `json:"onboardingStep" example:"intro"`
+	OnboardingStep string       `json:"onboardingStep" enums:"intro,purpose,first-image,complete" example:"intro"`
 	ExpiresAt      time.Time    `json:"expiresAt" format:"date-time" example:"2026-10-01T00:00:00Z"`
 }
 
@@ -83,4 +85,56 @@ func toSessionResponse(session auth.Session) SessionResponse {
 
 func toLoginResponse(session auth.Session, credential string) LoginResponse {
 	return LoginResponse{Session: toSessionResponse(session), Credential: credential}
+}
+
+// 처리 작업. result는 status가 completed일 때만 있다.
+type ProcessingJobResponse struct {
+	JobID  string                    `json:"jobId" example:"4f1c2a9e-0000-4000-8000-000000000000"`
+	Status string                    `json:"status" enums:"running,completed,failed" example:"running"`
+	Result *ProcessingResultResponse `json:"result,omitempty"`
+}
+
+// 사진에서 찾은 것. 신뢰도는 숫자가 아니라 단계다.
+type ProcessingResultResponse struct {
+	Category        string                   `json:"category" enums:"place,event,receipt,foreign_text,shopping,work,other" example:"event"`
+	Facts           []ProcessingFactResponse `json:"facts"`
+	SuggestedAction string                   `json:"suggestedAction" enums:"save_place,add_to_calendar,record_expense,translate,none" example:"add_to_calendar"`
+	Confidence      string                   `json:"confidence" enums:"high,medium,low" example:"high"`
+}
+
+type ProcessingFactResponse struct {
+	Label string `json:"label" example:"날짜"`
+	Value string `json:"value" example:"8월 20일 19시"`
+}
+
+func toProcessingJobResponse(job processing.Job) ProcessingJobResponse {
+	response := ProcessingJobResponse{JobID: job.ID, Status: string(job.Status)}
+	if job.Result != nil {
+		facts := make([]ProcessingFactResponse, len(job.Result.Facts))
+		for i, fact := range job.Result.Facts {
+			facts[i] = ProcessingFactResponse{Label: fact.Label, Value: fact.Value}
+		}
+		response.Result = &ProcessingResultResponse{
+			Category:        job.Result.Category,
+			Facts:           facts,
+			SuggestedAction: job.Result.SuggestedAction,
+			Confidence:      job.Result.Confidence,
+		}
+	}
+	return response
+}
+
+// 온보딩 진행. purposes는 first-image부터 있다 — null은 아직 답하지 않음, 빈 목록은 건너뜀이다.
+type OnboardingRequest struct {
+	Step     string   `json:"step" binding:"required" enums:"intro,purpose,first-image" example:"first-image"`
+	Purposes []string `json:"purposes" enums:"food,shopping,travel,events,receipt,foreign-language,work,unsure" example:"food,receipt"`
+}
+
+type OnboardingResponse struct {
+	Step     string   `json:"step" enums:"intro,purpose,first-image,complete" example:"first-image"`
+	Purposes []string `json:"purposes" enums:"food,shopping,travel,events,receipt,foreign-language,work,unsure" example:"food,receipt"`
+}
+
+func toOnboardingResponse(p onboarding.Progress) OnboardingResponse {
+	return OnboardingResponse{Step: p.Step, Purposes: p.Purposes}
 }

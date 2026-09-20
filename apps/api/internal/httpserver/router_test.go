@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
-	"net/http/httptest"
 	"regexp"
 	"strings"
 	"testing"
@@ -22,16 +21,6 @@ func dbFreeRouter() http.Handler {
 		OAuth:    auth.NewOAuth(nil, nil, nil, auth.ReturnURIs{}, auth.Consent{}),
 		Handoff:  auth.NewHandoff(nil),
 	})
-}
-
-func send(handler http.Handler, method, target, body string, headers ...string) *httptest.ResponseRecorder {
-	req := httptest.NewRequest(method, target, strings.NewReader(body))
-	for i := 0; i+1 < len(headers); i += 2 {
-		req.Header.Add(headers[i], headers[i+1])
-	}
-	recorder := httptest.NewRecorder()
-	handler.ServeHTTP(recorder, req)
-	return recorder
 }
 
 // ServeMux 시절 동작: GET route는 HEAD도 받고, 다른 메서드는 Allow와 함께 405, 없는 경로는 404다.
@@ -97,7 +86,7 @@ func TestAuthRoutesAnswer503WhenNotConfigured(t *testing.T) {
 	for name, tc := range cases {
 		handler := NewRouter(tc.deps)
 		for _, route := range tc.routes {
-			r := send(handler, route[0], route[1], "{}", "Authorization", "Bearer "+validToken)
+			r := send(handler, route[0], route[1], "{}", bearer...)
 			if r.Code != http.StatusServiceUnavailable || errorCode(t, r) != "provider_unavailable" {
 				t.Errorf("%s: %s %s status %d", name, route[0], route[1], r.Code)
 			}
@@ -109,8 +98,7 @@ func TestAuthRoutesAnswer503WhenNotConfigured(t *testing.T) {
 // 본문 모양이 틀리면 저장소에 닿기 전에 endpoint별 기존 오류 코드로 400이다. cancel은 언제나 204다.
 func TestAuthRequestBodyValidation(t *testing.T) {
 	handler := dbFreeRouter()
-	bearer := []string{"Authorization", "Bearer " + validToken}
-	oversized := `{"code":"` + strings.Repeat("a", maxAuthBody) + `"}`
+	oversized := `{"code":"` + strings.Repeat("a", maxJSONBody) + `"}`
 	cases := []struct {
 		path    string
 		headers []string
@@ -154,7 +142,7 @@ func TestHandoffStartChecksBearerBeforeBody(t *testing.T) {
 func TestAuthResponsesAreNotCached(t *testing.T) {
 	handler := NewRouter(Deps{Sessions: &fakeSessions{}})
 	for _, path := range []string{"/v1/auth/capabilities", "/v1/auth/session"} {
-		assertNoStore(t, send(handler, http.MethodGet, path, "", "Authorization", "Bearer "+validToken))
+		assertNoStore(t, send(handler, http.MethodGet, path, "", bearer...))
 	}
 	if r := send(handler, http.MethodGet, "/health", ""); r.Header().Get("Cache-Control") != "" {
 		t.Errorf("health Cache-Control = %q", r.Header().Get("Cache-Control"))
@@ -177,7 +165,7 @@ func TestRequestIDIsGeneratedPerRequest(t *testing.T) {
 func TestRequestLogCarriesRouteTemplateOnly(t *testing.T) {
 	var logs bytes.Buffer
 	handler := NewRouter(Deps{Logger: slog.New(slog.NewJSONHandler(&logs, nil)), Sessions: &fakeSessions{}})
-	send(handler, http.MethodGet, "/v1/auth/session?token=query-secret", "", "Authorization", "Bearer "+validToken)
+	send(handler, http.MethodGet, "/v1/auth/session?token=query-secret", "", bearer...)
 	send(handler, http.MethodGet, "/unknown-secret-path?code=query-secret", "")
 
 	var lines []map[string]any
@@ -207,7 +195,7 @@ func TestRecoveryHidesPanicValue(t *testing.T) {
 	router.Use(requestID, requestLogger(logger), recovery(logger))
 	router.GET("/boom", func(c *gin.Context) { panic("panic-secret " + c.GetHeader("Authorization")) })
 
-	r := send(router, http.MethodGet, "/boom", "", "Authorization", "Bearer "+validToken)
+	r := send(router, http.MethodGet, "/boom", "", bearer...)
 	if r.Code != http.StatusInternalServerError || errorCode(t, r) != "provider_unavailable" {
 		t.Errorf("status %d", r.Code)
 	}

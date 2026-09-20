@@ -13,10 +13,12 @@ type Config struct {
 
 	Auth   *Auth
 	Google *Google
+	// nil이면 사진 처리가 비활성(/v1/processing-jobs 503)이다.
+	Processing *Processing
 }
 
 // 환경 변수에서 설정을 읽고, 값이 없으면 로컬 개발 환경을 위한 기본값을 사용한다.
-// 인증 설정이 일부만 있거나 잘못됐으면 오류를 반환한다.
+// 인증 · 사진 처리 설정이 일부만 있거나 잘못됐으면 오류를 반환한다.
 func Load() (Config, error) {
 	cfg := Config{
 		Host:        env("API_HOST", "127.0.0.1"),
@@ -30,6 +32,9 @@ func Load() (Config, error) {
 	}
 	cfg.Auth = auth
 	if cfg.Google, err = loadGoogle(auth); err != nil {
+		return Config{}, err
+	}
+	if cfg.Processing, err = loadProcessing(); err != nil {
 		return Config{}, err
 	}
 	return cfg, nil

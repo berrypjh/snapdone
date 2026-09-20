@@ -1,7 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "snapdone Go API. 인증 credential은 JWT가 아닌 opaque 서버 세션 토큰이다.",
+        "description": "snapdone Go API. 인증 credential은 JWT가 아닌 opaque 서버 세션 토큰.",
         "title": "snapdone API",
         "contact": {},
         "version": "0.1"
@@ -442,6 +442,247 @@
                     }
                 }
             }
+        },
+        "/v1/onboarding": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "내 온보딩 단계와 사용 목적. mobile과 web이 같은 진행에서 이어 간다.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboarding"
+                ],
+                "summary": "온보딩 진행",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.OnboardingResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "credential 없음 · 만료 · 취소 (session_expired)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "내부 오류 (provider_unavailable)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "인증 비활성 (provider_unavailable)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "단계(intro · purpose · first-image)와 사용 목적을 저장한다. 목적은 first-image에서만 있고 빈 목록은 건너뜀이다.\nunsure는 혼자만 고를 수 있다. 같은 단계를 다시 저장하거나 한 단계 앞으로만 갈 수 있고, 온보딩을 마친 뒤에는 바꿀 수 없다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboarding"
+                ],
+                "summary": "온보딩 진행 저장",
+                "parameters": [
+                    {
+                        "description": "저장할 진행",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.OnboardingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.OnboardingResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "계약 밖의 진행 (invalid_onboarding)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "credential 없음 · 만료 · 취소 (session_expired)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "이미 마친 온보딩 (onboarding_complete) · 건너뛰거나 되돌아가는 단계 (onboarding_out_of_order)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "내부 오류 (provider_unavailable)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "인증 비활성 (provider_unavailable)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/processing-jobs": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "사진 한 장(multipart 필드 image)으로 처리 작업을 만들고 바로 돌아온다. 결과는 작업 조회로 받는다.\nJPEG · PNG · GIF · WebP만 받고 7,500,000 byte까지다. 사진은 저장하지 않는다.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "processing"
+                ],
+                "summary": "사진 처리 시작",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "사진 한 장",
+                        "name": "image",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ProcessingJobResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "multipart가 아니거나 image 필드 없음 (invalid_image)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "credential 없음 · 만료 · 취소 (session_expired)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "413": {
+                        "description": "상한 초과 (image_too_large)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "415": {
+                        "description": "지원하지 않는 형식 (unsupported_image)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "내부 오류 (provider_unavailable)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "처리 비활성 (provider_unavailable)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/processing-jobs/{jobId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "내 처리 작업의 상태와, 완료됐다면 결과. 다른 사용자의 작업은 없는 작업과 같다.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "processing"
+                ],
+                "summary": "사진 처리 작업",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "처리 시작이 돌려준 jobId",
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ProcessingJobResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "credential 없음 · 만료 · 취소 (session_expired)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "없는 작업 (job_not_found)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "내부 오류 (provider_unavailable)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "처리 비활성 (provider_unavailable)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -476,7 +717,14 @@
                     "enum": [
                         "session_expired",
                         "provider_unavailable",
-                        "invalid_callback"
+                        "invalid_callback",
+                        "invalid_image",
+                        "image_too_large",
+                        "unsupported_image",
+                        "job_not_found",
+                        "invalid_onboarding",
+                        "onboarding_complete",
+                        "onboarding_out_of_order"
                     ],
                     "example": "session_expired"
                 }
@@ -624,6 +872,156 @@
                 }
             }
         },
+        "httpserver.OnboardingRequest": {
+            "type": "object",
+            "required": [
+                "step"
+            ],
+            "properties": {
+                "purposes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "food",
+                            "shopping",
+                            "travel",
+                            "events",
+                            "receipt",
+                            "foreign-language",
+                            "work",
+                            "unsure"
+                        ]
+                    },
+                    "example": [
+                        "food",
+                        "receipt"
+                    ]
+                },
+                "step": {
+                    "type": "string",
+                    "enum": [
+                        "intro",
+                        "purpose",
+                        "first-image"
+                    ],
+                    "example": "first-image"
+                }
+            }
+        },
+        "httpserver.OnboardingResponse": {
+            "type": "object",
+            "properties": {
+                "purposes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "food",
+                            "shopping",
+                            "travel",
+                            "events",
+                            "receipt",
+                            "foreign-language",
+                            "work",
+                            "unsure"
+                        ]
+                    },
+                    "example": [
+                        "food",
+                        "receipt"
+                    ]
+                },
+                "step": {
+                    "type": "string",
+                    "enum": [
+                        "intro",
+                        "purpose",
+                        "first-image",
+                        "complete"
+                    ],
+                    "example": "first-image"
+                }
+            }
+        },
+        "httpserver.ProcessingFactResponse": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "type": "string",
+                    "example": "날짜"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "8월 20일 19시"
+                }
+            }
+        },
+        "httpserver.ProcessingJobResponse": {
+            "type": "object",
+            "properties": {
+                "jobId": {
+                    "type": "string",
+                    "example": "4f1c2a9e-0000-4000-8000-000000000000"
+                },
+                "result": {
+                    "$ref": "#/definitions/httpserver.ProcessingResultResponse"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "running",
+                        "completed",
+                        "failed"
+                    ],
+                    "example": "running"
+                }
+            }
+        },
+        "httpserver.ProcessingResultResponse": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string",
+                    "enum": [
+                        "place",
+                        "event",
+                        "receipt",
+                        "foreign_text",
+                        "shopping",
+                        "work",
+                        "other"
+                    ],
+                    "example": "event"
+                },
+                "confidence": {
+                    "type": "string",
+                    "enum": [
+                        "high",
+                        "medium",
+                        "low"
+                    ],
+                    "example": "high"
+                },
+                "facts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/httpserver.ProcessingFactResponse"
+                    }
+                },
+                "suggestedAction": {
+                    "type": "string",
+                    "enum": [
+                        "save_place",
+                        "add_to_calendar",
+                        "record_expense",
+                        "translate",
+                        "none"
+                    ],
+                    "example": "add_to_calendar"
+                }
+            }
+        },
         "httpserver.SessionResponse": {
             "type": "object",
             "properties": {
@@ -634,6 +1032,12 @@
                 },
                 "onboardingStep": {
                     "type": "string",
+                    "enum": [
+                        "intro",
+                        "purpose",
+                        "first-image",
+                        "complete"
+                    ],
                     "example": "intro"
                 },
                 "user": {
@@ -653,7 +1057,7 @@
     },
     "securityDefinitions": {
         "BearerAuth": {
-            "description": "\"Bearer \u003copaque session credential\u003e\" 형식. JWT가 아니며 서버만 해석할 수 있는 세션 토큰이다.",
+            "description": "\"Bearer \u003copaque session credential\u003e\" 형식. 서버만 해석할 수 있는 세션 토큰.",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"

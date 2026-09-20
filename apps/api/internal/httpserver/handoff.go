@@ -41,8 +41,7 @@ func (h *handlers) handoffStart(c *gin.Context) {
 	case errors.Is(err, auth.ErrNotFound):
 		writeError(c, http.StatusUnauthorized, errSessionExpired)
 	case err != nil:
-		h.logFailure(c, "auth handoff start failed", err)
-		writeError(c, http.StatusInternalServerError, errProviderUnavailable)
+		h.internalError(c, "auth handoff start failed", err)
 	default:
 		c.JSON(http.StatusOK, HandoffStartResponse{Code: code})
 	}
@@ -71,8 +70,7 @@ func (h *handlers) handoffExchange(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		h.logFailure(c, "auth handoff exchange failed", err)
-		writeError(c, http.StatusInternalServerError, errProviderUnavailable)
+		h.internalError(c, "auth handoff exchange failed", err)
 		return
 	}
 	c.JSON(http.StatusOK, toLoginResponse(session, credential))

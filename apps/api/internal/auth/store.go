@@ -19,6 +19,11 @@ var (
 // Postgres SQLSTATE: UNIQUE 제약 위반.
 const uniqueViolation = "23505"
 
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == uniqueViolation
+}
+
 type Identity struct {
 	Provider string
 	Subject  string
@@ -65,8 +70,7 @@ func (s *Store) CreateUser(ctx context.Context, identity Identity, consent Conse
 	})
 
 	// 이 트랜잭션에서 UNIQUE 위반은 identities 기본키 충돌뿐.
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) && pgErr.Code == uniqueViolation {
+	if isUniqueViolation(err) {
 		return User{}, ErrIdentityTaken
 	}
 	if err != nil {

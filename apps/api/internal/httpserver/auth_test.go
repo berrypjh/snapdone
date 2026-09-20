@@ -2,68 +2,14 @@ package httpserver
 
 import (
 	"bytes"
-	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"snapdone/api/internal/auth"
 )
-
-const validToken = "abc_DEF-123"
-
-// fakeSessions는 validToken만 유효한 세션으로 알고, err가 있으면 모든 호출에서 돌려준다.
-type fakeSessions struct {
-	err     error
-	revoked [][]byte
-}
-
-func (f *fakeSessions) FindSession(_ context.Context, hash []byte) (auth.Session, error) {
-	if f.err != nil {
-		return auth.Session{}, f.err
-	}
-	if !bytes.Equal(hash, auth.HashToken(validToken)) {
-		return auth.Session{}, auth.ErrNotFound
-	}
-	return auth.Session{
-		ID:        "internal-session-id",
-		User:      auth.User{ID: "user-1", OnboardingStep: "intro"},
-		ExpiresAt: time.Date(2026, 10, 1, 9, 0, 0, 0, time.FixedZone("KST", 9*3600)),
-	}, nil
-}
-
-func (f *fakeSessions) RevokeSession(_ context.Context, hash []byte) error {
-	f.revoked = append(f.revoked, hash)
-	return f.err
-}
-
-func serve(t *testing.T, sessions SessionStore, method, path string, headers ...string) *httptest.ResponseRecorder {
-	t.Helper()
-	req := httptest.NewRequest(method, path, nil)
-	for _, h := range headers {
-		req.Header.Add("Authorization", h)
-	}
-	recorder := httptest.NewRecorder()
-	NewRouter(Deps{Sessions: sessions}).ServeHTTP(recorder, req)
-	return recorder
-}
-
-func errorCode(t *testing.T, r *httptest.ResponseRecorder) string {
-	t.Helper()
-	var body map[string]any
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		t.Fatalf("decoding body: %v", err)
-	}
-	if len(body) != 1 {
-		t.Errorf("error body = %v, want only the error field", body)
-	}
-	code, _ := body["error"].(string)
-	return code
-}
 
 func TestBearerToken(t *testing.T) {
 	cases := []struct {

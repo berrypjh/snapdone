@@ -28,6 +28,17 @@ func documentedOperations(t *testing.T) []string {
 	return ops
 }
 
+// Gin 경로 매개변수(:jobId)를 Swagger 표기({jobId})로 바꾼다.
+func swaggerPath(ginPath string) string {
+	segments := strings.Split(ginPath, "/")
+	for i, segment := range segments {
+		if name, ok := strings.CutPrefix(segment, ":"); ok {
+			segments[i] = "{" + name + "}"
+		}
+	}
+	return strings.Join(segments, "/")
+}
+
 // 등록된 route와 Swagger 문서가 일치해야 한다. 새 endpoint에 주석을 달지 않았거나
 // `nx run api:swagger`로 다시 생성하지 않으면 여기서 실패한다.
 // HEAD route는 GET을 그대로 받는 것이라 GET 문서로 대신하고, Swagger UI route는 제외한다.
@@ -36,14 +47,15 @@ func TestEveryRouteIsDocumentedInSwagger(t *testing.T) {
 
 	var registered []string
 	for _, route := range NewRouter(Deps{Swagger: true}).Routes() {
+		path := swaggerPath(route.Path)
 		switch {
-		case strings.HasPrefix(route.Path, "/swagger/"):
+		case strings.HasPrefix(path, "/swagger/"):
 		case route.Method == http.MethodHead:
-			if !slices.Contains(documented, "GET "+route.Path) {
-				t.Errorf("HEAD %s has no documented GET", route.Path)
+			if !slices.Contains(documented, "GET "+path) {
+				t.Errorf("HEAD %s has no documented GET", path)
 			}
 		default:
-			registered = append(registered, route.Method+" "+route.Path)
+			registered = append(registered, route.Method+" "+path)
 		}
 	}
 
@@ -53,8 +65,8 @@ func TestEveryRouteIsDocumentedInSwagger(t *testing.T) {
 		t.Errorf("routes and Swagger differ; add annotations and run `nx run api:swagger`\nregistered: %v\ndocumented: %v",
 			registered, documented)
 	}
-	if len(registered) != 10 {
-		t.Errorf("registered %d API routes, want 10", len(registered))
+	if len(registered) != 14 {
+		t.Errorf("registered %d API routes, want 14", len(registered))
 	}
 }
 
@@ -86,7 +98,10 @@ func TestSwaggerSecurityMatchesBearerRoutes(t *testing.T) {
 		}
 	}
 	slices.Sort(secured)
-	want := []string{"GET /v1/auth/session", "POST /v1/auth/handoff/start", "POST /v1/auth/logout"}
+	want := []string{
+		"GET /v1/auth/session", "GET /v1/onboarding", "GET /v1/processing-jobs/{jobId}",
+		"POST /v1/auth/handoff/start", "POST /v1/auth/logout", "POST /v1/processing-jobs", "PUT /v1/onboarding",
+	}
 	if !slices.Equal(secured, want) {
 		t.Errorf("secured operations = %v, want %v", secured, want)
 	}

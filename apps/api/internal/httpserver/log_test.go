@@ -1,6 +1,9 @@
 package httpserver
 
 import (
+	"errors"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -64,5 +67,23 @@ func TestAuthLogsCarryNoSecrets(t *testing.T) {
 	}
 	if !strings.Contains(output, "route=/v1/auth/oauth/callback") {
 		t.Errorf("request log has no callback route line:\n%s", output)
+	}
+}
+
+// 사용자 취소는 오류 로그에 섞이지 않고, 맞지 않는 state는 경고, 장애는 오류로 남는다.
+func TestCallbackLogLevel(t *testing.T) {
+	cases := []struct {
+		err  error
+		want slog.Level
+	}{
+		{auth.ErrCancelled, slog.LevelInfo},
+		{auth.ErrInvalidCallback, slog.LevelWarn},
+		{fmt.Errorf("%w: provider error", auth.ErrProviderUnavailable), slog.LevelError},
+		{errors.New("cipher: message authentication failed"), slog.LevelError},
+	}
+	for _, tc := range cases {
+		if got := callbackLogLevel(tc.err); got != tc.want {
+			t.Errorf("callbackLogLevel(%v) = %v, want %v", tc.err, got, tc.want)
+		}
 	}
 }

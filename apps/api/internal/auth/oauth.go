@@ -8,8 +8,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgconn"
-
 	"snapdone/api/internal/google"
 )
 
@@ -18,6 +16,8 @@ var (
 	ErrProviderUnavailable = errors.New("auth: provider unavailable")
 	// state · code · verifier가 맞지 않거나 이미 쓰였거나 만료됐다.
 	ErrInvalidCallback = errors.New("auth: invalid callback")
+	// 사용자가 provider 동의 화면에서 로그인을 취소했다. 장애가 아니다.
+	ErrCancelled = errors.New("auth: cancelled by user")
 )
 
 const (
@@ -87,8 +87,7 @@ func (o *OAuth) Start(ctx context.Context, req StartInput) (string, error) {
 		UpstreamNonce:    o.cipher.Seal([]byte(nonce), stateHash),
 		KeyID:            o.cipher.KeyID(),
 	}, transactionTTL)
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) && pgErr.Code == uniqueViolation {
+	if isUniqueViolation(err) {
 		// 앱 state를 재사용한 시작은 받지 않는다.
 		return "", ErrProviderUnavailable
 	}
@@ -133,7 +132,7 @@ func (o *OAuth) Callback(ctx context.Context, query url.Values) (location string
 
 	if providerError := query.Get("error"); providerError != "" {
 		if providerError == "access_denied" {
-			return fail("cancelled", fmt.Errorf("%w: user denied", ErrInvalidCallback))
+			return fail("cancelled", ErrCancelled)
 		}
 		return fail("provider_unavailable", fmt.Errorf("%w: provider error", ErrProviderUnavailable))
 	}

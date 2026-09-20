@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"mime"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -142,7 +143,7 @@ func TestServerClosesConnectionAfterOversizedBody(t *testing.T) {
 	t.Cleanup(func() { _ = server.Close() })
 	client := &http.Client{Transport: &http.Transport{DialContext: listener.dial}}
 
-	for size, wantClose := range map[int]bool{maxAuthBody - 100: false, maxAuthBody + 1: true} {
+	for size, wantClose := range map[int]bool{maxJSONBody - 100: false, maxJSONBody + 1: true} {
 		body := `{"challenge":"` + strings.Repeat("a", size) + `"}`
 		req, _ := http.NewRequest(http.MethodPost, "http://api/v1/auth/handoff/start", strings.NewReader(body))
 		req.Header.Set("Authorization", "Bearer "+validToken)
@@ -154,5 +155,60 @@ func TestServerClosesConnectionAfterOversizedBody(t *testing.T) {
 		if resp.StatusCode != http.StatusBadRequest || resp.Close != wantClose {
 			t.Errorf("size %d: status %d close %v, want 400 close %v", size, resp.StatusCode, resp.Close, wantClose)
 		}
+	}
+}
+
+// slowUpload는 image 필드에 data를 담은 multipart 본문을 took 동안 나눠 보낸다.
+func slowUpload(data []byte, took time.Duration) (io.Reader, string) {
+	reader, writer := io.Pipe()
+	form := multipart.NewWriter(writer)
+	go func() {
+		part, _ := form.CreateFormFile("image", "photo")
+		const chunks = 4
+		size := len(data) / chunks
+		for i := range chunks {
+			time.Sleep(took / chunks)
+			end := (i + 1) * size
+			if i == chunks-1 {
+				end = len(data)
+			}
+			_, _ = part.Write(data[i*size : end])
+		}
+		_ = form.Close()
+		_ = writer.Close()
+	}()
+	return reader, form.FormDataContentType()
+}
+
+// 사진 업로드는 서버 기본 읽기 · 쓰기 기한보다 오래 걸려도 끝까지 받는다(느린 모바일 네트워크).
+func TestServerAcceptsPhotoUploadSlowerThanDefaultTimeouts(t *testing.T) {
+	server := New(config.Config{}, Deps{Sessions: &fakeSessions{}, Processing: &fakeProcessing{}, Handoff: auth.NewHandoff(nil)})
+	server.ReadTimeout, server.WriteTimeout = 100*time.Millisecond, 100*time.Millisecond
+	listener := newPipeListener()
+	go func() { _ = server.Serve(listener) }()
+	t.Cleanup(func() { _ = server.Close() })
+	client := &http.Client{Transport: &http.Transport{DialContext: listener.dial}}
+
+	body, contentType := slowUpload(pngImage, 400*time.Millisecond)
+	req, _ := http.NewRequest(http.MethodPost, "http://api/v1/processing-jobs", body)
+	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("Authorization", "Bearer "+validToken)
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("upload: %v", err)
+	}
+	defer resp.Body.Close()
+	answer, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusAccepted {
+		t.Errorf("status %d, body %s", resp.StatusCode, answer)
+	}
+
+	// 다른 route는 기본 기한 그대로라 같은 속도의 본문이면 연결이 끊긴다.
+	slow, _ := slowUpload([]byte(`{"challenge":"`+strings.Repeat("a", 64)+`","next":"/"}`), 400*time.Millisecond)
+	other, _ := http.NewRequest(http.MethodPost, "http://api/v1/auth/handoff/start", slow)
+	other.Header.Set("Authorization", "Bearer "+validToken)
+	if resp, err := client.Do(other); err == nil {
+		resp.Body.Close()
+		t.Errorf("slow body to another route: status %d, want the connection cut", resp.StatusCode)
 	}
 }

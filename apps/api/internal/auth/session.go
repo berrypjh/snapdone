@@ -40,7 +40,7 @@ type Session struct {
 // root 세션을 만든다.
 func (s *Store) CreateSession(ctx context.Context, userID string, kind SessionKind, tokenHash []byte) (Session, error) {
 	absolute, idle := ttls(kind)
-	return s.insertSession(ctx, `
+	return s.querySession(ctx, `
 		WITH s AS (
 			INSERT INTO auth_sessions (user_id, kind, token_hash, absolute_expires_at, idle_expires_at)
 			VALUES ($1::uuid, $2, $3, now() + make_interval(secs => $4), now() + make_interval(secs => LEAST($4, $5)))
@@ -55,7 +55,7 @@ func (s *Store) CreateSession(ctx context.Context, userID string, kind SessionKi
 // parent가 없거나 child · 취소 · 만료 상태면 ErrNotFound를 반환한다.
 func (s *Store) CreateChildSession(ctx context.Context, parentID string, kind SessionKind, tokenHash []byte) (Session, error) {
 	absolute, idle := ttls(kind)
-	return s.insertSession(ctx, `
+	return s.querySession(ctx, `
 		WITH s AS (
 			INSERT INTO auth_sessions (user_id, kind, parent_id, token_hash, absolute_expires_at, idle_expires_at)
 			SELECT p.user_id, $2, p.id, $3,
@@ -71,7 +71,8 @@ func (s *Store) CreateChildSession(ctx context.Context, parentID string, kind Se
 		parentID, kind, tokenHash, absolute.Seconds(), idle.Seconds())
 }
 
-func (s *Store) insertSession(ctx context.Context, sql string, args ...any) (Session, error) {
+// 세션 한 행을 돌려주는 쿼리를 실행한다. 행이 없으면 ErrNotFound다.
+func (s *Store) querySession(ctx context.Context, sql string, args ...any) (Session, error) {
 	var session Session
 	err := s.pool.QueryRow(ctx, sql, args...).
 		Scan(&session.ID, &session.User.ID, &session.User.OnboardingStep, &session.ExpiresAt)
@@ -84,8 +85,7 @@ func (s *Store) insertSession(ctx context.Context, sql string, args ...any) (Ses
 // 유효한 세션을 찾고 idle 만료를 absolute 만료 이내로 연장한다.
 // 만료 · 취소됐거나 parent가 취소됐으면 ErrNotFound를 반환한다. 시각은 DB now() 기준.
 func (s *Store) FindSession(ctx context.Context, tokenHash []byte) (Session, error) {
-	var session Session
-	err := s.pool.QueryRow(ctx, `
+	return s.querySession(ctx, `
 		UPDATE auth_sessions s
 		SET last_seen_at = now(),
 			idle_expires_at = LEAST(s.absolute_expires_at, now() + make_interval(secs =>
@@ -99,12 +99,7 @@ func (s *Store) FindSession(ctx context.Context, tokenHash []byte) (Session, err
 			AND (s.parent_id IS NULL OR EXISTS (
 				SELECT 1 FROM auth_sessions r WHERE r.id = s.parent_id AND r.revoked_at IS NULL))
 		RETURNING s.id::text, s.user_id::text, p.onboarding_step, s.idle_expires_at`,
-		tokenHash, MobileIdleTTL.Seconds(), WebIdleTTL.Seconds()).
-		Scan(&session.ID, &session.User.ID, &session.User.OnboardingStep, &session.ExpiresAt)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return Session{}, ErrNotFound
-	}
-	return session, err
+		tokenHash, MobileIdleTTL.Seconds(), WebIdleTTL.Seconds())
 }
 
 // 세션을 삭제하지 않고 revoked_at을 기록한다. root면 child도 함께 취소한다.

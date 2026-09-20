@@ -11,7 +11,7 @@ import (
 	"snapdone/api/internal/auth"
 )
 
-// 인증 endpoint가 쓰는 세션 저장소. 운영에서는 *auth.Store다.
+// Bearer 세션을 확인하는 모든 endpoint가 쓰는 세션 저장소. 운영에서는 *auth.Store다.
 type SessionStore interface {
 	FindSession(ctx context.Context, tokenHash []byte) (auth.Session, error)
 	RevokeSession(ctx context.Context, tokenHash []byte) error
@@ -43,19 +43,8 @@ func (h *handlers) capabilities(c *gin.Context) {
 // @Failure     503 {object} ErrorResponse "인증 비활성 (provider_unavailable)"
 // @Router      /v1/auth/session [get]
 func (h *handlers) session(c *gin.Context) {
-	token, ok := bearerToken(c.Request)
+	session, ok := h.requireSession(c)
 	if !ok {
-		writeError(c, http.StatusUnauthorized, errSessionExpired)
-		return
-	}
-	session, err := h.sessions.FindSession(c.Request.Context(), auth.HashToken(token))
-	if errors.Is(err, auth.ErrNotFound) {
-		writeError(c, http.StatusUnauthorized, errSessionExpired)
-		return
-	}
-	if err != nil {
-		h.logFailure(c, "auth session lookup failed", err)
-		writeError(c, http.StatusInternalServerError, errProviderUnavailable)
 		return
 	}
 	c.JSON(http.StatusOK, toSessionResponse(session))
@@ -77,8 +66,7 @@ func (h *handlers) logout(c *gin.Context) {
 		return
 	}
 	if err := h.sessions.RevokeSession(c.Request.Context(), auth.HashToken(token)); err != nil {
-		h.logFailure(c, "auth logout failed", err)
-		writeError(c, http.StatusInternalServerError, errProviderUnavailable)
+		h.internalError(c, "auth logout failed", err)
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -96,4 +84,23 @@ func bearerToken(r *http.Request) (string, bool) {
 		return "", false
 	}
 	return token, true
+}
+
+// Bearer credential의 세션을 찾는다. 없거나 무효면 오류를 쓰고 false다.
+func (h *handlers) requireSession(c *gin.Context) (auth.Session, bool) {
+	token, ok := bearerToken(c.Request)
+	if !ok {
+		writeError(c, http.StatusUnauthorized, errSessionExpired)
+		return auth.Session{}, false
+	}
+	session, err := h.sessions.FindSession(c.Request.Context(), auth.HashToken(token))
+	if errors.Is(err, auth.ErrNotFound) {
+		writeError(c, http.StatusUnauthorized, errSessionExpired)
+		return auth.Session{}, false
+	}
+	if err != nil {
+		h.internalError(c, "auth session lookup failed", err)
+		return auth.Session{}, false
+	}
+	return session, true
 }

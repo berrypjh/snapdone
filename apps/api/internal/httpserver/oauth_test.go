@@ -176,13 +176,6 @@ func (f *oauthFixture) exchange(code, verifier, state string) *httptest.Response
 	return f.do(http.MethodPost, "/v1/auth/exchange", map[string]string{"code": code, "verifier": verifier, "state": state})
 }
 
-func assertNoStore(t *testing.T, r *httptest.ResponseRecorder) {
-	t.Helper()
-	if r.Header().Get("Cache-Control") != "no-store" || r.Header().Get("Referrer-Policy") != "no-referrer" {
-		t.Errorf("headers = %v, want no-store and no-referrer", r.Header())
-	}
-}
-
 // 앱 → Go → Google → Go → 앱 → exchange 전체 흐름.
 func TestOAuthGoogleMobileLogin(t *testing.T) {
 	f := newOAuthFixture(t)
@@ -496,10 +489,10 @@ func TestOAuthStartRejectsOversizedBody(t *testing.T) {
 		return req
 	}
 
-	if r := f.do(http.MethodPost, "/v1/auth/oauth/start", body(maxAuthBody)); r.Code != http.StatusOK {
+	if r := f.do(http.MethodPost, "/v1/auth/oauth/start", body(maxJSONBody)); r.Code != http.StatusOK {
 		t.Errorf("body at the limit: status %d, want 200", r.Code)
 	}
-	r := f.do(http.MethodPost, "/v1/auth/oauth/start", body(maxAuthBody+1))
+	r := f.do(http.MethodPost, "/v1/auth/oauth/start", body(maxJSONBody+1))
 	if r.Code != http.StatusBadRequest || errorCode(t, r) != "provider_unavailable" {
 		t.Errorf("body over the limit: status %d, want 400", r.Code)
 	}

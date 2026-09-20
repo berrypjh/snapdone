@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -35,8 +36,7 @@ func (h *handlers) oauthStart(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		h.logFailure(c, "auth oauth start failed", err)
-		writeError(c, http.StatusInternalServerError, errProviderUnavailable)
+		h.internalError(c, "auth oauth start failed", err)
 		return
 	}
 	c.JSON(http.StatusOK, AuthorizeURLResponse{AuthorizeURL: authorizeURL})
@@ -77,7 +77,8 @@ func (h *handlers) oauthCancel(c *gin.Context) {
 func (h *handlers) oauthCallback(c *gin.Context) {
 	location, err := h.oauth.Callback(c.Request.Context(), c.Request.URL.Query())
 	if err != nil {
-		h.logFailure(c, "auth oauth callback failed", err)
+		h.log.Log(c.Request.Context(), callbackLogLevel(err), "auth oauth callback failed",
+			requestIDKey, c.GetString(requestIDKey), "err", err)
 	}
 	if location == "" {
 		writeError(c, http.StatusBadRequest, errInvalidCallback)
@@ -111,9 +112,21 @@ func (h *handlers) exchange(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		h.logFailure(c, "auth exchange failed", err)
-		writeError(c, http.StatusInternalServerError, errProviderUnavailable)
+		h.internalError(c, "auth exchange failed", err)
 		return
 	}
 	c.JSON(http.StatusOK, toLoginResponse(session, credential))
+}
+
+// callback 실패의 로그 레벨. 사용자 취소는 정상 동작(Info), 맞지 않는 · 이미 쓴 state는
+// 재시도나 변조일 수 있어 Warn, provider · 저장소 · 복호화 오류는 장애라 Error다.
+func callbackLogLevel(err error) slog.Level {
+	switch {
+	case errors.Is(err, auth.ErrCancelled):
+		return slog.LevelInfo
+	case errors.Is(err, auth.ErrInvalidCallback):
+		return slog.LevelWarn
+	default:
+		return slog.LevelError
+	}
 }
