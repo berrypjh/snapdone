@@ -1,13 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 
-import { signIn } from './support/fixture';
-
-/**
- * The User-Agent the app's WebView sends: a normal mobile Safari string plus the bridge token
- * `SnapdoneApp/<contract version>` from libs/webview-bridge. Written out literally to pin the wire format.
- */
-const IN_APP_USER_AGENT =
-  'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 SnapdoneApp/1';
+import { IN_APP_USER_AGENT, signIn } from './support/fixture';
 
 type AppMessages = { __appMessages: string[] };
 

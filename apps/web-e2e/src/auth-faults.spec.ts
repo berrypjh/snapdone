@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { answerGoogle, setFaults, startCalls } from './support/fixture';
+import { answerGoogle, GOOGLE, setFaults, startCalls } from './support/fixture';
 
 /**
  * Faults are global in the fake API, so this file runs in its own serial `faults-*` projects
@@ -8,8 +8,6 @@ import { answerGoogle, setFaults, startCalls } from './support/fixture';
  */
 test.describe.configure({ mode: 'serial' });
 test.use({ viewport: { width: 390, height: 844 } });
-
-const GOOGLE = { name: 'Google로 계속하기' } as const;
 
 test.afterEach(async ({ request }) => {
   await setFaults(request, {});

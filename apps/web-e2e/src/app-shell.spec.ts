@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+import { linkTabKey, overflowsSideways } from './support/fixture';
+
 /**
  * The shell swaps at the md breakpoint: the sidebar is desktop-only, and below
  * it the header carries the wordmark instead. This is the contract described in
@@ -33,15 +35,8 @@ test('does not let the page scroll sideways on a narrow screen', async ({ page }
   await page.setViewportSize({ width: 320, height: 800 });
   await page.goto('/');
 
-  const overflows = await page.evaluate(
-    () => document.documentElement.scrollWidth > window.innerWidth,
-  );
-
-  expect(overflows).toBe(false);
+  expect(await overflowsSideways(page)).toBe(false);
 });
-
-/** WebKit on macOS skips links on plain Tab, so link focus needs Alt+Tab there. */
-const linkTabKey = (browserName: string) => (browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
 
 /**
  * The skip link is the first keyboard stop. It stays visually hidden until focused,

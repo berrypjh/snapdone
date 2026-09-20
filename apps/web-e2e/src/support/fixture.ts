@@ -6,6 +6,23 @@ export const FAKE_API_URL = 'http://127.0.0.1:4010';
 /** Where the fake API sends the browser to "Google". Never resolves; tests answer it with `page.route`. */
 const FAKE_AUTHORIZE = 'https://oauth.fake.test/**';
 
+/** The Google login button on `/login`. */
+export const GOOGLE = { name: 'Google로 계속하기' } as const;
+
+/**
+ * An iPhone WebView User-Agent with the app's `SnapdoneApp/<contract version>` token from
+ * libs/webview-bridge. Written out literally to pin the wire format.
+ */
+export const IN_APP_USER_AGENT =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 SnapdoneApp/1';
+
+/** Whether the page scrolls sideways at its current viewport. */
+export const overflowsSideways = (page: Page) =>
+  page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+
+/** WebKit on macOS skips links on plain Tab, so link focus needs Alt+Tab there. */
+export const linkTabKey = (browserName: string) => (browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
+
 /** `next dev` cookie name (`authCookies()` outside production). */
 export const SESSION_COOKIE = 'snapdone-session-dev';
 

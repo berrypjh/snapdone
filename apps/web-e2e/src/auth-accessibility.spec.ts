@@ -1,6 +1,12 @@
 import { expect, type Page, test } from '@playwright/test';
 
-import { answerGoogle, signIn } from './support/fixture';
+import {
+  answerGoogle,
+  GOOGLE,
+  IN_APP_USER_AGENT,
+  overflowsSideways,
+  signIn,
+} from './support/fixture';
 
 /**
  * ON-01 screens by width, color scheme, keyboard, and assistive-technology semantics.
@@ -9,12 +15,6 @@ import { answerGoogle, signIn } from './support/fixture';
 
 const WIDTHS = [320, 767, 768, 1280] as const;
 const SCHEMES = ['light', 'dark'] as const;
-const GOOGLE = { name: 'Google로 계속하기' } as const;
-const IN_APP_USER_AGENT =
-  'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 SnapdoneApp/1';
-
-const overflowsSideways = (page: Page) =>
-  page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
 
 /** Text color and background resolve to different colors, so the copy is not painted invisible. */
 const textIsVisibleOnBody = (page: Page) =>
@@ -100,7 +100,7 @@ test('hides the decorative arrows and check marks from assistive technology', as
   const tree = await page.getByRole('main').ariaSnapshot();
   expect(tree).not.toContain('↓');
   expect(tree).not.toContain('✓');
-  await expect(page.getByRole('button', { name: '시작하기' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '시작하기' })).toBeEnabled();
 });
 
 test('the handoff page announces one status while it waits', async ({ page }) => {

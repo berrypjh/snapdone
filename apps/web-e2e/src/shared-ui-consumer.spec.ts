@@ -1,8 +1,10 @@
 import { expect, type Page, test } from '@playwright/test';
 
+import { linkTabKey, overflowsSideways } from './support/fixture';
+
 /**
  * How the app consumes @berrypjh/react-ui as it ships: the first server HTML, a clean
- * hydration, the shared stylesheet actually applied, and the fixed light theme.
+ * hydration, the shared stylesheet actually applied, and a theme that follows the system and the switch.
  * Against `nx start web` (BASE_URL) this is production evidence; under the default
  * `nx dev web` server it only proves the dev build.
  */
@@ -113,7 +115,6 @@ test('exposes one banner, one main, and one page heading', async ({ page }) => {
 });
 
 /** WebKit on macOS skips links on plain Tab, so link focus needs Alt+Tab there. */
-const linkTabKey = (browserName: string) => (browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
 
 test('draws a visible focus ring on the keyboard-focused skip link', async ({
   page,
@@ -132,8 +133,5 @@ test('does not scroll sideways just below the md breakpoint', async ({ page }) =
   await page.setViewportSize({ width: 767, height: 800 });
   await page.goto('/');
 
-  const overflows = await page.evaluate(
-    () => document.documentElement.scrollWidth > window.innerWidth,
-  );
-  expect(overflows).toBe(false);
+  expect(await overflowsSideways(page)).toBe(false);
 });

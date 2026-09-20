@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const GOOGLE = { name: 'Google로 계속하기' } as const;
+import { GOOGLE, overflowsSideways } from './support/fixture';
 
 test.describe('login screen', () => {
   test.use({ viewport: { width: 390, height: 844 } });
@@ -24,10 +24,7 @@ test.describe('login screen', () => {
     await page.setViewportSize({ width: 320, height: 800 });
     await page.goto('/login');
 
-    const overflows = await page.evaluate(
-      () => document.documentElement.scrollWidth > window.innerWidth,
-    );
-    expect(overflows).toBe(false);
+    expect(await overflowsSideways(page)).toBe(false);
   });
 
   test('shows a callback error from the query', async ({ page }) => {

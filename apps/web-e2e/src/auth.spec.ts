@@ -1,13 +1,19 @@
 import { type BrowserContext, expect, type Page, type Request, test } from '@playwright/test';
 
-import { answerGoogle, FAKE_API_URL, mintSession, SESSION_COOKIE, signIn } from './support/fixture';
+import {
+  answerGoogle,
+  FAKE_API_URL,
+  GOOGLE,
+  IN_APP_USER_AGENT,
+  mintSession,
+  SESSION_COOKIE,
+  signIn,
+} from './support/fixture';
 
 /**
  * ON-01 browser login against the fake auth API (support/fake-api.mts). Google itself is never
  * contacted: the consent screen is answered with `page.route`.
  */
-
-const GOOGLE = { name: 'Google로 계속하기' } as const;
 
 const sessionCookie = async (context: BrowserContext) =>
   (await context.cookies()).find((cookie) => cookie.name === SESSION_COOKIE);
@@ -153,10 +159,7 @@ test.describe('signed in', () => {
 });
 
 test.describe('WebView handoff', () => {
-  test.use({
-    userAgent:
-      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 SnapdoneApp/1',
-  });
+  test.use({ userAgent: IN_APP_USER_AGENT });
 
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {

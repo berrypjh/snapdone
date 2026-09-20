@@ -1,7 +1,7 @@
 /**
- * Test-only stand-in for the Go auth API, run as its own process so the Next server can reach it
- * through `API_BASE_URL`. It speaks the same wire contract (docs/features/on01/api-contract.md)
- * with in-memory state. Nothing here ships: the product has no switch to a fake provider.
+ * Test-only stand-in for the Go auth · onboarding · processing API, run as its own process so the Next server can reach it
+ * through `API_BASE_URL`. It speaks the same wire contract as the Go API (its generated Swagger
+ * document, apps/api/docs/swagger) with in-memory state. Nothing here ships: the product has no switch to a fake provider.
  *
  * `/__fixture/*` lets a test mint sessions and inject faults. Fault settings are global, so only
  * the serial `faults` Playwright projects change them.
@@ -14,7 +14,7 @@ const WEB_ORIGIN = process.env['WEB_ORIGIN'];
 /** Same as `fixture.ts`. `.test` never resolves, so a navigation that escapes `page.route` reaches no provider. */
 const FAKE_AUTHORIZE_URL = 'https://oauth.fake.test/authorize';
 
-type Step = 'intro' | 'complete';
+type Step = 'intro' | 'purpose' | 'first-image' | 'complete';
 type Session = {
   userId: string;
   step: Step;
@@ -28,6 +28,10 @@ const transactions = new Map<string, string>();
 const loginGrants = new Map<string, { state: string; challenge: string; step: Step }>();
 const handoffGrants = new Map<string, { challenge: string; next: string; parent: string }>();
 const faults = { startStatus: 0, startDelayMs: 0, startCalls: 0 };
+/** Onboarding purposes per user. Absent means unanswered (`null`). */
+const purposes = new Map<string, string[]>();
+/** Processing jobs finish on their first lookup. */
+const jobs = new Map<string, string>();
 
 const token = () => randomBytes(32).toString('base64url');
 const s256 = (verifier: string) => createHash('sha256').update(verifier).digest('base64url');
@@ -93,6 +97,33 @@ const redirectToWeb = (res: ServerResponse, query: Record<string, string>) => {
 const invalid = (res: ServerResponse) => send(res, 400, { error: 'invalid_callback' });
 
 type Handler = (req: IncomingMessage, res: ServerResponse, url: URL) => void | Promise<void>;
+
+/** The valid session of this request, or a 401 already sent. */
+const authorized = (req: IncomingMessage, res: ServerResponse) => {
+  const session = sessions.get(bearer(req) ?? '');
+  if (isValid(session)) return session;
+  send(res, 401, { error: 'session_expired' });
+  return null;
+};
+
+/** Steps a save may come from: the same step again or the one before it (Go `onboarding.CanMove`). */
+const FROM: Record<string, Step[]> = {
+  intro: ['intro'],
+  purpose: ['intro', 'purpose'],
+  'first-image': ['purpose', 'first-image'],
+};
+
+const progressBody = (session: Session) => ({
+  step: session.step,
+  purposes: purposes.get(session.userId) ?? null,
+});
+
+const RESULT = {
+  category: 'receipt',
+  facts: [{ label: '금액', value: '12,000원' }],
+  suggestedAction: 'record_expense',
+  confidence: 'high',
+};
 
 const routes: Record<string, Handler> = {
   'GET /v1/auth/capabilities': (_req, res) => send(res, 200, { providers: ['google'] }),
@@ -178,6 +209,42 @@ const routes: Record<string, Handler> = {
     );
   },
 
+  'GET /v1/onboarding': (req, res) => {
+    const session = authorized(req, res);
+    if (session) send(res, 200, progressBody(session));
+  },
+
+  /** Go's contract: resume steps only, purposes from first-image, one step forward, nothing after complete. */
+  'PUT /v1/onboarding': async (req, res) => {
+    const session = authorized(req, res);
+    if (!session) return;
+    if (session.step === 'complete') return send(res, 409, { error: 'onboarding_complete' });
+    const body = await readJson(req);
+    const answered = Array.isArray(body.purposes);
+    const valid =
+      body.step === 'first-image' ? answered : body.step === 'intro' || body.step === 'purpose';
+    if (!valid || (body.step !== 'first-image' && body.purposes !== null)) {
+      return send(res, 400, { error: 'invalid_onboarding' });
+    }
+    if (!FROM[String(body.step)]?.includes(session.step)) {
+      return send(res, 409, { error: 'onboarding_out_of_order' });
+    }
+    for (const other of sessions.values()) {
+      if (other.userId === session.userId) other.step = body.step as Step;
+    }
+    if (answered) purposes.set(session.userId, (body.purposes as unknown[]).map(String));
+    else purposes.delete(session.userId);
+    send(res, 200, progressBody(session));
+  },
+
+  'POST /v1/processing-jobs': async (req, res) => {
+    for await (const _chunk of req);
+    if (!authorized(req, res)) return;
+    const jobId = `job-${token().slice(0, 8)}`;
+    jobs.set(jobId, 'running');
+    send(res, 202, { jobId, status: 'running' });
+  },
+
   'GET /__fixture/health': (_req, res) => send(res, 200, { status: 'ok' }),
 
   /** `{ onboardingStep, kind }` → `{ credential }`. */
@@ -201,6 +268,13 @@ const routes: Record<string, Handler> = {
 
 createServer((req, res) => {
   const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
+  const jobLookup = /^\/v1\/processing-jobs\/([^/]+)$/.exec(url.pathname);
+  if (req.method === 'GET' && jobLookup) {
+    const jobId = decodeURIComponent(jobLookup[1] ?? '');
+    if (!authorized(req, res)) return;
+    if (!jobs.has(jobId)) return send(res, 404, { error: 'job_not_found' });
+    return send(res, 200, { jobId, status: 'completed', result: RESULT });
+  }
   const handler = routes[`${req.method} ${url.pathname}`];
   if (!handler) return send(res, 404, { error: 'provider_unavailable' });
   void handler(req, res, url);
