@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "types": [],
+    "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "vitest.config.ts", "eslint.config.mjs"],
+  "references": [
+    {
+      "path": "../auth-contracts/tsconfig.lib.json"
+    }
+  ]
+}
