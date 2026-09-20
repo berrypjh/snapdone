@@ -8,13 +8,14 @@ import { inspect } from './inspection';
 const entities = SECTIONS.flatMap((section) => section.entities);
 
 describe('explorer sections', () => {
-  it('hold every scenario, project, document, and command in the catalog', () => {
+  it('hold every scenario, project, document, record, and command in the catalog', () => {
     const count = (id: string) => SECTIONS.find((section) => section.id === id)?.entities.length;
     expect(count('scenarios')).toBe(catalog.scenarios.length);
     expect((count('applications') ?? 0) + (count('libraries') ?? 0)).toBe(
       catalog.nodes.filter((node) => node.kind !== 'external').length,
     );
     expect(count('documents')).toBe(catalog.documents.length);
+    expect(count('records')).toBe(catalog.records.length);
     expect(count('engineering')).toBe(COMMAND_GROUPS.length);
   });
 

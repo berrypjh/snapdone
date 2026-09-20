@@ -48,7 +48,7 @@
   letter-spacing: var(--ds-caption-small-letter-spacing);
 }
 
-/* Paths, symbols, and commands. No shared monospace token exists, so this uses Tailwind's stack. */
+/* 경로 · 심볼 · 명령용. 공용 monospace 토큰이 없어서 Tailwind의 스택을 쓴다. */
 @utility devhub-code {
   font-family: var(--font-mono);
   font-size: var(--ds-caption-small-font-size);
@@ -56,7 +56,7 @@
   overflow-wrap: anywhere;
 }
 
-/* Faint grid for the diagram area, drawn from the shared stroke token. */
+/* 그림 영역의 옅은 격자. 공용 stroke 토큰으로 그린다. */
 @utility devhub-grid {
   background-image:
     linear-gradient(var(--ds-stroke-light) 1px, transparent 1px),
@@ -64,7 +64,7 @@
   background-size: 24px 24px;
 }
 
-/* The tokens switch on data-theme but set no color-scheme; native controls and scrollbars need it. */
+/* 토큰은 data-theme로 바뀌지만 color-scheme는 정하지 않는다. 기본 컨트롤과 스크롤바에 필요하다. */
 :root {
   color-scheme: light;
 }
@@ -73,7 +73,7 @@
   color-scheme: dark;
 }
 
-/* Below `lg` the top bar sticks to the top (min-h-14 plus its border); anchors land below it. */
+/* `lg` 아래에서는 상단 바가 붙어 있으므로(min-h-14 + 테두리) 앵커가 그 아래에 도착한다. */
 @media (width < 64rem) {
   :root {
     scroll-padding-top: 3.75rem;
@@ -93,7 +93,7 @@ body {
   outline-offset: 2px;
 }
 
-/* Reading width text for repository documents (components/doc). Tokens only; utilities still win. */
+/* 저장소 문서(components/doc)를 읽기 좋은 너비로. 토큰만 쓰고, utility가 여전히 우선한다. */
 @layer components {
   .devhub-prose {
     color: var(--ds-text-default);
@@ -142,5 +142,38 @@ body {
 
   .devhub-prose [id] {
     scroll-margin-top: var(--ds-spacing-xl);
+  }
+
+  /*
+   * 제목에 도착한 링크는 어디에 닿았는지 알려 주고, 보일 만큼 머문 뒤 물러난다. 표식은 `:target`이
+   * 아니라 라우터가 붙인다. 라우터는 `pushState`로 이동해서 `:target`이 떠나온 페이지에 남는다.
+   * selected 토큰은 8% 농도라 한 줄에서는 알아보기 어려우므로, 표식은 같은 색으로 농도를 직접
+   * 섞고 그림자로 글 밖까지 번지게 한다. 그림자는 아무것도 밀지 않고 여백만 물들인다.
+   */
+  .devhub-prose [data-anchor-flash] {
+    --devhub-anchor-tint: rgb(var(--ds-background-selected-rgb) / 0.3);
+    border-radius: var(--ds-radius-xs);
+    animation: devhub-anchor-flash 2.4s ease-out both;
+  }
+
+  @keyframes devhub-anchor-flash {
+    0%,
+    55% {
+      background-color: var(--devhub-anchor-tint);
+      box-shadow: 0 0 0 0.4rem var(--devhub-anchor-tint);
+    }
+    100% {
+      background-color: transparent;
+      box-shadow: 0 0 0 0.4rem transparent;
+    }
+  }
+
+  /* 움직임을 줄여 달라고 한 사람에게는 사라지는 효과 없이 표식이 그대로 남는다. */
+  @media (prefers-reduced-motion: reduce) {
+    .devhub-prose [data-anchor-flash] {
+      animation: none;
+      background-color: var(--devhub-anchor-tint);
+      box-shadow: 0 0 0 0.4rem var(--devhub-anchor-tint);
+    }
   }
 }

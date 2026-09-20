@@ -13,9 +13,9 @@ const LINK = 'text-text-link underline-offset-2 hover:underline';
 
 const runtimeName = new Map(catalog.runtimes.map((runtime) => [runtime.id, runtime.name]));
 
-/** One line that says where the step runs, who owns it, and how much evidence it has. */
+/** 단계가 어디서 돌고 누가 맡으며 근거가 얼마나 있는지 한 줄로. */
 const summaryOf = (scenario: Scenario, step: ScenarioStep, order: number) => {
-  // A single `next` that is the step right below says nothing the list order does not.
+  // 바로 아래 단계 하나뿐인 `next`는 목록 순서가 이미 말한 것이라 적지 않는다.
   const following = scenario.steps[order]?.id;
   const next = step.next.length === 1 && step.next[0] === following ? [] : step.next;
   const orderOf = new Map(scenario.steps.map((s, i) => [s.id, i + 1]));
@@ -70,9 +70,8 @@ function StepItem({
 }
 
 /**
- * The scenario as a list of step summaries: what the flow drawing shows — order, intent, status,
- * where it runs, owner, evidence counts, and any next step that is not simply the one below — as
- * text. The step's evidence (source, APIs, contracts, tests) is in the inspector once selected.
+ * 시나리오를 단계 요약 목록으로. 흐름 그림이 보이는 것 — 순서 · 의도 · 상태 · 실행 위치 · 담당 ·
+ * 근거 수 · 바로 아래가 아닌 다음 단계 — 을 글로 적는다. 단계의 근거는 고르면 인스펙터에 나온다.
  */
 export function ScenarioOutline({ scenario }: { scenario: Scenario }) {
   const segments = useSelectedLayoutSegments();

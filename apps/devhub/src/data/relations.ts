@@ -1,10 +1,10 @@
 import type { Relation } from '../domain/model';
 
 /**
- * Three kinds, never mixed:
- * - `workspace-dependency` — what the Nx graph derives from manifests (build-time structure)
- * - `runtime` — what actually talks to what while the product runs
- * - `verification` — which project exercises which (not a build or runtime edge)
+ * 세 종류이고 서로 섞지 않는다:
+ * - `workspace-dependency` — Nx 그래프가 manifest에서 끌어내는 것(빌드 시점 구조)
+ * - `runtime` — 제품이 도는 동안 실제로 무엇이 무엇과 대화하는지
+ * - `verification` — 어떤 프로젝트가 어떤 것을 실행해 검증하는지(빌드 · 런타임 edge가 아니다)
  */
 export const relations: Relation[] = [
   {

@@ -13,6 +13,7 @@ describe('resolveDocLink', () => {
       ),
     ).toEqual({
       kind: 'document',
+      section: 'documents',
       id: 'target-architecture',
       path: 'docs/architecture/target-architecture.md',
       anchor: '제품-구성--네이티브-셸--웹-콘텐츠',
@@ -22,7 +23,13 @@ describe('resolveDocLink', () => {
   it('resolves relative paths from the document folder, even outside docs/', () => {
     expect(
       resolveDocLink('docs/engineering/quality-gates.md', '../../.claude/README.md#신뢰-표면'),
-    ).toEqual({ kind: 'document', id: 'harness', path: '.claude/README.md', anchor: '신뢰-표면' });
+    ).toEqual({
+      kind: 'document',
+      section: 'documents',
+      id: 'harness',
+      path: '.claude/README.md',
+      anchor: '신뢰-표면',
+    });
     expect(resolveDocLink(from, '../../apps/web/src/lib/auth/handoff.ts')).toEqual({
       kind: 'file',
       path: 'apps/web/src/lib/auth/handoff.ts',

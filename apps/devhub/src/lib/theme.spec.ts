@@ -9,7 +9,7 @@ import { ThemeSwitch } from '../components/theme-switch';
 
 import { THEME_KEY, themeScript } from './theme';
 
-/** Runs the head script against a fake browser and returns the `data-theme` it set. */
+/** head 스크립트를 가짜 브라우저에서 돌리고 설정된 `data-theme`를 돌려준다. */
 const run = ({
   stored,
   osDark,

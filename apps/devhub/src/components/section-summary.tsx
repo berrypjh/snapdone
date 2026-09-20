@@ -5,7 +5,7 @@ import { entityHref, entityStatus, type Section } from '@/lib/entities';
 import { StatusChip } from './status-chip';
 import { WorkspaceSection } from './workspace';
 
-/** Center view of a whole explorer section: every entity with a link and its status. */
+/** 탐색기 섹션 하나의 가운데 화면. 모든 항목을 링크와 상태로 보인다. */
 export function SectionSummary({ section }: { section: Section }) {
   return (
     <WorkspaceSection id="section-list" title={`${section.entities.length}개`}>

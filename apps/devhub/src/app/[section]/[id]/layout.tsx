@@ -17,10 +17,9 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 /**
- * Shell and workspace for one entity. Kept as a layout so the scenario flow keeps its pan/zoom
- * while the selected step changes. The page (`children`) is the workspace header and the
- * `@inspector` slot is the right pane: Next scrolls to the page after a navigation, so the page
- * must be at the top of the workspace.
+ * 항목 하나의 셸과 작업 영역. layout으로 두어야 고른 단계가 바뀌어도 시나리오 흐름의 이동 · 확대가
+ * 유지된다. 페이지(`children`)는 작업 영역 머리말, `@inspector` 슬롯은 오른쪽 칸이다. Next는 이동
+ * 뒤 페이지로 스크롤하므로 페이지가 작업 영역 맨 위에 있어야 한다.
  */
 export default async function EntityLayout({
   params,

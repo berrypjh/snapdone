@@ -23,8 +23,8 @@ import {
 import { catalog } from './index';
 
 /**
- * Freshness: the catalog against the repository as it is now. Any failure here means the DevHub
- * would show something the repository no longer backs; fix the data, never skip the check.
+ * 신선도: 카탈로그를 지금의 저장소와 맞춰 본다. 여기서 실패하면 DevHub가 저장소에 더 이상 없는
+ * 것을 보여 준다는 뜻이다. 검사를 건너뛰지 말고 데이터를 고친다.
  */
 
 const refs = citedRefs();
@@ -45,7 +45,7 @@ describe('cited paths', () => {
   });
 
   it('get repository links derived only from the snapshot and the path', () => {
-    // Fixture revision for the derivation check; never shown as the current commit.
+    // 링크 생성 규칙만 보기 위한 가짜 revision. 현재 커밋으로 화면에 나가지 않는다.
     const commit = 'f'.repeat(40);
     const snapshot: RepositorySnapshot = {
       repositoryId: catalog.repository.id,
@@ -181,7 +181,7 @@ describe('document links', () => {
     new Set(parseMarkdown(read(path)).flatMap((b) => (b.kind === 'heading' ? [b.id] : [])));
 
   it('point at documents, files, and headings that exist', () => {
-    const broken = catalog.documents.flatMap((doc) =>
+    const broken = [...catalog.documents, ...catalog.records].flatMap((doc) =>
       linksIn(parseMarkdown(read(doc.path))).flatMap((href) => {
         const link = resolveDocLink(doc.path, href);
         const ok =
@@ -201,8 +201,8 @@ describe('source files', () => {
     const text = [...filesUnder('apps/devhub'), ...filesUnder('apps/devhub-e2e')].filter((path) =>
       /\.(ts|tsx|mts|mjs|js|json|css|md)$/.test(path),
     );
-    // Tab, line feed, and carriage return are ordinary text; every other C0 byte and DEL is not.
-    // eslint-disable-next-line no-control-regex -- control characters are what this looks for
+    // 탭 · 줄바꿈 · 캐리지 리턴은 보통 텍스트이고, 나머지 C0 바이트와 DEL은 아니다.
+    // eslint-disable-next-line no-control-regex -- 이 정규식이 찾으려는 대상이 제어 문자다
     const control = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/;
     expect(text.filter((path) => control.test(read(path)))).toEqual([]);
   });

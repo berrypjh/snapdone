@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-/** Both slots match every URL under this layout; a slot that cannot be restored is a 404. */
+/** 이 layout 아래의 모든 URL에 두 슬롯이 걸린다. 복원할 수 없는 슬롯은 404다. */
 export default function Default() {
   notFound();
 }

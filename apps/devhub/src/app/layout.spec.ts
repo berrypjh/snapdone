@@ -16,7 +16,7 @@ describe('skip links', () => {
   it('open the document body, once, outside every route', () => {
     const html = renderToStaticMarkup(createElement(RootLayout, null, createElement('p')));
     const body = html.slice(html.indexOf('<body>') + '<body>'.length);
-    // Only the navigation focus spot comes first, so the next Tab after a navigation is a skip link.
+    // 앞에는 이동 포커스 자리만 있어서, 이동한 뒤 처음 누르는 Tab이 건너뛰기 링크로 간다.
     expect(body).toMatch(
       /^<div tabindex="-1" class="outline-none"><\/div><a href="#devhub-main" class="ui-skip-link">본문으로 건너뛰기<\/a><a href="#devhub-inspector" class="ui-skip-link">상세 정보로 건너뛰기<\/a>/,
     );
@@ -42,7 +42,7 @@ describe('skip links', () => {
         children: createElement('main'),
       }),
     );
-    // Icons drawn here (line icons). The shared search field hides its own icon on a wrapper.
+    // 여기서 그리는 선 아이콘들. 공용 검색 입력은 자기 아이콘을 wrapper에서 숨긴다.
     const svgs = (html.match(/<svg[^>]*>/g) ?? []).filter((svg) =>
       svg.includes('stroke="currentColor"'),
     );
@@ -52,6 +52,6 @@ describe('skip links', () => {
     const names = [...nav.matchAll(/<a [^>]*>([\s\S]*?)<\/a>/g)].map(([, inner]) =>
       inner.replace(/<[^>]+>/g, ''),
     );
-    expect(names).toEqual(['개요', '시나리오', '아키텍처', '문서', '엔지니어링']);
+    expect(names).toEqual(['개요', '시나리오', '아키텍처', '문서', '기록', '엔지니어링']);
   });
 });

@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return { title: found ? `${found.step.intent} · ${found.scenario.title}` : undefined };
 }
 
-/** The scenario's workspace header with a step selected; the step itself is in `@inspector`. */
+/** 단계를 고른 상태의 시나리오 작업 영역 머리말. 단계 자체는 `@inspector`에 있다. */
 export default async function StepPage({ params }: { params: Params }) {
   const { section, id, stepId } = await params;
   if (section !== 'scenarios' || !findStep(id, stepId)) notFound();

@@ -7,11 +7,8 @@ import { isCommitSha, isSafeBranch } from '../domain/links';
 import type { RepositoryRef, RepositorySnapshot } from '../domain/model';
 
 /**
- * Server-only: which commit the DevHub describes. Read once per process at build or request time.
- *
- * 1. `DEVHUB_COMMIT_SHA` (and optional `DEVHUB_BRANCH`) from the build environment
- * 2. otherwise `git rev-parse HEAD` in the repository
- * 3. otherwise `unavailable` — the commit stays null and only branch links are offered
+ * 서버 전용. DevHub가 설명하는 커밋을 정한다.
+ * 환경변수(`DEVHUB_COMMIT_SHA`) → `git rev-parse HEAD` → 둘 다 없으면 `unavailable`(커밋은 null).
  */
 
 type Git = (args: string[]) => string | null;
@@ -41,7 +38,7 @@ export const resolveSnapshot = (
   };
 };
 
-/** Nearest ancestor of `start` that holds `pnpm-workspace.yaml`, the repository root marker. */
+/** `pnpm-workspace.yaml`이 있는 가장 가까운 상위 폴더. 저장소 루트다. */
 export const findRepositoryRoot = (start: string): string | null => {
   let current = start;
   while (!existsSync(join(current, 'pnpm-workspace.yaml'))) {
@@ -54,7 +51,7 @@ export const findRepositoryRoot = (start: string): string | null => {
 
 export const REPOSITORY_ROOT = findRepositoryRoot(process.cwd());
 
-/** Runs git without a shell. Any failure is null — never a made-up value. */
+/** 셸 없이 git을 실행한다. 실패하면 null이고, 값을 지어내지 않는다. */
 const git: Git = (args) => {
   if (!REPOSITORY_ROOT) return null;
   try {
@@ -73,13 +70,11 @@ const git: Git = (args) => {
 let snapshot: RepositorySnapshot | undefined;
 let committed: Set<string> | null | undefined;
 
+/** 프로세스당 한 번만 계산한다. */
 export const currentSnapshot = (): RepositorySnapshot =>
   (snapshot ??= resolveSnapshot(catalog.repository, process.env, git));
 
-/**
- * Paths tracked in the snapshot commit, or null when git cannot say. A permalink for a path that
- * is not in the commit would 404, so links check this first.
- */
+/** 스냅샷 커밋에 있는 경로들. git이 답하지 못하면 null. 커밋에 없는 경로는 permalink가 404다. */
 export const committedPaths = (): Set<string> | null => {
   if (committed !== undefined) return committed;
   const { commit } = currentSnapshot();

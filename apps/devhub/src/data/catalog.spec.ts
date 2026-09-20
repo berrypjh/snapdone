@@ -18,7 +18,7 @@ import { swaggerDocument } from './apis';
 import { RUNNER_COMMAND } from './commands';
 import { catalog } from './index';
 
-/** Checks the curated catalog against the repository files it describes. */
+/** 정리해 둔 catalog를 그것이 설명하는 저장소 파일과 대조한다. */
 
 type NxConfig = {
   name?: string;
@@ -83,6 +83,7 @@ describe('ids', () => {
     ['apis', idsOf(catalog.apis)],
     ['contracts', idsOf(catalog.contracts)],
     ['documents', idsOf(catalog.documents)],
+    ['records', idsOf(catalog.records)],
     ['commands', idsOf(catalog.commands)],
     ['tests', idsOf(catalog.tests)],
     ['scenarios', idsOf(catalog.scenarios)],
@@ -180,7 +181,7 @@ describe('relations', () => {
   });
 
   it('name only API paths that appear in their evidence files', () => {
-    // A `{param}` segment is written in the caller as a template placeholder: `/jobs/${id}`.
+    // `{param}` 구간은 호출부에서 템플릿 자리표시자로 적힌다: `/jobs/${id}`.
     const callPattern = (path: string) =>
       new RegExp(
         path
@@ -234,17 +235,56 @@ describe('contracts', () => {
 });
 
 describe('documents', () => {
-  it('cover every markdown file under docs/', () => {
+  it('cover every markdown file under docs/, together with the records', () => {
     const onDisk = readdirSync(join(ROOT, 'docs'), { recursive: true, encoding: 'utf8' })
       .filter((path) => path.endsWith('.md'))
       .map((path) => `docs/${path.split('\\').join('/')}`);
-    const curated = catalog.documents.map((doc) => doc.path).filter((p) => p.startsWith('docs/'));
+    const curated = [...catalog.documents, ...catalog.records]
+      .map((doc) => doc.path)
+      .filter((p) => p.startsWith('docs/'));
     expect(curated.sort()).toEqual(onDisk.sort());
   });
 
   it('carry the title written as the first heading', () => {
-    for (const doc of catalog.documents) {
+    for (const doc of [...catalog.documents, ...catalog.records]) {
       expect(read(doc.path).split('\n')[0]).toBe(`# ${doc.title}`);
+    }
+  });
+});
+
+describe('records', () => {
+  it('live at docs/records/<date>-<id>.md', () => {
+    for (const record of catalog.records) {
+      expect(record.path).toBe(`docs/records/${record.date}-${record.id}.md`);
+    }
+  });
+
+  it('cite documents, headings, and tests that exist', () => {
+    const documentPath = new Map(catalog.documents.map((doc) => [doc.id, doc.path]));
+    const testIds = new Set(catalog.tests.map((test) => test.id));
+    const broken = catalog.records.flatMap((record) => [
+      ...record.docs
+        .filter((link) => !documentPath.has(link.document))
+        .map((link) => `${record.id} document ${link.document}`),
+      ...record.docs
+        .filter(
+          (link) =>
+            link.heading &&
+            documentPath.has(link.document) &&
+            !read(String(documentPath.get(link.document))).includes(`# ${link.heading}`),
+        )
+        .map((link) => `${record.id} heading ${link.heading}`),
+      ...record.tests.filter((id) => !testIds.has(id)).map((id) => `${record.id} test ${id}`),
+    ]);
+    expect(broken).toEqual([]);
+  });
+
+  it('carry a calendar date and a one-line summary', () => {
+    for (const record of catalog.records) {
+      expect(record.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(new Date(record.date).toISOString().slice(0, 10)).toBe(record.date);
+      expect(record.summary.length).toBeGreaterThan(0);
+      expect(record.summary).not.toContain('\n');
     }
   });
 });

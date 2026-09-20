@@ -4,8 +4,8 @@ import type { ImplementationStatus, Scenario, ScenarioStep } from '../domain/mod
 import { stepHref } from './entities';
 
 /**
- * Coordinates for drawing a scenario. Derived from curated data on every render; nothing here
- * is stored. Lanes are the runtimes the scenario actually visits; columns follow `next`.
+ * 시나리오를 그리는 좌표. 그릴 때마다 정리된 데이터에서 계산하고 저장하지 않는다.
+ * 레인은 시나리오가 실제로 거치는 런타임이고, 열은 `next`를 따른다.
  */
 
 export const NODE = { width: 232, height: 148 } as const;
@@ -15,7 +15,7 @@ const LANE_PADDING = 20;
 const LABEL_WIDTH = 136;
 const LOOP_DEPTH = 44;
 
-/** Consumer-facing runtimes first, server last. Unknown runtimes go after these. */
+/** 사용자와 맞닿은 런타임이 앞, 서버가 끝. 모르는 런타임은 이 뒤에 온다. */
 const RUNTIME_ORDER = [
   'browser',
   'system-auth-browser',
@@ -37,7 +37,7 @@ export type FlowNode = {
   status: ImplementationStatus;
   runtime: string;
   owner: string;
-  /** First source path, shortened; the inspector keeps the full list. */
+  /** 첫 소스 경로를 줄인 것. 전체 목록은 인스펙터가 갖고 있다. */
   source: string | null;
   sourceCount: number;
   apiCount: number;
@@ -66,8 +66,8 @@ export const shortPath = (path: string) => {
 };
 
 /**
- * Column of each step: 0 for steps nothing earlier points to, otherwise one past the deepest
- * earlier step that leads to it. Edges to earlier steps are loops and do not add depth.
+ * 각 단계의 열. 앞선 단계가 가리키지 않으면 0이고, 아니면 그 단계로 이어지는 가장 깊은
+ * 앞선 단계보다 하나 뒤다. 앞선 단계로 가는 선은 되돌이라서 깊이를 더하지 않는다.
  */
 const columnsOf = (steps: ScenarioStep[]) => {
   const index = new Map(steps.map((step, i) => [step.id, i]));
@@ -111,7 +111,7 @@ export const flowModel = (scenario: Scenario): FlowModel => {
     (a, b) => laneOrder(a) - laneOrder(b),
   );
 
-  // Steps sharing a lane and a column stack vertically inside that lane.
+  // 레인과 열이 같은 단계들은 그 레인 안에서 세로로 쌓인다.
   const slot = new Map<string, number>();
   const stackDepth = new Map<string, number>();
   for (const step of steps) {

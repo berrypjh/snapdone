@@ -7,7 +7,7 @@ import type { RepositoryRef, RepositorySnapshot, SourceRef } from '../domain/mod
 
 import { committedPaths, currentSnapshot, REPOSITORY_ROOT } from './snapshot';
 
-/** Why a reference got no link. Shown instead of a link; never replaced by a guess. */
+/** 링크를 만들지 못한 이유. 링크 대신 이 이유를 보이고, 추측한 링크로 채우지 않는다. */
 export type LinkGap = 'invalid-path' | 'missing' | 'not-committed' | 'unknown-commit';
 
 export type SourceLinks = {
@@ -21,9 +21,9 @@ export type SourceLinks = {
 type LinkContext = {
   repository: RepositoryRef;
   snapshot: RepositorySnapshot;
-  /** `file` · `directory` · null when the path is not on disk. */
+  /** `file` · `directory`, 디스크에 없으면 null. */
   kindOf: (path: string) => 'file' | 'directory' | null;
-  /** Paths tracked in the snapshot commit; null when unknown. */
+  /** 스냅샷 커밋에 있는 경로들. 알 수 없으면 null. */
   committed: Set<string> | null;
 };
 
@@ -33,8 +33,8 @@ const inCommit = (committed: Set<string>, path: string, directory: boolean) =>
     : committed.has(path);
 
 /**
- * Links for one reference. The permalink is the canonical link; it exists only when the path is
- * canonical, on disk, and (when git can tell) tracked in the snapshot commit.
+ * 참조 하나의 링크들. 정본은 permalink이고, 경로가 저장소 상대 경로이며 디스크에 있고
+ * (git이 답한다면) 스냅샷 커밋에도 있을 때만 만들어진다.
  */
 export const linksFor = (ref: SourceRef, context: LinkContext): SourceLinks => {
   const base = { path: ref.path, symbol: ref.symbol };
@@ -66,7 +66,7 @@ const kindOnDisk = (path: string) => {
   }
 };
 
-/** Server-only: links for a reference in this repository at the current snapshot. */
+/** 서버 전용. 지금 스냅샷 기준으로 이 저장소의 참조 하나에 대한 링크를 만든다. */
 export const sourceLinks = (ref: SourceRef): SourceLinks =>
   linksFor(ref, {
     repository: catalog.repository,

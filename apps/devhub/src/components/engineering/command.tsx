@@ -12,7 +12,7 @@ import { WorkspaceSection } from '../workspace';
 
 const LINK = 'text-text-link underline-offset-2 hover:underline';
 
-/** What the environment must provide, as icon and words; never color alone. */
+/** 실행에 필요한 환경 조건을 아이콘과 글로. 색만으로 알리지 않는다. */
 function Constraints({ constraints }: { constraints: CommandConstraint[] }) {
   return constraints.length ? (
     <p className="flex items-center gap-1.5 typo-caption-small text-text-warning">
@@ -28,8 +28,8 @@ function Constraints({ constraints }: { constraints: CommandConstraint[] }) {
 }
 
 /**
- * One command on its group's page: the line as a terminal heading with copy beside it, what it
- * really runs (read from the file that defines it), its summary, and its conditions.
+ * 그룹 페이지에 놓이는 명령 하나. 명령 줄을 터미널 모양 제목으로 두고 옆에 복사를, 그 아래
+ * 실제로 실행되는 내용(정의 파일에서 읽는다) · 요약 · 실행 조건을 보인다.
  */
 function CommandCard({ command }: { command: CommandRef }) {
   const line = commandLine(command);
@@ -64,7 +64,7 @@ function CommandCard({ command }: { command: CommandRef }) {
   );
 }
 
-/** A group's page: what the group is for, then every command in it as a card. */
+/** 그룹 페이지. 그룹이 무엇을 위한 것인지 적고 속한 명령을 카드로 늘어놓는다. */
 export function CommandGroupDetail({ group }: { group: CommandGroupEntry }) {
   return (
     <>
@@ -78,7 +78,7 @@ export function CommandGroupDetail({ group }: { group: CommandGroupEntry }) {
   );
 }
 
-/** The engineering section: every group with its commands in one line each, ready to copy. */
+/** 엔지니어링 섹션. 그룹마다 명령을 한 줄씩 보이고 바로 복사할 수 있게 한다. */
 export function CommandGroups() {
   return COMMAND_GROUPS.map((group) => (
     <WorkspaceSection

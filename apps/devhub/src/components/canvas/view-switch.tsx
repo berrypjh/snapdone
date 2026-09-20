@@ -12,9 +12,8 @@ const OPTIONS = [
 ] as const;
 
 /**
- * Lets the reader choose the drawing or the structured list. Both carry the same information;
- * only the chosen one is rendered, so the canvas refits when it comes back. `tools` (a filter)
- * share the switch's row, on the left.
+ * 읽는 사람이 그림과 목록 중에 고른다. 둘은 같은 정보를 담고, 고른 쪽만 그리므로 그림은 돌아올 때
+ * 다시 화면에 맞춘다. `tools`(필터)는 같은 줄 왼쪽에 놓인다.
  */
 export function ViewSwitch({
   label,

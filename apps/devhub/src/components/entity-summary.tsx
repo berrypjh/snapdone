@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { catalog } from '@/data';
 import { type Entity, entityHref } from '@/lib/entities';
 import { flowModel } from '@/lib/flow';
-import { RELATION } from '@/lib/labels';
+import { RECORD_KIND, RELATION } from '@/lib/labels';
 
 import { ViewSwitch } from './canvas/view-switch';
 import { DOCUMENT_COLUMN, DocumentLayout } from './doc/document-layout';
@@ -65,8 +65,8 @@ function CitingScenarios({ documentId }: { documentId: string }) {
 }
 
 /**
- * Center summary of one entity. A scenario can be read as the flow drawing or as a structured
- * list; other entities are lists, with the diagram slot still empty.
+ * 개체 하나의 가운데 요약. 시나리오는 흐름 그림이나 목록으로 읽고, 나머지 개체는 목록만 있으며
+ * 그림 자리는 아직 비어 있다.
  */
 export function EntitySummary({ entity }: { entity: Entity }) {
   switch (entity.section) {
@@ -102,6 +102,18 @@ export function EntitySummary({ entity }: { entity: Entity }) {
           <WorkspaceSection id={LIST_ID} title="이 문서를 인용한 시나리오">
             <CitingScenarios documentId={entity.id} />
           </WorkspaceSection>
+        </div>
+      );
+    case 'records':
+      return (
+        <div className={`${DOCUMENT_COLUMN} flex flex-col gap-5`}>
+          <p className="typo-caption-small text-text-light">
+            <time dateTime={entity.record.date}>{entity.record.date}</time>
+            <span aria-hidden="true"> · </span>
+            {RECORD_KIND[entity.record.kind]}
+          </p>
+          <SourceActions source={{ path: entity.record.path }} />
+          <DocumentLayout doc={entity.record} />
         </div>
       );
     case 'engineering':

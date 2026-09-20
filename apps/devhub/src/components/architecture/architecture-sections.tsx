@@ -46,10 +46,7 @@ function RelationItem({ relation }: { relation: Relation }) {
   );
 }
 
-/**
- * Boundaries a new developer should see first, each with the relations that cross it, indented
- * under the boundary so they read as its evidence.
- */
+/** 새로 온 사람이 먼저 봐야 할 경계들. 경계를 넘는 관계를 아래에 들여써 근거로 읽히게 한다. */
 export function BoundaryList() {
   return (
     <WorkspaceSection id="architecture-boundaries" title="경계">
@@ -81,7 +78,7 @@ export function BoundaryList() {
 
 const KINDS: Relation['kind'][] = ['runtime', 'workspace-dependency', 'verification'];
 
-/** Every relation as text, grouped so Nx edges and runtime calls never read as the same thing. */
+/** 모든 관계를 글로. Nx 의존과 실행 중 호출이 같은 것으로 읽히지 않게 묶어서 보인다. */
 export function RelationList() {
   return (
     <WorkspaceSection id="architecture-relations" title="관계 (정본 목록)">
@@ -109,7 +106,7 @@ export function RelationList() {
   );
 }
 
-/** Target-only parts, kept out of the drawing and listed as what they are. */
+/** 문서에만 있는 구성. 그림에서 빼고 그렇다고 밝힌 목록으로만 보인다. */
 export function TargetOnlyList() {
   const targets = catalog.scenarios.filter((scenario) => scenario.track === 'product-target');
   return (

@@ -8,7 +8,7 @@ const cite =
   (origin: string) =>
   (ref: SourceRef): CitedRef => ({ ...ref, origin });
 
-/** Every repository path the catalog cites, with the record that cites it. */
+/** 카탈로그가 인용하는 모든 저장소 경로와, 그 경로를 인용한 기록. */
 export const citedRefs = (): CitedRef[] => [
   ...catalog.nodes.flatMap((node) =>
     node.kind === 'external'
@@ -24,6 +24,10 @@ export const citedRefs = (): CitedRef[] => [
     ),
   ),
   ...catalog.documents.map((document) => cite(`document ${document.id}`)({ path: document.path })),
+  ...catalog.records.flatMap((record) => [
+    cite(`record ${record.id}`)({ path: record.path }),
+    ...record.sources.map(cite(`record ${record.id}`)),
+  ]),
   ...catalog.tests.map((test) => cite(`test ${test.id}`)(test.source)),
   ...catalog.scenarios.flatMap((scenario) =>
     scenario.steps.flatMap((step) => step.source.map(cite(`step ${scenario.id}/${step.id}`))),

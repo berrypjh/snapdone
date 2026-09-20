@@ -11,7 +11,7 @@ import { Icon } from '../icon';
 
 type Context = { from: string; caption: string };
 
-/** A link written in the document, resolved: other documents stay in DevHub, the rest opens. */
+/** 문서에 적힌 링크를 해석한다. 다른 문서는 DevHub 안에 머물고, 나머지는 밖으로 나간다. */
 function DocLink({
   href,
   from,
@@ -25,7 +25,7 @@ function DocLink({
   const hash = (anchor?: string) => (anchor ? `#${anchor}` : '');
   if (link.kind === 'anchor') return <a href={`#${link.anchor}`}>{children}</a>;
   if (link.kind === 'document')
-    return <Link href={`/documents/${link.id}${hash(link.anchor)}`}>{children}</Link>;
+    return <Link href={`/${link.section}/${link.id}${hash(link.anchor)}`}>{children}</Link>;
   const target =
     link.kind === 'external'
       ? link.href
@@ -69,7 +69,7 @@ function Inlines({ nodes, from }: { nodes: Inline[]; from: string }) {
   });
 }
 
-/** A section heading with a `#` link to share its place; the link shows on hover or focus. */
+/** 위치를 공유할 `#` 링크가 달린 절 제목. 링크는 hover · focus일 때만 보인다. */
 function Heading({ block, from }: { block: Extract<Block, { kind: 'heading' }>; from: string }) {
   const Tag = block.level <= 2 ? 'h2' : block.level === 3 ? 'h3' : 'h4';
   const size =
@@ -192,7 +192,7 @@ function Blocks({ blocks, context }: { blocks: Block[]; context: Context }) {
   });
 }
 
-/** A repository document as a reading page: prose width, section anchors, tables, code. */
+/** 저장소 문서를 읽는 페이지로. 본문 폭 · 절 앵커 · 표 · 코드를 갖춘다. */
 export function DocContent({
   blocks,
   from,

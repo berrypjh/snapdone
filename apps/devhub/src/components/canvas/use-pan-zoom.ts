@@ -30,15 +30,15 @@ const sizeOf = (element: HTMLElement): Size => ({
 });
 
 /**
- * Viewer state for one canvas. Pan by dragging the background or with arrow keys, zoom with
- * Ctrl/⌘ + wheel or +/−, fit with 0. No transitions, so reduced motion is respected by default.
+ * 그림 하나의 보기 상태. 배경을 끌거나 화살표 키로 이동, Ctrl/⌘ + 휠이나 +/−로 확대, 0으로 맞춤.
+ * transition이 없으므로 움직임 줄이기 설정은 기본으로 지켜진다.
  */
 export function usePanZoom(viewportRef: RefObject<HTMLDivElement | null>, content: Size) {
   const [view, setView] = useState<View>({ x: 0, y: 0, k: 1 });
   const drag = useRef<{ id: number; x: number; y: number } | null>(null);
 
   const { width, height } = content;
-  // Depends on the numbers, not the object, so a parent re-render never resets the user's pan.
+  // 객체가 아니라 숫자에 의존한다. 부모가 다시 그려도 사용자가 옮긴 위치가 초기화되지 않는다.
   const fit = useCallback(() => {
     if (viewportRef.current) setView(fitView({ width, height }, sizeOf(viewportRef.current)));
   }, [viewportRef, width, height]);
@@ -53,7 +53,7 @@ export function usePanZoom(viewportRef: RefObject<HTMLDivElement | null>, conten
     [viewportRef],
   );
 
-  /** Brings a content rect into view, e.g. when keyboard focus lands on an off-screen node. */
+  /** content 좌표를 화면 안으로 옮긴다. 예를 들어 화면 밖 노드가 키보드 포커스를 받을 때. */
   const reveal = useCallback(
     (rect: Rect) => {
       const element = viewportRef.current;
@@ -66,7 +66,7 @@ export function usePanZoom(viewportRef: RefObject<HTMLDivElement | null>, conten
 
   useLayoutEffect(fit, [fit]);
 
-  // Wheel needs a non-passive listener to keep the page from scrolling under the canvas.
+  // 휠은 non-passive listener여야 그림 아래에서 페이지가 스크롤되지 않는다.
   useEffect(() => {
     const element = viewportRef.current;
     if (!element) return;

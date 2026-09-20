@@ -30,8 +30,8 @@ const useDrawer = () => {
 };
 
 /**
- * Open state of the explorer drawer below `lg`, shared by the top bar button and the pane. A
- * navigation closes it: the item was chosen.
+ * `lg` 아래에서 쓰는 탐색기 서랍의 열림 상태. 상단 바 버튼과 서랍이 함께 쓴다. 화면을 옮기면
+ * 항목을 고른 것이므로 닫는다.
  */
 export function ExplorerDrawerProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -53,7 +53,7 @@ export function ExplorerDrawerProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/** Top bar menu button that opens and closes the explorer below `lg`. */
+/** `lg` 아래에서 탐색기를 여닫는 상단 바 메뉴 버튼. */
 export function ExplorerToggle() {
   const { open, toggle } = useDrawer();
   return (
@@ -73,9 +73,9 @@ export function ExplorerToggle() {
 }
 
 /**
- * The explorer pane. From `lg` it is the left column; below that it slides in from the left over
- * a dimmed page. It is a disclosure, not a modal: Escape, the close button, the backdrop, or
- * moving focus out of it closes it, so focus is never trapped.
+ * 탐색기 창. `lg`부터는 왼쪽 칸이고, 그 아래에서는 어두워진 화면 위로 왼쪽에서 밀려 나온다.
+ * modal이 아니라 disclosure다. Escape · 닫기 버튼 · 배경 · 포커스가 밖으로 나가면 닫히므로
+ * 포커스가 갇히지 않는다.
  */
 export function ExplorerPane({ children }: { children: ReactNode }) {
   const { open, close } = useDrawer();
@@ -116,7 +116,7 @@ export function ExplorerPane({ children }: { children: ReactNode }) {
           'relative bg-background-surface lg:overflow-y-auto lg:border-r lg:border-stroke-light',
           'max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-40 max-lg:w-[min(20rem,85vw)] max-lg:overflow-y-auto max-lg:shadow-4',
           'max-lg:duration-200 max-lg:motion-reduce:transition-none',
-          // Opening shows the pane at once so its item can take focus; closing hides it after the slide.
+          // 열 때는 바로 보여야 항목이 포커스를 받고, 닫을 때는 미끄러진 뒤에 감춘다.
           open
             ? 'max-lg:transition-[translate]'
             : 'max-lg:invisible max-lg:-translate-x-full max-lg:transition-[translate,visibility]',

@@ -9,9 +9,9 @@ import { TopBar } from './top-bar';
 
 type DevHubShellProps = {
   selection: { section?: SectionId; id?: string; view?: 'architecture' | 'source' };
-  /** The `<main>` workspace. */
+  /** `<main>` 작업 영역. */
   children: ReactNode;
-  /** The right `<aside>`. A route page supplies it so the selection can change under a layout. */
+  /** 오른쪽 `<aside>`. 레이아웃 아래에서 선택이 바뀔 수 있도록 route page가 넘긴다. */
   inspector: ReactNode;
 };
 

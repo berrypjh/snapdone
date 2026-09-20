@@ -7,6 +7,7 @@ import { DevHubShell } from '@/components/devhub-shell';
 import { CommandGroups } from '@/components/engineering/command';
 import { FilterBar } from '@/components/filter-bar';
 import { Inspector } from '@/components/inspector';
+import { RecordList } from '@/components/record-list';
 import { SectionSummary } from '@/components/section-summary';
 import { SECTION_ICON } from '@/components/view-icons';
 import { Workspace, WorkspaceSection } from '@/components/workspace';
@@ -57,6 +58,8 @@ export default async function SectionPage({
         )}
         {section.id === 'engineering' ? (
           <CommandGroups />
+        ) : section.id === 'records' ? (
+          <RecordList />
         ) : entities.length > 0 ? (
           <SectionSummary section={{ ...section, entities }} />
         ) : (

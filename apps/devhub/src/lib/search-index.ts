@@ -3,11 +3,12 @@ import { commandLine } from '../domain/links';
 
 import { architectureHref, nodeLabel } from './architecture';
 import { commandHref, entityHref, stepHref } from './entities';
+import { RECORD_KIND } from './labels';
 import { sourceHref, sourceUsage } from './source-usage';
 
 /**
- * Global search over every catalog entity. The index is derived from the data on load — there is
- * no hand-kept search registry — and ranking is deterministic (no fuzzy matching).
+ * 카탈로그의 모든 엔티티를 훑는 전체 검색. 색인은 로드할 때 데이터에서 만들어지고
+ * 손으로 관리하는 검색 목록은 없다. 순위는 정해진 규칙을 따르며 유사 일치는 쓰지 않는다.
  */
 
 export type SearchKind =
@@ -18,6 +19,7 @@ export type SearchKind =
   | 'node'
   | 'concept'
   | 'document'
+  | 'record'
   | 'api'
   | 'contract'
   | 'source'
@@ -25,7 +27,7 @@ export type SearchKind =
   | 'test'
   | 'command';
 
-/** Visible type label. Result kinds are told apart by this text, never by color. */
+/** 화면에 보이는 종류 이름. 결과 종류는 색이 아니라 이 글자로 구분한다. */
 export const KIND_LABEL: Record<SearchKind, string> = {
   scenario: '시나리오',
   step: '시나리오 단계',
@@ -34,6 +36,7 @@ export const KIND_LABEL: Record<SearchKind, string> = {
   node: '아키텍처 구성 요소',
   concept: '개념',
   document: '문서',
+  record: '기록',
   api: 'API',
   contract: '계약',
   source: '소스 파일',
@@ -50,11 +53,11 @@ export type SearchEntry = {
   label: string;
   detail: string;
   href: string;
-  /** Matched exactly or by prefix: id, title, path. */
+  /** 정확히 또는 앞부분으로 맞춰 보는 값. id · 제목 · 경로다. */
   names: string[];
-  /** Matched by token or substring. */
+  /** 낱말이나 부분 문자열로 맞춰 보는 값. */
   text: string[];
-  /** Matched only as a last resort: words from what cites this entry. */
+  /** 마지막 수단으로만 맞춰 보는 값. 이 항목을 인용한 쪽의 낱말이다. */
   related: string[];
 };
 
@@ -62,7 +65,7 @@ export type SearchResult = SearchEntry & { tier: number };
 
 export const normalize = (value: string) => value.normalize('NFC').toLowerCase().trim();
 
-/** Words of a value, also split at camelCase and path punctuation (`webHandoff` → web, handoff). */
+/** 값의 낱말들. camelCase와 경로 구분자에서도 자른다 (`webHandoff` → web, handoff). */
 export const tokensOf = (value: string) => {
   const spaced = value.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
   return [
@@ -165,6 +168,18 @@ const entries = (): SearchEntry[] => {
       href: entityHref({ section: 'documents', id: doc.id }),
       names: [doc.id, doc.path, doc.title, stem(doc.path)],
       text: [doc.topic],
+    });
+  }
+
+  for (const record of catalog.records) {
+    add({
+      key: `record:${record.id}`,
+      kind: 'record',
+      label: record.title,
+      detail: `${record.date} · ${RECORD_KIND[record.kind]}`,
+      href: entityHref({ section: 'records', id: record.id }),
+      names: [record.id, record.path, record.title],
+      text: [record.summary, RECORD_KIND[record.kind]],
     });
   }
 
@@ -276,8 +291,8 @@ const prepare = (entry: SearchEntry): Prepared => {
 };
 
 /**
- * 0 exact name · 1 name, path segment, or word prefix · 2 every query word is a word here ·
- * 3 substring · 4 only through what cites the entry · null no match.
+ * 0 이름이 정확히 일치 · 1 이름 · 경로 조각 · 낱말의 앞부분 · 2 질의의 모든 낱말이 여기 낱말 ·
+ * 3 부분 문자열 · 4 인용한 쪽을 통해서만 · null 일치 없음.
  */
 export const tierOf = (entry: Prepared, query: string, words: string[]): number | null => {
   if (entry.n.includes(query)) return 0;
@@ -304,7 +319,7 @@ export type SearchIndex = Prepared[];
 
 export const buildSearchIndex = (): SearchIndex => entries().map(prepare);
 
-/** Ranked matches: tier, then kind order, then shorter label, then label. */
+/** 순위를 매긴 결과. 등급 · 종류 순서 · 짧은 이름 · 이름 순으로 정렬한다. */
 export const search = (index: SearchIndex, raw: string): SearchResult[] => {
   const query = normalize(raw);
   if (!query) return [];
@@ -335,8 +350,8 @@ export const search = (index: SearchIndex, raw: string): SearchResult[] => {
 };
 
 /**
- * What the result list shows: rank order kept, at most `perKind` of each kind, so one query
- * reaches scenarios, sources, docs, and tests together instead of thirty files.
+ * 결과 목록에 보이는 것. 순위는 그대로 두고 종류마다 `perKind`개까지만 남겨서,
+ * 한 번의 질의가 파일 서른 개 대신 시나리오 · 소스 · 문서 · 테스트에 두루 닿게 한다.
  */
 export const topResults = (results: SearchResult[], perKind = 5, limit = 30): SearchResult[] => {
   const seen = new Map<SearchKind, number>();

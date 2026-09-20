@@ -3,7 +3,7 @@ import { currentSnapshot } from '@/lib/snapshot';
 
 const SOURCE = { env: '빌드 환경', git: 'git', unavailable: '' } as const;
 
-/** Which commit the DevHub links point at, or plainly that it is unknown. */
+/** DevHub 링크가 어느 커밋을 가리키는지. 모르면 모른다고 밝힌다. */
 export function SnapshotSummary() {
   const { commit, source, dirty, branch } = currentSnapshot();
   return (

@@ -41,7 +41,7 @@ const LIB_ONBOARDING = 'libs/onboarding/src/lib';
 const PROCESSING = 'apps/api/internal/processing';
 const ONBOARDING = 'apps/api/internal/onboarding/onboarding_test.go';
 
-/** Tests cited as scenario evidence. Titles and function names are written exactly as in the file. */
+/** 시나리오가 근거로 지목하는 테스트. 제목과 함수 이름은 파일에 있는 그대로 적는다. */
 export const tests: TestRef[] = [
   // web — Vitest
   vitest(
@@ -566,7 +566,7 @@ export const tests: TestRef[] = [
     'runProcessing',
     'ends with the server failure',
   ),
-  // api — go test (DB tests skip without TEST_DATABASE_URL)
+  // api — go test (TEST_DATABASE_URL이 없으면 DB 테스트는 건너뛴다)
   goTest(
     'go-capabilities',
     `${HTTP}/oauth_test.go`,
@@ -689,7 +689,7 @@ export const tests: TestRef[] = [
     DB,
   ),
 
-  // web-e2e — Playwright (fake auth API + next dev)
+  // web-e2e — Playwright (가짜 인증 API + next dev)
   playwright('e2e-home', 'home.spec.ts', 'renders the bootstrap page in Korean'),
   playwright(
     'e2e-login-screen',
@@ -846,5 +846,55 @@ export const tests: TestRef[] = [
     'e2e-web-onboarding-resume',
     'onboarding.spec.ts',
     'reopening onboarding resumes the saved step',
+  ),
+
+  // devhub — 기록이 근거로 지목하는 이 앱 자신의 Vitest
+  vitest(
+    'devhub-editor-link-production',
+    'apps/devhub/src/lib/editor-link.spec.ts',
+    'editorHref',
+    'is null outside the dev server, so a built page carries no machine path',
+  ),
+  vitest(
+    'devhub-editor-link-development',
+    'apps/devhub/src/lib/editor-link.spec.ts',
+    'editorHref',
+    'opens the file at its absolute path while the dev server runs',
+  ),
+  vitest(
+    'devhub-editor-link-setting',
+    'apps/devhub/src/lib/editor-link.spec.ts',
+    'editorHref',
+    'takes the editor named in DEVHUB_EDITOR',
+  ),
+  vitest(
+    'devhub-editor-link-outside-repository',
+    'apps/devhub/src/lib/editor-link.spec.ts',
+    'editorHref',
+    'refuses a path that is not repository-relative',
+  ),
+  vitest(
+    'devhub-source-actions-icons',
+    'apps/devhub/src/components/source-actions.spec.ts',
+    'SourceActions',
+    'carries the actions of the path as icons, editor before copy, only while developing',
+  ),
+  vitest(
+    'devhub-source-actions-remote-views',
+    'apps/devhub/src/components/source-actions.spec.ts',
+    'SourceActions',
+    'joins the remote views into one line, without a dangling separator',
+  ),
+  vitest(
+    'devhub-inspector-editor-beside-copy',
+    'apps/devhub/src/components/inspector.spec.ts',
+    'Inspector evidence lists',
+    'puts the editor action beside copy, and only while developing',
+  ),
+  vitest(
+    'devhub-anchor-flash-marks',
+    'apps/devhub/src/lib/anchor-flash.spec.ts',
+    'markAnchor',
+    'marks the element the fragment names',
   ),
 ];

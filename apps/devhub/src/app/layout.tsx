@@ -15,12 +15,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    // The head script sets `data-theme` before hydration, so the attribute differs from the server.
+    // head script가 hydration 전에 `data-theme`를 설정하므로 속성이 서버와 다르다.
     <html lang="ko" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      {/* Skip links belong to the document: kept outside the routes so no navigation focuses them. */}
+      {/* 건너뛰기 링크는 문서의 것이다. 라우트 밖에 두어야 이동할 때 포커스가 가지 않는다. */}
       <body>
         <NavigationFocus />
         <SkipLink targetId={MAIN_CONTENT_ID}>본문으로 건너뛰기</SkipLink>

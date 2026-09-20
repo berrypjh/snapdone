@@ -8,13 +8,13 @@ import { currentSnapshot } from '@/lib/snapshot';
 import { sourceLinks } from '@/lib/source-links';
 
 import { CopyButton } from './copy-button';
+import { EditorLink } from './editor-link';
 import { Icon } from './icon';
 import { GAP } from './source-actions';
 
 /**
- * One file: its name is the link (the snapshot commit, or the branch when the commit is unknown,
- * said in text), the folder is dimmed, and copy is one icon button. `children` carries what the
- * file holds — symbols or test titles — so the file and its actions appear once.
+ * 파일 하나. 이름이 링크이고(스냅샷 커밋, 커밋을 모르면 브랜치라고 글로 밝힌다) 폴더는 흐리게,
+ * 복사는 아이콘 버튼 하나다. 파일이 담은 것은 `children`으로 받아 파일과 동작이 한 번만 나온다.
  */
 export function FileRow({
   file,
@@ -22,7 +22,7 @@ export function FileRow({
   children,
 }: {
   file: FileGroup;
-  /** Role of the file, shown before its name (`handler`, `Swagger`). */
+  /** 파일의 역할. 이름 앞에 보인다 (`handler`, `Swagger`). */
   label?: string;
   children?: ReactNode;
 }) {
@@ -65,7 +65,11 @@ export function FileRow({
           </span>
           {file.folder && <span className="devhub-code text-text-light">{file.folder}</span>}
         </div>
-        <CopyButton variant="icon" text={file.path} label="경로 복사" />
+        {/* 파일마다의 동작을 모아 둔다. 에디터로 열기(dev 전용) · 경로 복사. */}
+        <span className="flex shrink-0 items-center gap-1">
+          <EditorLink path={file.path} />
+          <CopyButton variant="icon" text={file.path} label="경로 복사" />
+        </span>
       </div>
       {children}
       {links.gap && links.gap !== 'unknown-commit' && (
@@ -78,7 +82,7 @@ export function FileRow({
   );
 }
 
-/** Symbols a source file is cited for, as code chips. */
+/** 소스 파일이 인용된 symbol들을 코드 칩으로. */
 export function Symbols({ symbols }: { symbols: string[] }) {
   if (symbols.length === 0) return null;
   return (
@@ -92,7 +96,7 @@ export function Symbols({ symbols }: { symbols: string[] }) {
   );
 }
 
-/** Files under a small project heading, so the project prefix is not repeated on every path. */
+/** 파일을 작은 프로젝트 제목 아래에 묶어 경로마다 프로젝트 접두사가 반복되지 않게 한다. */
 export function ByProject<T extends FileGroup>({
   groups,
   row,

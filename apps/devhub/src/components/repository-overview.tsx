@@ -42,7 +42,7 @@ function ScenarioList({ track }: { track: Scenario['track'] }) {
   );
 }
 
-/** What the product is for, quoted from its document, and which flows exist in code today. */
+/** 문서에서 인용한 제품의 목적과, 지금 코드에 있는 흐름. */
 function ProductSummary() {
   return (
     <WorkspaceSection id="overview-product" title="제품">
@@ -53,7 +53,7 @@ function ProductSummary() {
   );
 }
 
-/** Center view of the repository: what the catalog holds, counted from the data itself. */
+/** 저장소의 가운데 화면. 카탈로그가 담은 것을 데이터에서 직접 세어 보인다. */
 export function RepositoryOverview() {
   const { repository, scenarios } = catalog;
   const statusCounts = STATUS_ORDER.map((status) => ({

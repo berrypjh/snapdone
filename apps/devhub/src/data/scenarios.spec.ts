@@ -12,7 +12,7 @@ import {
 
 import { catalog } from './index';
 
-/** Checks scenario traces: references resolve, statuses follow their evidence, absences hold. */
+/** 시나리오 추적을 검사한다: 참조가 풀리는지, 상태가 근거를 따르는지, 부재가 유지되는지. */
 
 const ids = (items: { id: string }[]) => new Set(items.map((item) => item.id));
 const scenarioIds = ids(catalog.scenarios);
@@ -188,10 +188,11 @@ describe('tests', () => {
     expect(bad).toEqual([]);
   });
 
-  it('are all cited by some scenario', () => {
+  it('are all cited by some scenario or record', () => {
     const cited = new Set([
       ...allSteps.flatMap(({ step }) => step.tests),
       ...catalog.scenarios.flatMap((scenario) => scenario.gaps.flatMap((gap) => gap.tests ?? [])),
+      ...catalog.records.flatMap((record) => record.tests),
     ]);
     expect(catalog.tests.filter((test) => !cited.has(test.id)).map((test) => test.id)).toEqual([]);
   });

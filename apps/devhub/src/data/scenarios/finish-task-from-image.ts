@@ -4,7 +4,7 @@ import { step } from './step';
 
 const PRODUCT_SOURCE = ['apps/mobile/src', 'apps/web/src', 'apps/api/internal', 'libs'];
 
-/** `action` is not searched: it matches `transaction` (OAuth transactions) and `suggestedAction`. */
+/** `action`은 검색하지 않는다: `transaction`(OAuth transaction) · `suggestedAction`에 걸린다. */
 const ACTION_SURFACE: AbsenceCheck = {
   terms: ['execute', '/actions'],
   scope: ['apps/api/docs/swagger/swagger.json', 'apps/api/internal/database/migrations'],
@@ -12,8 +12,8 @@ const ACTION_SURFACE: AbsenceCheck = {
 };
 
 /**
- * The product loop the docs promise. Nothing here runs today: every step is documented-only and
- * carries a search that proves the code is absent.
+ * 문서가 약속한 제품 loop. 오늘 도는 것은 하나도 없다. 모든 단계가 documented-only이고
+ * 코드가 없음을 증명하는 검색을 들고 있다.
  */
 export const finishTaskFromImage: Scenario = {
   id: 'finish-task-from-image',

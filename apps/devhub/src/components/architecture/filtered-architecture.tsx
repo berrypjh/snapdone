@@ -10,8 +10,8 @@ import { FilterBar } from '../filter-bar';
 import { ArchitectureViews } from './architecture-views';
 
 /**
- * Architecture filters from the URL query. Rendered inside a Suspense boundary whose fallback is
- * the unfiltered views, so the page stays static.
+ * URL 쿼리에서 읽는 아키텍처 필터. fallback이 필터 없는 보기인 Suspense 안에서 그리기 때문에
+ * 페이지는 static으로 남는다.
  */
 export function FilteredArchitecture({ model }: { model: ArchitectureModel }) {
   const pathname = usePathname();

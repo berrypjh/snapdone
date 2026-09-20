@@ -1,6 +1,6 @@
 import type { ApplicationRef, LibraryRef } from '../domain/model';
 
-/** Every Nx application. `nxTags` are the tags the manifest declares (Nx adds `npm:private` itself). */
+/** 모든 Nx application. `nxTags`는 manifest가 선언한 tag다(`npm:private`는 Nx가 직접 붙인다). */
 export const applications: ApplicationRef[] = [
   {
     kind: 'application',

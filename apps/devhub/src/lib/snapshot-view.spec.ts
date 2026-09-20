@@ -7,7 +7,7 @@ import { SnapshotSummary } from '../components/snapshot-summary';
 import { SourceActions } from '../components/source-actions';
 import type { RepositorySnapshot } from '../domain/model';
 
-/** What the reader sees when the snapshot commit cannot be resolved: said plainly, never faked. */
+/** 스냅샷 커밋을 알아내지 못했을 때 독자가 보는 것. 그대로 말하고 지어내지 않는다. */
 
 const unavailable: RepositorySnapshot = {
   repositoryId: 'snapdone',

@@ -6,7 +6,7 @@ import { DOCUMENT_COLUMN } from './doc/document-layout';
 import { SECTION_ICON } from './view-icons';
 import { WorkspaceHeader } from './workspace';
 
-/** Workspace header of one entity page. An unknown entity is a 404. */
+/** 개체 페이지 하나의 작업 영역 헤더. 없는 개체는 404다. */
 export function EntityHeader({ section: sectionId, id }: { section: string; id: string }) {
   const section = findSection(sectionId);
   const entity = findEntity(sectionId, id);
@@ -17,7 +17,9 @@ export function EntityHeader({ section: sectionId, id }: { section: string; id: 
       eyebrow={section.title}
       icon={SECTION_ICON[section.id]}
       title={entity.section === 'documents' ? entity.record.title : entity.label}
-      className={entity.section === 'documents' ? DOCUMENT_COLUMN : undefined}
+      className={
+        entity.section === 'documents' || entity.section === 'records' ? DOCUMENT_COLUMN : undefined
+      }
     />
   );
 }

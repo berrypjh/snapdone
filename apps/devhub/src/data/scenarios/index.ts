@@ -13,7 +13,7 @@ import { protectedHistoryAccess } from './protected-history-access';
 import { webViewAuthHandoff } from './webview-auth-handoff';
 import { webViewRecovery } from './webview-recovery';
 
-/** Current behaviour first, then the product target. */
+/** 지금 동작을 먼저, 그다음 제품 목표를 둔다. */
 export const scenarios: Scenario[] = [
   appEntrySessionRestore,
   browserGoogleLogin,

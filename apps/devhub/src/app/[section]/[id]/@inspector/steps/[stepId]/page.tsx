@@ -10,7 +10,7 @@ export const dynamicParams = false;
 
 export const generateStaticParams = stepParams;
 
-/** Inspector slot: one scenario step, selected from the flow or the step list. */
+/** 상세 정보 슬롯: 흐름이나 단계 목록에서 고른 시나리오 단계 하나. */
 export default async function StepInspector({ params }: { params: Params }) {
   const { section, id, stepId } = await params;
   const found = section === 'scenarios' ? findStep(id, stepId) : undefined;

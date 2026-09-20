@@ -2,27 +2,26 @@ import type { ReactNode } from 'react';
 
 import { Icon, type IconName } from './icon';
 
-/** App ids carry a prefix: document headings are free text and could take a bare name. */
+/** 앱의 id에는 접두사를 붙인다. 문서 제목은 자유 글이라 맨 이름을 가져갈 수 있다. */
 export const MAIN_CONTENT_ID = 'devhub-main';
 export const INSPECTOR_ID = 'devhub-inspector';
 
 /**
- * A link that opens another item's details. It carries the inspector's id as its hash, so after
- * the move Next scrolls to and focuses the new details: on a narrow screen, where the inspector
- * sits below the workspace, the reader stays in the details instead of going back to the top.
+ * 다른 항목의 상세를 여는 링크. hash로 인스펙터 id를 달아 이동 뒤 Next가 새 상세로 스크롤하고
+ * 포커스를 준다. 인스펙터가 작업 영역 아래에 오는 좁은 화면에서 맨 위로 돌아가지 않게 한다.
  */
 export const detailsHref = (href: string) => `${href}#${INSPECTOR_ID}`;
 
 type HeaderProps = {
   eyebrow: string;
-  /** The view's icon, shown with the eyebrow: the same shape as in the top bar and explorer. */
+  /** `eyebrow`와 함께 보이는 화면 아이콘. 상단 바 · 탐색기와 같은 모양이다. */
   icon?: IconName;
   title: string;
-  /** Extra classes, e.g. the centered column a document page shares with its text. */
+  /** 덧붙일 class. 예를 들어 문서 페이지가 본문과 함께 쓰는 가운데 칸. */
   className?: string;
 };
 
-/** Center pane frame. Its first child should be a `WorkspaceHeader`. */
+/** 가운데 창의 틀. 첫 자식은 `WorkspaceHeader`여야 한다. */
 export function WorkspaceFrame({ children }: { children: ReactNode }) {
   return (
     <main id={MAIN_CONTENT_ID} tabIndex={-1} className="relative min-w-0 lg:overflow-y-auto">
@@ -31,7 +30,7 @@ export function WorkspaceFrame({ children }: { children: ReactNode }) {
   );
 }
 
-/** Where the selected thing is named. */
+/** 선택한 것의 이름이 놓이는 자리. */
 export function WorkspaceHeader({ eyebrow, icon, title, className }: HeaderProps) {
   return (
     <header className={['flex flex-col gap-1', className].filter(Boolean).join(' ')}>
@@ -40,7 +39,7 @@ export function WorkspaceHeader({ eyebrow, icon, title, className }: HeaderProps
         {eyebrow}
       </p>
       <h1 className="typo-heading-h5">{title}</h1>
-      {/* Below `lg` the inspector sits after the whole workspace. */}
+      {/* `lg` 아래에서는 인스펙터가 작업 영역 전체 뒤에 온다. */}
       <a
         href={`#${INSPECTOR_ID}`}
         className="typo-caption-small text-text-link underline-offset-2 hover:underline lg:hidden"
@@ -51,7 +50,7 @@ export function WorkspaceHeader({ eyebrow, icon, title, className }: HeaderProps
   );
 }
 
-/** Center pane: where the selected thing is named and summarised. */
+/** 가운데 창. 선택한 것의 이름과 요약이 놓인다. */
 export function Workspace({ children, ...header }: HeaderProps & { children: ReactNode }) {
   return (
     <WorkspaceFrame>
@@ -61,10 +60,7 @@ export function Workspace({ children, ...header }: HeaderProps & { children: Rea
   );
 }
 
-/**
- * Reserved area for the relation diagram. Nothing is drawn yet; the list next to it is the
- * canonical representation (devhub.md 21).
- */
+/** 관계 그림 자리. 아직 그리지 않았고, 옆의 목록이 정본이다 (devhub.md 21). */
 export function DiagramPlaceholder({ listId }: { listId: string }) {
   return (
     <figure className="flex h-48 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-stroke-default bg-background-default devhub-grid">
@@ -80,7 +76,7 @@ export function DiagramPlaceholder({ listId }: { listId: string }) {
   );
 }
 
-/** A titled block inside the workspace. */
+/** 작업 영역 안의 제목 붙은 블록. */
 export function WorkspaceSection({
   id,
   title,

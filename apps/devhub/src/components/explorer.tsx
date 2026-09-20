@@ -48,7 +48,7 @@ function ItemList({ entities, selection }: { entities: Entity[]; selection: Sele
   );
 }
 
-/** Scenarios split by track so product targets never sit among current behaviour. */
+/** 시나리오를 트랙으로 나눈다. 제품 목표가 현재 동작 사이에 섞이지 않게 한다. */
 function ScenarioGroups({ section, selection }: { section: Section; selection: Selection }) {
   const tracks: Scenario['track'][] = ['current', 'product-target'];
   return tracks.map((track) => {
@@ -89,8 +89,8 @@ function ExplorerSection({ section, selection }: { section: Section; selection: 
 }
 
 /**
- * Left pane: every catalog entity, grouped by section, with a rule between sections. Below `lg`
- * it is a drawer opened from the top bar.
+ * 왼쪽 창. 카탈로그의 모든 항목을 섹션으로 묶고 섹션 사이에 선을 둔다. `lg` 아래에서는 상단
+ * 바에서 여는 서랍이 된다.
  */
 export function Explorer({ selection }: { selection: Selection }) {
   return (

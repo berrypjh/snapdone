@@ -4,8 +4,8 @@ import type { ArchitectureNode, ImplementationStatus, Scenario } from '../domain
 import { STATUS, TRACK } from './labels';
 
 /**
- * View filters kept in the URL query (`?status=…&runtime=…`). Values are checked against the
- * catalog; anything unknown is ignored rather than trusted.
+ * URL 쿼리(`?status=…&runtime=…`)에 담는 화면 필터. 값은 카탈로그와 대조하고,
+ * 모르는 값은 믿지 않고 무시한다.
  */
 
 type Params = Record<string, string | string[] | undefined>;
@@ -19,7 +19,7 @@ const pick = (params: Params, param: string, allowed: string[]) => {
   return typeof value === 'string' && allowed.includes(value) ? value : undefined;
 };
 
-/** Link to the same view with one filter set (or cleared, when `value` is undefined). */
+/** 필터 하나만 바꾼 같은 화면으로 가는 링크. `value`가 undefined면 그 필터를 푼다. */
 export const filterHref = (
   basePath: string,
   active: ActiveFilters,

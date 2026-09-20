@@ -8,8 +8,8 @@ const nxTarget = (project: string, target: string) => ({
 });
 
 /**
- * Root `package.json` scripts, plus the `api` targets no script wraps.
- * `constraints` say why a command fails inside a sandboxed AI session.
+ * 루트 `package.json`의 script, 그리고 어떤 script도 감싸지 않는 `api` target.
+ * `constraints`는 샌드박스 AI 세션에서 그 명령이 왜 실패하는지 말한다.
  */
 export const commands: CommandRef[] = [
   {
@@ -164,7 +164,7 @@ export const commands: CommandRef[] = [
   },
 ];
 
-/** The root command that runs each kind of test (`test` runs Vitest and go test through Nx). */
+/** 테스트 종류마다 돌리는 루트 명령(`test`는 Nx로 Vitest와 go test를 함께 돌린다). */
 export const RUNNER_COMMAND: Record<TestRef['runner'], string> = {
   vitest: 'test',
   'go-test': 'test',

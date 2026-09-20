@@ -1,6 +1,6 @@
 import type { Boundary } from '../domain/model';
 
-/** The lines a new developer should see first. Each is backed by relations and docs. */
+/** 새로 온 개발자가 가장 먼저 봐야 할 선들. 각각 관계와 문서가 근거다. */
 export const boundaries: Boundary[] = [
   {
     id: 'webview',

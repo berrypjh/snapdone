@@ -29,7 +29,7 @@ function Group({
   );
 }
 
-/** Where a cited file is used, as plain lists. The inspector holds its repository links. */
+/** 인용된 파일이 어디에 쓰였는지 목록으로. 저장소 링크는 인스펙터에 있다. */
 export function SourceUsageSummary({ usage }: { usage: SourceUsage }) {
   return (
     <>

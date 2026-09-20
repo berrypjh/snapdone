@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return { title: node ? `${nodeLabel(node)} · 아키텍처` : undefined };
 }
 
-/** The architecture workspace header with a node selected; the node itself is in `@inspector`. */
+/** 구성 요소를 고른 상태의 아키텍처 작업 영역 머리말. 구성 요소 자체는 `@inspector`에 있다. */
 export default async function ArchitectureNodePage({ params }: { params: Params }) {
   if (!findNode((await params).nodeId)) notFound();
 

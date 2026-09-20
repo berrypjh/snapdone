@@ -12,13 +12,12 @@ import { Icon } from './icon';
 
 const FIELD_ID = 'global-search';
 
-/** Built once per page load from the bundled catalog. */
+/** 번들된 카탈로그에서 페이지 로드마다 한 번 만든다. */
 const index = buildSearchIndex();
 
 /**
- * Global search. The shared SearchField is the combobox (focus stays in the input, arrows move the
- * active option, Enter selects, Escape closes); this adds ⌘K / Ctrl+K and the result count.
- * Below `lg` the field folds behind a search button and opens as a full-width row of the top bar.
+ * 전역 검색. combobox는 공용 SearchField가 맡고, 여기서는 ⌘K / Ctrl+K와 결과 수를 더한다.
+ * `lg` 아래에서는 검색 버튼 뒤로 접혔다가 상단 바의 전체 폭 줄로 열린다.
  */
 export function GlobalSearch() {
   const router = useRouter();
@@ -31,7 +30,7 @@ export function GlobalSearch() {
   const shown = useMemo(() => topResults(all), [all]);
   const byKey = useMemo(() => new Map(shown.map((result) => [result.key, result])), [shown]);
 
-  /** Opens the field (a no-op from `lg`, where it is always shown) and focuses it once shown. */
+  /** 필드를 열고 보이면 포커스를 준다. `lg`부터는 늘 보이므로 여는 동작은 없는 셈이다. */
   const openAndFocus = () => {
     setOpen(true);
     setFocusRequest((count) => count + 1);

@@ -1,7 +1,7 @@
 'use client';
 
-// A client component: `component={Link}` hands a function to the shared Button, which a Server
-// Component cannot do. The shared IconButton takes no `component`, so it cannot be a router link.
+// client component인 이유: `component={Link}`는 공용 Button에 함수를 넘기는데 Server
+// Component는 그럴 수 없다. 공용 IconButton은 `component`를 받지 않아 router 링크가 못 된다.
 import Link from 'next/link';
 
 import { Button } from '@berrypjh/react-ui';
@@ -11,10 +11,7 @@ import type { Pager as PagerModel } from '@/lib/pager';
 import { Icon } from './icon';
 import { detailsHref } from './workspace';
 
-/**
- * One arrow. With a neighbour it is a link named after it; without one it is a disabled button,
- * so the pair keeps its place.
- */
+/** 화살표 하나. 이웃이 있으면 그 이름을 단 링크, 없으면 disabled 버튼이라 쌍이 자리를 지킨다. */
 function Arrow({
   link,
   unit,
@@ -48,7 +45,7 @@ function Arrow({
   );
 }
 
-/** Previous and next item in an order, as a pair of arrows at the end of the title row. */
+/** 순서에서 이전 · 다음 항목으로. 제목 줄 끝에 화살표 한 쌍으로 둔다. */
 export function Pager({ pager }: { pager: PagerModel }) {
   return (
     <nav aria-label={`${pager.unit} 이동`} className="flex shrink-0 items-center">

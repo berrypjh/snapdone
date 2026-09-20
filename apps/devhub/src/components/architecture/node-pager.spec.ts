@@ -19,7 +19,7 @@ const inspectionOf = (id: string) => {
   return inspectNode(node);
 };
 
-/** The hrefs of the pager links for node `id`, with `query` as the page's search params. */
+/** 페이지 search params를 `query`로 두었을 때 구성 요소 `id`의 넘김 링크 href 목록. */
 const pagerHrefs = (id: string, query = '') => {
   nav.query = query;
   const order = inspectionOf(id).nodeOrder;

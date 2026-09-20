@@ -22,8 +22,8 @@ function Option({ href, current, label }: { href: string; current: boolean; labe
 }
 
 /**
- * View filters as plain links: they work without JavaScript, keep the other filters, and the
- * active choice is marked with `aria-current` plus a check mark and weight, not color alone.
+ * 보기 필터를 그냥 링크로. JavaScript 없이도 되고 다른 필터를 유지하며, 선택된 항목은
+ * `aria-current`와 체크 표시 · 굵기로 알린다. 색만으로 알리지 않는다.
  */
 export function FilterBar({
   basePath,

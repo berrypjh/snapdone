@@ -1,7 +1,7 @@
 /**
- * The Markdown the repository's documents actually use, parsed to a small tree: headings,
- * paragraphs, lists (nested), tables, fenced code, quotes, rules; inline code, bold, links.
- * No HTML and no images — the documents have none. Anything else stays literal text.
+ * 저장소 문서가 실제로 쓰는 Markdown만 작은 트리로 파싱한다. 제목 · 문단 · 목록(중첩) ·
+ * 표 · 코드 블록 · 인용 · 구분선, 그리고 인라인 코드 · 굵게 · 링크.
+ * HTML과 이미지는 문서에 없어서 다루지 않는다. 나머지는 글자 그대로 둔다.
  */
 
 export type Inline =
@@ -25,7 +25,7 @@ const RULE = /^\s*(-{3,}|\*{3,})\s*$/;
 const LIST = /^(\s*)([-*]|(\d+)\.)\s+(.*)$/;
 const TABLE_SEPARATOR = /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/;
 
-/** Inline Markdown → tree. Backslash escapes a character; backticks win over everything. */
+/** 인라인 Markdown을 트리로. 역슬래시는 한 글자를 이스케이프하고, 백틱이 무엇보다 먼저다. */
 export const parseInline = (source: string): Inline[] => {
   const out: Inline[] = [];
   let text = '';
@@ -73,7 +73,7 @@ export const parseInline = (source: string): Inline[] => {
   return out;
 };
 
-/** Plain text of inline content, as a reader sees it. */
+/** 인라인 내용의 평문. 독자가 보는 그대로다. */
 export const inlineText = (inline: Inline[]): string =>
   inline
     .map((node) =>
@@ -82,8 +82,8 @@ export const inlineText = (inline: Inline[]): string =>
     .join('');
 
 /**
- * GitHub's heading anchor: lower case, drop punctuation except `-` and `_`, spaces to `-`.
- * Documents already link each other this way, so the same links work inside DevHub.
+ * GitHub의 제목 앵커. 소문자로 바꾸고 `-` · `_`를 뺀 문장부호를 버리고 공백을 `-`로 바꾼다.
+ * 문서끼리 이미 이 방식으로 링크하고 있어서, 같은 링크가 DevHub 안에서도 통한다.
  */
 export const slug = (text: string) =>
   text
@@ -91,7 +91,7 @@ export const slug = (text: string) =>
     .replace(/[^\p{L}\p{M}\p{N}\p{Pc} -]/gu, '')
     .replace(/ /g, '-');
 
-/** Table cells: split on `|` outside code spans and not escaped. */
+/** 표의 칸. 코드 구간 밖이고 이스케이프되지 않은 `|`에서 자른다. */
 const cells = (line: string): string[] => {
   const trimmed = line.trim().replace(/^\|/, '').replace(/\|$/, '');
   const out: string[] = [];
@@ -100,7 +100,7 @@ const cells = (line: string): string[] => {
   for (let i = 0; i < trimmed.length; i += 1) {
     const ch = trimmed[i];
     if (ch === '\\' && trimmed[i + 1] === '|') {
-      // GFM: an escaped pipe is a pipe, even inside a code span; outside code, keep the escape.
+      // GFM: 이스케이프된 파이프는 코드 구간 안에서도 파이프다. 코드 밖에서는 이스케이프를 남긴다.
       cell += inCode ? '|' : '\\|';
       i += 1;
     } else if (ch === '`') {
@@ -195,7 +195,7 @@ const parseLines = (lines: string[], ids: Map<string, number>): Block[] => {
         const content = indent + item[2].length + 1;
         const body = [item[4]];
         i += 1;
-        // The item goes on while lines are indented to its content, or blank before such a line.
+        // 내용만큼 들여쓴 줄, 또는 그런 줄 앞의 빈 줄이 이어지는 동안 항목이 계속된다.
         while (i < lines.length) {
           const next = lines[i];
           if (!isBlank(next) && indentOf(next) >= content) {
@@ -233,6 +233,6 @@ const parseLines = (lines: string[], ids: Map<string, number>): Block[] => {
   return blocks;
 };
 
-/** A whole document. Heading ids are unique within it (`-1`, `-2` for repeats, as GitHub does). */
+/** 문서 한 벌. 제목 id는 문서 안에서 유일하다(겹치면 GitHub처럼 `-1` · `-2`를 붙인다). */
 export const parseMarkdown = (source: string): Block[] =>
   parseLines(source.replace(/\r\n?/g, '\n').split('\n'), new Map());

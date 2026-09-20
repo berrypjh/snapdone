@@ -3,14 +3,13 @@ import { useId } from 'react';
 export type CanvasEdge = {
   id: string;
   path: string;
-  /** SVG dash pattern. Line pattern and label, not color, tell edge kinds apart. */
+  /** SVG dash 패턴. 선의 종류는 색이 아니라 패턴과 라벨로 구분한다. */
   dash?: string;
   label?: { x: number; y: number; text: string };
 };
 
 /**
- * Edges in the same coordinate space as the nodes. Decorative for assistive technology: every
- * canvas also lists its relations as text.
+ * 노드와 같은 좌표계에 그리는 연결선. 보조 기술에는 장식이다. 모든 그림은 관계를 글로도 나열한다.
  */
 export function CanvasEdges({
   edges,
@@ -21,7 +20,7 @@ export function CanvasEdges({
   width: number;
   height: number;
 }) {
-  // Per instance: the same canvas can be drawn twice (in the page and in "크게 보기").
+  // 인스턴스마다 하나씩. 같은 그림이 페이지와 "크게 보기"에 두 번 그려질 수 있다.
   const markerId = useId();
   return (
     <svg

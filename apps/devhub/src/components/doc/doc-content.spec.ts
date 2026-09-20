@@ -19,7 +19,7 @@ const render = (doc: DocumentRef) =>
   renderToStaticMarkup(
     createElement(DocContent, { blocks: documentBlocks(doc), from: doc.path, title: doc.title }),
   );
-/** Visible text, outside code, with tags removed. */
+/** 코드 밖에서 눈에 보이는 글. 태그는 지운다. */
 const visible = (html: string) =>
   html
     .replace(/<pre[\s\S]*?<\/pre>/g, '')

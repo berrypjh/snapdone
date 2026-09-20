@@ -10,7 +10,7 @@ export const dynamicParams = false;
 
 export const generateStaticParams = entityParams;
 
-/** Inspector slot: the entity itself. */
+/** 상세 정보 슬롯: 항목 자체. */
 export default async function EntityInspector({ params }: { params: Params }) {
   const { section, id } = await params;
   const entity = findEntity(section, id);

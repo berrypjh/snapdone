@@ -1,6 +1,6 @@
 import type { FlowLane } from '@/lib/flow';
 
-/** Runtime bands behind the nodes. Every node also names its runtime, so these are decorative. */
+/** 단계 뒤에 깔리는 런타임 띠. 단계마다 런타임을 글로도 적으므로 장식이다. */
 export function FlowLanes({ lanes, width }: { lanes: FlowLane[]; width: number }) {
   return (
     <div aria-hidden="true" className="absolute top-0 left-0" style={{ width }}>

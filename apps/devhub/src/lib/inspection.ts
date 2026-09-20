@@ -27,28 +27,28 @@ import {
 } from './architecture';
 import { architectureModel } from './architecture-layout';
 import { commandHref, type Entity, stepHref } from './entities';
-import { CONSTRAINT, GAP, INTERACTION, RELATION, ROLE, TRACK } from './labels';
+import { CONSTRAINT, GAP, INTERACTION, RECORD_KIND, RELATION, ROLE, TRACK } from './labels';
 import { type Pager, type PagerItem, pagerOf } from './pager';
 import type { SourceUsage } from './source-usage';
 
 export type RelatedLink = { label: string; href: string; detail?: string };
 
-/** A fact's detail is text, or a link to another item shown in the inspector. */
+/** 사실의 세부는 글이거나, 인스펙터가 보여 주는 다른 항목으로 가는 링크다. */
 export type Fact = { term: string; details: (string | RelatedLink)[] };
 
 export type ResolvedDocument = { document: DocumentRef; heading?: string };
 
-/** Navigation to other views of the same thing (scenario ↔ architecture). */
+/** 같은 것을 다른 화면에서 보는 이동 (시나리오 ↔ 아키텍처). */
 export type RelatedGroup = { title: string; links: RelatedLink[]; empty: string };
 
-/** Architecture nodes in the list order, for a pager that follows the kind filter in the URL. */
+/** 목록 순서의 아키텍처 노드. URL의 종류 필터를 따르는 넘김에 쓴다. */
 export type NodeOrder = { current: string; nodes: (PagerItem & { kind: string })[] };
 
-/** What the inspector shows for one entity. Empty lists come with the reason they are empty. */
+/** 인스펙터가 엔티티 하나에 대해 보여 주는 것. 빈 목록에는 비어 있는 이유가 따라붙는다. */
 export type Inspection = {
-  /** Set for a scenario step: previous and next step, under the title. */
+  /** 시나리오 단계일 때 채운다. 제목 아래의 앞뒤 단계다. */
   pager?: Pager;
-  /** Set for an architecture node: previous and next node, under the title. */
+  /** 아키텍처 노드일 때 채운다. 제목 아래의 앞뒤 노드다. */
   nodeOrder?: NodeOrder;
   kind: string;
   title: string;
@@ -60,7 +60,7 @@ export type Inspection = {
   docsEmpty: string;
   tests: TestRef[];
   testsEmpty: string;
-  /** Routes the entity uses; shown with handler source and the generated Swagger document. */
+  /** 엔티티가 쓰는 라우트. 핸들러 소스와 생성된 Swagger 문서를 함께 보여 준다. */
   apis?: ApiRef[];
   related?: RelatedGroup[];
 };
@@ -87,7 +87,7 @@ const relationLine = (relation: Relation) =>
     relation.kind === 'runtime' ? INTERACTION[relation.interaction] : RELATION[relation.kind]
   }`;
 
-/** A relation of `id`, linked to the node at its other end. */
+/** `id`의 관계 하나. 반대쪽 끝 노드로 링크한다. */
 const relationLink = (id: string, relation: Relation): RelatedLink => ({
   label: relationLine(relation),
   href: architectureHref(relation.from === id ? relation.to : relation.from),
@@ -109,7 +109,7 @@ const apisById = new Map(catalog.apis.map((api) => [api.id, api]));
 const resolveApis = (ids: string[]): ApiRef[] =>
   [...new Set(ids)].flatMap((id) => apisById.get(id) ?? []);
 
-/** The root commands that run these tests, e.g. Vitest and go test → `pnpm test`. */
+/** 이 테스트들을 돌리는 루트 명령. 예를 들어 Vitest와 go test → `pnpm test`. */
 const commandsFor = (tests: TestRef[]): RelatedGroup => ({
   title: '이 테스트를 돌리는 명령',
   links: [...new Set(tests.map((test) => RUNNER_COMMAND[test.runner]))].flatMap((id) => {
@@ -239,7 +239,26 @@ const inspectDocument = (entity: Extract<Entity, { section: 'documents' }>): Ins
   };
 };
 
-/** Where the command is declared: root `package.json` or the project's Nx manifest. */
+const inspectRecord = (entity: Extract<Entity, { section: 'records' }>): Inspection => {
+  const { record } = entity;
+  return {
+    kind: '기록',
+    title: record.title,
+    facts: [
+      { term: '종류', details: [RECORD_KIND[record.kind]] },
+      { term: '날짜', details: [record.date] },
+      { term: '요약', details: [record.summary] },
+    ],
+    source: [{ path: record.path }, ...record.sources],
+    sourceEmpty: '',
+    docs: resolveDocs(record.docs),
+    docsEmpty: '이 기록이 정한 것을 담은 문서가 없다',
+    tests: catalog.tests.filter((test) => record.tests.includes(test.id)),
+    testsEmpty: 'devhub 자체 테스트는 카탈로그에 없다. 확인 방법은 본문의 검증 절에 있다',
+  };
+};
+
+/** 명령이 어디에 선언돼 있는지. 루트 `package.json`이나 프로젝트의 Nx 매니페스트다. */
 const commandSource = ({ source }: CommandRef): SourceRef[] => {
   if (source.kind === 'package-script') return [{ path: 'package.json' }];
   const project = catalog.nodes.find((node) => node.id === source.project);
@@ -278,7 +297,7 @@ const contractLabel = new Map(
 );
 const scenarioTitle = new Map(catalog.scenarios.map((scenario) => [scenario.id, scenario.title]));
 
-/** One step of a scenario: the flow viewer's selection. */
+/** 시나리오의 한 단계. 흐름 뷰어에서 고른 것이다. */
 const stepPager = (scenario: Scenario, step: ScenarioStep) =>
   pagerOf(
     '단계',
@@ -286,7 +305,7 @@ const stepPager = (scenario: Scenario, step: ScenarioStep) =>
     step.id,
   );
 
-/** Nodes in the order the architecture list shows them. */
+/** 아키텍처 목록이 보여 주는 순서의 노드들. */
 const nodeOrder = (current: string): NodeOrder => ({
   current,
   nodes: architectureModel().nodes.map(({ id, label, href, nodeKind }) => ({
@@ -344,7 +363,7 @@ const projectPage = (node: ArchitectureNode): RelatedLink[] =>
         },
       ];
 
-/** One node of the architecture view: its role, boundaries, relations, and the steps through it. */
+/** 아키텍처 뷰의 노드 하나. 역할 · 경계 · 관계와 이 노드를 지나는 단계들이다. */
 export const inspectNode = (node: ArchitectureNode): Inspection => {
   const project = node.kind !== 'external';
   return {
@@ -383,7 +402,7 @@ export const inspectNode = (node: ArchitectureNode): Inspection => {
   };
 };
 
-/** A cited repository file: where it is used, with its own tests and APIs. */
+/** 인용된 저장소 파일 하나. 어디에 쓰이는지와 그 파일의 테스트 · API다. */
 export const inspectSource = (usage: SourceUsage): Inspection => {
   const project = projectOf(usage.path);
   return {
@@ -428,6 +447,8 @@ export const inspect = (entity: Entity): Inspection => {
       return inspectProject(entity);
     case 'documents':
       return inspectDocument(entity);
+    case 'records':
+      return inspectRecord(entity);
     case 'engineering':
       return inspectCommandGroup(entity);
   }

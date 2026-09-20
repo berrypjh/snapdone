@@ -18,7 +18,7 @@ import { NoNodes } from './architecture-map';
 
 const LINK = 'text-text-link underline-offset-2 hover:underline';
 
-/** The other end of each relation, as a link, with the relation named like its edge. */
+/** 각 관계의 반대쪽 구성 요소를 링크로. 관계 이름은 간선 라벨과 같게 적는다. */
 function Relations({
   list,
   end,
@@ -50,9 +50,8 @@ function Relations({
 }
 
 /**
- * The architecture drawing as a list: each node with its kind, path, and summary, and the drawn
- * relations split into outgoing and incoming — each line names the other node (a link) and the
- * relation the same way the edge is labelled.
+ * 아키텍처 그림을 목록으로. 구성 요소마다 종류 · 경로 · 요약을 적고, 그려진 관계는 나가는 것과
+ * 들어오는 것으로 나눠 반대쪽 구성 요소 링크와 간선과 같은 관계 이름을 보인다.
  */
 export function ArchitectureOutline({
   model,

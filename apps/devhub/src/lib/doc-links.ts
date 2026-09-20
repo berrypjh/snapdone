@@ -2,18 +2,30 @@ import { posix } from 'node:path';
 
 import { catalog } from '../data';
 
-/** Where a link written in a repository document goes, once resolved against that document. */
+/** 저장소 문서에 적힌 링크를 그 문서 기준으로 풀었을 때 향하는 곳. */
 export type DocLink =
   | { kind: 'external'; href: string }
   | { kind: 'anchor'; anchor: string }
-  | { kind: 'document'; id: string; path: string; anchor?: string }
+  | {
+      kind: 'document';
+      section: 'documents' | 'records';
+      id: string;
+      path: string;
+      anchor?: string;
+    }
   | { kind: 'file'; path: string; anchor?: string };
 
-const documentByPath = new Map(catalog.documents.map((doc) => [doc.path, doc]));
+/** DevHub가 그리는 두 종류의 마크다운 페이지. 둘 사이 링크는 앱 밖으로 나가지 않는다. */
+const pageByPath = new Map<string, { section: 'documents' | 'records'; id: string }>([
+  ...catalog.documents.map(
+    (doc) => [doc.path, { section: 'documents' as const, id: doc.id }] as const,
+  ),
+  ...catalog.records.map((rec) => [rec.path, { section: 'records' as const, id: rec.id }] as const),
+]);
 
 /**
- * Resolves `href` as written in the document at `from` (a repository path). Relative paths are
- * taken from the document's folder, as GitHub does; a cataloged document stays inside DevHub.
+ * `from`(저장소 경로) 문서에 적힌 `href`를 푼다. 상대 경로는 GitHub처럼 그 문서의 폴더 기준이고,
+ * 카탈로그에 있는 문서나 기록은 DevHub 안에서 각자의 섹션 페이지로 간다.
  */
 export const resolveDocLink = (from: string, href: string): DocLink => {
   if (/^[a-z][a-z0-9+.-]*:/i.test(href)) return { kind: 'external', href };
@@ -23,6 +35,8 @@ export const resolveDocLink = (from: string, href: string): DocLink => {
   const path = pathPart.startsWith('/')
     ? posix.normalize(pathPart.slice(1))
     : posix.normalize(posix.join(posix.dirname(from), pathPart));
-  const doc = documentByPath.get(path);
-  return doc ? { kind: 'document', id: doc.id, path, anchor } : { kind: 'file', path, anchor };
+  const page = pageByPath.get(path);
+  return page
+    ? { kind: 'document', section: page.section, id: page.id, path, anchor }
+    : { kind: 'file', path, anchor };
 };

@@ -21,15 +21,15 @@ const LEGEND: LegendItem[] = [
   { line: BACK_DASH, label: '앞 단계로 돌아가는 흐름' },
 ];
 
-/** The step selected by the URL (`…/steps/<id>`) below the scenario layout. */
+/** 시나리오 레이아웃 아래에서 URL(`…/steps/<id>`)이 가리키는 선택된 단계. */
 const useSelectedStep = () => {
   const segments = useSelectedLayoutSegments();
   return segments[0] === 'steps' ? segments[1] : undefined;
 };
 
 /**
- * Read-only scenario flow on the shared canvas. Selecting a node navigates to its step URL; the
- * inspector is rendered from that route, not from here.
+ * 공용 캔버스에 그리는 읽기 전용 시나리오 흐름. 단계를 고르면 그 단계 URL로 이동하고,
+ * 인스펙터는 여기가 아니라 그 route에서 그린다.
  */
 export function ScenarioFlow({ model, title }: { model: FlowModel; title: string }) {
   const selected = useSelectedStep();

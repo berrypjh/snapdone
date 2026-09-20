@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react';
 import type { OutlineItem } from '@/lib/documents';
 
 /**
- * "이 페이지에서": the document's sections, with the one being read marked
- * (`aria-current="location"`) as the workspace scrolls.
+ * "이 페이지에서" 목록. 작업 영역이 스크롤되면 읽고 있는 절을 `aria-current="location"`으로
+ * 표시한다.
  */
 export function DocToc({ items }: { items: OutlineItem[] }) {
   const [active, setActive] = useState(items[0]?.id);

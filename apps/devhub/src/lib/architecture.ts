@@ -11,8 +11,8 @@ import type {
 import { stepHref } from './entities';
 
 /**
- * Links between scenario steps and architecture nodes, derived from data already curated:
- * nothing here is a second hand-written list.
+ * 시나리오 단계와 아키텍처 노드를 잇는다. 이미 정리된 데이터에서 끌어내며,
+ * 손으로 적은 두 번째 목록은 여기에 없다.
  */
 
 const projects = catalog.nodes.filter(
@@ -26,19 +26,19 @@ export const architectureHref = (nodeId: string) => `/architecture/${nodeId}`;
 export const findNode = (id: string): ArchitectureNode | undefined =>
   catalog.nodes.find((node) => node.id === id);
 
-/** Route params of every architecture node page, for `generateStaticParams`. */
+/** 모든 아키텍처 노드 페이지의 라우트 파라미터. `generateStaticParams`용. */
 export const nodeParams = () => catalog.nodes.map((node) => ({ nodeId: node.id }));
 
 export const nodeLabel = (node: ArchitectureNode) =>
   node.kind === 'external' ? node.name : node.id;
 
-/** The project whose root contains `path`, if any. */
+/** `path`를 루트에 품은 프로젝트. 없으면 undefined. */
 export const projectOf = (path: string) =>
   projects.find((project) => path === project.root || path.startsWith(`${project.root}/`))?.id;
 
 /**
- * Nodes a step touches: its owner, the projects holding its source, the project serving its
- * APIs, and the libraries owning its contracts. In that order, without repeats.
+ * 단계가 건드리는 노드들. 담당 프로젝트, 소스를 가진 프로젝트, API를 제공하는 프로젝트,
+ * 계약을 소유한 라이브러리 순서이고 중복은 없다.
  */
 export const stepNodeIds = (step: ScenarioStep): string[] => [
   ...new Set(
@@ -57,7 +57,7 @@ export const scenarioNodeIds = (scenario: Scenario): string[] => [
 
 export type RelatedStep = { scenario: Scenario; step: ScenarioStep; href: string };
 
-/** Every scenario step that touches the node, in catalog order. */
+/** 이 노드를 건드리는 모든 시나리오 단계. 카탈로그 순서를 따른다. */
 export const stepsTouching = (nodeId: string): RelatedStep[] =>
   catalog.scenarios.flatMap((scenario) =>
     scenario.steps

@@ -13,11 +13,11 @@ type ArchitectureViewsProps = {
   model: ArchitectureModel;
   kind?: string;
   query?: string;
-  /** The kind filter, on the row of the view switch. */
+  /** 종류 필터. 보기 전환 줄에 함께 놓인다. */
   filter?: ReactNode;
 };
 
-/** The architecture as a drawing or as a list, with the same filter applied to both. */
+/** 아키텍처를 그림이나 목록으로. 같은 필터를 둘에 똑같이 적용한다. */
 export function ArchitectureViews({ filter, ...props }: ArchitectureViewsProps) {
   return (
     <ViewSwitch

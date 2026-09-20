@@ -1,6 +1,6 @@
 import { Inspector } from '@/components/inspector';
 
-/** Inspector slot: no node selected yet. */
+/** 상세 정보 슬롯: 아직 고른 구성 요소가 없다. */
 export default function ArchitectureInspector() {
   return <Inspector />;
 }

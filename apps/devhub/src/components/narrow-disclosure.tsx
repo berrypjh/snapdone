@@ -5,8 +5,8 @@ import { type ReactNode, useState } from 'react';
 import { Button } from '@berrypjh/react-ui';
 
 /**
- * Below `lg` the content folds behind a real disclosure button; from `lg` it is always shown and
- * the button is gone. Keeps a long list from pushing the workspace off a narrow screen.
+ * `lg` 아래에서는 내용을 disclosure 버튼 뒤로 접고, `lg`부터는 늘 보이며 버튼이 사라진다.
+ * 긴 목록이 좁은 화면에서 작업 영역을 밀어내지 않게 한다.
  */
 export function NarrowDisclosure({
   id,

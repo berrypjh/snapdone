@@ -4,7 +4,7 @@ import { Button } from '@berrypjh/react-ui';
 
 import { Icon, type IconName } from '../icon';
 
-/** One legend entry: a line style (a dash pattern, `null` for solid) or a node box. */
+/** 범례 항목 하나. 선 모양(dash 패턴, 실선이면 `null`)이거나 노드 상자다. */
 export type LegendItem = { label: string } & (
   { line: string | null } | { box: 'solid' | 'dashed' }
 );
@@ -47,8 +47,8 @@ const KEYS: [keys: string[], action: string][] = [
 ];
 
 /**
- * How to move around and what the lines mean, folded behind "도움말". Hidden until asked, but
- * still the canvas's description (`aria-describedby` reads hidden content too).
+ * 조작법과 선의 뜻을 "도움말" 뒤에 접어 둔다. 펼치기 전에도 그림의 설명이다
+ * (`aria-describedby`는 숨긴 내용도 읽는다).
  */
 export function CanvasHelp({
   id,
@@ -128,11 +128,11 @@ type CanvasControlsProps = {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onFit: () => void;
-  /** Opens the canvas at the window's size; absent inside that enlarged view. */
+  /** 그림을 창 크기로 연다. 그 확대 보기 안에서는 없다. */
   onExpand?: () => void;
 };
 
-/** Zoom and view controls, floating in the canvas's bottom-right corner as map tools do. */
+/** 지도 도구처럼 그림 오른쪽 아래에 떠 있는 확대 · 보기 조절. */
 export function CanvasControls({
   zoom,
   onZoomIn,

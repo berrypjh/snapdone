@@ -5,16 +5,16 @@ import { architectureHref, nodeLabel } from './architecture';
 import { INTERACTION, RELATION, ROLE } from './labels';
 
 /**
- * Curated positions for the architecture view (presentation, not repository facts).
- * Grid: column × 300px, row × 220px. Chosen so no edge passes under a node:
+ * 아키텍처 뷰의 손으로 정한 위치다. 저장소 사실이 아니라 표현이다.
+ * 격자는 열 × 300px, 행 × 220px. 선이 노드 밑을 지나지 않도록 골랐다.
  *
  *   row 0            web-e2e                              devhub   devhub-e2e
  *   row 1  browser   web              google-oidc
- *   row 2  webview-  (empty: WebView   api              postgres
- *          bridge     edges pass here)
+ *   row 2  webview-  (비어 있음: WebView  api           postgres
+ *          bridge     선이 여기로 지난다)
  *   row 3  auth-     mobile                            image-model
  *          contracts
- *   row 4  onboarding (web's edge bends between auth-contracts and mobile)
+ *   row 4  onboarding (web의 선이 auth-contracts와 mobile 사이로 휜다)
  */
 const GRID: Record<string, [column: number, row: number]> = {
   'web-e2e': [1, 0],
@@ -32,7 +32,7 @@ const GRID: Record<string, [column: number, row: number]> = {
   'image-model': [3, 3],
 };
 
-/** Curve direction for relations that share a pair of nodes, so parallel edges don't overlap. */
+/** 같은 두 노드를 잇는 관계의 휨 방향. 나란한 선이 겹치지 않게 한다. */
 const BEND: Record<string, number> = {
   'mobile-hosts-web': -1,
   'web-messages-mobile': -1,
@@ -56,7 +56,7 @@ export type ArchNode = {
   id: string;
   href: string;
   label: string;
-  /** Raw node kind, for filtering. `kind` is the display label. */
+  /** 거르기에 쓰는 원래 노드 종류. `kind`는 화면에 보이는 이름이다. */
   nodeKind: ArchitectureNode['kind'];
   kind: string;
   summary: string;
@@ -92,7 +92,7 @@ export const positionedIds = () => Object.keys(GRID);
 
 type Point = { x: number; y: number };
 
-/** Where the line from a box center toward `toward` leaves the box. */
+/** 상자 중심에서 `toward`로 향하는 선이 상자를 벗어나는 지점. */
 export const boxAnchor = (center: Point, toward: Point): Point => {
   const dx = toward.x - center.x;
   const dy = toward.y - center.y;
@@ -109,7 +109,7 @@ const centerOf = (id: string): Point | undefined => {
   return position && { x: position.x + ARCH_NODE.width / 2, y: position.y + ARCH_NODE.height / 2 };
 };
 
-/** Quadratic curve between two boxes, bent sideways by `bend`, with its label at the middle. */
+/** 두 상자를 잇는 2차 곡선. `bend`만큼 옆으로 휘고, 이름표는 가운데에 둔다. */
 export const edgeGeometry = (fromId: string, toId: string, bend = 0) => {
   const a = centerOf(fromId);
   const b = centerOf(toId);
@@ -186,7 +186,7 @@ export const architectureModel = (): ArchitectureModel => {
   };
 };
 
-/** Keeps nodes of one kind and the edges whose both ends stay. No kind keeps everything. */
+/** 한 종류의 노드와 양 끝이 모두 남은 선만 남긴다. 종류가 없으면 전부 남긴다. */
 export const filterModel = (model: ArchitectureModel, kind?: string): ArchitectureModel => {
   if (!kind) return model;
   const nodes = model.nodes.filter((node) => node.nodeKind === kind);

@@ -33,8 +33,8 @@ const API_SECTION: SectionMeta = { id: 'inspector-apis', title: 'API', icon: 'ap
 const RELATED_SECTION: SectionMeta = { id: 'inspector-related', title: '연결', icon: 'related' };
 
 /**
- * Previous and next architecture node. The kind filter is read from the URL on the client, so the
- * static fallback pages through every node.
+ * 이전 · 다음 아키텍처 구성 요소. 종류 필터는 클라이언트에서 URL로 읽으므로 static fallback은
+ * 전체를 대상으로 넘긴다.
  */
 function NodePagerSlot({ order }: { order: NodeOrder }) {
   const all = pagerOf('구성 요소', order.nodes, order.current);
@@ -45,7 +45,7 @@ function NodePagerSlot({ order }: { order: NodeOrder }) {
   );
 }
 
-/** A fact detail: text, or a link that opens the other item's details. */
+/** 사실의 세부 항목. 글이거나, 다른 항목의 상세를 여는 링크다. */
 function Detail({ detail }: { detail: Fact['details'][number] }) {
   if (typeof detail === 'string') return detail;
   return (
@@ -66,7 +66,7 @@ function InspectorSection({
 }: {
   meta: SectionMeta;
   count?: number;
-  /** One line that says what the list holds before it is read, e.g. `web 4 · api 2`. */
+  /** 목록을 읽기 전에 무엇이 들었는지 알려 주는 한 줄. 예: `web 4 · api 2`. */
   summary?: string;
   children: ReactNode;
 }) {
@@ -95,7 +95,7 @@ function Empty({ reason }: { reason: string }) {
   return <p className="typo-caption-small text-text-light">없음 — {reason}</p>;
 }
 
-/** Only the facts that hold something; an empty fact is noise, not evidence. */
+/** 내용이 있는 사실만 보인다. 빈 사실은 근거가 아니라 잡음이다. */
 function Facts({ facts }: { facts: Fact[] }) {
   return (
     <dl className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-3 gap-y-2">
@@ -267,8 +267,8 @@ function Contents({ apis, related }: { apis: boolean; related: boolean }) {
 }
 
 /**
- * Right pane: evidence for the selected entity, always in the same four sections. Sources and
- * tests are grouped by project and file, so each file and its actions appear once.
+ * 오른쪽 창. 선택한 항목의 근거를 언제나 같은 네 구획으로 보인다. 소스와 테스트는 프로젝트 ·
+ * 파일로 묶어서 파일과 그 동작이 한 번만 나오게 한다.
  */
 export function Inspector({ inspection }: { inspection?: Inspection }) {
   const sources = groupSources(inspection?.source ?? []);
@@ -282,7 +282,7 @@ export function Inspector({ inspection }: { inspection?: Inspection }) {
       {inspection ? (
         <div className="flex flex-col divide-y divide-stroke-light p-4 pb-12">
           <header className="flex flex-col gap-2 pb-4">
-            {/* The arrows end the first row, which is where a move between neighbours lands. */}
+            {/* 화살표는 첫 줄 끝에 둔다. 이웃으로 이동하면 도착하는 자리다. */}
             <div className="flex items-center justify-between gap-2">
               <p className="min-w-0 typo-caption-small text-text-light">{inspection.kind}</p>
               {inspection.pager && <Pager pager={inspection.pager} />}

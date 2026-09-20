@@ -10,7 +10,7 @@ const texts = (inline: Inline[]): string[] =>
     node.kind === 'text' ? [node.text] : node.kind === 'code' ? [] : texts(node.children),
   );
 
-/** Every piece of plain text in a document, outside code. */
+/** 문서 안의 모든 일반 텍스트. 코드는 뺀다. */
 const allText = (blocks: Block[]): string[] =>
   blocks.flatMap((block) => {
     switch (block.kind) {

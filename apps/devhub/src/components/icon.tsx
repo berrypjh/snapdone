@@ -1,7 +1,6 @@
 /**
- * Line icons drawn here: the shared UI ships none. Decorative only — the text next to each icon
- * carries the meaning, so every icon is `aria-hidden`. Stroke is `currentColor`, so icons follow
- * the text color and the light/dark theme.
+ * 공용 UI에 아이콘이 없어 여기서 직접 그리는 선 아이콘. 뜻은 옆 글자가 지므로 전부
+ * `aria-hidden`이고, stroke가 `currentColor`라 글자 색과 라이트 · 다크 테마를 따라간다.
  */
 const PATHS = {
   overview: ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'M12 11v5', 'M12 8h.01'],
@@ -53,6 +52,8 @@ const PATHS = {
   application: ['M4 5h16v14H4Z', 'M4 9h16', 'M7 7h.01'],
   library: ['M5 4h4v16H5Z', 'M11 4h4v16h-4Z', 'm17 5.5 3 .8-3.6 14.2-3-.8'],
   engineering: ['m5 8 4 4-4 4', 'M12 16h7', 'M3 4h18v16H3Z'],
+  record: ['M6 6h.01', 'M6 12h.01', 'M6 18h.01', 'M10 6h9', 'M10 12h9', 'M10 18h5'],
+  editor: ['M3 5h18v14H3Z', 'M3 9h18', 'm8 13 2 2-2 2', 'M13 17h3'],
   sun: [
     'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z',
     'M12 2v2',

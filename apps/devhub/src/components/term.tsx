@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import { Icon, type IconName } from './icon';
 
-/** One term of a list entry: icon and name on the left, the content on the right. */
+/** 목록 항목 하나. 왼쪽에 아이콘과 이름, 오른쪽에 내용을 둔다. */
 export function Term({
   icon,
   term,

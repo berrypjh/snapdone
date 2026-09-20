@@ -17,9 +17,8 @@ type ArchitectureNodeProps = {
 };
 
 /**
- * One project or external system as a real link to its architecture URL. A system outside the
- * repository has a dashed border, like a scenario step without code. The selected node is
- * followed by a skip link to its details in the inspector.
+ * 프로젝트 · 외부 시스템 하나를 아키텍처 URL로 가는 실제 링크로 그린다. 저장소 밖 시스템은 코드
+ * 없는 단계처럼 점선이고, 선택된 구성 요소 뒤에는 인스펙터 상세로 가는 건너뛰기 링크가 붙는다.
  */
 export function ArchitectureNode({ node, selected, onFocus }: ArchitectureNodeProps) {
   const external = node.kind === '외부';

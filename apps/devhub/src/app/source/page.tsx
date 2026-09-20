@@ -13,7 +13,7 @@ import { sourceUsage } from '@/lib/source-usage';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-/** The query value is only a lookup key into the cited paths; anything else is not found. */
+/** 쿼리 값은 인용된 경로를 찾는 키일 뿐이다. 그 밖의 값은 404다. */
 const usageFor = async (searchParams: SearchParams) => {
   const { path } = await searchParams;
   return typeof path === 'string' ? sourceUsage().get(path) : undefined;
@@ -28,7 +28,7 @@ export async function generateMetadata({
   return { title: usage ? `${usage.path} · Snapdone DevHub` : undefined };
 }
 
-/** Hub for a cited file: search results for sources, symbols, APIs, contracts, and tests land here. */
+/** 인용된 파일의 허브. 소스 · 심볼 · API · 계약 · 테스트 검색 결과가 여기로 온다. */
 export default async function SourcePage({ searchParams }: { searchParams: SearchParams }) {
   const usage = await usageFor(searchParams);
   if (!usage) notFound();
@@ -39,7 +39,7 @@ export default async function SourcePage({ searchParams }: { searchParams: Searc
       inspector={<Inspector inspection={inspectSource(usage)} />}
     >
       <Workspace eyebrow="소스 파일" icon={VIEW_ICON.source} title={usage.path}>
-        {/* The one place with every link for a file; the inspector keeps one link per file. */}
+        {/* 파일의 모든 링크가 모인 유일한 곳. 상세 정보에는 파일당 링크 하나만 둔다. */}
         <SourceActions source={{ path: usage.path }} />
         <SourceUsageSummary usage={usage} />
       </Workspace>

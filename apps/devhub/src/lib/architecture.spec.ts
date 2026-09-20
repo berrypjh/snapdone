@@ -10,7 +10,7 @@ const model = architectureModel();
 const nodeIds = new Set(catalog.nodes.map((node) => node.id));
 const documentPath = new Map(catalog.documents.map((doc) => [doc.id, doc.path]));
 
-/** Points along a `M x y Q cx cy ex ey` path. */
+/** `M x y Q cx cy ex ey` 경로 위의 점들. */
 const samples = (path: string) => {
   const [sx, sy, cx, cy, ex, ey] = path.match(/-?\d+(\.\d+)?/g)?.map(Number) ?? [];
   return Array.from({ length: 21 }, (_, i) => {

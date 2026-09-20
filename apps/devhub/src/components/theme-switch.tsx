@@ -8,7 +8,7 @@ import { THEME_KEY, type ThemeMode } from '@/lib/theme';
 
 import { Icon } from './icon';
 
-/** Icon-only options: the sun and moon show the choice, `ariaLabel` names each button. */
+/** 아이콘만 있는 선택지. 해와 달이 선택을 보이고, 버튼 이름은 `ariaLabel`이 맡는다. */
 const OPTIONS = [
   { value: 'light', label: <Icon name="sun" />, ariaLabel: '라이트' },
   { value: 'dark', label: <Icon name="moon" />, ariaLabel: '다크' },
@@ -23,7 +23,7 @@ const subscribe = (onChange: () => void) => {
 const current = (): ThemeMode =>
   document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
 
-/** Light / dark choice. Reads and writes `<html data-theme>`; the choice is kept per browser. */
+/** 라이트 · 다크 선택. `<html data-theme>`를 읽고 쓰며, 선택은 브라우저마다 남는다. */
 export function ThemeSwitch() {
   const mode = useSyncExternalStore(subscribe, current, (): ThemeMode => 'light');
 
@@ -32,7 +32,7 @@ export function ThemeSwitch() {
     try {
       localStorage.setItem(THEME_KEY, next);
     } catch {
-      // Storage can be blocked; the choice then lasts until reload.
+      // 저장이 막힐 수 있다. 그때는 선택이 새로고침 전까지만 남는다.
     }
   };
 

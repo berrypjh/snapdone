@@ -16,10 +16,9 @@ import { architectureModel } from '@/lib/architecture-layout';
 export const metadata: Metadata = { title: '아키텍처 · Snapdone DevHub' };
 
 /**
- * Current architecture: the map and its text lists stay mounted while the selected node (the
- * `@inspector` slot) changes. The page (`children`) is the workspace header, because Next scrolls
- * to the page after a navigation. The kind filter reads the URL on the client, so the static
- * fallback is the unfiltered drawing or list.
+ * 지금의 아키텍처. 고른 구성 요소(`@inspector` 슬롯)가 바뀌어도 지도와 글 목록은 그대로 남는다.
+ * Next가 이동 뒤 페이지로 스크롤하므로 페이지(`children`)가 작업 영역 머리말이다. 종류 필터는
+ * 클라이언트에서 URL을 읽으므로 정적 fallback은 필터를 걸지 않은 그림이나 목록이다.
  */
 export default function ArchitectureLayout({
   children,

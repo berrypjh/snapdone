@@ -10,8 +10,8 @@ type GraphFile = {
 };
 
 /**
- * Projects and their targets as Nx itself resolves them, inferred targets included. Asks the
- * installed `nx` once (`nx graph --file`), without the daemon.
+ * Nx가 직접 해석한 프로젝트와 target. 추론된 target도 포함한다. 설치된 `nx`에 daemon 없이
+ * `nx graph --file`로 한 번만 묻는다.
  */
 export const nxProjectTargets = (): Map<string, Set<string>> => {
   const file = join(mkdtempSync(join(tmpdir(), 'devhub-nx-')), 'graph.json');
@@ -29,7 +29,7 @@ export const nxProjectTargets = (): Map<string, Set<string>> => {
   );
 };
 
-/** Nx calls a root script makes: `nx run-many -t a,b`, `nx run p:t`, and `nx <target> <project>`. */
+/** 루트 스크립트가 부르는 Nx 호출. `nx run-many -t a,b` · `nx run p:t` · `nx <target> <project>`. */
 export const nxCallsIn = (script: string, projects: Set<string>) => {
   const runMany = [...script.matchAll(/\bnx run-many (?:-t|--targets?)[ =]([\w:,-]+)/g)].flatMap(
     ([, list]) => list.split(',').map((target) => ({ project: undefined, target })),

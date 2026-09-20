@@ -1,26 +1,29 @@
-import type { DocumentRef } from '@/domain/model';
-import { documentBlocks, documentOutline } from '@/lib/documents';
+import { documentBlocks, documentOutline, type ReadableDoc } from '@/lib/documents';
 
+import { AnchorFlash } from '../anchor-flash';
 import { Icon } from '../icon';
 
 import { DocContent } from './doc-content';
 import { DocToc } from './doc-toc';
 
 /**
- * The centered column of a document page — text (46rem) plus the outline beside it — shared by
- * the header, the text, and what follows, so their left edges line up, as in the reference docs.
+ * 문서 페이지의 가운데 칸 — 본문 46rem에 옆의 목차를 더한 폭. 헤더 · 본문 · 뒤따르는 내용이
+ * 같이 쓰기 때문에 왼쪽 끝이 맞는다.
  */
 export const DOCUMENT_COLUMN = 'mx-auto w-full max-w-[61rem]';
 
 /**
- * A document with its "이 페이지에서" inside the workspace, as the reference docs do: beside the
- * text, following the scroll, when the workspace is wide; folded above the text when it is not.
- * The width that matters is the workspace's (a container query), not the screen's — the side
- * panes take a different share at each breakpoint.
+ * 문서와 "이 페이지에서"를 작업 영역 안에 함께 둔다. 넓으면 본문 옆에서 스크롤을 따라가고,
+ * 좁으면 본문 위에 접어 둔다. 기준 폭은 화면이 아니라 작업 영역이다(container query).
  */
-export function DocumentLayout({ doc }: { doc: DocumentRef }) {
+export function DocumentLayout({ doc }: { doc: ReadableDoc }) {
   const outline = documentOutline(doc);
-  const content = <DocContent blocks={documentBlocks(doc)} from={doc.path} title={doc.title} />;
+  const content = (
+    <>
+      <AnchorFlash />
+      <DocContent blocks={documentBlocks(doc)} from={doc.path} title={doc.title} />
+    </>
+  );
   if (outline.length === 0) return content;
 
   return (

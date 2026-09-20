@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { RepositorySnapshot } from '../domain/model';
 import { findStep } from '../lib/entities';
@@ -30,6 +30,8 @@ if (!exchange) throw new Error('fixture step missing');
 const inspection = inspectStep(exchange.scenario, exchange.step);
 const render = () => renderToStaticMarkup(createElement(Inspector, { inspection }));
 const count = (html: string, pattern: RegExp) => (html.match(pattern) ?? []).length;
+afterEach(() => vi.unstubAllEnvs());
+
 const section = (html: string, id: string) =>
   html.match(new RegExp(`<section[^>]*id="${id}"[\\s\\S]*?</section>`))?.[0] ?? '';
 
@@ -64,6 +66,23 @@ describe('Inspector evidence lists', () => {
     for (const title of ['TestHandoffCreatesChildWebSession', 'TestHandoffExchangeChecksProof']) {
       expect(html).toContain(title);
     }
+  });
+
+  it('puts the editor action beside copy, and only while developing', () => {
+    const editor = /aria-label="에디터에서 열기: ([^"]+)"/g;
+    // 두 경우 모두 모드를 밝힌다. 로컬 env 파일이 테스트 실행의 `NODE_ENV`를 정하기 때문이다.
+    vi.stubEnv('NODE_ENV', 'production');
+    expect(count(render(), editor)).toBe(0);
+
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('DEVHUB_EDITOR', 'cursor');
+    const html = render();
+    const files = new Set(inspection.source.map((ref) => ref.path)).size;
+    expect(count(section(html, 'inspector-source'), editor)).toBe(files);
+    // 파일의 두 동작은 에디터를 앞에 두고 붙어 있고, 사이에는 그 아이콘만 있다.
+    expect(html).toMatch(
+      /에디터에서 열기: ([^"]+)"[^<]*<svg[\s\S]*?<\/a>\s*<span[^>]*><button[^>]*aria-label="경로 복사: \1"/,
+    );
   });
 
   it('leaves out overview facts that hold nothing', () => {

@@ -1,14 +1,14 @@
 import { catalog } from '../data';
 import type { CommandConstraint, SourceRef, TestRef } from '../domain/model';
 
-/** Paths outside every project (root files, `docs/`). */
+/** 어느 프로젝트에도 속하지 않는 경로(루트 파일, `docs/`). */
 export const REPOSITORY_GROUP = '저장소';
 
 export type FileGroup = {
   path: string;
-  /** File name, the part a reader scans for. */
+  /** 파일 이름. 독자가 눈으로 훑는 부분이다. */
   name: string;
-  /** Folder inside the project (or the repository), shown dimmed. Empty at the root. */
+  /** 프로젝트(또는 저장소) 안의 폴더. 흐리게 보이고, 루트면 비어 있다. */
   folder: string;
   symbols: string[];
 };
@@ -36,7 +36,7 @@ const splitPath = (path: string) => {
   };
 };
 
-/** Groups items by project, then by file, keeping first-seen order. */
+/** 항목을 프로젝트별로, 다시 파일별로 묶는다. 처음 나온 순서를 지킨다. */
 const groupByFile = <T extends FileGroup>(
   items: { path: string }[],
   start: (path: string) => T,
@@ -54,13 +54,13 @@ const groupByFile = <T extends FileGroup>(
   return [...projects].map(([project, files]) => ({ project, files: [...files.values()] }));
 };
 
-/** A single file, split for display. */
+/** 파일 하나를 화면에 보여 줄 형태로 나눈다. */
 export const fileOf = (path: string): FileGroup => {
   const { name, folder } = splitPath(path);
   return { path, name, folder, symbols: [] };
 };
 
-/** One row per file: a reference list with the same file cited for several symbols collapses. */
+/** 파일당 한 줄. 같은 파일이 여러 symbol로 인용되면 한 줄로 합친다. */
 export const groupSources = (refs: SourceRef[]): ProjectGroup<FileGroup>[] =>
   groupByFile(refs, fileOf, (group, index) => {
     const symbol = refs[index].symbol;
@@ -70,7 +70,7 @@ export const groupSources = (refs: SourceRef[]): ProjectGroup<FileGroup>[] =>
 const testTitle = (test: TestRef) =>
   test.title ? test.title.join(' › ') : String(test.source.symbol);
 
-/** One row per test file, with its runner and run conditions said once. */
+/** 테스트 파일당 한 줄. 러너와 실행 조건은 한 번만 적는다. */
 export const groupTests = (tests: TestRef[]): ProjectGroup<TestFileGroup>[] =>
   groupByFile(
     tests.map((test) => test.source),
@@ -85,13 +85,13 @@ export const groupTests = (tests: TestRef[]): ProjectGroup<TestFileGroup>[] =>
     },
   );
 
-/** `web 4 · api 2`: how many references each project holds. */
+/** `web 4 · api 2`: 프로젝트마다 참조가 몇 개인지. */
 export const countByProject = <T>(groups: ProjectGroup<T>[], size: (file: T) => number) =>
   groups
     .map(({ project, files }) => `${project} ${files.reduce((n, file) => n + size(file), 0)}`)
     .join(' · ');
 
-/** `vitest 3 · go-test 2`: how many tests each runner holds. */
+/** `vitest 3 · go-test 2`: 러너마다 테스트가 몇 개인지. */
 export const countByRunner = (tests: TestRef[]) => {
   const counts = new Map<string, number>();
   for (const test of tests) counts.set(test.runner, (counts.get(test.runner) ?? 0) + 1);

@@ -9,8 +9,8 @@ import { pagerOf } from '@/lib/pager';
 import { Pager } from '../pager';
 
 /**
- * Previous and next architecture node within the kind filter in the URL, keeping the filter on
- * the links. A node outside the filter (reached through a relation) pages through every node.
+ * URL의 종류 필터 안에서 이전 · 다음 구성 요소로 넘기고, 링크에 필터를 유지한다. 필터 밖
+ * 구성 요소(관계를 따라 들어온 경우)는 전체를 대상으로 넘긴다.
  */
 export function NodePager({ order }: { order: NodeOrder }) {
   const active = parseArchitectureFilters(Object.fromEntries(useSearchParams().entries()));

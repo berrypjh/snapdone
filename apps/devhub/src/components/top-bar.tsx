@@ -22,6 +22,7 @@ const VIEWS: { label: string; href: string; icon: IconName; sections: SectionId[
     sections: ['applications', 'libraries'],
   },
   { label: '문서', href: '/documents', icon: SECTION_ICON.documents, sections: ['documents'] },
+  { label: '기록', href: '/records', icon: SECTION_ICON.records, sections: ['records'] },
   {
     label: '엔지니어링',
     href: '/engineering',
@@ -54,7 +55,7 @@ export function TopBar({ repository, activeSection, activeView }: TopBarProps) {
         </p>
       </div>
 
-      {/* From `xl` only: the overview page carries the same line. */}
+      {/* `xl`부터만 보인다. 같은 줄이 개요 페이지에도 있다. */}
       <p className="hidden min-w-0 shrink-[4] truncate text-text-light xl:block">
         <span className="devhub-code">
           {repository.owner}/{repository.name}
@@ -64,7 +65,7 @@ export function TopBar({ repository, activeSection, activeView }: TopBarProps) {
 
       <GlobalSearch />
 
-      {/* From `lg` only: below it the explorer drawer lists the same views. */}
+      {/* `lg`부터만 보인다. 그 아래에서는 탐색기 서랍이 같은 보기를 담는다. */}
       <nav aria-label="보기" className="ml-auto hidden shrink-0 lg:block">
         <ul className="flex items-center gap-1">
           {VIEWS.map((view) => (

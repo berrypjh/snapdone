@@ -4,12 +4,13 @@ import type {
   CommandGroup,
   EvidenceGap,
   ImplementationStatus,
+  RecordRef,
   Relation,
   RuntimeRelation,
   Scenario,
 } from '../domain/model';
 
-/** Korean display text for domain enums. Status also carries a glyph so color is never the only cue. */
+/** 도메인 enum의 한국어 표기. 상태는 글리프도 함께 둬서 색만으로 구분하지 않게 한다. */
 export const STATUS: Record<ImplementationStatus, { label: string; glyph: string }> = {
   implemented: { label: '구현됨', glyph: '●' },
   partial: { label: '일부 구현', glyph: '◐' },
@@ -21,6 +22,13 @@ export const STATUS: Record<ImplementationStatus, { label: string; glyph: string
 export const TRACK: Record<Scenario['track'], string> = {
   current: '현재 동작',
   'product-target': '제품 목표 — 아직 구현되지 않음',
+};
+
+/** 기록의 종류. 그 항목이 무엇에 대한 것인지 나타낸다. */
+export const RECORD_KIND: Record<RecordRef['kind'], string> = {
+  decision: '설계 결정',
+  fix: '고친 것',
+  implementation: '구현',
 };
 
 export const ROLE: Record<ApplicationRef['role'], string> = {
@@ -53,7 +61,7 @@ export const RELATION: Record<Relation['kind'], string> = {
   verification: '검증',
 };
 
-/** Edge text in the architecture view. Kinds differ by text and line pattern, not color. */
+/** 아키텍처 뷰의 선 위 글자. 종류는 색이 아니라 글자와 선 모양으로 구분한다. */
 export const INTERACTION: Record<RuntimeRelation['interaction'], string> = {
   'page-request': '페이지 요청',
   'http-call': 'HTTP 호출',
@@ -63,7 +71,7 @@ export const INTERACTION: Record<RuntimeRelation['interaction'], string> = {
   persistence: '저장',
 };
 
-/** Engineering view order: what a person runs first, then checks, then the rest. */
+/** 엔지니어링 화면 순서. 먼저 실행하는 것, 그다음 검사, 나머지 순이다. */
 export const COMMAND_GROUP: Record<CommandGroup, { title: string; summary: string }> = {
   run: { title: '실행', summary: '개발 서버를 띄운다. 모두 포트가 필요하다' },
   check: { title: '검사', summary: '코드를 바꾸지 않고 확인만 한다' },

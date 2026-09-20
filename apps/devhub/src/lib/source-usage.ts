@@ -10,8 +10,8 @@ import type {
 } from '../domain/model';
 
 /**
- * Every repository path the catalog cites, with what cites it. Derived from the data, so there is
- * no second list to keep in sync.
+ * 카탈로그가 인용하는 모든 저장소 경로와 그것을 인용한 쪽. 데이터에서 끌어내므로
+ * 따로 맞춰 둘 두 번째 목록이 없다.
  */
 export type SourceUsage = {
   path: string;

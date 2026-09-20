@@ -1,6 +1,6 @@
 /**
- * Pan/zoom math for the flow viewer. Pure: screen = content × k + (x, y).
- * Viewer state lives only here and in the client component; it never touches catalog data.
+ * 흐름 뷰어의 이동 · 확대 계산. 순수 함수이고 screen = content × k + (x, y)이다.
+ * 뷰어 상태는 여기와 클라이언트 컴포넌트에만 있고 카탈로그 데이터는 건드리지 않는다.
  */
 
 export type View = { x: number; y: number; k: number };
@@ -18,14 +18,14 @@ export const panBy = (view: View, dx: number, dy: number): View => ({
   y: view.y + dy,
 });
 
-/** Zooms by `factor` keeping the screen point (px, py) over the same content point. */
+/** `factor`만큼 확대한다. 화면의 (px, py)가 같은 내용 지점 위에 남는다. */
 export const zoomAt = (view: View, factor: number, px: number, py: number): View => {
   const k = clampZoom(view.k * factor);
   const ratio = k / view.k;
   return { k, x: px - (px - view.x) * ratio, y: py - (py - view.y) * ratio };
 };
 
-/** Scales content to fit the viewport (never above 1:1) and centers it. */
+/** 내용을 뷰포트에 맞춰 키우고(1:1을 넘지 않는다) 가운데에 둔다. */
 export const fitView = (content: Size, viewport: Size, padding = 24): View => {
   const k = clampZoom(
     Math.min(
@@ -41,7 +41,7 @@ export const fitView = (content: Size, viewport: Size, padding = 24): View => {
   };
 };
 
-/** Pans the least amount that brings a content rect fully into the viewport. */
+/** 내용 사각형이 뷰포트에 온전히 들어오도록 가장 조금만 이동한다. */
 export const revealRect = (view: View, rect: Rect, viewport: Size, margin = 24): View => {
   const shift = (start: number, size: number, limit: number) => {
     if (start < margin) return margin - start;

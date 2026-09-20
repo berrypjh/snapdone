@@ -16,16 +16,16 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/',
 }));
 
-/** A whole document page: shell, workspace with the document, and its inspector. */
-const page = (id: string) => {
-  const entity = findEntity('documents', id);
-  if (!entity || entity.section !== 'documents') throw new Error(`no document ${id}`);
+/** 마크다운 페이지 한 벌. 셸, 글이 담긴 작업 영역, 상세 정보. */
+const page = (section: 'documents' | 'records', id: string) => {
+  const entity = findEntity(section, id);
+  if (entity?.section !== section) throw new Error(`no ${section} ${id}`);
   return renderToStaticMarkup(
     createElement(DevHubShell, {
-      selection: { section: 'documents', id },
+      selection: { section, id },
       inspector: createElement(Inspector, { inspection: inspect(entity) }),
       children: createElement(Workspace, {
-        eyebrow: '문서',
+        eyebrow: section === 'documents' ? '문서' : '기록',
         title: entity.record.title,
         children: createElement(EntitySummary, { entity }),
       }),
@@ -33,9 +33,14 @@ const page = (id: string) => {
   );
 };
 
-describe.each(catalog.documents.map((doc) => [doc.id]))('document page %s', (id) => {
+const pages = [
+  ...catalog.documents.map((doc) => ['documents', doc.id] as const),
+  ...catalog.records.map((record) => ['records', record.id] as const),
+];
+
+describe.each(pages)('%s page %s', (section, id) => {
   it('uses every id once, so anchors and skip links land where they should', () => {
-    const ids = [...page(id).matchAll(/ id="([^"]+)"/g)].map(([, value]) => value);
+    const ids = [...page(section, id).matchAll(/ id="([^"]+)"/g)].map(([, value]) => value);
     expect(ids.filter((value, index) => ids.indexOf(value) !== index)).toEqual([]);
     expect(
       ids.filter((value) => value === MAIN_CONTENT_ID || value === INSPECTOR_ID).sort(),

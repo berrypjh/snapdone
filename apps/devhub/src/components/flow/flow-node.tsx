@@ -26,9 +26,8 @@ const counts = (node: FlowNodeModel) =>
     .join(' · ');
 
 /**
- * One step as a real link to its deep-link URL: focusable, activatable with Enter, and the
- * full intent stays in the accessible name even when the visual text is clamped. The selected
- * step is followed by a skip link, so one Tab reaches its details in the inspector.
+ * 단계 하나를 딥링크 URL로 가는 실제 링크로. 포커스와 Enter가 되고, 글이 잘려도 접근성 이름에는
+ * 의도가 그대로 남는다. 선택된 단계 뒤에는 인스펙터 상세로 가는 건너뛰기 링크가 붙는다.
  */
 export function FlowNode({ node, selected, onFocus }: FlowNodeProps) {
   const noCode =

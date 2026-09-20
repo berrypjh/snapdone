@@ -11,7 +11,7 @@ import { CanvasViewport } from '../canvas/canvas-viewport';
 
 import { ArchitectureNode } from './architecture-node';
 
-/** Line pattern per relation kind; every edge also carries a text label. */
+/** 관계 종류별 선 모양. 모든 간선은 글자 라벨도 함께 가진다. */
 const DASH: Record<Relation['kind'], string | undefined> = {
   'workspace-dependency': '2 4',
   runtime: undefined,
@@ -20,7 +20,7 @@ const DASH: Record<Relation['kind'], string | undefined> = {
 
 const AUTH_REDIRECT_DASH = '6 4';
 
-/** Drawn from the same patterns as the edges, so the legend cannot drift from the drawing. */
+/** 간선과 같은 선 모양에서 만들기 때문에 범례가 그림과 어긋날 수 없다. */
 const LEGEND: LegendItem[] = [
   { box: 'solid', label: '저장소 안 프로젝트' },
   { box: 'dashed', label: '저장소 밖 시스템' },
@@ -32,13 +32,13 @@ const LEGEND: LegendItem[] = [
 
 type ArchitectureMapProps = {
   model: ArchitectureModel;
-  /** Show only nodes of this kind (and edges between them). */
+  /** 이 종류의 구성 요소와 그 사이 간선만 보인다. */
   kind?: string;
-  /** Current filter query, kept on node links so selecting a node keeps the filter. */
+  /** 현재 필터 쿼리. 구성 요소 링크에 붙여 두어 선택해도 필터가 유지된다. */
   query?: string;
 };
 
-/** Shown by the map and the list when the filter leaves no node. */
+/** 필터 결과가 비었을 때 그림과 목록이 함께 쓰는 빈 상태. */
 export function NoNodes() {
   return (
     <p
@@ -50,7 +50,7 @@ export function NoNodes() {
   );
 }
 
-/** Current architecture on the shared canvas. The node in the URL is the selection. */
+/** 공용 캔버스에 그리는 현재 아키텍처. URL의 구성 요소가 선택이다. */
 export function ArchitectureMap({ model, kind, query = '' }: ArchitectureMapProps) {
   const selected = useSelectedLayoutSegment();
   const { nodes, edges: kept } = filterModel(model, kind);
