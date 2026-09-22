@@ -66,8 +66,6 @@ test.describe('global search', () => {
     await page.keyboard.press('ControlOrMeta+k');
     await page.keyboard.type('zzzz-no-such-thing');
 
-    await expect(
-      page.getByRole('status').filter({ hasText: '일치하는 항목이 없습니다' }),
-    ).toHaveCount(1);
+    await expect(page.getByRole('status').filter({ hasText: '일치하는 항목 없음' })).toHaveCount(1);
   });
 });

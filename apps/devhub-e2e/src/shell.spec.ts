@@ -213,12 +213,10 @@ test.describe('narrow viewport', () => {
     const pager = inspector.getByRole('navigation', { name: '단계 이동' });
     await expect(pager.getByRole('link', { name: /^이전 단계: / })).toBeVisible();
 
-    await pager.getByRole('link', { name: '다음 단계: (자동) 앱이 코드를 요청한다' }).click();
+    await pager.getByRole('link', { name: '다음 단계: (자동) 앱이 코드 요청' }).click();
     await expect(page).toHaveURL(`/scenarios/${SCENARIO.id}/steps/request-code#devhub-inspector`);
     await expect(inspector).toBeFocused();
-    await expect(inspector.getByRole('heading', { level: 2 })).toHaveText(
-      '(자동) 앱이 코드를 요청한다',
-    );
+    await expect(inspector.getByRole('heading', { level: 2 })).toHaveText('(자동) 앱이 코드 요청');
     await expect(pager).toBeInViewport();
   });
 

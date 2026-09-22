@@ -2,8 +2,8 @@ import { expect, type Page, test } from '@playwright/test';
 
 import { enterMain, SCENARIO, tabTo } from './support/keyboard';
 
-const READY = { id: 'ready', intent: '(자동) web이 앱에 challenge를 알린다' };
-const LAST = { id: 'open-page', order: 6, intent: '요청했던 화면을 로그인된 상태로 본다' };
+const READY = { id: 'ready', intent: '(자동) web이 앱에 challenge 알림' };
+const LAST = { id: 'open-page', order: 6, intent: '요청했던 화면을 로그인된 상태로 보기' };
 
 const flow = (page: Page) => page.getByRole('group', { name: `${SCENARIO.title} 흐름 그림` });
 const inspector = (page: Page) => page.getByRole('complementary', { name: '상세 정보' });
@@ -98,7 +98,7 @@ test.describe('structured list', () => {
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/steps\/exchange$/);
     await expect(asList).toHaveAttribute('aria-pressed', 'true');
-    await expect(inspector(page).getByRole('heading', { level: 2 })).toHaveText(/세션으로 바꾼다/);
+    await expect(inspector(page).getByRole('heading', { level: 2 })).toHaveText(/세션으로 교환/);
     await expect(title).toHaveAttribute('aria-current', 'page');
     await expect(exchange).toContainText('· 선택됨');
     await expect(inspector(page).getByRole('region', { name: /^소스/ })).toBeVisible();
