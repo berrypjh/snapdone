@@ -6,3 +6,10 @@ packages:
 autoInstallPeers: true
 onlyBuiltDependencies:
   - nx
+
+overrides:
+  react: 19.2.3
+  react-dom: 19.2.3
+  react-native: 0.85.3
+  react-native-svg: 15.15.4
+  "@berrypjh/react-native-ui": 1.1.2

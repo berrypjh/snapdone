@@ -14,7 +14,7 @@ Expo managed + React Native. 진입점은 `index.js` → `src/app/App.tsx`.
 - **Expo는 SDK 56에 고정한다.** `@nx/expo`가 57을 생성 · 마이그레이션하지 못한다 (nrwl/nx#36443)
 - **`process.env.EXPO_PUBLIC_*`는 직접 프로퍼티 접근으로만 쓴다.** Expo가 빌드 시 이 표현식을 그대로 치환하므로 `process.env[key]` 같은 동적 접근은 실제 빌드에서 `undefined`가 된다
 - **패키지를 추가할 때 루트 `package.json`에 실제 버전을, `apps/mobile/package.json`에는 `"*"`를 적는다.** 루트에 빠뜨리면 `"*"`가 레지스트리 최신 버전으로 풀려 SDK와 어긋난다. 버전은 `node -e "console.log(require('expo/bundledNativeModules.json')['패키지명'])"`로 확인한다
-- **버전에 민감한 패키지는 `apps/mobile`에도 루트와 같은 정확한 버전을 적는다** — `react`, `react-native-svg`, `@berrypjh/react-native-ui`. `"*"`는 루트 버전을 바꿔도 lock의 옛 해석을 유지해서, 루트는 React 19.2.3 · 앱은 19.2.8처럼 **두 벌이 섞인다.** 그러면 react-native 모듈 트리도 두 벌이 되어 렌더러 shim이 `undefined`로 풀리는 런타임 오류(`Cannot read property 'default' of undefined`)가 난다. 앱 코드가 import하는 공용 패키지는 앱에 직접 선언한다
+- **사본이 갈리면 안 되는 패키지는 `pnpm-workspace.yaml`의 `overrides`로 못박는다** — `react` · `react-dom` · `react-native` · `react-native-svg` · `@berrypjh/react-native-ui`. `"*"`는 루트 버전을 바꿔도 lock의 옛 해석을 유지해서 두 벌이 섞이고, 그러면 렌더러 shim이 `undefined`로 풀리는 런타임 오류(`Cannot read property 'default' of undefined`)가 난다. overrides는 앱 표기와 무관하게 한 버전으로 해석시킨다. 앱 코드가 import하는 공용 패키지는 앱에 직접 선언한다
 - `build` target은 로컬 빌드가 아니라 **EAS 클라우드 빌드**다. 로컬 번들은 `nx export mobile`
 - `nx run-android` · `nx run-ios`가 만드는 `apps/mobile/android/` · `ios/`는 `app.json`에서 생성되는 산출물이라 git에서 제외했다. 네이티브 설정은 이 폴더가 아니라 `app.json` · config plugin에서 바꾼다(다시 생성하면 직접 고친 내용이 사라진다)
 - **`apps/mobile/package.json`의 `nx.targets.start.continuous: false`를 지우지 않는다.** 지우면 Nx가 단일 continuous 태스크에 PTY를 주지 않아 `expo start`가 QR · 키 입력 없이 뜬다 ([local-development.md](../../docs/development/local-development.md))

@@ -232,7 +232,7 @@ Nx는 orchestration 계층이다. 각 플랫폼의 빌드 도구(Next.js, Expo, 
 
 `nx`와 모든 `@nx/*` 플러그인은 **정확히 같은 버전**이어야 한다. 플러그인 dependency가 exact pin이라 하나만 어긋나면 중복 설치와 그래프 오류가 난다.
 
-**React는 `19.2.3`으로 정확히 고정한다** (root · `apps/web` 모두, `^` 금지). react-native 0.85.3 렌더러가 React 19.2.3으로 빌드됐고 버전이 다르면 `Incompatible React versions`로 멈춘다. Expo SDK 56 `expo install --check`의 기대값도 같다. web은 한 monorepo에서 같은 React를 쓰도록 맞춘다 — `next` peer `^19.0.0`이라 문제없다. 네이티브 모듈 버전(`react-native-svg` 등)도 `expo/bundledNativeModules.json` 값을 따른다.
+**React는 `19.2.3`으로 정확히 고정한다** (root · `apps/web` 모두, `^` 금지). react-native 0.85.3 렌더러가 React 19.2.3으로 빌드됐고 버전이 다르면 `Incompatible React versions`로 멈춘다. Expo SDK 56 `expo install --check`의 기대값도 같다. web은 한 monorepo에서 같은 React를 쓰도록 맞춘다 — `next` peer `^19.0.0`이라 문제없다. 네이티브 모듈 버전(`react-native-svg` 등)도 `expo/bundledNativeModules.json` 값을 따른다. **사본이 갈리면 안 되는 패키지는 `pnpm-workspace.yaml`의 `overrides`에 적어** 앱이 `"*"`로 적어도 워크스페이스 전체가 한 버전으로 해석되게 한다.
 
 **Expo는 SDK 56에 고정한다.** `@nx/expo`가 아직 SDK 57을 생성·마이그레이션하지 못한다 (nrwl/nx#36443 open).
 

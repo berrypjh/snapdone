@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 330" role="img" width="640" height="330">
+  <title>네이티브 셸 안의 WebView와 브라우저가 같은 web 한 벌을 연다</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 1 L9 5 L0 9 z" fill="currentColor" fill-opacity="0.45" />
+    </marker>
+  </defs>
+  <style>
+    .shell { fill: none; stroke: currentColor; stroke-opacity: 0.35; }
+    .block { fill: none; stroke: currentColor; stroke-opacity: 0.22; }
+    .web { fill: currentColor; fill-opacity: 0.06; stroke: currentColor; stroke-opacity: 0.35; }
+    .title { font: 600 13px system-ui, sans-serif; fill: currentColor; fill-opacity: 0.6; }
+    .text { font: 400 13px system-ui, sans-serif; fill: currentColor; }
+    .strong { font: 600 13px system-ui, sans-serif; fill: currentColor; }
+    .flow { fill: none; stroke: currentColor; stroke-opacity: 0.45; stroke-width: 1.5; }
+  </style>
+
+  <text class="title" x="40" y="26">앱 — 네이티브 셸</text>
+  <rect class="shell" x="40" y="38" width="250" height="186" rx="16" />
+  <rect class="block" x="60" y="60" width="210" height="36" rx="8" />
+  <text class="text" x="74" y="83">탭 · 로그인 · 권한 · 푸시</text>
+  <rect class="block" x="60" y="104" width="210" height="36" rx="8" />
+  <text class="text" x="74" y="127">Capture → Act (카메라 · 사진)</text>
+  <rect class="block" x="60" y="148" width="210" height="56" rx="8" />
+  <text class="strong" x="74" y="172">WebView</text>
+  <text class="title" x="74" y="192">앱 안에서 web을 연다</text>
+
+  <text class="title" x="380" y="26">브라우저</text>
+  <rect class="shell" x="380" y="38" width="220" height="186" rx="10" />
+  <line class="block" x1="380" y1="66" x2="600" y2="66" />
+  <circle class="block" cx="396" cy="52" r="4" />
+  <circle class="block" cx="410" cy="52" r="4" />
+  <text class="text" x="396" y="152">URL로 바로 들어온다</text>
+
+  <path class="flow" d="M165 204 L165 262" marker-end="url(#arrow)" />
+  <path class="flow" d="M490 224 L490 244 L360 244 L360 262" marker-end="url(#arrow)" />
+
+  <rect class="web" x="120" y="264" width="400" height="48" rx="10" />
+  <text class="strong" x="140" y="286">web 한 벌</text>
+  <text class="text" x="140" y="304">결과 상세 · 기록 · 공지 · 약관 — 스토어 배포 없이 고친다</text>
+</svg>

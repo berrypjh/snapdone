@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 260" role="img" width="640" height="260">
+  <title>iOS 한국어 줄바꿈 비교</title>
+  <style>
+    .frame { fill: none; stroke: currentColor; stroke-opacity: 0.25; }
+    .label { font: 600 13px system-ui, sans-serif; fill: currentColor; fill-opacity: 0.6; }
+    .line { font: 600 19px system-ui, sans-serif; fill: currentColor; }
+    .mark { font: 600 13px system-ui, sans-serif; fill: currentColor; fill-opacity: 0.55; }
+  </style>
+
+  <text class="label" x="20" y="24">기본값 — 글자 단위로 끊긴다</text>
+  <rect class="frame" x="20" y="38" width="260" height="120" rx="10" />
+  <text class="line" x="40" y="76">사진 한 장으로 해</text>
+  <text class="line" x="40" y="106">야 할 일을 끝내세</text>
+  <text class="line" x="40" y="136">요.</text>
+  <text class="mark" x="20" y="182">"해 / 야", "끝내세 / 요" 처럼 어절 중간에서 잘린다</text>
+
+  <text class="label" x="360" y="24">lineBreakStrategyIOS="hangul-word"</text>
+  <rect class="frame" x="360" y="38" width="260" height="120" rx="10" />
+  <text class="line" x="380" y="76">사진 한 장으로</text>
+  <text class="line" x="380" y="106">해야 할 일을</text>
+  <text class="line" x="380" y="136">끝내세요.</text>
+  <text class="mark" x="360" y="182">어절 단위로 끊긴다</text>
+</svg>

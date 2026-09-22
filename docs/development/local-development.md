@@ -331,7 +331,7 @@ node -e "console.log(require('expo/bundledNativeModules.json')['패키지명'])"
 
 그리고 **루트 `package.json`에 실제 버전을, `apps/mobile/package.json`에는 `"*"`를** 적는다. 루트에 빠뜨리면 `"*"`가 레지스트리 최신 버전으로 해석되어 SDK와 어긋난 패키지가 들어온다.
 
-**예외 — 버전에 민감한 패키지는 `apps/mobile`에도 루트와 같은 정확한 버전을 적는다** (`react`, `react-native-svg`, `@berrypjh/react-native-ui`). `"*"`는 루트 버전을 바꿔도 lock에 기록된 옛 해석을 유지한다. 실제로 루트 React를 19.2.3으로 내렸을 때 앱은 19.2.8에 남아 React와 react-native가 두 벌씩 설치됐고, Expo Go에서 다음 오류가 났다.
+**사본이 갈리면 안 되는 패키지는 `pnpm-workspace.yaml`의 `overrides`로 못박는다** (`react` · `react-dom` · `react-native` · `react-native-svg` · `@berrypjh/react-native-ui`). `"*"`는 루트 버전을 바꿔도 lock에 기록된 옛 해석을 유지하므로, overrides가 없으면 루트 React를 내려도 앱이 옛 버전에 남아 React와 react-native가 두 벌씩 설치된다. 그 상태에서는 Expo Go가 이렇게 멈춘다.
 
 ```
 Render Error — Cannot read property 'default' of undefined

@@ -37,7 +37,10 @@ CLAUDE.md                     `@AGENTS.md` 한 줄. Claude Code 진입점
 │  ├─ mobile.md               apps/mobile/**
 │  ├─ api.md                  apps/api/**
 │  ├─ ko-ui.md                apps/{web,mobile}/src/**/*.tsx
-│  └─ libs.md                 libs/**
+│  ├─ libs.md                 libs/**
+│  ├─ devhub.md               apps/devhub/**
+│  ├─ e2e.md                  apps/{web,devhub}-e2e/**
+│  └─ docs.md                 docs/**/*.md
 ├─ skills/                    호출하거나 관련성이 판단될 때만 로드
 │  ├─ repo-verify/            변경 영향 범위 판정 + 검증 사다리
 │  └─ frontend-quality/       화면 제품 검수 (references/ 2개는 필요할 때만)
