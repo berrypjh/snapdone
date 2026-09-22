@@ -32,7 +32,6 @@ const EXAMPLES = [
 type OnboardingIntroScreenProps = { controller: AuthController; onStart: () => void };
 
 /**
- * ON-02 서비스 소개. 시작하기는 목적 선택으로 간다.
  * 이 화면을 봤다고 온보딩을 완료 처리하거나 Home으로 보내지 않는다.
  */
 export const OnboardingIntroScreen = ({ controller, onStart }: OnboardingIntroScreenProps) => {

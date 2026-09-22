@@ -18,7 +18,7 @@
     }
   },
   "dependencies": {
-    "@berrypjh/react-native-ui": "1.1.2",
+    "@berrypjh/react-native-ui": "*",
     "@expo/metro": "*",
     "@react-navigation/native": "*",
     "@react-navigation/native-stack": "*",
@@ -33,11 +33,11 @@
     "expo-status-bar": "*",
     "expo-system-ui": "*",
     "expo-web-browser": "*",
-    "react": "19.2.3",
+    "react": "*",
     "react-native": "*",
     "react-native-safe-area-context": "*",
     "react-native-screens": "*",
-    "react-native-svg": "15.15.4",
+    "react-native-svg": "*",
     "react-native-svg-transformer": "*",
     "react-native-web": "*",
     "react-native-webview": "*"
