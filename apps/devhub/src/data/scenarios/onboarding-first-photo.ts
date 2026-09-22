@@ -11,7 +11,7 @@ const PROCESSOR = 'apps/api/internal/processing/processor.go';
 export const onboardingFirstPhoto: Scenario = {
   id: 'onboarding-first-photo',
   title: '온보딩 첫 사진 처리',
-  goal: '온보딩에서 사용 목적을 고르고 첫 사진 한 장을 올려 처리 결과를 받는다. 앱과 web 어느 쪽에서든 이어 간다',
+  goal: '온보딩에서 사용 목적을 고르고 첫 사진 한 장을 올려 처리 결과 수신. 앱과 web 어느 쪽에서든 이어서 진행',
   track: 'current',
   status: 'partial',
   docs: [
@@ -22,16 +22,16 @@ export const onboardingFirstPhoto: Scenario = {
   gaps: [
     {
       kind: 'runtime-unverified',
-      note: 'web 온보딩 E2E는 이 환경에서 실행하지 못했다. 앱 화면은 실행해 볼 수단이 없다',
+      note: 'web 온보딩 E2E는 이 환경에서 실행 못 함. 앱 화면은 실행해 볼 수단 없음',
       tests: ['e2e-web-onboarding-flow', 'e2e-web-onboarding-unsure-skip'],
     },
   ],
   steps: [
     step({
       id: 'choose-purpose-app',
-      intent: '앱에서 무엇에 쓰고 싶은지 고르거나 건너뛴다',
+      intent: '앱에서 무엇에 쓰고 싶은지 고르거나 건너뛰기',
       behavior:
-        '목적을 여러 개 고를 수 있고 "잘 모르겠어요"는 혼자만 남는다. 답(건너뛰기는 빈 목록)을 서버에 저장하고 첫 사진 화면으로 간다. 저장이 실패해도 흐름은 이어지고 다음 실행은 마지막으로 저장된 단계에서 연다',
+        '목적을 여러 개 고를 수 있고 "잘 모르겠어요"는 혼자만 남음. 답(건너뛰기는 빈 목록)을 서버에 저장하고 첫 사진 화면으로 이동. 저장이 실패해도 흐름은 이어지고 다음 실행은 마지막으로 저장된 단계부터 엶',
       runtime: 'mobile-app',
       owner: 'mobile',
       status: 'implemented',
@@ -58,9 +58,9 @@ export const onboardingFirstPhoto: Scenario = {
     }),
     step({
       id: 'choose-purpose-web',
-      intent: '브라우저에서 무엇에 쓰고 싶은지 고르거나 건너뛴다',
+      intent: '브라우저에서 무엇에 쓰고 싶은지 고르거나 건너뛰기',
       behavior:
-        '앱과 같은 규칙의 선택 양식을 Server Action이 받아 Go에 저장하고 /onboarding/first-image로 보낸다. 다른 기기 · 탭이 먼저 진행을 바꿨으면(409) 서버의 진행 단계로 보낸다',
+        '앱과 같은 규칙의 선택 양식을 Server Action이 받아 Go에 저장하고 /onboarding/first-image로 보냄. 다른 기기 · 탭이 먼저 진행을 바꿨으면(409) 서버의 진행 단계로 보냄',
       runtime: 'next-server',
       owner: 'web',
       status: 'implemented',
@@ -84,9 +84,9 @@ export const onboardingFirstPhoto: Scenario = {
     }),
     step({
       id: 'save-progress',
-      intent: '(자동) 서버가 온보딩 진행을 저장한다',
+      intent: '(자동) 서버가 온보딩 진행 저장',
       behavior:
-        '목적을 검사(알려진 값 · 중복 없음 · "잘 모르겠어요"는 혼자)하고, 같은 단계이거나 한 단계 앞일 때만 한 번의 조건부 UPDATE로 저장한다. 이미 마쳤으면 409 onboarding_complete, 순서가 어긋나면 409 onboarding_out_of_order다. 건너뛰기(빈 목록)와 아직 답하지 않음(null)을 구분해 둔다',
+        '목적을 검사(알려진 값 · 중복 없음 · "잘 모르겠어요"는 혼자)하고, 같은 단계이거나 한 단계 앞일 때만 한 번의 조건부 UPDATE로 저장. 이미 마쳤으면 409 onboarding_complete, 순서가 어긋나면 409 onboarding_out_of_order. 건너뛰기(빈 목록)와 아직 답하지 않음(null)을 구분',
       runtime: 'go-api',
       owner: 'api',
       status: 'implemented',
@@ -110,9 +110,9 @@ export const onboardingFirstPhoto: Scenario = {
     }),
     step({
       id: 'pick-photo-app',
-      intent: '앱에서 사진을 찍거나 고른 뒤 확인한다',
+      intent: '앱에서 사진을 찍거나 고른 뒤 확인',
       behavior:
-        '시스템 카메라 · 사진 선택기를 연다. 카메라 권한은 카메라를 고를 때만 묻고, 거절하면 설정 안내를 보인다. 취소는 오류가 아니다. 고른 사진을 크게 보여 주고 "처리하기" 또는 다른 사진 선택을 받는다',
+        '시스템 카메라 · 사진 선택기를 엶. 카메라 권한은 카메라를 고를 때만 묻고, 거절하면 설정 안내 표시. 취소는 오류 아님. 고른 사진을 크게 보여 주고 "처리하기" 또는 다른 사진 선택을 받음',
       runtime: 'mobile-app',
       owner: 'mobile',
       status: 'implemented',
@@ -133,9 +133,9 @@ export const onboardingFirstPhoto: Scenario = {
     }),
     step({
       id: 'pick-photo-web',
-      intent: '브라우저에서 사진 파일을 고른 뒤 확인한다',
+      intent: '브라우저에서 사진 파일을 고른 뒤 확인',
       behavior:
-        '파일 선택으로 사진 한 장을 받아 미리 보여 준다. Go 한도(7.5 MB)를 넘는 파일은 올리지 않고 바로 알린다',
+        '파일 선택으로 사진 한 장을 받아 미리 보여 줌. Go 한도(7.5 MB)를 넘는 파일은 올리지 않고 바로 알림',
       runtime: 'browser',
       owner: 'web',
       status: 'implemented',
@@ -155,9 +155,9 @@ export const onboardingFirstPhoto: Scenario = {
     }),
     step({
       id: 'upload',
-      intent: '"처리하기"를 누른다',
+      intent: '"처리하기" 누르기',
       behavior:
-        '앱은 기기에서 multipart로 직접, web은 Server Action이 사진을 받아 Go로 넘긴다. Go는 형식 · 크기를 내용으로 검사하고 running 작업을 만들어 202로 곧바로 돌려준다. 느린 망에서도 받도록 이 route만 읽기 · 쓰기 기한이 2분이다(다른 route는 15초). 모델이 설정되지 않았으면 503이다',
+        '앱은 기기에서 multipart로 직접, web은 Server Action이 사진을 받아 Go로 넘김. Go는 형식 · 크기를 내용으로 검사하고 running 작업을 만들어 202로 곧바로 반환. 느린 망에서도 받도록 이 route만 읽기 · 쓰기 기한 2분(다른 route는 15초). 모델이 설정되지 않았으면 503',
       runtime: 'go-api',
       owner: 'api',
       status: 'implemented',
@@ -182,9 +182,9 @@ export const onboardingFirstPhoto: Scenario = {
     }),
     step({
       id: 'classify',
-      intent: '(자동) 사진이 무엇인지 알아본다',
+      intent: '(자동) 사진이 무엇인지 파악',
       behavior:
-        '요청과 따로 도는 작업이 사진을 설정된 모델(Claude API 또는 OpenAI 호환 서버)에 보내 분류 · 찾은 값 · 제안 행동 · 신뢰 단계를 받는다. 계약 밖의 답은 실패로 저장한다. 사진은 저장하지 않는다',
+        '요청과 따로 도는 작업이 사진을 설정된 모델(Claude API 또는 OpenAI 호환 서버)에 보내 분류 · 찾은 값 · 제안 행동 · 신뢰 단계를 받음. 계약 밖의 답은 실패로 저장. 사진은 저장하지 않음',
       runtime: 'go-api',
       owner: 'api',
       status: 'implemented',
@@ -206,20 +206,20 @@ export const onboardingFirstPhoto: Scenario = {
       gaps: [
         {
           kind: 'external-unverified',
-          note: '실제 모델에는 붙지 않는다. 테스트는 가짜 HTTP 응답으로 요청 모양과 응답 해석만 본다',
+          note: '실제 모델에는 붙지 않음. 테스트는 가짜 HTTP 응답으로 요청 모양과 응답 해석만 확인',
         },
         {
           kind: 'config-required',
-          note: 'PROCESSING_PROVIDER · PROCESSING_MODEL(· 키 · 주소)이 없으면 사진 처리가 꺼진다',
+          note: 'PROCESSING_PROVIDER · PROCESSING_MODEL(· 키 · 주소)이 없으면 사진 처리 꺼짐',
         },
       ],
       next: ['wait-app', 'wait-web'],
     }),
     step({
       id: 'wait-app',
-      intent: '앱에서 처리가 끝나기를 기다린다',
+      intent: '앱에서 처리 완료 대기',
       behavior:
-        '2초마다 작업을 조회해 끝나면 결과 route로 간다. 실패하면 이유(형식 · 크기 · 연결 · 처리 실패)와 다시 시도 · 다른 사진 선택을 보인다. 세션이 끝났으면 로그인으로 돌아간다',
+        '2초마다 작업을 조회해 끝나면 결과 route로 이동. 실패하면 이유(형식 · 크기 · 연결 · 처리 실패)와 다시 시도 · 다른 사진 선택 표시. 세션이 끝났으면 로그인으로 복귀',
       runtime: 'mobile-app',
       owner: 'mobile',
       status: 'implemented',
@@ -248,9 +248,9 @@ export const onboardingFirstPhoto: Scenario = {
     }),
     step({
       id: 'wait-web',
-      intent: '브라우저에서 처리가 끝나기를 기다린다',
+      intent: '브라우저에서 처리 완료 대기',
       behavior:
-        '앱과 같은 조회 흐름을 Server Action으로 돈다. 상태 문장은 live region 하나로 읽히고, 실패는 alert와 다시 시도 · 다른 사진 선택을 보인다. 세션이 끝났으면 로그인으로 보낸다',
+        '앱과 같은 조회 흐름을 Server Action으로 수행. 상태 문장은 live region 하나로 읽히고, 실패는 alert와 다시 시도 · 다른 사진 선택 표시. 세션이 끝났으면 로그인으로 보냄',
       runtime: 'browser',
       owner: 'web',
       status: 'implemented',
@@ -270,9 +270,9 @@ export const onboardingFirstPhoto: Scenario = {
     }),
     step({
       id: 'show-result',
-      intent: '사진에서 찾은 것과 할 일을 본다',
+      intent: '사진에서 찾은 것과 할 일 보기',
       behavior:
-        '앱과 web 모두 결과를 받지만 "다음 단계는 준비 중입니다."만 보인다. 분류 · 찾은 값 · 제안 행동을 그리는 화면이 없다',
+        '앱과 web 모두 결과를 받지만 "다음 단계는 준비 중입니다."만 표시. 분류 · 찾은 값 · 제안 행동을 그리는 화면 없음',
       runtime: 'mobile-app',
       owner: 'mobile',
       status: 'not-found',
@@ -285,7 +285,7 @@ export const onboardingFirstPhoto: Scenario = {
             'apps/web/src/components',
             'apps/web/src/app',
           ],
-          meaning: '앱 · web 화면 어디에도 처리 결과의 필드를 그리는 코드가 없다',
+          meaning: '앱 · web 화면 어디에도 처리 결과의 필드를 그리는 코드 없음',
         },
       ],
     }),

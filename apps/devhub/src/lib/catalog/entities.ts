@@ -64,6 +64,16 @@ export const SECTIONS: Section[] = [
     })),
   },
   {
+    id: 'records',
+    title: '기록',
+    entities: RECORDS_NEWEST_FIRST.map((record) => ({
+      section: 'records',
+      id: record.id,
+      label: record.title,
+      record,
+    })),
+  },
+  {
     id: 'applications',
     title: '애플리케이션',
     entities: applications.map((record) => ({
@@ -90,16 +100,6 @@ export const SECTIONS: Section[] = [
       section: 'documents',
       id: record.id,
       label: record.path,
-      record,
-    })),
-  },
-  {
-    id: 'records',
-    title: '기록',
-    entities: RECORDS_NEWEST_FIRST.map((record) => ({
-      section: 'records',
-      id: record.id,
-      label: record.title,
       record,
     })),
   },

@@ -7,7 +7,7 @@ const OAUTH_HTTP = 'apps/api/internal/httpserver/oauth.go';
 export const browserGoogleLogin: Scenario = {
   id: 'browser-google-login',
   title: '브라우저 Google 로그인',
-  goal: '브라우저에서 Google로 로그인하고 원래 가려던 화면으로 돌아간다',
+  goal: '브라우저에서 Google로 로그인하고 원래 가려던 화면으로 복귀',
   track: 'current',
   status: 'implemented',
   docs: [
@@ -17,15 +17,15 @@ export const browserGoogleLogin: Scenario = {
   gaps: [
     {
       kind: 'external-unverified',
-      note: '실제 Google 계정으로 인수하지 않았다. E2E는 가짜 인증 API로 돈다',
+      note: '실제 Google 계정으로 인수 안 함. E2E는 가짜 인증 API로 실행',
     },
   ],
   steps: [
     step({
       id: 'open-login',
-      intent: '/login을 연다',
+      intent: '/login 열기',
       behavior:
-        '이미 로그인했으면 복귀 경로로 보낸다. 아니면 Go에서 로그인 수단을 받아 Google 버튼을 켜거나 끈다(약관 링크가 없으면 production에서 끈다)',
+        '이미 로그인했으면 복귀 경로로 보냄. 아니면 Go에서 로그인 수단을 받아 Google 버튼을 켜거나 끔(약관 링크가 없으면 production에서 끔)',
       runtime: 'next-server',
       owner: 'web',
       status: 'implemented',
@@ -41,9 +41,9 @@ export const browserGoogleLogin: Scenario = {
     }),
     step({
       id: 'start',
-      intent: '"Google로 계속하기"를 누른다',
+      intent: '"Google로 계속하기" 누르기',
       behavior:
-        'Server Action이 Origin을 확인하고 PKCE verifier · state를 만들어 Go에 시작을 요청한다. verifier는 HttpOnly preauth cookie에만 두고 Google 동의 화면으로 redirect한다',
+        'Server Action이 Origin을 확인하고 PKCE verifier · state를 만들어 Go에 시작 요청. verifier는 HttpOnly preauth cookie에만 두고 Google 동의 화면으로 redirect',
       runtime: 'next-server',
       owner: 'web',
       status: 'implemented',
@@ -60,22 +60,20 @@ export const browserGoogleLogin: Scenario = {
     }),
     step({
       id: 'consent',
-      intent: 'Google 화면에서 계정을 고르고 동의한다',
-      behavior: 'Go가 만든 authorize URL로 Google 동의 화면이 열린다',
+      intent: 'Google 화면에서 계정을 고르고 동의',
+      behavior: 'Go가 만든 authorize URL로 Google 동의 화면 열림',
       runtime: 'browser',
       owner: 'google-oidc',
       status: 'implemented',
       source: [{ path: 'apps/api/internal/google/google.go', symbol: 'Client.AuthorizeURL' }],
-      gaps: [
-        { kind: 'external-unverified', note: '실제 Google 화면은 자동 테스트가 거치지 않는다' },
-      ],
+      gaps: [{ kind: 'external-unverified', note: '실제 Google 화면은 자동 테스트가 거치지 않음' }],
       next: ['callback'],
     }),
     step({
       id: 'callback',
-      intent: '(자동) Google이 브라우저를 API로 돌려보낸다',
+      intent: '(자동) Google이 브라우저를 API로 돌려보냄',
       behavior:
-        'Go가 state를 확인하고 Google token을 교환해 사용자를 찾거나 만든 뒤, 60초 일회용 result code만 붙여 web /auth/callback으로 redirect한다. 실패 로그는 원인에 따라 남긴다 — 사용자 취소는 Info, 맞지 않거나 이미 쓴 state는 Warn, Google · DB 장애는 Error',
+        'Go가 state를 확인하고 Google token을 교환해 사용자를 찾거나 만든 뒤, 60초 일회용 result code만 붙여 web /auth/callback으로 redirect. 실패 로그는 원인에 따라 기록 — 사용자 취소는 Info, 맞지 않거나 이미 쓴 state는 Warn, Google · DB 장애는 Error',
       runtime: 'go-api',
       owner: 'api',
       status: 'implemented',
@@ -91,9 +89,9 @@ export const browserGoogleLogin: Scenario = {
     }),
     step({
       id: 'exchange',
-      intent: '(자동) web이 result code를 로그인 세션으로 바꾼다',
+      intent: '(자동) web이 result code를 로그인 세션으로 교환',
       behavior:
-        'Route Handler가 preauth cookie의 state를 비교하고 verifier로 Go와 교환한다. HttpOnly session cookie를 두고 preauth를 지운 뒤 code 없는 주소로 303 redirect한다',
+        'Route Handler가 preauth cookie의 state를 비교하고 verifier로 Go와 교환. HttpOnly session cookie를 두고 preauth를 지운 뒤 code 없는 주소로 303 redirect',
       runtime: 'next-server',
       owner: 'web',
       status: 'implemented',
@@ -116,9 +114,9 @@ export const browserGoogleLogin: Scenario = {
     }),
     step({
       id: 'return',
-      intent: '로그인 전에 가려던 화면으로 돌아간다',
+      intent: '로그인 전에 가려던 화면으로 복귀',
       behavior:
-        '허용 목록(/ · /history · /onboarding)과 정확히 같은 경로만 복귀하고 그 외는 홈으로 보낸다',
+        '허용 목록(/ · /history · /onboarding)과 정확히 같은 경로만 복귀하고 그 외는 홈으로 보냄',
       runtime: 'next-server',
       owner: 'web',
       status: 'implemented',

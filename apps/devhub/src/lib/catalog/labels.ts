@@ -27,14 +27,13 @@ export const TRACK: Record<Scenario['track'], string> = {
 /** 기록의 종류. 그 항목이 무엇에 대한 것인지 나타낸다. */
 export const RECORD_KIND: Record<RecordRef['kind'], string> = {
   decision: '설계 결정',
-  fix: '고친 것',
+  fix: '문제 해결',
   implementation: '구현',
 };
 
 export const ROLE: Record<ApplicationRef['role'], string> = {
   product: '제품',
   test: '테스트',
-  tooling: '도구',
 };
 
 export const CONSTRAINT: Record<CommandConstraint, string> = {
@@ -73,9 +72,9 @@ export const INTERACTION: Record<RuntimeRelation['interaction'], string> = {
 
 /** 엔지니어링 화면 순서. 먼저 실행하는 것, 그다음 검사, 나머지 순이다. */
 export const COMMAND_GROUP: Record<CommandGroup, { title: string; summary: string }> = {
-  run: { title: '실행', summary: '개발 서버를 띄운다. 모두 포트가 필요하다' },
-  check: { title: '검사', summary: '코드를 바꾸지 않고 확인만 한다' },
-  build: { title: '빌드 · 전체 검증', summary: '올리기 전에 전체를 만들고 돌린다' },
-  api: { title: 'API 작업', summary: 'Go API의 DB · Swagger 문서를 다루고 상태를 본다' },
-  workspace: { title: '저장소 도구', summary: '파일을 고치거나 도구를 연다' },
+  run: { title: '실행', summary: '개발 서버 실행. 모두 포트 필요' },
+  check: { title: '검사', summary: '코드를 바꾸지 않고 확인만 함' },
+  build: { title: '빌드 · 전체 검증', summary: '올리기 전에 전체 빌드 · 실행' },
+  api: { title: 'API 작업', summary: 'Go API의 DB · Swagger 문서 관리와 상태 확인' },
+  workspace: { title: '저장소 도구', summary: '파일 수정 · 도구 열기' },
 };

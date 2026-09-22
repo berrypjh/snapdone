@@ -64,7 +64,7 @@ type ProjectBase = {
 
 export type ApplicationRef = ProjectBase & {
   kind: 'application';
-  role: 'product' | 'test' | 'tooling';
+  role: 'product' | 'test';
 };
 
 export type LibraryRef = ProjectBase & {

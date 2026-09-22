@@ -64,7 +64,7 @@ export default async function SectionPage({
           <SectionSummary section={{ ...section, entities }} />
         ) : (
           <WorkspaceSection id="section-empty" title="결과 없음">
-            <p className="typo-body-small">조건에 맞는 시나리오가 없습니다.</p>
+            <p className="typo-body-small">조건에 맞는 시나리오 없음</p>
             <Link
               href={`/${section.id}`}
               className="typo-body-small text-text-link underline-offset-2 hover:underline"

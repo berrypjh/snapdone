@@ -10,17 +10,17 @@ const AUTH_HANDOFF = 'apps/api/internal/auth/handoff.go';
 export const webViewAuthHandoff: Scenario = {
   id: 'webview-auth-handoff',
   title: 'WebView 로그인 핸드오프',
-  goal: '앱에 로그인한 채로 연 web 화면이 따로 로그인하지 않아도 같은 사용자로 열린다',
+  goal: '앱에 로그인한 채로 연 web 화면이 따로 로그인하지 않아도 같은 사용자로 열림',
   track: 'current',
   status: 'implemented',
   docs: [{ document: 'data-access', heading: 'WebView 로그인 핸드오프' }],
-  gaps: [{ kind: 'runtime-unverified', note: '앱 쪽 단계는 단위 테스트까지다' }],
+  gaps: [{ kind: 'runtime-unverified', note: '앱 쪽 단계는 단위 테스트까지' }],
   steps: [
     step({
       id: 'start',
-      intent: '(자동) WebView가 핸드오프 시작 주소를 연다',
+      intent: '(자동) WebView가 핸드오프 시작 주소 열기',
       behavior:
-        'web 서버가 이 WebView만 가진 verifier를 2분짜리 HttpOnly cookie에 두고 ready page로 303 redirect한다. next는 허용 경로로 바꾼다',
+        'web 서버가 이 WebView만 가진 verifier를 2분짜리 HttpOnly cookie에 두고 ready page로 303 redirect. next는 허용 경로로 변환',
       runtime: 'next-server',
       owner: 'web',
       status: 'implemented',
@@ -34,9 +34,9 @@ export const webViewAuthHandoff: Scenario = {
     }),
     step({
       id: 'ready',
-      intent: '(자동) web이 앱에 challenge를 알린다',
+      intent: '(자동) web이 앱에 challenge 알림',
       behavior:
-        'ready page가 verifier의 S256 challenge만 handoff-ready로 보낸다. verifier cookie가 없으면 auth-required를 보낸다',
+        'ready page가 verifier의 S256 challenge만 handoff-ready로 보냄. verifier cookie가 없으면 auth-required를 보냄',
       runtime: 'mobile-webview',
       owner: 'web',
       status: 'implemented',
@@ -56,9 +56,9 @@ export const webViewAuthHandoff: Scenario = {
     }),
     step({
       id: 'request-code',
-      intent: '(자동) 앱이 코드를 요청한다',
+      intent: '(자동) 앱이 코드 요청',
       behavior:
-        '자기가 연 ready page에서 온 메시지만 받는다. 저장된 credential과 challenge로 Go에 코드를 요청하고, 받은 코드로 교환 주소를 연다',
+        '자기가 연 ready page에서 온 메시지만 받음. 저장된 credential과 challenge로 Go에 코드를 요청하고, 받은 코드로 교환 주소를 엶',
       runtime: 'mobile-app',
       owner: 'mobile',
       status: 'implemented',
@@ -80,9 +80,8 @@ export const webViewAuthHandoff: Scenario = {
     }),
     step({
       id: 'issue-code',
-      intent: '(자동) API가 일회용 코드를 발급한다',
-      behavior:
-        'root mobile 세션만 받아 30초 일회용 코드를 만든다. 코드와 challenge는 해시로만 저장한다',
+      intent: '(자동) API가 일회용 코드 발급',
+      behavior: 'root mobile 세션만 받아 30초 일회용 코드 생성. 코드와 challenge는 해시로만 저장',
       runtime: 'go-api',
       owner: 'api',
       status: 'implemented',
@@ -96,9 +95,9 @@ export const webViewAuthHandoff: Scenario = {
     }),
     step({
       id: 'exchange',
-      intent: '(자동) web이 코드를 이 WebView의 세션으로 바꾼다',
+      intent: '(자동) web이 코드를 이 WebView의 세션으로 교환',
       behavior:
-        'web 서버가 verifier cookie와 코드로 Go와 교환해 앱 세션 아래 child 세션을 받는다. 기존 session cookie를 덮어쓰고 code 없는 주소로 303 redirect한다. verifier가 없는 브라우저는 세션을 받지 못한다',
+        'web 서버가 verifier cookie와 코드로 Go와 교환해 앱 세션 아래 child 세션을 받음. 기존 session cookie를 덮어쓰고 code 없는 주소로 303 redirect. verifier가 없는 브라우저는 세션을 받지 못함',
       runtime: 'next-server',
       owner: 'web',
       status: 'implemented',
@@ -126,8 +125,8 @@ export const webViewAuthHandoff: Scenario = {
     }),
     step({
       id: 'open-page',
-      intent: '요청했던 화면을 로그인된 상태로 본다',
-      behavior: '보호 page가 새 child 세션으로 열린다',
+      intent: '요청했던 화면을 로그인된 상태로 보기',
+      behavior: '보호 page가 새 child 세션으로 열림',
       runtime: 'mobile-webview',
       owner: 'web',
       status: 'implemented',

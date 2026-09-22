@@ -10,8 +10,8 @@ type CopyState = 'idle' | 'copied' | 'failed';
 
 const STATUS: Record<CopyState, string> = {
   idle: '',
-  copied: '복사했습니다',
-  failed: '복사하지 못했습니다 — 글자를 직접 선택해 주세요',
+  copied: '복사 완료',
+  failed: '복사 실패 — 글자를 직접 선택해 복사',
 };
 
 /**

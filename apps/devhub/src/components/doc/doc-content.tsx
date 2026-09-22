@@ -9,6 +9,8 @@ import { sourceLinks } from '@/lib/repository/source-links';
 import { CopyButton } from '../source/copy-button';
 import { Icon } from '../ui/icon';
 
+import { DOCUMENT_TEXT } from './document-layout';
+
 type Context = { from: string; caption: string };
 
 /** 문서에 적힌 링크를 해석한다. 다른 문서는 DevHub 안에 머물고, 나머지는 밖으로 나간다. */
@@ -184,12 +186,35 @@ function Blocks({ blocks, context }: { blocks: Block[]; context: Context }) {
             <Blocks blocks={block.blocks} context={{ ...context, caption }} />
           </blockquote>
         );
+      case 'image':
+        return <DocImage key={index} block={block} from={context.from} />;
       case 'rule':
         return <hr key={index} className="border-stroke-light" />;
       default:
         return null;
     }
   });
+}
+
+/**
+ * 문서가 참조하는 그림. 저장소 경로는 `/doc-image/`가 읽어 내보내고, 설명(alt)은 캡션으로도
+ * 보인다. 그림만 있는 자리를 만들지 않는다는 원칙을 캡션이 지킨다.
+ */
+function DocImage({ block, from }: { block: Extract<Block, { kind: 'image' }>; from: string }) {
+  const link = resolveDocLink(from, block.src);
+  if (link.kind !== 'file') return null;
+
+  return (
+    <figure className="flex flex-col items-center gap-2">
+      {/* eslint-disable-next-line @next/next/no-img-element -- 저장소 파일을 그대로 내보내는 자리라 next/image의 최적화 경로를 타지 않는다 */}
+      <img
+        src={`/doc-image/${link.path}`}
+        alt={block.alt}
+        className="mx-auto h-auto w-full max-w-[36rem] rounded-md border border-stroke-light bg-background-surface"
+      />
+      <figcaption className="typo-caption-small text-text-light">{block.alt}</figcaption>
+    </figure>
+  );
 }
 
 /** 저장소 문서를 읽는 페이지로. 본문 폭 · 절 앵커 · 표 · 코드를 갖춘다. */
@@ -203,7 +228,7 @@ export function DocContent({
   title: string;
 }) {
   return (
-    <article className="devhub-prose max-w-[46rem]">
+    <article className={`devhub-prose ${DOCUMENT_TEXT}`}>
       <Blocks blocks={blocks} context={{ from, caption: title }} />
     </article>
   );

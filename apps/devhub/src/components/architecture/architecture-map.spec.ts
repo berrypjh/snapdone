@@ -43,7 +43,7 @@ describe('ArchitectureMap filter', () => {
   });
 
   it('shows an empty state when nothing matches', () => {
-    expect(render('none')).toContain('조건에 맞는 구성 요소가 없습니다');
+    expect(render('none')).toContain('조건에 맞는 구성 요소 없음');
   });
 });
 
@@ -118,6 +118,6 @@ describe('ArchitectureOutline', () => {
   });
 
   it('shows the same empty state as the drawing', () => {
-    expect(outline('none')).toContain('조건에 맞는 구성 요소가 없습니다');
+    expect(outline('none')).toContain('조건에 맞는 구성 요소 없음');
   });
 });

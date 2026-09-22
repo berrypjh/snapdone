@@ -45,7 +45,7 @@ export function NoNodes() {
       role="status"
       className="rounded-lg border border-dashed border-stroke-default p-6 typo-body-small"
     >
-      조건에 맞는 구성 요소가 없습니다. 필터를 &lsquo;전체&rsquo;로 바꿔 주세요.
+      조건에 맞는 구성 요소 없음. 필터를 &lsquo;전체&rsquo;로 바꾸면 모두 표시
     </p>
   );
 }

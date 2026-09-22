@@ -8,22 +8,22 @@ const HISTORY = 'apps/web/src/app/(product)/history/page.tsx';
 export const protectedHistoryAccess: Scenario = {
   id: 'protected-history-access',
   title: '보호된 기록 화면 접근',
-  goal: '브라우저에서 기록 화면은 로그인하고 온보딩을 마친 사용자만 본다',
+  goal: '브라우저에서 기록 화면은 로그인하고 온보딩을 마친 사용자만 볼 수 있음',
   track: 'current',
   status: 'implemented',
   docs: [{ document: 'foundation', heading: 'Web Shell' }],
   gaps: [
     {
       kind: 'code-not-found',
-      note: '접근 제어는 구현됐지만 기록 내용은 고정 빈 상태 문구다. 기록 데이터 · API가 없다',
+      note: '접근 제어는 구현됐지만 기록 내용은 고정 빈 상태 문구. 기록 데이터 · API 없음',
     },
   ],
   steps: [
     step({
       id: 'visit',
-      intent: '/history를 연다',
+      intent: '/history 열기',
       behavior:
-        'page가 요청 cookie의 credential로 Go에 세션을 확인한다. layout이 아니라 page 안에서 확인한다',
+        'page가 요청 cookie의 credential로 Go에 세션 확인. layout이 아니라 page 안에서 확인',
       runtime: 'next-server',
       owner: 'web',
       status: 'implemented',
@@ -42,8 +42,8 @@ export const protectedHistoryAccess: Scenario = {
     }),
     step({
       id: 'to-login',
-      intent: '로그인하지 않았거나 세션이 만료된 채로 왔다',
-      behavior: '/login?next=/history로 보낸다. 로그인하면 /history로 돌아온다',
+      intent: '로그인하지 않았거나 세션이 만료된 채로 진입',
+      behavior: '/login?next=/history로 보냄. 로그인하면 /history로 복귀',
       runtime: 'next-server',
       owner: 'web',
       status: 'implemented',
@@ -59,8 +59,8 @@ export const protectedHistoryAccess: Scenario = {
     }),
     step({
       id: 'to-onboarding',
-      intent: '로그인했지만 온보딩을 마치지 않았다',
-      behavior: '/onboarding으로 보낸다',
+      intent: '로그인했지만 온보딩을 마치지 않음',
+      behavior: '/onboarding으로 보냄',
       runtime: 'next-server',
       owner: 'web',
       status: 'implemented',
@@ -70,8 +70,8 @@ export const protectedHistoryAccess: Scenario = {
     }),
     step({
       id: 'render',
-      intent: '기록 화면을 본다',
-      behavior: '헤더 · 사이드바(홈 · 기록) · 로그아웃이 있는 셸 안에 기록 page를 렌더한다',
+      intent: '기록 화면 보기',
+      behavior: '헤더 · 사이드바(홈 · 기록) · 로그아웃이 있는 셸 안에 기록 page를 렌더',
       runtime: 'next-server',
       owner: 'web',
       status: 'implemented',

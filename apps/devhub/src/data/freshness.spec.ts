@@ -19,6 +19,7 @@ import {
   ROOT,
   symbolPattern,
 } from '../test-support/repository-files';
+import { isDevHubProject } from '../test-support/scope';
 
 import { catalog } from '.';
 
@@ -77,8 +78,9 @@ describe('Nx workspace', () => {
     .filter((node): node is ApplicationRef | LibraryRef => node.kind !== 'external')
     .map((node) => node.id);
 
-  it('has exactly the projects the catalog lists', () => {
-    expect([...targets.keys()].sort()).toEqual([...projectIds].sort());
+  it('has exactly the projects the catalog lists, DevHub itself aside', () => {
+    const inCatalog = [...targets.keys()].filter((id) => !isDevHubProject(id));
+    expect(inCatalog.sort()).toEqual([...projectIds].sort());
   });
 
   it('declares every Nx target a catalog command names', () => {
@@ -164,6 +166,8 @@ describe('document links', () => {
               : [],
         );
       switch (block.kind) {
+        case 'image':
+          return [block.src];
         case 'heading':
         case 'paragraph':
           return inline(block.inline);

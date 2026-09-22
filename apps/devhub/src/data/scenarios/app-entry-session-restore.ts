@@ -8,22 +8,22 @@ const CONTROLLER = 'apps/mobile/src/auth/controller.ts';
 export const appEntrySessionRestore: Scenario = {
   id: 'app-entry-session-restore',
   title: '앱 진입 · 세션 복원',
-  goal: '앱이나 사이트를 열면 첫 화면이 보이고, 앱은 저장된 로그인으로 이어지며 서버가 거부한 로그인은 정리된다',
+  goal: '앱이나 사이트를 열면 첫 화면 표시, 앱은 저장된 로그인으로 이어지고 서버가 거부한 로그인은 정리',
   track: 'current',
   status: 'implemented',
   docs: [{ document: 'target-architecture', heading: '`apps/mobile` — React Native + Expo' }],
   gaps: [
     {
       kind: 'runtime-unverified',
-      note: 'mobile은 시뮬레이터 · Detox · Maestro가 없어 단위 테스트까지만 검증된다',
+      note: 'mobile은 시뮬레이터 · Detox · Maestro가 없어 단위 테스트까지만 검증',
     },
   ],
   steps: [
     step({
       id: 'launch',
-      intent: '앱을 연다',
+      intent: '앱 열기',
       behavior:
-        '복원 화면을 띄우고 인증 controller가 저장된 로그인 복원과 로그인 수단 조회를 함께 시작한다',
+        '복원 화면을 띄우고 인증 controller가 저장된 로그인 복원과 로그인 수단 조회를 함께 시작',
       runtime: 'mobile-app',
       owner: 'mobile',
       status: 'implemented',
@@ -39,9 +39,9 @@ export const appEntrySessionRestore: Scenario = {
     }),
     step({
       id: 'read-credential',
-      intent: '(자동) 이 기기에 저장된 로그인 정보를 읽는다',
+      intent: '(자동) 이 기기에 저장된 로그인 정보 읽기',
       behavior:
-        'SecureStore에서 credential을 읽는다. 없으면 로그인 화면, 읽지 못하면 재시도 화면으로 간다',
+        'SecureStore에서 credential 읽기. 없으면 로그인 화면, 읽지 못하면 재시도 화면으로 이동',
       runtime: 'mobile-app',
       owner: 'mobile',
       status: 'implemented',
@@ -54,9 +54,8 @@ export const appEntrySessionRestore: Scenario = {
     }),
     step({
       id: 'check-session',
-      intent: '(자동) 저장된 로그인이 아직 유효한지 서버에 묻는다',
-      behavior:
-        'Bearer credential로 세션을 조회한다. 401이면 credential을 지우고 로그아웃 상태가 된다',
+      intent: '(자동) 저장된 로그인이 아직 유효한지 서버에 확인',
+      behavior: 'Bearer credential로 세션 조회. 401이면 credential을 지우고 로그아웃 상태로 전환',
       runtime: 'go-api',
       owner: 'api',
       status: 'implemented',
@@ -79,9 +78,8 @@ export const appEntrySessionRestore: Scenario = {
     }),
     step({
       id: 'restore-failed',
-      intent: '서버나 기기 저장소에 닿지 못했을 때 다시 시도한다',
-      behavior:
-        'credential을 지우지 않고 이유와 "다시 시도"를 보인다. 로그인 화면으로 보내지 않는다',
+      intent: '서버나 기기 저장소에 닿지 못했을 때 다시 시도',
+      behavior: 'credential을 지우지 않고 이유와 "다시 시도" 표시. 로그인 화면으로 보내지 않음',
       runtime: 'mobile-app',
       owner: 'mobile',
       status: 'implemented',
@@ -98,8 +96,8 @@ export const appEntrySessionRestore: Scenario = {
     }),
     step({
       id: 'choose-screen',
-      intent: '(자동) 로그인 상태에 맞는 첫 화면을 본다',
-      behavior: '로그아웃이면 로그인, 온보딩 전이면 소개, 온보딩을 마쳤으면 홈을 등록한다',
+      intent: '(자동) 로그인 상태에 맞는 첫 화면 보기',
+      behavior: '로그아웃이면 로그인, 온보딩 전이면 소개, 온보딩을 마쳤으면 홈 등록',
       runtime: 'mobile-app',
       owner: 'mobile',
       status: 'implemented',
@@ -112,9 +110,9 @@ export const appEntrySessionRestore: Scenario = {
     }),
     step({
       id: 'revalidate',
-      intent: '다른 앱을 쓰다 돌아온다',
+      intent: '다른 앱을 쓰다 복귀',
       behavior:
-        '앱이 foreground가 될 때마다 세션을 다시 확인한다. 401이면 만료 처리, 오프라인이면 로그인을 유지한다',
+        '앱이 foreground가 될 때마다 세션 재확인. 401이면 만료 처리, 오프라인이면 로그인 유지',
       runtime: 'mobile-app',
       owner: 'mobile',
       status: 'implemented',
@@ -127,9 +125,9 @@ export const appEntrySessionRestore: Scenario = {
     }),
     step({
       id: 'web-home',
-      intent: '브라우저에서 사이트(/)를 연다',
+      intent: '브라우저에서 사이트(/) 열기',
       behavior:
-        '/는 보호하지 않는 부트스트랩 홈이다. 셸과 "초기 설정 중입니다" 문구를 보이고, session cookie가 있으면 헤더에 로그아웃을 둔다. 세션을 Go에 확인하지 않는다',
+        '/는 보호하지 않는 부트스트랩 홈. 셸과 "초기 설정 중입니다" 문구 표시, session cookie가 있으면 헤더에 로그아웃 배치. 세션을 Go에 확인하지 않음',
       runtime: 'next-server',
       owner: 'web',
       status: 'implemented',

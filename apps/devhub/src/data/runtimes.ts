@@ -4,7 +4,7 @@ export const runtimes: RuntimeRef[] = [
   {
     id: 'browser',
     name: '브라우저',
-    summary: '사용자의 브라우저. web의 client component와 Google 동의 화면이 여기서 돈다',
+    summary: '사용자의 브라우저. web의 client component와 Google 동의 화면이 여기서 실행',
     node: 'web',
   },
   {
@@ -22,7 +22,7 @@ export const runtimes: RuntimeRef[] = [
   {
     id: 'system-auth-browser',
     name: '시스템 인증 브라우저',
-    summary: '앱이 openAuthSessionAsync로 여는 OS 인증 세션. 제품 WebView가 아니다',
+    summary: '앱이 openAuthSessionAsync로 여는 OS 인증 세션. 제품 WebView 아님',
   },
   {
     id: 'mobile-webview',

@@ -85,7 +85,7 @@ export function GlobalSearch() {
           clearable
           clearAriaLabel="검색어 지우기"
           suggestions={suggestions}
-          noSuggestionsText={query.trim() ? '일치하는 항목이 없습니다' : undefined}
+          noSuggestionsText={query.trim() ? '일치하는 항목 없음' : undefined}
           onSuggestionSelect={(suggestion) => {
             const result = byKey.get(suggestion.id);
             if (!result) return;

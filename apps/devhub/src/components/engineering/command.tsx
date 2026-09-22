@@ -27,7 +27,7 @@ function Constraints({ constraints }: { constraints: CommandConstraint[] }) {
   ) : (
     <p className="flex items-center gap-1.5 typo-caption-small text-text-light">
       <Icon name="check" />
-      조건 없음 — 어디서나 돈다
+      조건 없음 — 어디서나 실행 가능
     </p>
   );
 }

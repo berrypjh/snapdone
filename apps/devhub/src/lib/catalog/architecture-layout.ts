@@ -8,7 +8,7 @@ import { INTERACTION, RELATION, ROLE } from './labels';
  * 아키텍처 뷰의 손으로 정한 위치다. 저장소 사실이 아니라 표현이다.
  * 격자는 열 × 300px, 행 × 220px. 선이 노드 밑을 지나지 않도록 골랐다.
  *
- *   row 0            web-e2e                              devhub   devhub-e2e
+ *   row 0            web-e2e
  *   row 1  browser   web              google-oidc
  *   row 2  webview-  (비어 있음: WebView  api           postgres
  *          bridge     선이 여기로 지난다)
@@ -18,8 +18,6 @@ import { INTERACTION, RELATION, ROLE } from './labels';
  */
 const GRID: Record<string, [column: number, row: number]> = {
   'web-e2e': [1, 0],
-  devhub: [3, 0],
-  'devhub-e2e': [4, 0],
   browser: [0, 1],
   web: [1, 1],
   'google-oidc': [2, 1],
@@ -40,8 +38,6 @@ const BEND: Record<string, number> = {
   'api-calls-google': -1,
   'web-e2e-depends-on-web': -1,
   'web-verified-by-web-e2e': -1,
-  'devhub-e2e-depends-on-devhub': -1,
-  'devhub-verified-by-devhub-e2e': -1,
   'mobile-opens-google': -0.5,
   'web-depends-on-onboarding': -0.5,
 };

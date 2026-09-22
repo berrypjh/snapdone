@@ -72,21 +72,13 @@ export const relations: Relation[] = [
     evidence: { path: 'apps/web-e2e/package.json' },
   },
   {
-    kind: 'workspace-dependency',
-    id: 'devhub-e2e-depends-on-devhub',
-    from: 'devhub-e2e',
-    to: 'devhub',
-    declaredBy: 'implicit-dependency',
-    evidence: { path: 'apps/devhub-e2e/package.json' },
-  },
-  {
     kind: 'runtime',
     id: 'browser-requests-web',
     from: 'browser',
     to: 'web',
     interaction: 'page-request',
     summary:
-      '브라우저는 web 서버에서 HTML을 받고 Server Action · Route Handler를 부른다. 인증 cookie는 HttpOnly라 JS가 읽지 못한다',
+      '브라우저는 web 서버에서 HTML을 받고 Server Action · Route Handler 호출. 인증 cookie는 HttpOnly라 JS가 읽지 못함',
     apis: [],
     contracts: [],
     evidence: [
@@ -101,7 +93,7 @@ export const relations: Relation[] = [
     from: 'web',
     to: 'google-oidc',
     interaction: 'auth-redirect',
-    summary: 'Server Action이 Go에서 받은 authorize URL로 브라우저를 Google 동의 화면에 보낸다',
+    summary: 'Server Action이 Go에서 받은 authorize URL로 브라우저를 Google 동의 화면에 보냄',
     apis: [],
     contracts: [],
     evidence: [{ path: 'apps/web/src/lib/auth/actions.ts', symbol: 'startGoogleLogin' }],
@@ -112,7 +104,7 @@ export const relations: Relation[] = [
     from: 'mobile',
     to: 'google-oidc',
     interaction: 'auth-redirect',
-    summary: '앱이 제품 WebView가 아닌 OS 인증 세션으로 Google 동의 화면을 연다',
+    summary: '앱이 제품 WebView가 아닌 OS 인증 세션으로 Google 동의 화면을 엶',
     apis: [],
     contracts: [],
     evidence: [{ path: 'apps/mobile/src/auth/device.ts', symbol: 'systemAuthBrowser' }],
@@ -124,7 +116,7 @@ export const relations: Relation[] = [
     to: 'api',
     interaction: 'http-call',
     summary:
-      'Next 서버(Server Action · Route Handler · Server Component)가 인증 · 온보딩 진행 · 사진 처리 endpoint를 부른다. 브라우저는 직접 부르지 않는다 — 사진도 Server Action이 받아 Go로 넘긴다',
+      'Next 서버(Server Action · Route Handler · Server Component)가 인증 · 온보딩 진행 · 사진 처리 endpoint 호출. 브라우저는 직접 부르지 않음 — 사진도 Server Action이 받아 Go로 넘김',
     apis: [
       'get-auth-capabilities',
       'get-auth-session',
@@ -158,7 +150,7 @@ export const relations: Relation[] = [
     from: 'mobile',
     to: 'api',
     interaction: 'http-call',
-    summary: '앱이 기기에서 직접 인증 · 온보딩 진행 · 사진 처리 endpoint를 부른다',
+    summary: '앱이 기기에서 직접 인증 · 온보딩 진행 · 사진 처리 endpoint 호출',
     apis: [
       'get-auth-capabilities',
       'get-auth-session',
@@ -194,7 +186,7 @@ export const relations: Relation[] = [
     from: 'google-oidc',
     to: 'api',
     interaction: 'auth-redirect',
-    summary: '동의를 마친 브라우저를 Google이 API callback으로 돌려보낸다',
+    summary: '동의를 마친 브라우저를 Google이 API callback으로 돌려보냄',
     apis: ['get-auth-oauth-callback'],
     contracts: [],
     evidence: [{ path: 'apps/api/internal/httpserver/oauth.go', symbol: 'handlers.oauthCallback' }],
@@ -205,7 +197,7 @@ export const relations: Relation[] = [
     from: 'api',
     to: 'google-oidc',
     interaction: 'http-call',
-    summary: 'API가 token endpoint에서 code를 교환하고 ID token을 검사한다',
+    summary: 'API가 token endpoint에서 code를 교환하고 ID token 검사',
     apis: [],
     contracts: [],
     evidence: [{ path: 'apps/api/internal/google/google.go', symbol: 'Client.Exchange' }],
@@ -217,7 +209,7 @@ export const relations: Relation[] = [
     to: 'postgres',
     interaction: 'persistence',
     summary:
-      '사용자 · 세션 · grant · OAuth transaction · 온보딩 진행 · 사진 처리 작업을 pgx로 저장한다',
+      '사용자 · 세션 · grant · OAuth transaction · 온보딩 진행 · 사진 처리 작업을 pgx로 저장',
     apis: [],
     contracts: [],
     evidence: [
@@ -233,7 +225,7 @@ export const relations: Relation[] = [
     to: 'image-model',
     interaction: 'http-call',
     summary:
-      '사진 처리 작업이 사진을 설정된 모델에 보내 분류 결과를 받는다. 모델을 부르는 것은 api뿐이고, 응답을 기다리지 않고 작업 id를 먼저 돌려준다',
+      '사진 처리 작업이 사진을 설정된 모델에 보내 분류 결과를 받음. 모델 호출은 api만 함. 응답을 기다리지 않고 작업 id를 먼저 돌려줌',
     apis: [],
     contracts: [],
     evidence: [
@@ -248,7 +240,7 @@ export const relations: Relation[] = [
     from: 'mobile',
     to: 'web',
     interaction: 'webview-host',
-    summary: 'WebView가 web 허용 경로를 앱 User-Agent 토큰과 함께 연다',
+    summary: 'WebView가 web 허용 경로를 앱 User-Agent 토큰과 함께 엶',
     apis: [],
     contracts: ['bridge-user-agent'],
     evidence: [
@@ -263,7 +255,7 @@ export const relations: Relation[] = [
     from: 'web',
     to: 'mobile',
     interaction: 'bridge-message',
-    summary: 'WebView 안의 web이 postMessage로 앱에 계약 메시지를 보낸다',
+    summary: 'WebView 안의 web이 postMessage로 앱에 계약 메시지를 보냄',
     apis: [],
     contracts: ['bridge-ready', 'bridge-auth-required', 'bridge-handoff-ready'],
     evidence: [
@@ -277,23 +269,11 @@ export const relations: Relation[] = [
     from: 'web',
     to: 'web-e2e',
     summary:
-      'Playwright가 next dev와 가짜 인증 API(:4010)를 직접 띄워 web을 검증한다. 실제 Go API · Google에는 붙지 않는다',
+      'Playwright가 next dev와 가짜 인증 API(:4010)를 직접 띄워 web 검증. 실제 Go API · Google에는 붙지 않음',
     evidence: [
       { path: 'apps/web-e2e/playwright.config.mts', symbol: 'webDev' },
       { path: 'apps/web-e2e/playwright.config.mts', symbol: 'fakeApi' },
       { path: 'apps/web-e2e/src/support/fake-api.mts' },
-    ],
-  },
-  {
-    kind: 'verification',
-    id: 'devhub-verified-by-devhub-e2e',
-    from: 'devhub',
-    to: 'devhub-e2e',
-    summary:
-      'Playwright가 next dev(:3100)로 devhub만 띄워 키보드 경로 · 목록 보기 · 좁은 화면을 검증한다. API나 다른 앱은 띄우지 않는다',
-    evidence: [
-      { path: 'apps/devhub-e2e/playwright.config.mts' },
-      { path: 'apps/devhub-e2e/src/support/keyboard.ts', symbol: 'tabTo' },
     ],
   },
 ];

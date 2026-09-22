@@ -49,30 +49,6 @@ export const applications: ApplicationRef[] = [
     summary: '가짜 인증 API로 web을 띄워 검증하는 E2E',
     docs: [{ document: 'quality-gates', heading: 'E2E 범위' }],
   },
-  {
-    kind: 'application',
-    id: 'devhub',
-    role: 'tooling',
-    root: 'apps/devhub',
-    manifest: { path: 'apps/devhub/package.json' },
-    packageName: '@snapdone/devhub',
-    nxTags: ['type:app'],
-    stack: 'Next.js App Router · TypeScript',
-    summary: '저장소의 시나리오 · 구조 · 근거를 보는 내부 도구. 제품 런타임과 연결되지 않는다',
-    docs: [{ document: 'devhub', heading: '16. DevHub purpose' }],
-  },
-  {
-    kind: 'application',
-    id: 'devhub-e2e',
-    role: 'test',
-    root: 'apps/devhub-e2e',
-    manifest: { path: 'apps/devhub-e2e/package.json' },
-    packageName: '@snapdone/devhub-e2e',
-    nxTags: ['type:e2e'],
-    stack: 'Playwright',
-    summary: 'devhub를 띄워 키보드 경로 · 목록 보기 · 좁은 화면을 검증하는 E2E',
-    docs: [{ document: 'devhub', heading: '36. 구현 상태 — 접근성 · DevHub E2E' }],
-  },
 ];
 
 export const libraries: LibraryRef[] = [

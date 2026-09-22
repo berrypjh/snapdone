@@ -83,8 +83,8 @@ export function RelationList() {
   return (
     <WorkspaceSection id="architecture-relations" title="관계 (정본 목록)">
       <p className="typo-caption-small text-text-light">
-        Nx graph가 보는 것은 manifest에 선언된 의존뿐이다. 실행 중 호출과 검증은 Nx graph에 없고
-        여기에서만 보인다.
+        Nx graph가 보는 것은 manifest에 선언된 의존뿐. 실행 중 호출과 검증은 Nx graph에 없고
+        여기에서만 보임
       </p>
       {KINDS.map((kind) => {
         const relations = catalog.relations.filter((relation) => relation.kind === kind);
@@ -112,7 +112,7 @@ export function TargetOnlyList() {
   return (
     <WorkspaceSection id="architecture-target" title="문서에만 있는 구성 — 그림에 없음">
       <p className="typo-caption-small text-text-light">
-        아래 단계는 문서가 약속하지만 코드가 없다. 현재 아키텍처 그림에 node로 넣지 않았다.
+        아래 단계는 문서가 약속하지만 코드 없음. 현재 아키텍처 그림에 node로 넣지 않음
       </p>
       {targets.map((scenario) => (
         <section

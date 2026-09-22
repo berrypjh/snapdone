@@ -23,12 +23,6 @@ export const documents: DocumentRef[] = [
     topic: 'architecture',
   },
   {
-    id: 'devhub',
-    path: 'docs/architecture/devhub.md',
-    title: 'DevHub',
-    topic: 'architecture',
-  },
-  {
     id: 'foundation',
     path: 'docs/design/foundation.md',
     title: 'Design Foundation',

@@ -37,7 +37,7 @@ describe('unavailable snapshot', () => {
     );
     expect(html).toContain('/blob/main/apps/web/src/lib/auth/handoff.ts');
     expect(html).toContain('최신 main에서 보기');
-    expect(html).toContain('스냅샷 커밋을 알 수 없어 고정 링크가 없습니다');
+    expect(html).toContain('스냅샷 커밋을 알 수 없어 고정 링크 없음');
     expect(html).not.toContain('@ ');
   });
 });

@@ -204,7 +204,7 @@ function ApiList({ apis }: { apis: ApiRef[] }) {
               <FileRow file={fileOf(swaggerDocument.path)} label="Swagger" />
             ) : (
               <li className="typo-caption-small text-text-light">
-                개발 환경 전용 route라 Swagger 문서에 없습니다
+                개발 환경 전용 route라 Swagger 문서에 없음
               </li>
             )}
           </ul>
@@ -349,7 +349,7 @@ export function Inspector({ inspection }: { inspection?: Inspection }) {
         </div>
       ) : (
         <p className="p-4 typo-body-small text-text-light">
-          탐색기에서 항목을 고르면 근거가 여기에 나옵니다.
+          탐색기에서 항목을 고르면 여기에 근거 표시
         </p>
       )}
     </aside>

@@ -13,6 +13,7 @@ import {
   ROOT,
   symbolPattern,
 } from '../test-support/repository-files';
+import { DEVHUB_ITSELF, isDevHubProject } from '../test-support/scope';
 
 import { swaggerDocument } from './apis';
 import { RUNNER_COMMAND } from './commands';
@@ -125,7 +126,7 @@ describe('projects', () => {
         const config = readJson<NxConfig>(path);
         return { id: config.name, manifest: path, packageName: undefined, tags: config.tags };
       }),
-    ];
+    ].filter(({ id }) => !isDevHubProject(id));
     const curated = projects.map((project) => ({
       id: project.id,
       manifest: project.manifest.path,
@@ -171,7 +172,7 @@ describe('relations', () => {
       const implicit = (manifest.nx?.implicitDependencies ?? []).map(
         (to) => `${from}->${to}:implicit-dependency@${path}`,
       );
-      return [...packageDeps, ...implicit];
+      return isDevHubProject(from) ? [] : [...packageDeps, ...implicit];
     });
     const curated = catalog.relations
       .filter((relation) => relation.kind === 'workspace-dependency')
@@ -238,7 +239,8 @@ describe('documents', () => {
   it('cover every markdown file under docs/, together with the records', () => {
     const onDisk = readdirSync(join(ROOT, 'docs'), { recursive: true, encoding: 'utf8' })
       .filter((path) => path.endsWith('.md'))
-      .map((path) => `docs/${path.split('\\').join('/')}`);
+      .map((path) => `docs/${path.split('\\').join('/')}`)
+      .filter((path) => path !== DEVHUB_ITSELF.document);
     const curated = [...catalog.documents, ...catalog.records]
       .map((doc) => doc.path)
       .filter((p) => p.startsWith('docs/'));

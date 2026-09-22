@@ -33,8 +33,8 @@ export default function ArchitectureLayout({
       <WorkspaceFrame>
         {children}
         <p className="typo-body-small">
-          지금 저장소에 코드가 있는 구성 요소와 관계만 그렸다. 문서에만 있는 구성은 아래 목록에 따로
-          둔다.
+          지금 저장소에 코드가 있는 구성 요소와 관계만 표시. 문서에만 있는 구성은 아래 목록에 따로
+          정리
         </p>
         <WorkspaceSection id="architecture-map" title="구성 요소와 관계">
           <Suspense fallback={<ArchitectureViews model={model} />}>

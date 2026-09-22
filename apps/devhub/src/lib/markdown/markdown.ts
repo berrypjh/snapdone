@@ -1,7 +1,7 @@
 /**
  * 저장소 문서가 실제로 쓰는 Markdown만 작은 트리로 파싱한다. 제목 · 문단 · 목록(중첩) ·
  * 표 · 코드 블록 · 인용 · 구분선, 그리고 인라인 코드 · 굵게 · 링크.
- * HTML과 이미지는 문서에 없어서 다루지 않는다. 나머지는 글자 그대로 둔다.
+ * 그림은 한 줄을 통째로 차지하는 `![설명](경로)`만 받는다. HTML은 다루지 않고 나머지는 글자 그대로 둔다.
  */
 
 export type Inline =
@@ -17,6 +17,7 @@ export type Block =
   | { kind: 'table'; head: Inline[][]; rows: Inline[][][] }
   | { kind: 'code'; lang: string; text: string }
   | { kind: 'quote'; blocks: Block[] }
+  | { kind: 'image'; src: string; alt: string }
   | { kind: 'rule' };
 
 const FENCE = /^\s*```(\S*)\s*$/;
@@ -24,6 +25,8 @@ const HEADING = /^(#{1,6})\s+(.*?)\s*#*\s*$/;
 const RULE = /^\s*(-{3,}|\*{3,})\s*$/;
 const LIST = /^(\s*)([-*]|(\d+)\.)\s+(.*)$/;
 const TABLE_SEPARATOR = /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/;
+/** 한 줄을 통째로 차지하는 그림. 설명(alt)은 캡션으로도 쓰이므로 비울 수 없다. */
+const IMAGE = /^\s*!\[([^\]]+)\]\(([^)\s]+)\)\s*$/;
 
 /** 인라인 Markdown을 트리로. 역슬래시는 한 글자를 이스케이프하고, 백틱이 무엇보다 먼저다. */
 export const parseInline = (source: string): Inline[] => {
@@ -125,6 +128,13 @@ const parseLines = (lines: string[], ids: Map<string, number>): Block[] => {
   while (i < lines.length) {
     const line = lines[i];
     if (isBlank(line)) {
+      i += 1;
+      continue;
+    }
+
+    const image = IMAGE.exec(line);
+    if (image) {
+      blocks.push({ kind: 'image', alt: image[1], src: image[2] });
       i += 1;
       continue;
     }

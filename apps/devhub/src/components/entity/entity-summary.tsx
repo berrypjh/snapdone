@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { catalog } from '@/data';
 import { type Entity, entityHref } from '@/lib/catalog/entities';
 import { flowModel } from '@/lib/catalog/flow';
-import { RECORD_KIND, RELATION } from '@/lib/catalog/labels';
+import { RELATION } from '@/lib/catalog/labels';
 
 import { ViewSwitch } from '../canvas/view-switch';
 import { DOCUMENT_COLUMN, DocumentLayout } from '../doc/document-layout';
@@ -13,13 +13,15 @@ import { ScenarioOutline } from '../flow/scenario-outline';
 import { DiagramPlaceholder, WorkspaceSection } from '../shell/workspace';
 import { SourceActions } from '../source/source-actions';
 
+import { RecordMeta } from './record-meta';
+
 const LIST_ID = 'entity-list';
 
 function ProjectRelations({ id }: { id: string }) {
   const relations = catalog.relations.filter((r) => r.from === id || r.to === id);
   if (relations.length === 0) {
     return (
-      <p className="typo-body-small text-text-light">관계 없음 — 다른 프로젝트와 연결되지 않았다</p>
+      <p className="typo-body-small text-text-light">관계 없음 — 다른 프로젝트와 연결되지 않음</p>
     );
   }
   return (
@@ -46,7 +48,7 @@ function CitingScenarios({ documentId }: { documentId: string }) {
     ),
   );
   if (citing.length === 0) {
-    return <p className="typo-body-small text-text-light">이 문서를 인용한 시나리오가 없다</p>;
+    return <p className="typo-body-small text-text-light">이 문서를 인용한 시나리오 없음</p>;
   }
   return (
     <ul className="flex flex-col gap-1">
@@ -97,7 +99,9 @@ export function EntitySummary({ entity }: { entity: Entity }) {
     case 'documents':
       return (
         <div className={`${DOCUMENT_COLUMN} flex flex-col gap-5`}>
-          <SourceActions source={{ path: entity.record.path }} />
+          <div className="border-b border-stroke-light pb-4">
+            <SourceActions source={{ path: entity.record.path }} />
+          </div>
           <DocumentLayout doc={entity.record} />
           <WorkspaceSection id={LIST_ID} title="이 문서를 인용한 시나리오">
             <CitingScenarios documentId={entity.id} />
@@ -107,12 +111,13 @@ export function EntitySummary({ entity }: { entity: Entity }) {
     case 'records':
       return (
         <div className={`${DOCUMENT_COLUMN} flex flex-col gap-5`}>
-          <p className="typo-caption-small text-text-light">
-            <time dateTime={entity.record.date}>{entity.record.date}</time>
-            <span aria-hidden="true"> · </span>
-            {RECORD_KIND[entity.record.kind]}
-          </p>
-          <SourceActions source={{ path: entity.record.path }} />
+          {/* 머리와 본문을 가르는 선. 문서 칸 전체 폭으로 긋는다 */}
+          <div className="border-b border-stroke-light pb-4">
+            <SourceActions
+              source={{ path: entity.record.path }}
+              lead={<RecordMeta record={entity.record} />}
+            />
+          </div>
           <DocumentLayout doc={entity.record} />
         </div>
       );

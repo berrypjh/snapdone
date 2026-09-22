@@ -10,7 +10,7 @@ import './global.css';
 
 export const metadata: Metadata = {
   title: 'Snapdone DevHub',
-  description: '저장소의 시나리오 · 구조 · 근거를 한곳에서 보는 내부 도구입니다.',
+  description: '저장소의 시나리오 · 구조 · 근거를 한곳에서 보는 내부 도구',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -102,7 +102,7 @@ const nodeLinks = (ids: string[]): RelatedLink[] =>
 const inArchitecture = (ids: string[]): RelatedGroup => ({
   title: '아키텍처에서 보기',
   links: nodeLinks(ids),
-  empty: '연결된 구성 요소가 없다',
+  empty: '연결된 구성 요소 없음',
 });
 
 const apisById = new Map(catalog.apis.map((api) => [api.id, api]));
@@ -126,7 +126,7 @@ const commandsFor = (tests: TestRef[]): RelatedGroup => ({
         ]
       : [];
   }),
-  empty: '인용된 테스트가 없다',
+  empty: '인용된 테스트 없음',
 });
 
 const touchingSteps = (nodeId: string): RelatedGroup => ({
@@ -136,7 +136,7 @@ const touchingSteps = (nodeId: string): RelatedGroup => ({
     href,
     detail: scenario.title,
   })),
-  empty: '이 구성 요소를 거치는 시나리오 단계가 없다',
+  empty: '이 구성 요소를 거치는 시나리오 단계 없음',
 });
 
 const relationsOf = (id: string) =>
@@ -169,14 +169,14 @@ const inspectScenario = (entity: Extract<Entity, { section: 'scenarios' }>): Ins
       record.steps.flatMap((step) => step.source),
       (ref) => `${ref.path}#${ref.symbol ?? ''}`,
     ),
-    sourceEmpty: '이 시나리오에는 코드가 없다. 각 단계의 부재 검색이 근거다',
+    sourceEmpty: '이 시나리오에는 코드 없음. 각 단계의 부재 검색이 근거',
     docs: resolveDocs([...record.docs, ...record.steps.flatMap((step) => step.docs)]),
-    docsEmpty: '연결된 문서가 없다',
+    docsEmpty: '연결된 문서 없음',
     tests: resolveTests([
       ...record.steps.flatMap((step) => step.tests),
       ...gaps.flatMap((gap) => gap.tests ?? []),
     ]),
-    testsEmpty: '이 시나리오를 검증하는 테스트가 없다',
+    testsEmpty: '이 시나리오를 검증하는 테스트 없음',
     apis: resolveApis(record.steps.flatMap((step) => step.apis)),
     related: [
       inArchitecture(scenarioNodeIds(record)),
@@ -209,9 +209,9 @@ const inspectProject = (
     source: [{ path: record.root }, record.manifest],
     sourceEmpty: '',
     docs: resolveDocs(steps.flatMap((step) => step.docs)),
-    docsEmpty: '이 프로젝트가 담당한 시나리오 단계가 인용한 문서가 없다',
+    docsEmpty: '이 프로젝트가 담당한 시나리오 단계가 인용한 문서 없음',
     tests: catalog.tests.filter((test) => test.source.path.startsWith(`${record.root}/`)),
-    testsEmpty: '시나리오 근거로 인용된 이 프로젝트의 테스트가 없다',
+    testsEmpty: '시나리오 근거로 인용된 이 프로젝트의 테스트 없음',
     related: [inArchitecture([record.id]), touchingSteps(record.id)],
   };
 };
@@ -233,9 +233,9 @@ const inspectDocument = (entity: Extract<Entity, { section: 'documents' }>): Ins
     source: [{ path: record.path }],
     sourceEmpty: '',
     docs: [],
-    docsEmpty: '문서 자체다',
+    docsEmpty: '문서 자체임',
     tests: [],
-    testsEmpty: '문서는 테스트 대상이 아니다',
+    testsEmpty: '문서는 테스트 대상 아님',
   };
 };
 
@@ -252,9 +252,9 @@ const inspectRecord = (entity: Extract<Entity, { section: 'records' }>): Inspect
     source: [{ path: record.path }, ...record.sources],
     sourceEmpty: '',
     docs: resolveDocs(record.docs),
-    docsEmpty: '이 기록이 정한 것을 담은 문서가 없다',
+    docsEmpty: '이 기록이 정한 것을 담은 문서 없음',
     tests: catalog.tests.filter((test) => record.tests.includes(test.id)),
-    testsEmpty: 'devhub 자체 테스트는 카탈로그에 없다. 확인 방법은 본문의 검증 절에 있다',
+    testsEmpty: 'devhub 자체 테스트는 카탈로그에 없음. 확인 방법은 본문의 검증 절 참고',
   };
 };
 
@@ -279,15 +279,15 @@ const inspectCommandGroup = (entity: Extract<Entity, { section: 'engineering' }>
         term: '실행 조건',
         details: constraints.length
           ? constraints.map((constraint) => CONSTRAINT[constraint])
-          : ['없음 — 어디서나 돈다'],
+          : ['없음 — 어디서나 실행 가능'],
       },
     ],
     source: sources.filter((ref, index) => sources.findIndex((r) => r.path === ref.path) === index),
-    sourceEmpty: '정의 위치를 찾지 못했다',
+    sourceEmpty: '정의 위치를 찾지 못함',
     docs: [],
-    docsEmpty: '연결된 문서가 없다',
+    docsEmpty: '연결된 문서 없음',
     tests: [],
-    testsEmpty: '명령은 테스트를 인용하지 않는다',
+    testsEmpty: '명령은 테스트를 인용하지 않음',
   };
 };
 
@@ -343,11 +343,11 @@ export const inspectStep = (scenario: Scenario, step: ScenarioStep): Inspection 
       },
     ],
     source: step.source,
-    sourceEmpty: '이 단계에는 코드가 없다. 부재 검색이 근거다',
+    sourceEmpty: '이 단계에는 코드 없음. 부재 검색이 근거',
     docs: resolveDocs(step.docs),
-    docsEmpty: '이 단계가 직접 인용한 문서가 없다',
+    docsEmpty: '이 단계가 직접 인용한 문서 없음',
     tests: resolveTests(step.tests),
-    testsEmpty: '이 단계를 직접 검증하는 테스트가 없다',
+    testsEmpty: '이 단계를 직접 검증하는 테스트 없음',
     apis: resolveApis(step.apis),
     related: [inArchitecture(stepNodeIds(step)), commandsFor(resolveTests(step.tests))],
   };
@@ -383,21 +383,21 @@ export const inspectNode = (node: ArchitectureNode): Inspection => {
       ...(node.standalone ? [{ term: '관계 없음', details: [node.standalone] }] : []),
     ],
     source: project ? [{ path: node.root }, node.manifest] : node.evidence,
-    sourceEmpty: '근거 source가 없다',
+    sourceEmpty: '근거 source 없음',
     docs: resolveDocs([
       ...node.docs,
       ...boundariesOf(node.id).flatMap((boundary) => boundary.docs),
     ]),
-    docsEmpty: '이 구성 요소를 설명하는 문서가 없다',
+    docsEmpty: '이 구성 요소를 설명하는 문서 없음',
     tests: project
       ? catalog.tests.filter((test) => test.source.path.startsWith(`${node.root}/`))
       : [],
     testsEmpty: project
-      ? '시나리오 근거로 인용된 이 프로젝트의 테스트가 없다'
-      : '저장소 밖 시스템이다. 이를 부르는 쪽의 테스트는 관련 시나리오 단계에 있다',
+      ? '시나리오 근거로 인용된 이 프로젝트의 테스트 없음'
+      : '저장소 밖 시스템. 이를 부르는 쪽의 테스트는 관련 시나리오 단계에 있음',
     related: [
       touchingSteps(node.id),
-      { title: '프로젝트 상세', links: projectPage(node), empty: '저장소 밖 시스템이다' },
+      { title: '프로젝트 상세', links: projectPage(node), empty: '저장소 밖 시스템' },
     ],
   };
 };
@@ -416,9 +416,9 @@ export const inspectSource = (usage: SourceUsage): Inspection => {
     source: [{ path: usage.path }],
     sourceEmpty: '',
     docs: resolveDocs(usage.steps.flatMap(({ step }) => step.docs)),
-    docsEmpty: '이 파일을 인용한 단계가 인용한 문서가 없다',
+    docsEmpty: '이 파일을 인용한 단계가 인용한 문서 없음',
     tests: usage.tests,
-    testsEmpty: '이 파일에 정의된, 근거로 인용된 테스트가 없다',
+    testsEmpty: '이 파일에 정의된, 근거로 인용된 테스트 없음',
     apis: usage.apis,
     related: [
       {
@@ -428,7 +428,7 @@ export const inspectSource = (usage: SourceUsage): Inspection => {
           href: stepHref(scenario.id, step.id),
           detail: scenario.title,
         })),
-        empty: '인용한 시나리오 단계가 없다',
+        empty: '인용한 시나리오 단계 없음',
       },
       inArchitecture([
         ...new Set([...(project ? [project] : []), ...usage.nodes.map((n) => n.id)]),

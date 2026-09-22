@@ -12,6 +12,9 @@ import { DocToc } from './doc-toc';
  */
 export const DOCUMENT_COLUMN = 'mx-auto w-full max-w-[61rem]';
 
+/** 본문 글줄 폭. 제목 아래 머리도 이 폭에 맞춰 한 칸으로 읽히게 한다. */
+export const DOCUMENT_TEXT = 'max-w-[46rem]';
+
 /**
  * 문서와 "이 페이지에서"를 작업 영역 안에 함께 둔다. 넓으면 본문 옆에서 스크롤을 따라가고,
  * 좁으면 본문 위에 접어 둔다. 기준 폭은 화면이 아니라 작업 영역이다(container query).
