@@ -163,7 +163,7 @@ pnpm exec nx export mobile   # apps/mobile/dist 에 JS 번들 생성
 ## Project graph
 
 ```bash
-pnpm graph                      # 브라우저로 그래프 열기
+pnpm exec nx graph              # 브라우저로 그래프 열기
 pnpm exec nx show projects      # 현재 프로젝트 목록
 pnpm exec nx show project api   # 특정 프로젝트의 실제 target 확인
 ```
@@ -227,7 +227,7 @@ API_PORT=9000 pnpm dev:api
 ```bash
 docker compose -f apps/api/compose.yaml up -d
 export DATABASE_URL='postgres://snapdone:snapdone@127.0.0.1:5432/snapdone?sslmode=disable'
-pnpm exec nx run api:migrate
+pnpm migrate
 pnpm dev:api
 ```
 
@@ -240,8 +240,8 @@ pnpm dev:api
 `API_ENV`가 `production`이 아니면 `http://127.0.0.1:8080/swagger/index.html`에서 Swagger UI를 볼 수 있다(스펙 원문은 `/swagger/doc.json`). 핸들러의 swag 주석을 바꿨으면 다시 생성해 함께 커밋한다.
 
 ```bash
-pnpm exec nx run api:swagger        # apps/api/docs/swagger 재생성 (go tool swag, go.mod에 고정)
-pnpm exec nx run api:swagger-check  # 최신인지 검사만 한다
+pnpm swagger        # apps/api/docs/swagger 재생성 (go tool swag, go.mod에 고정)
+pnpm swagger:check  # 최신인지 검사만 한다
 ```
 
 ## 실기기에서 API 주소 잡기

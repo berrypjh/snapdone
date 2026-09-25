@@ -94,13 +94,14 @@ architecture를 auto memory에만 두지 않는다. **secret과 credential은 �
 
 ## 문서
 
-| 문서                                                               | 내용                         |
-| ------------------------------------------------------------------ | ---------------------------- |
-| [product-principles.md](docs/product/product-principles.md)        | 제품 판단 기준               |
-| [target-architecture.md](docs/architecture/target-architecture.md) | 구조와 경계                  |
-| [data-access.md](docs/architecture/data-access.md)                 | API 호출 규칙, CORS 판단     |
-| [foundation.md](docs/design/foundation.md)                         | 디자인 토큰, App Shell       |
-| [local-development.md](docs/development/local-development.md)      | 실행 · 환경변수 · 트러블슈팅 |
-| [quality-gates.md](docs/engineering/quality-gates.md)              | 검증 · 의존성 · 보안 원칙    |
+| 문서                                                               | 내용                                |
+| ------------------------------------------------------------------ | ----------------------------------- |
+| [product-principles.md](docs/product/product-principles.md)        | 제품 판단 기준                      |
+| [target-architecture.md](docs/architecture/target-architecture.md) | 구조와 경계                         |
+| [data-access.md](docs/architecture/data-access.md)                 | API 호출 규칙, CORS 판단            |
+| [agent-evaluation.md](docs/architecture/agent-evaluation.md)       | 평가 harness — 계약 · 실행 · 산출물 |
+| [foundation.md](docs/design/foundation.md)                         | 디자인 토큰, App Shell              |
+| [local-development.md](docs/development/local-development.md)      | 실행 · 환경변수 · 트러블슈팅        |
+| [quality-gates.md](docs/engineering/quality-gates.md)              | 검증 · 의존성 · 보안 원칙           |
 
 AI harness(rule · skill · hook · permission)가 어떻게 구성돼 있는지는 [.claude/README.md](.claude/README.md).

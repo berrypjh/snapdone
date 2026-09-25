@@ -983,6 +983,7 @@ generator 기본값(`--e2eTestRunner=playwright`)은 `apps/devhub-e2e`를 만든
 ### 구현과 제품 목표를 섞지 않는 장치
 
 - `track: 'product-target'`인 시나리오는 상태가 documented-only · planned · not-found만 될 수 있고 step에 source가 있으면 validator가 실패한다
+- `track: 'developer'`(2026-09-22 추가)는 사용자 화면이 아니라 개발자가 저장소 안에서 돌리는 흐름(평가 harness)이다. 상태 규칙은 `current`와 같고 runtime `go-cli`를 쓴다. 개요 · 탐색기 · 필터에 세 번째 구분으로 보인다
 - documented-only step은 source 없이 문서 근거와 **부재 검색**을 가져야 한다. 부재 검색은 lockfile의 카메라 · 사진 · 캘린더 · 모델 SDK 패키지, web의 파일 입력 · 붙여넣기, bridge의 촬영 · 공유 메시지, Swagger · 마이그레이션의 image · upload, 소스의 Calendar · Receipt · undo · automation을 찾는다
 - 온보딩 소개의 예시(영수증 · 공연 포스터 · 맛집 캡처)는 `EXAMPLES` 고정 문구로 기록했다. 해당 기능 step으로 만들지 않았다
 - 검색어 `action`은 쓰지 않는다 — `transaction`(OAuth transaction 테이블 · Swagger)에 걸려 아무것도 증명하지 못한다는 것을 validator 첫 실행이 잡았다

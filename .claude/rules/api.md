@@ -12,6 +12,7 @@ Go 표준 레이아웃. module은 `snapdone/api`, 진입점은 `cmd/server`.
 ```
 cmd/server/main.go               서버 기동 · 미적용 마이그레이션 시 기동 거부 · graceful shutdown · Swagger 일반 정보
 cmd/migrate/main.go              마이그레이션 적용 (배포 단계에서 1회)
+cmd/eval/main.go                 평가 harness CLI (nx run api:eval). 서버 · DB 없이 분류기를 부름. run은 --allow-api가 있을 때만 실제 provider 호출
 docs/swagger/                    swag가 생성한 Swagger 2.0 (docs.go · swagger.json · swagger.yaml). 손으로 고치지 않는다
 internal/config/                 환경변수 로딩 · 인증 설정 검증
 internal/httpserver/             http.Server · Gin router(router.go) · middleware · DTO(dto.go) · 핸들러와 Swagger 주석
@@ -21,6 +22,7 @@ internal/auth/                   인증 저장소 (사용자 · 세션 · grant 
 internal/google/                 Google OIDC authorize URL · token 교환 · ID token claim 검사
 internal/processing/             사진 처리 작업 저장소 · 공용 지시 · 결과 검증(result.go) · 분류기(claude.go · openai.go) · 백그라운드 처리(processor.go)
 internal/onboarding/             온보딩 진행(단계 · 사용 목적) 저장소와 저장 규칙(Validate)
+internal/evaluation/             평가 harness — dataset · variant · runner · 산출물 · 비교. cmd/server가 import하지 않고 production 계약은 processing.DescribeContract로만 읽음. 설계는 docs/architecture/agent-evaluation.md
 ```
 
 - **Nx 때문에 Go 관례를 바꾸지 않는다.** Nx는 `project.json`의 `nx:run-commands`로 `go` 명령을 감싸기만 한다
@@ -79,8 +81,11 @@ nx vet api    # go vet ./...
 nx fmt api    # gofmt 위반 검사 -- 파일을 고쳐 쓰지 않는다
 nx test api   # go test ./...
 nx build api  # dist/apps/api/api
-nx run api:swagger        # docs/swagger 재생성
-nx run api:swagger-check  # docs/swagger가 최신인지 검사 -- 파일을 고쳐 쓰지 않는다
+pnpm swagger              # docs/swagger 재생성 (= nx run api:swagger)
+pnpm swagger:check        # docs/swagger가 최신인지 검사 -- 파일을 고쳐 쓰지 않는다
+pnpm migrate              # 마이그레이션 적용 (= nx run api:migrate, Postgres 필요)
+pnpm eval:check           # 평가 harness offline 테스트 + pilot dataset 검증
+pnpm eval <command>       # 평가 CLI (= nx run api:eval). run은 --allow-api가 있을 때만 실제 호출
 ```
 
 HTTP 테스트는 `net/http/httptest`로 실제 Gin engine의 `ServeHTTP`를 부른다. 실제 `http.Server` 동작(연결 종료 · shutdown)은 `server_test.go`의 `net.Pipe` listener로 포트 없이 본다.
