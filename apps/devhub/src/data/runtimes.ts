@@ -36,4 +36,11 @@ export const runtimes: RuntimeRef[] = [
     summary: 'Gin 라우터 뒤의 인증 · 세션 · 온보딩 진행 · 사진 처리',
     node: 'api',
   },
+  {
+    id: 'go-cli',
+    name: 'Go 평가 CLI',
+    summary:
+      '개발자 터미널에서 도는 apps/api/cmd/eval. 서버 · DB 없이 production 분류기를 그대로 부르고, 실제 provider 호출은 --allow-api가 있을 때만',
+    node: 'api',
+  },
 ];

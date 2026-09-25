@@ -6,6 +6,33 @@ import type { RecordRef } from '../domain/model';
  */
 export const records: RecordRef[] = [
   {
+    id: 'agent-evaluation-harness',
+    path: 'docs/records/2026-09-22-agent-evaluation-harness.md',
+    title: '사진 분류 평가 harness를 Go core와 CLI로 구현',
+    kind: 'implementation',
+    date: '2026-09-22',
+    summary:
+      'production 분류기를 그대로 부르는 offline harness. 실제 provider 호출은 opt-in과 예산이 있을 때만, 종합 점수 없음',
+    sources: [
+      { path: 'apps/api/internal/processing/contract.go', symbol: 'DescribeContract' },
+      { path: 'apps/api/internal/evaluation/runner.go', symbol: 'Run' },
+      { path: 'apps/api/internal/evaluation/compare.go', symbol: 'Compare' },
+      { path: 'apps/api/cmd/eval/main.go', symbol: 'run' },
+    ],
+    docs: [
+      { document: 'agent-evaluation', heading: '위치 · 언어 결정' },
+      { document: 'agent-evaluation', heading: '실행과 검증' },
+    ],
+    tests: [
+      'go-eval-descriptor-matches-providers',
+      'go-eval-preflight-no-calls',
+      'go-eval-budget-counts-retries',
+      'go-eval-replay-golden',
+      'go-eval-compare-variants',
+      'go-eval-cli-exit-codes',
+    ],
+  },
+  {
     id: 'exact-react-version-pins',
     path: 'docs/records/2026-09-16-exact-react-version-pins.md',
     title: 'React와 react-native 버전은 `^` 없이 정확히 고정',

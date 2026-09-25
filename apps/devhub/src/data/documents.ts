@@ -23,6 +23,12 @@ export const documents: DocumentRef[] = [
     topic: 'architecture',
   },
   {
+    id: 'agent-evaluation',
+    path: 'docs/architecture/agent-evaluation.md',
+    title: 'Agent Evaluation',
+    topic: 'architecture',
+  },
+  {
     id: 'foundation',
     path: 'docs/design/foundation.md',
     title: 'Design Foundation',

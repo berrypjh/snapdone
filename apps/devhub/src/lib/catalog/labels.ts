@@ -22,6 +22,7 @@ export const STATUS: Record<ImplementationStatus, { label: string; glyph: string
 export const TRACK: Record<Scenario['track'], string> = {
   current: '현재 동작',
   'product-target': '제품 목표 — 아직 구현되지 않음',
+  developer: '개발 흐름',
 };
 
 /** 기록의 종류. 그 항목이 무엇에 대한 것인지 나타낸다. */

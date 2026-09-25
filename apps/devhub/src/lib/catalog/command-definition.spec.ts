@@ -16,7 +16,13 @@ describe('definitionOf', () => {
   });
 
   it("reads an Nx target's command from the project manifest", () => {
-    expect(definitionOf(command('api-migrate'))).toBe('go run ./cmd/migrate');
+    // 지금은 모든 api target을 루트 script가 감싸므로 target을 직접 가리키는 명령을 만들어 본다.
+    const target: CommandRef = {
+      ...command('api-migrate'),
+      source: { kind: 'nx-target', project: 'api', target: 'migrate' },
+    };
+    expect(definitionOf(target)).toBe('go run ./cmd/migrate');
+    expect(definitionOf(command('api-migrate'))).toBe('nx run api:migrate');
   });
 
   it('has a definition for every catalog command today', () => {

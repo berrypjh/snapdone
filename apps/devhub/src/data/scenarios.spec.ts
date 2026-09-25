@@ -99,7 +99,7 @@ describe('scenario structure', () => {
 describe('scenario status', () => {
   it('keeps current scenarios and product targets apart', () => {
     for (const scenario of catalog.scenarios) {
-      const allowed = scenario.track === 'current' ? CURRENT : TARGET;
+      const allowed = scenario.track === 'product-target' ? TARGET : CURRENT;
       expect(allowed).toContain(scenario.status);
     }
   });

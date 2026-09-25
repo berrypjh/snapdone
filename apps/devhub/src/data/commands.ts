@@ -1,14 +1,9 @@
 import type { CommandRef, TestRef } from '../domain/model';
 
 const script = (name: string) => ({ kind: 'package-script' as const, script: name });
-const nxTarget = (project: string, target: string) => ({
-  kind: 'nx-target' as const,
-  project,
-  target,
-});
 
 /**
- * 루트 `package.json`의 script, 그리고 어떤 script도 감싸지 않는 `api` target.
+ * 루트 `package.json`의 script 전부. api target도 루트 script(`migrate` · `swagger` · `eval` 등)가 감싼다.
  * `constraints`는 샌드박스 AI 세션에서 그 명령이 왜 실패하는지 말한다.
  */
 export const commands: CommandRef[] = [
@@ -128,13 +123,6 @@ export const commands: CommandRef[] = [
     constraints: [],
   },
   {
-    id: 'graph',
-    source: script('graph'),
-    group: 'workspace',
-    summary: 'Nx project graph를 브라우저로 엶',
-    constraints: ['port-binding'],
-  },
-  {
     id: 'prepare',
     source: script('prepare'),
     group: 'workspace',
@@ -143,21 +131,37 @@ export const commands: CommandRef[] = [
   },
   {
     id: 'api-migrate',
-    source: nxTarget('api', 'migrate'),
+    source: script('migrate'),
     group: 'api',
     summary: 'Postgres 마이그레이션 적용 (Nx 내장 migrate와 다름)',
     constraints: ['database'],
   },
   {
     id: 'api-swagger',
-    source: nxTarget('api', 'swagger'),
+    source: script('swagger'),
     group: 'api',
     summary: 'swag 주석으로 apps/api/docs/swagger 재생성',
     constraints: [],
   },
   {
+    id: 'api-eval',
+    source: script('eval'),
+    group: 'api',
+    summary:
+      '평가 harness CLI(go run ./cmd/eval). list · validate · plan · replay · report · compare는 모델을 부르지 않고, run은 --allow-api와 --max-api-calls가 있을 때만 실제 provider를 부름',
+    constraints: [],
+  },
+  {
+    id: 'api-eval-check',
+    source: script('eval:check'),
+    group: 'check',
+    summary:
+      '평가 harness의 offline Go 테스트와 pilot dataset 구조 검증 · readiness 출력. 모델 호출 없음, 캐시 없음',
+    constraints: [],
+  },
+  {
     id: 'api-swagger-check',
-    source: nxTarget('api', 'swagger-check'),
+    source: script('swagger:check'),
     group: 'api',
     summary: 'Swagger 문서가 최신인지 검사만 함',
     constraints: [],

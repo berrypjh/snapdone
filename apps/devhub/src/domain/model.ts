@@ -297,14 +297,16 @@ export type ScenarioStep = {
 };
 
 /**
- * 코드로 따라간 사용자 목표. `current` 시나리오는 오늘 도는 것을 설명하고,
+ * 코드로 따라간 목표. `current` 시나리오는 오늘 도는 사용자 흐름을 설명하고,
  * `product-target` 시나리오는 문서가 약속한 것을 설명하며 source를 달면 안 된다.
+ * `developer` 시나리오는 사용자가 아니라 개발자가 저장소 안에서 돌리는 흐름(평가 harness 등)이며
+ * 상태 규칙은 `current`와 같다.
  */
 export type Scenario = {
   id: string;
   title: string;
   goal: string;
-  track: 'current' | 'product-target';
+  track: 'current' | 'product-target' | 'developer';
   status: ImplementationStatus;
   /** 첫 단계가 진입점이다. */
   steps: ScenarioStep[];

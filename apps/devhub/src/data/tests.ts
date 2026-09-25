@@ -34,6 +34,7 @@ const goTest = (
 const WEB = 'apps/web/src/lib/auth';
 const MOBILE = 'apps/mobile/src/auth';
 const HTTP = 'apps/api/internal/httpserver';
+const EVAL = 'apps/api/internal/evaluation';
 const AUTH = 'apps/api/internal/auth';
 const WEB_ONBOARDING = 'apps/web/src/lib/onboarding';
 const MOBILE_ONBOARDING = 'apps/mobile/src/onboarding';
@@ -847,4 +848,119 @@ export const tests: TestRef[] = [
     'onboarding.spec.ts',
     'reopening onboarding resumes the saved step',
   ),
+  goTest(
+    'go-eval-descriptor-matches-providers',
+    'apps/api/internal/processing/contract_test.go',
+    'TestDescribeContractMatchesProviderRequests',
+    [],
+  ),
+  goTest(
+    'go-eval-preflight-no-calls',
+    `${EVAL}/runner_test.go`,
+    'TestPreflightBlocksWithoutCalls',
+    [],
+  ),
+  goTest(
+    'go-eval-budget-counts-retries',
+    `${EVAL}/runner_test.go`,
+    'TestRunBudgetCountsRetries',
+    [],
+  ),
+  goTest('go-eval-replay-golden', `${EVAL}/artifact_test.go`, 'TestReplayGolden', []),
+  goTest(
+    'go-eval-compare-variants',
+    `${EVAL}/compare_test.go`,
+    'TestCompareSameDataDifferentVariants',
+    [],
+  ),
+  goTest(
+    'go-eval-cli-exit-codes',
+    'apps/api/cmd/eval/main_test.go',
+    'TestCompiledBinaryExitCodes',
+    [],
+  ),
+  goTest('go-eval-dataset-pilot', `${EVAL}/dataset_test.go`, 'TestLoadPilotDataset', []),
+  goTest('go-eval-dataset-rejects', `${EVAL}/dataset_test.go`, 'TestLoadDatasetRejects', []),
+  goTest(
+    'go-eval-plan-reproducible',
+    `${EVAL}/runner_test.go`,
+    'TestPlanIsReproducibleAndOrdered',
+    [],
+  ),
+  goTest(
+    'go-eval-adapter-normal',
+    `${EVAL}/adapter_processing_test.go`,
+    'TestAdapterObservesANormalAnswer',
+    [],
+  ),
+  goTest(
+    'go-eval-adapter-redacts',
+    `${EVAL}/adapter_processing_test.go`,
+    'TestAdapterRedactsTheSecret',
+    [],
+  ),
+  goTest(
+    'go-eval-accuracy-vs-f1',
+    `${EVAL}/classification_test.go`,
+    'TestAccuracyDiffersFromMacroF1',
+    [],
+  ),
+  goTest(
+    'go-eval-risk-unobserved',
+    `${EVAL}/classification_test.go`,
+    'TestRiskCountsCriticalAndUnobserved',
+    [],
+  ),
+  goTest(
+    'go-eval-artifacts-regenerable',
+    `${EVAL}/artifact_test.go`,
+    'TestWriterProducesRegenerableArtifacts',
+    [],
+  ),
+  goTest('go-eval-compare-mismatch', `${EVAL}/compare_test.go`, 'TestCompareRejectsMismatches', []),
+  goTest(
+    'go-eval-text-live-unsupported',
+    `${EVAL}/text_integration_test.go`,
+    'TestTextLiveIsUnsupported',
+    [],
+  ),
+  goTest(
+    'go-eval-translation-live-unsupported',
+    `${EVAL}/translation_test.go`,
+    'TestTranslationLiveIsUnsupported',
+    [],
+  ),
+  goTest(
+    'go-eval-cli-replay-round-trip',
+    'apps/api/cmd/eval/main_test.go',
+    'TestReplayReportCompare',
+    [],
+  ),
+  goTest('go-eval-cli-usage', 'apps/api/cmd/eval/main_test.go', 'TestUsageErrors', []),
+  goTest('go-eval-variant-rejects', `${EVAL}/variant_test.go`, 'TestDecodeVariantRejects', []),
+  goTest(
+    'go-eval-observer-budget-gate',
+    `${EVAL}/transport_test.go`,
+    'TestObserverBudgetGateRunsBeforeTheNetwork',
+    [],
+  ),
+  goTest(
+    'go-eval-summary-hand-calculated',
+    `${EVAL}/aggregate_test.go`,
+    'TestSummarizeMultiVariantHandCalculated',
+    [],
+  ),
+  goTest(
+    'go-eval-measure-zero-vs-missing',
+    `${EVAL}/measure_test.go`,
+    'TestMeasureZeroRoundTrip',
+    [],
+  ),
+  goTest(
+    'go-eval-text-whitespace-normalization',
+    `${EVAL}/text_test.go`,
+    'TestTextWhitespaceNormalization',
+    [],
+  ),
+  goTest('go-eval-run-metadata-rejects', `${EVAL}/run_test.go`, 'TestDecodeRunMetadataRejects', []),
 ];
