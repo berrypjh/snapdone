@@ -35,7 +35,12 @@
     "test": {
       "executor": "nx:run-commands",
       "cache": true,
-      "inputs": ["default"],
+      "inputs": [
+        "default",
+        "{workspaceRoot}/tools/evals/datasets/**/*",
+        "{workspaceRoot}/tools/evals/variants/**/*",
+        "!{workspaceRoot}/tools/evals/results/**/*"
+      ],
       "options": {
         "cwd": "apps/api",
         "command": "go test ./..."
@@ -74,6 +79,22 @@
       "options": {
         "cwd": "apps/api",
         "command": "unformatted=$(gofmt -l .); if [ -n \"$unformatted\" ]; then echo 'gofmt required for:'; echo \"$unformatted\"; exit 1; fi"
+      }
+    },
+    "eval": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "apps/api",
+        "command": "go run ./cmd/eval"
+      }
+    },
+    "eval-check": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "apps/api",
+        "command": "go test ./cmd/eval ./internal/evaluation -count=1 && go run ./cmd/eval validate --dataset pilot-v1"
       }
     }
   }

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "runId": "replay-golden",
+  "startedAt": "2026-09-22T06:00:00Z",
+  "status": "partial",
+  "finishedAt": "2026-09-22T06:00:00Z",
+  "mode": "replay",
+  "source": {
+    "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "branch": "main",
+    "dirty": false,
+    "sourceHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "evaluatorHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "moduleHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "goVersion": "go-test"
+  },
+  "dataset": {
+    "name": "unit",
+    "version": 1,
+    "tier": "software-fixture",
+    "split": "dev",
+    "selectionHash": "be294f7f43c9fc27c802f8695acf47df7576870873351ecc094e6181344f265d",
+    "caseCount": 3
+  },
+  "selectedCaseIds": [
+    "case-a",
+    "case-b",
+    "case-c"
+  ],
+  "variants": [
+    {
+      "id": "replay-v",
+      "version": 1,
+      "task": "image-classification",
+      "adapter": "processing",
+      "provider": "openai",
+      "model": "test-model",
+      "baseHost": "localhost:11434",
+      "contractHash": "5152dd422f81459aeb6c8ed50f4aedd9e0983f4a255ea49cd0d050c1fc3edcfb"
+    }
+  ],
+  "policy": {
+    "version": "classification-pass-v1",
+    "requireSchemaValid": false
+  },
+  "evaluatorPolicyHash": "331dcd06bcf486c2849402049162742e6a2d49509916bee3254c24468fa95eb5",
+  "labelContractHash": "ba87ebe5a99b4e76002d0d8bf34707bbd9ec4519affa9adf6954d5993b9c2111",
+  "sampling": {
+    "trials": 1,
+    "seed": null
+  },
+  "controls": {
+    "timeoutMs": 5000,
+    "maxAttempts": 1,
+    "concurrency": 1,
+    "allowApi": false,
+    "callBudget": 0,
+    "allowDrafts": false,
+    "allowHeldOut": false
+  }
+}

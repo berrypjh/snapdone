@@ -1,0 +1,537 @@
+{
+  "schemaVersion": 1,
+  "runId": "replay-golden",
+  "mode": "replay",
+  "status": "partial",
+  "dataset": {
+    "name": "unit",
+    "version": 1,
+    "tier": "software-fixture",
+    "split": "dev",
+    "selectionHash": "be294f7f43c9fc27c802f8695acf47df7576870873351ecc094e6181344f265d",
+    "caseCount": 3
+  },
+  "policy": {
+    "version": "classification-pass-v1",
+    "requireSchemaValid": false
+  },
+  "officialEligible": false,
+  "reasons": [
+    "run is partial: some invocations did not run",
+    "mode is replay, not a live measurement",
+    "dataset tier is software-fixture, not golden-benchmark",
+    "variant replay-v trial 1 is incomplete"
+  ],
+  "variants": [
+    {
+      "variant": {
+        "id": "replay-v",
+        "version": 1,
+        "task": "image-classification",
+        "adapter": "processing",
+        "provider": "openai",
+        "model": "test-model",
+        "baseHost": "localhost:11434",
+        "contractHash": "5152dd422f81459aeb6c8ed50f4aedd9e0983f4a255ea49cd0d050c1fc3edcfb"
+      },
+      "trials": 1,
+      "execution": {
+        "selected": 3,
+        "invocations": 3,
+        "attempted": 2,
+        "completed": 2,
+        "failed": 0,
+        "timedOut": 0,
+        "unsupported": 0,
+        "notRun": 1,
+        "cancelled": 0,
+        "missing": 0
+      },
+      "outcome": {
+        "passed": 1,
+        "failed": 1,
+        "unscored": 1
+      },
+      "quality": [
+        {
+          "trial": 1,
+          "classification": {
+            "policy": {
+              "version": "classification-pass-v1",
+              "requireSchemaValid": false
+            },
+            "selected": 3,
+            "evaluated": 2,
+            "notRun": 1,
+            "complete": false,
+            "execution": {
+              "completed": 2
+            },
+            "predicted": 2,
+            "category": {
+              "correct": 1,
+              "accuracy": {
+                "availability": "measured",
+                "value": 0.3333333333333333
+              },
+              "invalid": 1,
+              "labels": {
+                "event": {
+                  "support": 3,
+                  "tp": 1,
+                  "fp": 0,
+                  "fn": 2,
+                  "precision": {
+                    "availability": "measured",
+                    "value": 1
+                  },
+                  "recall": {
+                    "availability": "measured",
+                    "value": 0.3333333333333333
+                  },
+                  "f1": {
+                    "availability": "measured",
+                    "value": 0.5
+                  }
+                },
+                "foreign_text": {
+                  "support": 0,
+                  "tp": 0,
+                  "fp": 0,
+                  "fn": 0,
+                  "precision": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no prediction of this label"
+                  },
+                  "recall": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no gold of this label"
+                  },
+                  "f1": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no gold of this label"
+                  }
+                },
+                "other": {
+                  "support": 0,
+                  "tp": 0,
+                  "fp": 0,
+                  "fn": 0,
+                  "precision": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no prediction of this label"
+                  },
+                  "recall": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no gold of this label"
+                  },
+                  "f1": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no gold of this label"
+                  }
+                },
+                "place": {
+                  "support": 0,
+                  "tp": 0,
+                  "fp": 1,
+                  "fn": 0,
+                  "precision": {
+                    "availability": "measured",
+                    "value": 0
+                  },
+                  "recall": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no gold of this label"
+                  },
+                  "f1": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no gold of this label"
+                  }
+                },
+                "receipt": {
+                  "support": 0,
+                  "tp": 0,
+                  "fp": 0,
+                  "fn": 0,
+                  "precision": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no prediction of this label"
+                  },
+                  "recall": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no gold of this label"
+                  },
+                  "f1": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no gold of this label"
+                  }
+                },
+                "shopping": {
+                  "support": 0,
+                  "tp": 0,
+                  "fp": 0,
+                  "fn": 0,
+                  "precision": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no prediction of this label"
+                  },
+                  "recall": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no gold of this label"
+                  },
+                  "f1": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no gold of this label"
+                  }
+                },
+                "work": {
+                  "support": 0,
+                  "tp": 0,
+                  "fp": 0,
+                  "fn": 0,
+                  "precision": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no prediction of this label"
+                  },
+                  "recall": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no gold of this label"
+                  },
+                  "f1": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no gold of this label"
+                  }
+                }
+              },
+              "macroF1": {
+                "availability": "measured",
+                "value": 0.5
+              },
+              "macroCoverage": "subset",
+              "missingLabels": [
+                "place",
+                "receipt",
+                "foreign_text",
+                "shopping",
+                "work",
+                "other"
+              ],
+              "confusion": {
+                "event": {
+                  "__invalid__": 1,
+                  "event": 1,
+                  "place": 1
+                }
+              }
+            },
+            "action": {
+              "withCanonical": 3,
+              "unresolved": 0,
+              "canonicalCorrect": 1,
+              "canonicalExactMatch": {
+                "availability": "measured",
+                "value": 0.3333333333333333
+              },
+              "acceptedCorrect": 1,
+              "acceptedAccuracy": {
+                "availability": "measured",
+                "value": 0.3333333333333333
+              },
+              "labels": {
+                "add_to_calendar": {
+                  "support": 3,
+                  "tp": 1,
+                  "fp": 0,
+                  "fn": 2,
+                  "precision": {
+                    "availability": "measured",
+                    "value": 1
+                  },
+                  "recall": {
+                    "availability": "measured",
+                    "value": 0.3333333333333333
+                  },
+                  "f1": {
+                    "availability": "measured",
+                    "value": 0.5
+                  }
+                },
+                "none": {
+                  "support": 0,
+                  "tp": 0,
+                  "fp": 0,
+                  "fn": 0,
+                  "precision": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no prediction of this label"
+                  },
+                  "recall": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no gold of this label"
+                  },
+                  "f1": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no gold of this label"
+                  }
+                },
+                "record_expense": {
+                  "support": 0,
+                  "tp": 0,
+                  "fp": 0,
+                  "fn": 0,
+                  "precision": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no prediction of this label"
+                  },
+                  "recall": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no gold of this label"
+                  },
+                  "f1": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no gold of this label"
+                  }
+                },
+                "save_place": {
+                  "support": 0,
+                  "tp": 0,
+                  "fp": 1,
+                  "fn": 0,
+                  "precision": {
+                    "availability": "measured",
+                    "value": 0
+                  },
+                  "recall": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no gold of this label"
+                  },
+                  "f1": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no gold of this label"
+                  }
+                },
+                "translate": {
+                  "support": 0,
+                  "tp": 0,
+                  "fp": 0,
+                  "fn": 0,
+                  "precision": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no prediction of this label"
+                  },
+                  "recall": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no gold of this label"
+                  },
+                  "f1": {
+                    "availability": "not-applicable",
+                    "value": null,
+                    "reason": "no gold of this label"
+                  }
+                }
+              },
+              "confusion": {
+                "add_to_calendar": {
+                  "__invalid__": 1,
+                  "add_to_calendar": 1,
+                  "save_place": 1
+                }
+              },
+              "offDiagonalAccepted": 0,
+              "confusionNote": "rows are canonical (acceptableActions[0]); an off-diagonal cell of an adjudicated case may be an accepted alternative"
+            },
+            "jointCorrect": 1,
+            "jointExactMatch": {
+              "availability": "measured",
+              "value": 0.3333333333333333
+            },
+            "passed": 1,
+            "passRate": {
+              "availability": "measured",
+              "value": 0.3333333333333333
+            },
+            "confidence": {
+              "high": {
+                "cases": 1,
+                "categoryCorrect": 1,
+                "nonNone": 1,
+                "accuracy": {
+                  "availability": "measured",
+                  "value": 1
+                },
+                "nonNoneRate": {
+                  "availability": "measured",
+                  "value": 1
+                }
+              },
+              "low": {
+                "cases": 0,
+                "categoryCorrect": 0,
+                "nonNone": 0,
+                "accuracy": {
+                  "availability": "not-applicable",
+                  "value": null,
+                  "reason": "no prediction at this level"
+                },
+                "nonNoneRate": {
+                  "availability": "not-applicable",
+                  "value": null,
+                  "reason": "no prediction at this level"
+                }
+              },
+              "medium": {
+                "cases": 1,
+                "categoryCorrect": 0,
+                "nonNone": 1,
+                "accuracy": {
+                  "availability": "measured",
+                  "value": 0
+                },
+                "nonNoneRate": {
+                  "availability": "measured",
+                  "value": 1
+                }
+              }
+            },
+            "risk": {
+              "eligible": 3,
+              "observed": 2,
+              "unobserved": 1,
+              "critical": 0,
+              "criticalRate": {
+                "availability": "measured",
+                "value": 0
+              },
+              "criticalOrUnobservedRate": {
+                "availability": "measured",
+                "value": 0.3333333333333333
+              }
+            },
+            "rawSyntax": {
+              "valid": 2,
+              "invalid": 0,
+              "unobserved": 0
+            },
+            "rawShape": {
+              "valid": 2,
+              "invalid": 0,
+              "unobserved": 0
+            },
+            "parser": {
+              "valid": 2,
+              "invalid": 0,
+              "unobserved": 0
+            }
+          }
+        }
+      ],
+      "reliability": {
+        "attempted": 2,
+        "completed": 2,
+        "wireCalls": 0,
+        "completionRate": {
+          "availability": "measured",
+          "value": 1
+        },
+        "errorsByClass": {},
+        "errorsByKind": {}
+      },
+      "latency": {
+        "definition": "adapter wall time per invocation in ms; attempted includes timed-out and failed; mean = sum/n; median averages the two middle values for even n; p95 = value at rank ceil(0.95*n) (nearest-rank)",
+        "attempted": {
+          "n": 0,
+          "meanMs": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "replay: latency is not measured"
+          },
+          "medianMs": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "replay: latency is not measured"
+          },
+          "p95Ms": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "replay: latency is not measured"
+          },
+          "note": "replay: latency is not measured"
+        },
+        "completed": {
+          "n": 0,
+          "meanMs": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "replay: latency is not measured"
+          },
+          "medianMs": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "replay: latency is not measured"
+          },
+          "p95Ms": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "replay: latency is not measured"
+          },
+          "note": "replay: latency is not measured"
+        }
+      },
+      "cost": {
+        "wireCalls": 0,
+        "usage": {
+          "inputTokens": {
+            "availability": "unavailable",
+            "value": null,
+            "reason": "no invocation reported usage"
+          },
+          "outputTokens": {
+            "availability": "unavailable",
+            "value": null,
+            "reason": "no invocation reported usage"
+          },
+          "known": 0,
+          "unknown": 2
+        },
+        "estimated": {
+          "availability": "unavailable",
+          "value": null,
+          "reason": "no price table"
+        },
+        "actual": {
+          "availability": "unavailable",
+          "value": null,
+          "reason": "provider invoices are not read"
+        },
+        "pricing": null
+      }
+    }
+  ]
+}

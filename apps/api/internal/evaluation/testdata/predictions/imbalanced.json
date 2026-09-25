@@ -1,0 +1,33 @@
+{
+  "note": "손으로 검산한 기대값. place 4 · event 1 · receipt 1을 전부 place/save_place로 예측. accuracy 4/6, place P=4/6 R=1 F1=0.8, event · receipt F1=0, macro F1 = 0.8/3 (gold가 있는 3개 label 평균, 나머지 4 category는 missing).",
+  "cases": [
+    { "id": "p1", "category": "place", "action": "save_place" },
+    { "id": "p2", "category": "place", "action": "save_place" },
+    { "id": "p3", "category": "place", "action": "save_place" },
+    { "id": "p4", "category": "place", "action": "save_place" },
+    { "id": "e1", "category": "event", "action": "add_to_calendar" },
+    { "id": "r1", "category": "receipt", "action": "record_expense" }
+  ],
+  "predictions": {
+    "p1": { "category": "place", "action": "save_place", "confidence": "high" },
+    "p2": { "category": "place", "action": "save_place", "confidence": "high" },
+    "p3": { "category": "place", "action": "save_place", "confidence": "high" },
+    "p4": { "category": "place", "action": "save_place", "confidence": "high" },
+    "e1": { "category": "place", "action": "save_place", "confidence": "high" },
+    "r1": { "category": "place", "action": "save_place", "confidence": "high" }
+  },
+  "expected": {
+    "categoryAccuracy": 0.6666666666666666,
+    "macroF1": 0.26666666666666666,
+    "macroCoverage": "subset",
+    "missingLabels": ["foreign_text", "shopping", "work", "other"],
+    "labels": {
+      "place": { "support": 4, "tp": 4, "fp": 2, "fn": 0, "f1": 0.8 },
+      "event": { "support": 1, "tp": 0, "fp": 0, "fn": 1, "f1": 0 },
+      "receipt": { "support": 1, "tp": 0, "fp": 0, "fn": 1, "f1": 0 }
+    },
+    "canonicalActionExactMatch": 0.6666666666666666,
+    "jointExactMatch": 0.6666666666666666,
+    "passRate": 0.6666666666666666
+  }
+}

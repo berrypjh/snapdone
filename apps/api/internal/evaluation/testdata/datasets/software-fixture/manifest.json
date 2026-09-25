@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "name": "software-fixture",
+  "version": 1,
+  "task": "image-classification",
+  "tier": "software-fixture",
+  "license": "CC0-1.0",
+  "guideline": "software-fixture",
+  "splits": {
+    "dev": {
+      "file": "dev.jsonl",
+      "cases": 2
+    },
+    "validation": {
+      "file": "validation.jsonl",
+      "cases": 1
+    },
+    "held-out": {
+      "file": "held-out.jsonl",
+      "cases": 1
+    }
+  },
+  "targetPerCategory": {
+    "dev": 0,
+    "validation": 0,
+    "held-out": 0
+  }
+}
