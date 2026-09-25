@@ -1,0 +1,7 @@
+{"variantId": "replay-example", "caseId": "place-01", "prediction": {"category": "place", "facts": [], "suggestedAction": "save_place", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "event-01", "prediction": {"category": "event", "facts": [], "suggestedAction": "add_to_calendar", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "receipt-01", "prediction": {"category": "receipt", "facts": [], "suggestedAction": "record_expense", "confidence": "medium"}}
+{"variantId": "replay-example", "caseId": "foreign-text-01", "prediction": {"category": "foreign_text", "facts": [], "suggestedAction": "translate", "confidence": "medium"}}
+{"variantId": "replay-example", "caseId": "shopping-01", "prediction": {"category": "shopping", "facts": [], "suggestedAction": "none", "confidence": "low"}}
+{"variantId": "replay-example", "caseId": "work-01", "prediction": {"category": "event", "facts": [], "suggestedAction": "add_to_calendar", "confidence": "low"}}
+{"variantId": "replay-example", "caseId": "other-01", "status": "timed-out", "failure": {"class": "timeout", "kind": "timeout", "message": "request timed out"}}

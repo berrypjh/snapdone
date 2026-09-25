@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "anthropic-example",
+  "version": 1,
+  "task": "image-classification",
+  "adapter": "processing",
+  "provider": "anthropic",
+  "model": "<claude-model-id>",
+  "apiKeyEnv": "PROCESSING_API_KEY",
+  "expectedContractHash": "5152dd422f81459aeb6c8ed50f4aedd9e0983f4a255ea49cd0d050c1fc3edcfb",
+  "config": {},
+  "placeholder": true
+}

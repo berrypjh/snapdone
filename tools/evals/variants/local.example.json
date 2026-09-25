@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "local-ollama-example",
+  "version": 1,
+  "task": "image-classification",
+  "adapter": "processing",
+  "provider": "openai",
+  "model": "<ollama-model-tag>",
+  "endpoint": "http://localhost:11434/v1",
+  "expectedContractHash": "5152dd422f81459aeb6c8ed50f4aedd9e0983f4a255ea49cd0d050c1fc3edcfb",
+  "config": {},
+  "placeholder": true
+}

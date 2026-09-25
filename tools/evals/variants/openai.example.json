@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "openai-example",
+  "version": 1,
+  "task": "image-classification",
+  "adapter": "processing",
+  "provider": "openai",
+  "model": "<openai-model-id>",
+  "endpoint": "https://api.openai.com/v1",
+  "apiKeyEnv": "PROCESSING_API_KEY",
+  "expectedContractHash": "5152dd422f81459aeb6c8ed50f4aedd9e0983f4a255ea49cd0d050c1fc3edcfb",
+  "config": {},
+  "placeholder": true
+}

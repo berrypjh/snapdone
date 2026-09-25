@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "name": "pilot-v1",
+  "version": 1,
+  "task": "image-classification",
+  "tier": "synthetic-pilot",
+  "license": "CC0-1.0",
+  "guideline": "pilot-v1-rubric",
+  "splits": {
+    "dev": {
+      "file": "dev.jsonl",
+      "cases": 7
+    },
+    "validation": {
+      "file": "validation.jsonl",
+      "cases": 0
+    },
+    "held-out": {
+      "file": "held-out.jsonl",
+      "cases": 0
+    }
+  },
+  "targetPerCategory": {
+    "dev": 3,
+    "validation": 1,
+    "held-out": 1
+  }
+}
