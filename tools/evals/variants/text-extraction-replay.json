@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "id": "anthropic-example",
+  "id": "text-extraction-replay",
   "version": 1,
-  "task": "image-classification",
+  "task": "text-extraction",
   "adapter": "processing",
-  "provider": "anthropic",
-  "model": "<claude-model-id>",
-  "apiKeyEnv": "PROCESSING_API_KEY",
+  "provider": "openai",
+  "model": "replay-text-extraction-model",
+  "endpoint": "http://localhost:11434/v1",
   "expectedContractHash": "5152dd422f81459aeb6c8ed50f4aedd9e0983f4a255ea49cd0d050c1fc3edcfb",
   "config": {},
   "placeholder": true

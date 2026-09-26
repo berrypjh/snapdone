@@ -1,0 +1,2 @@
+{"variantId": "replay-example", "caseId": "event-01", "prediction": {"category": "event", "facts": [], "suggestedAction": "add_to_calendar", "confidence": "high"}}
+{"variantId": "replay-candidate", "caseId": "event-01", "prediction": {"category": "receipt", "facts": [], "suggestedAction": "record_expense", "confidence": "medium"}}

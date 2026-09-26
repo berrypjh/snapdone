@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "facts-prompt",
+  "version": 1,
+  "config": {
+    "promptPath": "prompts/facts-normalized.md"
+  }
+}

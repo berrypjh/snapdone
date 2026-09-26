@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "baseline-nearest-case",
+  "version": 1,
+  "task": "image-classification",
+  "adapter": "baseline",
+  "provider": "none",
+  "model": "baseline-nearest-case",
+  "expectedContractHash": "5152dd422f81459aeb6c8ed50f4aedd9e0983f4a255ea49cd0d050c1fc3edcfb",
+  "config": {
+    "baseline": {
+      "strategy": "nearest"
+    },
+    "retrieval": {
+      "k": 1
+    }
+  }
+}

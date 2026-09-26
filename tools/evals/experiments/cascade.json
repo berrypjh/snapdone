@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "cascade",
+  "version": 1,
+  "config": {
+    "cascade": {
+      "escalateOn": ["low", "medium"]
+    }
+  }
+}

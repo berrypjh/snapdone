@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "similar-cases",
+  "version": 1,
+  "config": {
+    "retrieval": {
+      "k": 3
+    }
+  }
+}
