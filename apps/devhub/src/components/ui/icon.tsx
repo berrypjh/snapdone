@@ -100,6 +100,7 @@ const PATHS = {
   'chevron-left': ['m15 6-6 6 6 6'],
   'chevron-right': ['m9 6 6 6-6 6'],
   search: ['M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z', 'm20 20-4-4'],
+  evaluation: ['M4 20h16', 'M7 16v-4', 'M12 16V8', 'M17 16v-7'],
 } as const;
 
 export type IconName = keyof typeof PATHS;

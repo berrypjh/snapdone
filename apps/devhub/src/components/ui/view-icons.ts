@@ -26,4 +26,5 @@ export const VIEW_ICON = {
   overview: 'home',
   architecture: 'architecture',
   source: 'source',
+  evals: 'evaluation',
 } as const satisfies Record<string, IconName>;

@@ -6,6 +6,53 @@ import type { RecordRef } from '../domain/model';
  */
 export const records: RecordRef[] = [
   {
+    id: 'evaluation-retry',
+    path: 'docs/records/2026-09-26-evaluation-retry.md',
+    title: '일부 모델만 실패한 평가 run을 실패한 것만 다시 불러 한 run으로 모음',
+    kind: 'decision',
+    date: '2026-09-26',
+    summary:
+      '성공한 결과는 호출 없이 옮겨 지금 채점기로 다시 채점하고 실패 · 미실행만 부름. 비용을 다시 쓰지 않고 모든 모델을 한 비교표로 봄',
+    sources: [
+      { path: 'apps/api/internal/evaluation/carry.go', symbol: 'LoadCarry' },
+      { path: 'apps/api/internal/evaluation/carry.go', symbol: 'Carry.check' },
+      { path: 'apps/api/internal/evalcli/retry.go', symbol: 'cmdRetry' },
+    ],
+    docs: [{ document: 'agent-evaluation', heading: 'run — `Run(ctx, RunRequest, Deps, Sink)`' }],
+    tests: ['go-eval-retry-carry', 'go-eval-retry-refuse', 'go-eval-cli-retry'],
+  },
+  {
+    id: 'evaluation-experiments',
+    path: 'docs/records/2026-09-26-evaluation-experiments.md',
+    title: '평가에 기준선 · 여러 모델 · 실험 지시 · 비슷한 사례 · 계단식과 추출값 채점을 더함',
+    kind: 'implementation',
+    date: '2026-09-26',
+    summary:
+      'production 동작은 그대로 두고 manifest 설정으로 실험. 모델 없는 기준선과 나란히 보고, 행동에 필요한 값을 읽었는지와 자동 실행 안전성까지 잼',
+    sources: [
+      { path: 'apps/api/internal/evaluation/baseline.go', symbol: 'baselineAdapter.Invoke' },
+      { path: 'apps/api/internal/evaluation/retrieval.go', symbol: 'ProbeRetrieval' },
+      { path: 'apps/api/internal/evaluation/facts.go', symbol: 'factMatches' },
+      {
+        path: 'apps/api/internal/evaluation/processingadapter/adapter.go',
+        symbol: 'Adapter.escalate',
+      },
+      {
+        path: 'apps/api/internal/processing/claude.go',
+        symbol: 'ClaudeClassifier.WithInstructions',
+      },
+    ],
+    docs: [{ document: 'agent-evaluation', heading: '실험 설정' }],
+    tests: [
+      'go-eval-baseline-run',
+      'go-eval-retrieval-probe',
+      'go-eval-facts-readiness-calibration',
+      'go-eval-cascade-escalation',
+      'go-eval-prompt-examples-request',
+      'go-eval-pilot-facts-in-source',
+    ],
+  },
+  {
     id: 'agent-evaluation-harness',
     path: 'docs/records/2026-09-22-agent-evaluation-harness.md',
     title: '사진 분류 평가 harness를 Go core와 CLI로 구현',
@@ -17,7 +64,7 @@ export const records: RecordRef[] = [
       { path: 'apps/api/internal/processing/contract.go', symbol: 'DescribeContract' },
       { path: 'apps/api/internal/evaluation/runner.go', symbol: 'Run' },
       { path: 'apps/api/internal/evaluation/compare.go', symbol: 'Compare' },
-      { path: 'apps/api/cmd/eval/main.go', symbol: 'run' },
+      { path: 'apps/api/internal/evalcli/app.go', symbol: 'Run' },
     ],
     docs: [
       { document: 'agent-evaluation', heading: '위치 · 언어 결정' },

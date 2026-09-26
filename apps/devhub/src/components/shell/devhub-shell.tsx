@@ -2,13 +2,19 @@ import type { ReactNode } from 'react';
 
 import { catalog } from '@/data';
 import type { SectionId } from '@/lib/catalog/entities';
+import type { Task } from '@/lib/evaluations/contract';
 
 import { Explorer } from './explorer';
 import { ExplorerDrawerProvider } from './explorer-drawer';
 import { TopBar } from './top-bar';
 
 type DevHubShellProps = {
-  selection: { section?: SectionId; id?: string; view?: 'architecture' | 'source' };
+  selection: {
+    section?: SectionId;
+    id?: string;
+    view?: 'architecture' | 'source' | 'evals';
+    evalTask?: Task;
+  };
   /** `<main>` 작업 영역. */
   children: ReactNode;
   /** 오른쪽 `<aside>`. 레이아웃 아래에서 선택이 바뀔 수 있도록 route page가 넘긴다. */

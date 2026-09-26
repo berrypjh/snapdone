@@ -30,12 +30,13 @@ const VIEWS: { label: string; href: string; icon: IconName; sections: SectionId[
     icon: SECTION_ICON.engineering,
     sections: ['engineering'],
   },
+  { label: '평가', href: '/evals', icon: VIEW_ICON.evals, sections: [] },
 ];
 
 type TopBarProps = {
   repository: RepositoryRef;
   activeSection?: SectionId;
-  activeView?: 'architecture' | 'source';
+  activeView?: 'architecture' | 'source' | 'evals';
 };
 
 export function TopBar({ repository, activeSection, activeView }: TopBarProps) {
@@ -44,7 +45,7 @@ export function TopBar({ repository, activeSection, activeView }: TopBarProps) {
       ? view.href === `/${activeView}`
       : activeSection
         ? view.sections.includes(activeSection)
-        : view.sections.length === 0;
+        : view.href === '/';
 
   return (
     <header className="flex min-h-14 flex-wrap items-center gap-x-2 gap-y-2 border-b border-stroke-light bg-background-surface px-4 py-2 max-lg:sticky max-lg:top-0 max-lg:z-20 lg:flex-nowrap lg:gap-x-4">

@@ -156,7 +156,7 @@ export const commands: CommandRef[] = [
     source: script('eval:check'),
     group: 'check',
     summary:
-      '평가 harness의 offline Go 테스트와 pilot dataset 구조 검증 · readiness 출력. 모델 호출 없음, 캐시 없음',
+      '평가 harness의 offline Go 테스트와 sample dataset 구조 검증 · readiness 출력. 모델 호출 없음, 캐시 없음',
     constraints: [],
   },
   {

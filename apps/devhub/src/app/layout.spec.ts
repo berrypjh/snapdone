@@ -52,6 +52,6 @@ describe('skip links', () => {
     const names = [...nav.matchAll(/<a [^>]*>([\s\S]*?)<\/a>/g)].map(([, inner]) =>
       inner.replace(/<[^>]+>/g, ''),
     );
-    expect(names).toEqual(['개요', '시나리오', '아키텍처', '문서', '기록', '엔지니어링']);
+    expect(names).toEqual(['개요', '시나리오', '아키텍처', '문서', '기록', '엔지니어링', '평가']);
   });
 });
