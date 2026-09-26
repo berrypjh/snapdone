@@ -130,3 +130,21 @@ func TestLimitedTransportCutsLargeBodies(t *testing.T) {
 		t.Fatalf("read %d bytes, want %d", len(read), maxResponseBody)
 	}
 }
+
+// 평가 실험용 복사본은 system 지시만 바꾸고 원본은 production 지시 그대로다.
+func TestWithInstructionsChangesOnlyTheCopy(t *testing.T) {
+	classifier, body, _ := fakeClaude(t, "end_turn", resultJSON)
+	system := func() any { return (*body)["system"].([]any)[0].(map[string]any)["text"] }
+	if _, err := classifier.WithInstructions("Answer briefly.").Classify(context.Background(), []byte("x"), "image/png"); err != nil {
+		t.Fatal(err)
+	}
+	if system() != "Answer briefly." {
+		t.Errorf("experiment system = %v", system())
+	}
+	if _, err := classifier.Classify(context.Background(), []byte("x"), "image/png"); err != nil {
+		t.Fatal(err)
+	}
+	if system() != instructions {
+		t.Errorf("original system = %v", system())
+	}
+}

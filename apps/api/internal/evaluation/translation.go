@@ -8,10 +8,10 @@ import (
 
 // 번역 채점 규칙 — 기본은 reference 비교만 하고 pass · fail을 정하지 않는다(unscored). 적절한 의역은 EM에 실패할 수 있고
 // 그것을 의미 오류로 단정하지 않는다.
-var DefaultTranslationPolicy = ClassificationPolicy{Version: "translation-reference-v1"}
+var DefaultTranslationPolicy = ScoringPolicy{Version: "translation-reference-v1"}
 
 // 명시적으로 고른 strict 규칙 — 어느 reference와 정규화 뒤 정확히 같고 critical span이 전부 보존되면 pass.
-var ExactTranslationPolicy = ClassificationPolicy{Version: "translation-exact-v1"}
+var ExactTranslationPolicy = ScoringPolicy{Version: "translation-exact-v1"}
 
 // 번역 case 하나의 판정. 전부 진단값이고 총점은 없다.
 type TranslationOutcome struct {
@@ -179,7 +179,7 @@ type TranslationContribution struct {
 	Metrics   map[string]Measure `json:"metrics"`
 }
 
-func contributeTranslation(c Case, obs Observation, ran bool, policy ClassificationPolicy) TranslationContribution {
+func contributeTranslation(c Case, obs Observation, ran bool, policy ScoringPolicy) TranslationContribution {
 	var out *TextOutput
 	if ran && obs.Status == Completed && obs.TextOutput != nil {
 		out = obs.TextOutput
@@ -224,14 +224,14 @@ func contributeTranslation(c Case, obs Observation, ran bool, policy Classificat
 
 // 번역 집계. reference 일치율과 span 보존율은 measured, 의미 · BLEU · chrF · judge는 unsupported다.
 type TranslationSummary struct {
-	Policy        ClassificationPolicy `json:"policy"`
-	Normalization string               `json:"normalization"`
-	Unicode       string               `json:"unicode"`
-	Selected      int                  `json:"selected"`
-	Evaluated     int                  `json:"evaluated"`
-	NotRun        int                  `json:"notRun"`
-	Complete      bool                 `json:"complete"`
-	Predicted     int                  `json:"predicted"`
+	Policy        ScoringPolicy `json:"policy"`
+	Normalization string        `json:"normalization"`
+	Unicode       string        `json:"unicode"`
+	Selected      int           `json:"selected"`
+	Evaluated     int           `json:"evaluated"`
+	NotRun        int           `json:"notRun"`
+	Complete      bool          `json:"complete"`
+	Predicted     int           `json:"predicted"`
 
 	RawExactMatches          int     `json:"rawExactMatches"`
 	NormalizedExactMatches   int     `json:"normalizedExactMatches"`
@@ -260,7 +260,7 @@ type TranslationSummary struct {
 	PassRate Measure `json:"passRate"`
 }
 
-func EvaluateTranslationCases(cases []Case, observations map[string]Observation, policy ClassificationPolicy) (TranslationSummary, []TranslationContribution) {
+func EvaluateTranslationCases(cases []Case, observations map[string]Observation, policy ScoringPolicy) (TranslationSummary, []TranslationContribution) {
 	s := TranslationSummary{
 		Policy: policy, Normalization: NormalizationWhitespaceV1, Unicode: UnicodeNormalizationNone, Selected: len(cases),
 		SemanticSimilarity: semanticUnsupported,

@@ -7,18 +7,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
 	"strings"
 	"time"
-
-	"snapdone/api/internal/processing"
 )
 
-// case 하나의 기본 상한. production 처리 상한(processing.processTimeout)과 같다.
+// case 하나의 기본 상한. production 처리 상한(processing의 processTimeout)과 같다.
 const defaultCaseTimeout = 2 * time.Minute
 
 // run 전체를 멈춘 이유. not-run의 error.message로도 남아 요약이 raw에서 되찾는다.
@@ -47,9 +44,13 @@ type RunRequest struct {
 	CallBudget  int
 	CaseTimeout time.Duration
 	Concurrency int
-	Policy      ClassificationPolicy
+	Policy      ScoringPolicy
+	// production 분류 계약. label hash와 채점의 기준이다.
+	Contract ClassificationContract
 	// replay 모드의 기록 출처.
 	Replay ReplaySource
+	// live 모드에서 이전 run의 끝난 결과. 있으면 그 invocation은 부르지 않고 옮긴다.
+	Carry *Carry
 }
 
 // 기록된 관측을 돌려준다. 실측 latency · cost로 저장하지 않는다.
@@ -82,7 +83,8 @@ type Plan struct {
 
 	cases        []LoadedCase
 	variants     []VariantManifest
-	policy       ClassificationPolicy
+	policy       ScoringPolicy
+	contract     ClassificationContract
 	timeout      time.Duration
 	allowDrafts  bool
 	allowHeldOut bool
@@ -118,6 +120,9 @@ func NewPlan(req RunRequest) (Plan, error) {
 	if len(req.Variants) == 0 {
 		checks = append(checks, errors.New("evaluation: at least one variant is required"))
 	}
+	if len(req.Contract.Categories) == 0 || len(req.Contract.Actions) == 0 || len(req.Contract.Confidence) == 0 {
+		checks = append(checks, errors.New("evaluation: the classification contract is required"))
+	}
 	for _, v := range req.Variants {
 		if v.Task != req.Dataset.Manifest.Task {
 			checks = append(checks, fmt.Errorf("evaluation: variant %s is %s but the dataset is %s", v.ID, v.Task, req.Dataset.Manifest.Task))
@@ -141,13 +146,13 @@ func NewPlan(req RunRequest) (Plan, error) {
 			Name: req.Dataset.Manifest.Name, Version: req.Dataset.Manifest.Version, Tier: req.Dataset.Manifest.Tier, Split: req.Split,
 			SelectionHash: selectionHash(req.Dataset.Manifest, req.Split, chosen), CaseCount: len(chosen),
 		},
-		cases: chosen, variants: req.Variants, policy: req.Policy, timeout: req.CaseTimeout,
+		cases: chosen, variants: req.Variants, policy: req.Policy, contract: req.Contract, timeout: req.CaseTimeout,
 		allowDrafts: req.AllowDrafts, allowHeldOut: req.AllowHeldOut,
 	}
 	for _, c := range chosen {
 		plan.SelectedCaseIDs = append(plan.SelectedCaseIDs, c.ID)
 	}
-	supported := 0
+	supported, calling := 0, false
 	for _, v := range req.Variants {
 		pv := PlannedVariant{Variant: v.Variant(), Supported: v.Supported(), Placeholder: v.Placeholder, MissingCredential: v.MissingCredential()}
 		if !pv.Supported {
@@ -156,7 +161,8 @@ func NewPlan(req RunRequest) (Plan, error) {
 		if pv.Supported || req.Mode == Replay {
 			supported++
 		}
-		if req.Mode == Live && pv.Supported {
+		if req.Mode == Live && pv.Supported && !req.Carry.covers(v.ID, chosen, req.Trials) {
+			calling = calling || v.CallsProvider()
 			if pv.Placeholder {
 				plan.Preflight = append(plan.Preflight, fmt.Sprintf("variant %s is marked placeholder (model %q); it is not for live runs", v.ID, v.Model))
 			}
@@ -169,10 +175,10 @@ func NewPlan(req RunRequest) (Plan, error) {
 	plan.Planned = supported * len(chosen) * req.Trials
 	switch req.Mode {
 	case Live:
-		if !req.AllowAPI {
+		if calling && !req.AllowAPI {
 			plan.Preflight = append(plan.Preflight, "live run needs the explicit AllowAPI opt-in")
 		}
-		if req.CallBudget < 1 {
+		if calling && req.CallBudget < 1 {
 			plan.Preflight = append(plan.Preflight, "live run needs a positive call budget")
 		}
 	case Replay:
@@ -222,6 +228,8 @@ type InvocationResult struct {
 	// live면 실측, replay면 not-measured.
 	Latency   Measure `json:"latency"`
 	WireCalls int     `json:"wireCalls"`
+	// 이전 run에서 호출 없이 옮겼다면 그 run id.
+	CarriedFrom string `json:"carriedFrom,omitempty"`
 }
 
 type RunCounts struct {
@@ -234,6 +242,8 @@ type RunCounts struct {
 	Skipped   int `json:"skipped"`
 	NotRun    int `json:"notRun"`
 	WireCalls int `json:"wireCalls"`
+	// 이전 run에서 호출 없이 옮긴 결과. Completed에도 들어 있다.
+	Carried int `json:"carried"`
 }
 
 // 알려진 usage의 합과 그 범위. Unknown이 0이 아니면 합은 전체가 아니다.
@@ -255,25 +265,27 @@ type RunReport struct {
 	Cost  Measure       `json:"cost"`
 }
 
-// 실행 시점에 바꿔 끼우는 것. 테스트는 시계 · id · Transport를 가짜로 준다.
+// 실행 시점에 바꿔 끼우는 것. 테스트는 시계 · id · adapter를 가짜로 준다.
 type Deps struct {
-	Now       func() time.Time
-	NewRunID  func() string
-	Transport http.RoundTripper
-	Source    Source
+	Now      func() time.Time
+	NewRunID func() string
+	// live adapter 생성자. replay만 돌리면 nil이어도 된다.
+	NewAdapter AdapterFactory
+	Source     Source
 }
 
-// 결과를 받는 곳. Begin은 첫 호출 전에, Result는 invocation마다 순서대로 불린다. 오류를 돌려주면 run이 멈춘다.
+// 결과를 받는 곳. Begin은 첫 호출 전에, Result는 invocation마다 채점을 마친 CaseResult로 순서대로 불린다.
+// 오류를 돌려주면 run이 멈춘다.
 type Sink interface {
-	Begin(meta RunMetadata, plan Plan) error
-	Result(result InvocationResult) error
+	Begin(meta RunMetadata) error
+	Result(result CaseResult) error
 }
 
 // 결과만 받는 Sink.
-type ResultFunc func(InvocationResult)
+type ResultFunc func(CaseResult)
 
-func (f ResultFunc) Begin(RunMetadata, Plan) error { return nil }
-func (f ResultFunc) Result(r InvocationResult) error {
+func (f ResultFunc) Begin(RunMetadata) error { return nil }
+func (f ResultFunc) Result(r CaseResult) error {
 	f(r)
 	return nil
 }
@@ -302,8 +314,14 @@ func Run(ctx context.Context, req RunRequest, deps Deps, sink Sink) (RunReport, 
 		Counts: RunCounts{Selected: len(plan.cases), Planned: plan.Planned},
 	}
 	report.Metadata = metadata(plan, deps)
+	if req.Carry != nil {
+		report.Metadata.RetriedFrom = req.Carry.Metadata.RunID
+		if err := req.Carry.check(report.Metadata); err != nil {
+			return RunReport{}, err
+		}
+	}
 	if sink != nil {
-		if err := sink.Begin(report.Metadata, plan); err != nil {
+		if err := sink.Begin(report.Metadata); err != nil {
 			return report, err
 		}
 	}
@@ -328,18 +346,23 @@ type runner struct {
 	sink    Sink
 	inputs  int
 	outputs int
+	// 예시를 찾는 곳. retrieval을 쓰는 variant가 처음 돌 때 만든다.
+	bank *exampleBank
 }
 
 func (r *runner) runVariant(v VariantManifest) error {
+	// 첫 실제 호출 때 만든다. 결과를 전부 옮겨 오는 variant는 만들지 않는다.
 	var adapter Adapter
-	if v.Supported() && r.plan.Mode == Live {
-		var err error
-		if adapter, err = adapters[v.Adapter].new(v.providerConfig(), r.budget, r.deps.Transport); err != nil {
-			return err
-		}
-	}
 	for _, c := range r.plan.cases {
 		for trial := 1; trial <= r.plan.Trials; trial++ {
+			if carried, ok := r.req.Carry.lookup(v.ID, c.ID, trial); ok {
+				carried.StartedAt = r.deps.Now()
+				r.report.Counts.Carried++
+				if err := r.record(carried, c.Case); err != nil {
+					return err
+				}
+				continue
+			}
 			result := InvocationResult{VariantID: v.ID, CaseID: c.ID, Trial: trial, Mode: r.plan.Mode, StartedAt: r.deps.Now()}
 			switch {
 			case r.report.Abort != "":
@@ -361,9 +384,15 @@ func (r *runner) runVariant(v VariantManifest) error {
 				result.Ran, result.Observation = true, &obs
 				result.Latency = Missing(NotApplicable, "not invoked")
 			default:
-				r.invoke(adapter, c, &result)
+				if adapter == nil {
+					var err error
+					if adapter, err = r.adapterFor(v); err != nil {
+						return err
+					}
+				}
+				r.invoke(adapter, v, c, &result)
 			}
-			if err := r.record(result); err != nil {
+			if err := r.record(result, c.Case); err != nil {
 				return err
 			}
 		}
@@ -371,9 +400,30 @@ func (r *runner) runVariant(v VariantManifest) error {
 	return nil
 }
 
+// baseline은 여기서 만들고, 모델을 부르는 adapter는 주입된 생성자가 만든다.
+func (r *runner) adapterFor(v VariantManifest) (Adapter, error) {
+	if v.Config.Retrieval != nil && r.bank == nil {
+		bank, err := newExampleBank(r.req.Dataset.Cases)
+		if err != nil {
+			return nil, err
+		}
+		r.bank = bank
+	}
+	if v.Adapter == AdapterBaseline {
+		return newBaselineAdapter(v), nil
+	}
+	if r.deps.NewAdapter == nil {
+		return nil, errors.New("evaluation: a live run needs Deps.NewAdapter")
+	}
+	return r.deps.NewAdapter(v, r.budget)
+}
+
 // live 호출 하나. 예산 거절과 취소는 관측이 아니라 not-run이다.
-func (r *runner) invoke(adapter Adapter, c LoadedCase, result *InvocationResult) {
+func (r *runner) invoke(adapter Adapter, v VariantManifest, c LoadedCase, result *InvocationResult) {
 	input, err := AdapterInputOf(c.Case, c.Image)
+	if err == nil && v.Config.Retrieval != nil {
+		input.Examples, err = r.bank.nearest(c, v.Config.Retrieval.K)
+	}
 	if err != nil {
 		result.Reason = "input rejected: " + err.Error()
 		return
@@ -381,6 +431,9 @@ func (r *runner) invoke(adapter Adapter, c LoadedCase, result *InvocationResult)
 	ctx, cancel := context.WithTimeout(r.ctx, r.plan.timeout)
 	obs := adapter.Invoke(ctx, input)
 	cancel()
+	if v.Config.Retrieval != nil {
+		obs.Retrieval = traceOf(input.Examples)
+	}
 	result.WireCalls = obs.Calls
 	switch {
 	case obs.Failure != nil && obs.Failure.Kind == FailureBudget:
@@ -395,7 +448,8 @@ func (r *runner) invoke(adapter Adapter, c LoadedCase, result *InvocationResult)
 	}
 }
 
-func (r *runner) record(result InvocationResult) error {
+// invocation 하나를 세고 report에 더한 뒤, sink가 있으면 채점한 CaseResult를 넘긴다.
+func (r *runner) record(result InvocationResult, c Case) error {
 	counts := &r.report.Counts
 	counts.WireCalls += result.WireCalls
 	if !result.Ran {
@@ -426,7 +480,7 @@ func (r *runner) record(result InvocationResult) error {
 	}
 	r.report.Results = append(r.report.Results, result)
 	if r.sink != nil {
-		return r.sink.Result(result)
+		return r.sink.Result(NewCaseResult(r.report.Metadata, result, c, r.plan.contract))
 	}
 	return nil
 }
@@ -458,7 +512,7 @@ func metadata(plan Plan, deps Deps) RunMetadata {
 	m := RunMetadata{
 		SchemaVersion: RunSchemaVersion, RunID: deps.NewRunID(), StartedAt: deps.Now(), Status: RunRunning, Mode: plan.Mode,
 		Source: deps.Source, Dataset: plan.Dataset, SelectedCaseIDs: plan.SelectedCaseIDs,
-		Policy: plan.policy, EvaluatorPolicyHash: policyHash(plan.policy), LabelContractHash: labelHash(processing.DescribeContract()),
+		Policy: plan.policy, EvaluatorPolicyHash: policyHash(plan.policy), LabelContractHash: labelHash(plan.contract),
 		Sampling: Sampling{Trials: plan.Trials},
 		Controls: Controls{
 			TimeoutMs: plan.CaseTimeoutMs, MaxAttempts: 1, Concurrency: 1, AllowAPI: plan.AllowAPI, CallBudget: plan.CallBudget,
@@ -471,32 +525,8 @@ func metadata(plan Plan, deps Deps) RunMetadata {
 	return m
 }
 
-// task별 기본 채점 규칙.
-func defaultPolicy(task Task) ClassificationPolicy {
-	switch task {
-	case TextExtraction:
-		return DefaultTextPolicy
-	case Translation:
-		return DefaultTranslationPolicy
-	}
-	return DefaultClassificationPolicy
-}
-
-// policy가 이 build가 아는 것이고 task에 맞는지.
-func policyFitsTask(policy ClassificationPolicy, task Task) bool {
-	switch policy.Version {
-	case DefaultClassificationPolicy.Version:
-		return task == ImageClassification
-	case DefaultTextPolicy.Version:
-		return task == TextExtraction
-	case DefaultTranslationPolicy.Version, ExactTranslationPolicy.Version:
-		return task == Translation
-	}
-	return false
-}
-
 // production label 목록의 hash. 지시 문구와 무관하게 category · action · confidence 값만 본다.
-func labelHash(contract processing.Contract) string {
+func labelHash(contract ClassificationContract) string {
 	h := sha256.New()
 	for _, list := range [][]string{contract.Categories, contract.Actions, contract.Confidence} {
 		fmt.Fprintf(h, "%s\n", strings.Join(list, ","))
@@ -505,7 +535,7 @@ func labelHash(contract processing.Contract) string {
 }
 
 // 채점 규칙의 hash. policy 값이 조금이라도 다르면 달라진다.
-func policyHash(policy ClassificationPolicy) string {
+func policyHash(policy ScoringPolicy) string {
 	encoded, _ := json.Marshal(policy)
 	sum := sha256.Sum256(encoded)
 	return hex.EncodeToString(sum[:])
@@ -528,12 +558,12 @@ type GitInfo struct {
 	Dirty  bool
 }
 
-// 평가에 관여한 소스의 lineage. apiDir 아래 internal/processing · internal/evaluation · cmd/eval의 .go 파일과
+// 평가에 관여한 소스의 lineage. apiDir 아래 internal/processing · internal/evaluation(과 processingadapter) · internal/evalcli · cmd/eval의 .go 파일과
 // go.mod · go.sum만 hash한다. 다른 파일(설정 · secret)은 읽지 않는다.
 func CollectSource(apiDir string, git GitInfo) (Source, error) {
 	source := Source{Commit: git.Commit, Branch: git.Branch, Dirty: git.Dirty, GoVersion: runtime.Version()}
 	var err error
-	if source.SourceHash, err = hashFiles(apiDir, []string{"internal/processing", "internal/evaluation", "cmd/eval"}, ".go"); err != nil {
+	if source.SourceHash, err = hashFiles(apiDir, []string{"internal/processing", "internal/evaluation", "internal/evaluation/processingadapter", "internal/evalcli", "cmd/eval"}, ".go"); err != nil {
 		return Source{}, err
 	}
 	if source.EvaluatorHash, err = hashFiles(apiDir, []string{"internal/evaluation"}, ".go"); err != nil {

@@ -25,6 +25,15 @@ production 계약(`processing.DescribeContract().Categories`)의 값만 쓴다. 
 - **`unresolved`** — 사진만으로 의도를 정할 수 없음. `acceptableActions`는 비우고 routing은 채점하지 않음
 - **`forbiddenActions`** — 절대 나오면 안 되는 행동. **run 전에** 정하고, 결과를 보고 고치지 않는다
 
+## facts — 읽어야 할 값
+
+행동을 끝내는 데 필요한 값을 `expected.classification.facts`에 적는다. 선택이고, 할 일이 없는 사진(`none`)에는 보통 없다.
+
+- **kind** — `amount`(금액, 수 하나) · `date` · `time`(숫자 묶음으로 비교) · `text`(공백 · 대소문자 무시 포함)
+- **acceptedValues** — 사진에 실제로 있는 표기에서 고른다. 연도가 없으면 연도 없이(`10월 25일`), `오후 2시`처럼 숫자만으로 모호하면 `text`로 표기 여럿(`오후 2시` · `14:00` · `14시`)을 적는다. 사진에 없는 값을 추측해 넣지 않는다
+- **requiredFor** — 이 값이 없으면 끝낼 수 없는 행동. 일정 등록의 날짜 · 시간, 지출 기록의 금액 · 결제일, 장소 저장의 이름. 있으면 좋은 값(주소 · 가게 이름)은 `[]`
+- facts를 고치면 case `revision`을 올린다. 원문이 있는 합성 사진은 `TestPilotFactsAppearInTheirSource`가 값이 원문에 있는지 확인한다
+
 ## ambiguity
 
 - **`none`** — 검토자 둘이 같은 답을 낼 것이 분명함

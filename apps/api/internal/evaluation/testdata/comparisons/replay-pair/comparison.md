@@ -5,7 +5,7 @@
 - dataset: unit v1 · dev · selection 0123456789ab · policy classification-pass-v1
 - warning: small sample: 3 paired cases; differences may be noise and no significance test is applied
 
-descriptive only: on 3 paired cases the quality axis has 6 metrics improved, 0 regressed, 2 unchanged; case checks: 6 fixed, 0 newly failed; cases: 0 newly errored, 0 new critical. No statistical significance or superiority is claimed.
+descriptive only: on 3 paired cases the quality axis has 9 metrics improved, 0 regressed, 2 unchanged; case checks: 6 fixed, 0 newly failed; cases: 0 newly errored, 0 new critical. No statistical significance or superiority is claimed.
 
 ## quality
 
@@ -21,6 +21,11 @@ descriptive only: on 3 paired cases the quality axis has 6 metrics improved, 0 r
 | critical-or-unobserved-rate | lower-is-better | not-applicable (no risk-annotated case) | not-applicable (no risk-annotated case) | not-applicable (baseline or candidate value is not measured) | not-applicable (baseline or candidate value is not measured) | not-applicable (baseline or candidate value is not measured) | not-comparable |
 | raw-shape-invalid | lower-is-better | 0.0000 | 0.0000 | 0.0000 | not-applicable (not a rate) | not-applicable (baseline is 0; relative change is undefined) | unchanged |
 | raw-syntax-invalid | lower-is-better | 0.0000 | 0.0000 | 0.0000 | not-applicable (not a rate) | not-applicable (baseline is 0; relative change is undefined) | unchanged |
+| facts-recall | higher-is-better | not-applicable (no case has expected facts) | not-applicable (no case has expected facts) | not-applicable (baseline or candidate value is not measured) | not-applicable (baseline or candidate value is not measured) | not-applicable (baseline or candidate value is not measured) | not-comparable |
+| action-ready-rate | higher-is-better | not-applicable (no scored action has expected facts) | not-applicable (no scored action has expected facts) | not-applicable (baseline or candidate value is not measured) | not-applicable (baseline or candidate value is not measured) | not-applicable (baseline or candidate value is not measured) | not-comparable |
+| high-but-wrong-rate | lower-is-better | 0.5000 | 0.0000 | -0.5000 | -50.0000 | -100.0000 | improved |
+| auto-run-precision | higher-is-better | 0.5000 | 1.0000 | 0.5000 | 50.0000 | 100.0000 | improved |
+| auto-run-coverage | higher-is-better | 0.6667 | 1.0000 | 0.3333 | 33.3333 | 50.0000 | improved |
 
 ## reliability
 

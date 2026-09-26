@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "comparisonId": "incomparable",
+  "baseline": {
+    "runId": "run-base",
+    "variantId": "base-v",
+    "trial": 1
+  },
+  "baselineVariant": {
+    "id": "base-v",
+    "version": 1,
+    "task": "image-classification",
+    "adapter": "processing",
+    "provider": "openai",
+    "model": "m",
+    "contractHash": "5152dd422f81459aeb6c8ed50f4aedd9e0983f4a255ea49cd0d050c1fc3edcfb"
+  },
+  "candidate": {
+    "runId": "run-cand",
+    "variantId": "cand-v",
+    "trial": 1
+  },
+  "candidateVariant": {
+    "id": "cand-v",
+    "version": 1,
+    "task": "image-classification",
+    "adapter": "processing",
+    "provider": "openai",
+    "model": "m",
+    "contractHash": "5152dd422f81459aeb6c8ed50f4aedd9e0983f4a255ea49cd0d050c1fc3edcfb"
+  },
+  "dataset": {
+    "name": "unit",
+    "version": 1,
+    "tier": "software-fixture",
+    "split": "dev",
+    "selectionHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "caseCount": 3
+  },
+  "policy": {
+    "version": "classification-pass-v1",
+    "requireSchemaValid": false
+  },
+  "comparable": false,
+  "incomparable": [
+    "selection hash differs: baseline 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef, candidate ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+  ],
+  "warnings": [],
+  "axes": [],
+  "labels": [],
+  "confidence": {},
+  "cases": {
+    "paired": 0,
+    "unpaired": [],
+    "predictionChanged": 0,
+    "newlyFailed": null,
+    "fixed": null,
+    "newlyErrored": null,
+    "errorsResolved": null,
+    "newCritical": null,
+    "criticalResolved": null
+  },
+  "gate": {
+    "policy": {
+      "version": "gate-example-v1",
+      "maxNewCriticalErrors": 0,
+      "maxPassRateDropPp": 5
+    },
+    "applicable": false,
+    "reason": "runs are not comparable",
+    "passed": false,
+    "rules": []
+  },
+  "conclusion": "not comparable: selection hash differs: baseline 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef, candidate ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+}

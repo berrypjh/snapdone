@@ -1,0 +1,234 @@
+{
+  "schemaVersion": 1,
+  "runId": "text-golden",
+  "mode": "replay",
+  "status": "completed",
+  "dataset": {
+    "name": "ocr-fixture",
+    "version": 1,
+    "tier": "software-fixture",
+    "split": "dev",
+    "selectionHash": "930fbab6bd7e9d9260871102a1370ef05ff791de020835a089ad364f767fa290",
+    "caseCount": 3
+  },
+  "policy": {
+    "version": "text-pass-v1",
+    "requireSchemaValid": false
+  },
+  "officialEligible": false,
+  "reasons": [
+    "mode is replay, not a live measurement",
+    "dataset tier is software-fixture, not golden-benchmark"
+  ],
+  "variants": [
+    {
+      "variant": {
+        "id": "tv",
+        "version": 1,
+        "task": "text-extraction",
+        "adapter": "processing",
+        "provider": "openai",
+        "model": "test-model",
+        "baseHost": "localhost:11434",
+        "contractHash": "5152dd422f81459aeb6c8ed50f4aedd9e0983f4a255ea49cd0d050c1fc3edcfb"
+      },
+      "trials": 1,
+      "execution": {
+        "selected": 3,
+        "invocations": 3,
+        "attempted": 3,
+        "completed": 3,
+        "failed": 0,
+        "timedOut": 0,
+        "unsupported": 0,
+        "notRun": 0,
+        "cancelled": 0,
+        "missing": 0
+      },
+      "outcome": {
+        "passed": 0,
+        "failed": 3,
+        "unscored": 0
+      },
+      "quality": [
+        {
+          "trial": 1,
+          "text": {
+            "policy": {
+              "version": "text-pass-v1",
+              "requireSchemaValid": false
+            },
+            "normalization": "text-ws-v1",
+            "unicode": "none",
+            "selected": 3,
+            "evaluated": 3,
+            "notRun": 0,
+            "complete": true,
+            "predicted": 3,
+            "rawExactMatches": 0,
+            "normalizedExactMatches": 1,
+            "rawExactMatchRate": {
+              "availability": "measured",
+              "value": 0
+            },
+            "normalizedExactMatchRate": {
+              "availability": "measured",
+              "value": 0.3333333333333333
+            },
+            "charEdits": 4,
+            "refChars": 50,
+            "corpusCer": {
+              "availability": "measured",
+              "value": 0.08
+            },
+            "caseCers": 2,
+            "meanCaseCer": {
+              "availability": "measured",
+              "value": 0.06060606060606061
+            },
+            "wordEdits": 1,
+            "refWords": 6,
+            "corpusWer": {
+              "availability": "measured",
+              "value": 0.16666666666666666
+            },
+            "caseWers": 1,
+            "meanCaseWer": {
+              "availability": "measured",
+              "value": 0.16666666666666666
+            },
+            "emptyReferences": 1,
+            "hallucinatedChars": 5,
+            "overLimit": 0,
+            "casesWithFields": 1,
+            "fields": 2,
+            "correctFields": 1,
+            "importantFields": 1,
+            "importantCorrect": 1,
+            "fieldAccuracy": {
+              "availability": "measured",
+              "value": 0.5
+            },
+            "importantFieldRecall": {
+              "availability": "measured",
+              "value": 1
+            },
+            "fieldStats": [
+              {
+                "id": "store",
+                "support": 1,
+                "important": 0,
+                "evaluated": 1,
+                "correct": 0,
+                "wrong": 1,
+                "missing": 0,
+                "accuracy": {
+                  "availability": "measured",
+                  "value": 0
+                }
+              },
+              {
+                "id": "total",
+                "support": 1,
+                "important": 1,
+                "evaluated": 1,
+                "correct": 1,
+                "wrong": 0,
+                "missing": 0,
+                "accuracy": {
+                  "availability": "measured",
+                  "value": 1
+                }
+              }
+            ],
+            "passed": 0,
+            "passRate": {
+              "availability": "measured",
+              "value": 0
+            }
+          }
+        }
+      ],
+      "reliability": {
+        "attempted": 3,
+        "completed": 3,
+        "wireCalls": 0,
+        "completionRate": {
+          "availability": "measured",
+          "value": 1
+        },
+        "errorsByClass": {},
+        "errorsByKind": {}
+      },
+      "latency": {
+        "definition": "adapter wall time per invocation in ms; attempted includes timed-out and failed; mean = sum/n; median averages the two middle values for even n; p95 = value at rank ceil(0.95*n) (nearest-rank)",
+        "attempted": {
+          "n": 0,
+          "meanMs": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "replay: latency is not measured"
+          },
+          "medianMs": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "replay: latency is not measured"
+          },
+          "p95Ms": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "replay: latency is not measured"
+          },
+          "note": "replay: latency is not measured"
+        },
+        "completed": {
+          "n": 0,
+          "meanMs": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "replay: latency is not measured"
+          },
+          "medianMs": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "replay: latency is not measured"
+          },
+          "p95Ms": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "replay: latency is not measured"
+          },
+          "note": "replay: latency is not measured"
+        }
+      },
+      "cost": {
+        "wireCalls": 0,
+        "usage": {
+          "inputTokens": {
+            "availability": "unavailable",
+            "value": null,
+            "reason": "no invocation reported usage"
+          },
+          "outputTokens": {
+            "availability": "unavailable",
+            "value": null,
+            "reason": "no invocation reported usage"
+          },
+          "known": 0,
+          "unknown": 3
+        },
+        "estimated": {
+          "availability": "unavailable",
+          "value": null,
+          "reason": "no price table"
+        },
+        "actual": {
+          "availability": "unavailable",
+          "value": null,
+          "reason": "provider invoices are not read"
+        },
+        "pricing": null
+      }
+    }
+  ]
+}

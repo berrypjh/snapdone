@@ -5,8 +5,6 @@ import (
 	"math"
 	"slices"
 	"sort"
-
-	"snapdone/api/internal/processing"
 )
 
 const RunSummarySchemaVersion = 1
@@ -14,17 +12,19 @@ const RunSummarySchemaVersion = 1
 // run 하나의 요약. raw 산출물(metadata.json · cases.jsonl)에서 언제든 같은 값으로 다시 만든다.
 // 종합 점수는 없다 — 네 축과 실행 수를 따로 둔다.
 type RunSummary struct {
-	SchemaVersion int                  `json:"schemaVersion"`
-	RunID         string               `json:"runId"`
-	Mode          Mode                 `json:"mode"`
-	Status        RunStatus            `json:"status"`
-	Abort         string               `json:"abort,omitempty"`
-	Dataset       DatasetSelection     `json:"dataset"`
-	Policy        ClassificationPolicy `json:"policy"`
+	SchemaVersion int              `json:"schemaVersion"`
+	RunID         string           `json:"runId"`
+	Mode          Mode             `json:"mode"`
+	Status        RunStatus        `json:"status"`
+	Abort         string           `json:"abort,omitempty"`
+	Dataset       DatasetSelection `json:"dataset"`
+	Policy        ScoringPolicy    `json:"policy"`
 	// 공식 benchmark gate에 쓸 수 있는지. partial · replay · draft 포함 · golden이 아닌 dataset은 부적합.
 	OfficialEligible bool            `json:"officialEligible"`
 	Reasons          []string        `json:"reasons"`
 	Variants         []VariantReport `json:"variants"`
+	// 실패한 것만 다시 실행한 run이면 원래 run id.
+	RetriedFrom string `json:"retriedFrom,omitempty"`
 }
 
 type VariantReport struct {
@@ -36,6 +36,41 @@ type VariantReport struct {
 	Reliability ReliabilityTable `json:"reliability"`
 	Latency     LatencyTable     `json:"latency"`
 	Cost        CostTable        `json:"cost"`
+	// 공급자가 답에 적은 모델별 수. 모델 이름이 있는 결과가 없으면(replay 기록) nil이다.
+	Models *ModelCounts `json:"models,omitempty"`
+}
+
+// 실제로 어느 모델이 답했는지. 요청은 variant(와 계단식 설정)에 있다.
+type ModelCounts struct {
+	// 답한 모델 → 호출 수.
+	Answered map[string]int `json:"answered"`
+	// 응답에 모델 이름이 없던 호출(실패 · 봉투 없음).
+	Unknown int `json:"unknown"`
+	// 요청한 모델이나 그 날짜 붙은 판이 아닌 모델이 답한 호출. 거절 뒤 대체 모델 등.
+	Different int `json:"different"`
+}
+
+func countModels(results []CaseResult) *ModelCounts {
+	var counts *ModelCounts
+	for _, r := range results {
+		if r.Model == nil {
+			continue
+		}
+		if counts == nil {
+			counts = &ModelCounts{Answered: map[string]int{}}
+		}
+		answered := r.Model.Answered
+		switch {
+		case answered.Availability != Measured:
+			counts.Unknown++
+		default:
+			counts.Answered[answered.Value]++
+			if !sameModel(r.Model.Requested, answered.Value) {
+				counts.Different++
+			}
+		}
+	}
+	return counts
 }
 
 // 불변식: Invocations = Attempted + Unsupported + NotRun + Missing, Attempted = Completed + Failed + TimedOut.
@@ -52,6 +87,8 @@ type ExecutionCounts struct {
 	Cancelled int `json:"cancelled"`
 	// cases.jsonl에 줄이 없는 invocation(프로세스가 죽은 경우).
 	Missing int `json:"missing"`
+	// Completed 중 이전 run에서 호출 없이 옮긴 수(실패한 것만 다시 실행한 run).
+	Carried int `json:"carried,omitempty"`
 }
 
 // 불변식: Passed + Failed + Unscored = Invocations. 실행 오류는 Unscored이고 분류 정확도 분모에서는 빠지지 않는다.
@@ -67,6 +104,19 @@ type TrialQuality struct {
 	Classification *ClassificationSummary `json:"classification,omitempty"`
 	Text           *TextSummary           `json:"text,omitempty"`
 	Translation    *TranslationSummary    `json:"translation,omitempty"`
+}
+
+// trial의 모든 case가 돌았는지. 채워진 task 요약 하나가 답한다.
+func (q TrialQuality) complete() bool {
+	switch {
+	case q.Classification != nil:
+		return q.Classification.Complete
+	case q.Text != nil:
+		return q.Text.Complete
+	case q.Translation != nil:
+		return q.Translation.Complete
+	}
+	return true
 }
 
 type ReliabilityTable struct {
@@ -113,13 +163,13 @@ type PricingSource struct {
 const latencyDefinition = "adapter wall time per invocation in ms; attempted includes timed-out and failed; mean = sum/n; median averages the two middle values for even n; p95 = value at rank ceil(0.95*n) (nearest-rank)"
 
 // metadata와 case result로 요약을 만든다. 모델 API를 부르지 않는다.
-func SummarizeResults(meta RunMetadata, results []CaseResult, contract processing.Contract) (RunSummary, error) {
+func SummarizeResults(meta RunMetadata, results []CaseResult, contract ClassificationContract) (RunSummary, error) {
 	if len(meta.Variants) > 0 && !policyFitsTask(meta.Policy, meta.Variants[0].Task) {
 		return RunSummary{}, fmt.Errorf("evaluation: policy version %q is not known to this build for %s", meta.Policy.Version, meta.Variants[0].Task)
 	}
 	s := RunSummary{
 		SchemaVersion: RunSummarySchemaVersion, RunID: meta.RunID, Mode: meta.Mode, Status: RunCompleted,
-		Dataset: meta.Dataset, Policy: meta.Policy, Reasons: []string{},
+		Dataset: meta.Dataset, Policy: meta.Policy, Reasons: []string{}, RetriedFrom: meta.RetriedFrom,
 	}
 	byVariant := map[string][]CaseResult{}
 	for _, r := range results {
@@ -187,7 +237,7 @@ func officialEligibility(s RunSummary, meta RunMetadata) (bool, []string) {
 	}
 	for _, v := range s.Variants {
 		for _, q := range v.Quality {
-			if (q.Classification != nil && !q.Classification.Complete) || (q.Text != nil && !q.Text.Complete) || (q.Translation != nil && !q.Translation.Complete) {
+			if !q.complete() {
 				reasons = append(reasons, fmt.Sprintf("variant %s trial %d is incomplete", v.Variant.ID, q.Trial))
 			}
 		}
@@ -195,7 +245,7 @@ func officialEligibility(s RunSummary, meta RunMetadata) (bool, []string) {
 	return len(reasons) == 0, reasons
 }
 
-func summarizeVariant(v Variant, meta RunMetadata, results []CaseResult, contract processing.Contract) VariantReport {
+func summarizeVariant(v Variant, meta RunMetadata, results []CaseResult, contract ClassificationContract) VariantReport {
 	trials := max(meta.Sampling.Trials, 1)
 	report := VariantReport{
 		Variant: v, Trials: trials,
@@ -204,10 +254,14 @@ func summarizeVariant(v Variant, meta RunMetadata, results []CaseResult, contrac
 		Latency:     LatencyTable{Definition: latencyDefinition},
 		Cost:        CostTable{Estimated: Missing(Unavailable, "no price table"), Actual: Missing(Unavailable, "provider invoices are not read")},
 	}
+	report.Models = countModels(results)
 	e, o := &report.Execution, &report.Outcome
 	var attempted, completed []float64
 	inputs, outputs := 0.0, 0.0
 	for _, r := range results {
+		if r.CarriedFrom != "" {
+			e.Carried++
+		}
 		switch r.Execution.Status {
 		case Completed:
 			e.Completed++
@@ -262,17 +316,7 @@ func summarizeVariant(v Variant, meta RunMetadata, results []CaseResult, contrac
 	report.Latency.Completed = latencyStats(completed, replay)
 	report.Cost.Usage = usageCoverage(report.Cost.Usage, inputs, outputs)
 	for trial := 1; trial <= trials; trial++ {
-		switch v.Task {
-		case ImageClassification:
-			summary := classificationForTrial(meta, results, trial, contract)
-			report.Quality = append(report.Quality, TrialQuality{Trial: trial, Classification: &summary})
-		case TextExtraction:
-			summary := textForTrial(meta, results, trial)
-			report.Quality = append(report.Quality, TrialQuality{Trial: trial, Text: &summary})
-		case Translation:
-			summary := translationForTrial(meta, results, trial)
-			report.Quality = append(report.Quality, TrialQuality{Trial: trial, Translation: &summary})
-		}
+		report.Quality = append(report.Quality, scoringOf(v.Task).summarize(meta, results, trial, contract))
 	}
 	return report
 }
@@ -336,8 +380,8 @@ func textForTrial(meta RunMetadata, results []CaseResult, trial int) TextSummary
 	return summary
 }
 
-// case result를 05의 evaluator 입력으로 되돌린다. 줄이 없는 case는 evaluator에 넣지 못하므로 Complete가 거짓이 된다.
-func classificationForTrial(meta RunMetadata, results []CaseResult, trial int, contract processing.Contract) ClassificationSummary {
+// 분류 case result를 evaluator 입력으로 되돌린다. 줄이 없는 case는 evaluator에 넣지 못하므로 Complete가 거짓이 된다.
+func classificationForTrial(meta RunMetadata, results []CaseResult, trial int, contract ClassificationContract) ClassificationSummary {
 	var cases []Case
 	observations := map[string]Observation{}
 	for _, r := range results {
@@ -355,6 +399,7 @@ func classificationForTrial(meta RunMetadata, results []CaseResult, trial int, c
 		if r.Raw != nil {
 			obs.Raw = *r.Raw
 		}
+		obs.Retrieval, obs.Cascade = r.Retrieval, r.Cascade
 		observations[r.CaseID] = obs
 	}
 	slices.SortFunc(cases, func(a, b Case) int { return compareIDs(a.ID, b.ID) })

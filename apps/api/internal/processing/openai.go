@@ -13,21 +13,30 @@ import (
 
 // OpenAI 호환 Chat Completions API 분류기. OpenAI(GPT)와 Ollama · vLLM 같은 로컬 서버가 같은 형식을 쓴다.
 type OpenAIClassifier struct {
-	endpoint string
-	model    string
-	apiKey   string
-	http     *http.Client
+	endpoint     string
+	model        string
+	apiKey       string
+	http         *http.Client
+	instructions string
 }
 
 // baseURL은 /chat/completions 앞까지다. 예: https://api.openai.com/v1, http://localhost:11434/v1
 // apiKey가 비면 Authorization 헤더를 보내지 않는다(로컬 서버).
 func NewOpenAIClassifier(baseURL, model, apiKey string, httpClient *http.Client) *OpenAIClassifier {
 	return &OpenAIClassifier{
-		endpoint: strings.TrimRight(baseURL, "/") + "/chat/completions",
-		model:    model,
-		apiKey:   apiKey,
-		http:     httpClient,
+		endpoint:     strings.TrimRight(baseURL, "/") + "/chat/completions",
+		model:        model,
+		apiKey:       apiKey,
+		http:         httpClient,
+		instructions: instructions,
 	}
+}
+
+// 평가 실험용 복사본. 지시만 text로 바꾸고 요청 · 결과 schema · 검증은 그대로다. 서버는 부르지 않는다.
+func (c *OpenAIClassifier) WithInstructions(text string) *OpenAIClassifier {
+	clone := *c
+	clone.instructions = text
+	return &clone
 }
 
 type chatResponse struct {
@@ -44,7 +53,7 @@ func (c *OpenAIClassifier) Classify(ctx context.Context, image []byte, mediaType
 	body, err := json.Marshal(map[string]any{
 		"model": c.model,
 		"messages": []map[string]any{
-			{"role": "system", "content": instructions},
+			{"role": "system", "content": c.instructions},
 			{"role": "user", "content": []map[string]any{
 				{"type": "image_url", "image_url": map[string]string{
 					"url": "data:" + mediaType + ";base64," + base64.StdEncoding.EncodeToString(image),

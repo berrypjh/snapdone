@@ -39,10 +39,9 @@ func TestLoadDatasetFromTestdata(t *testing.T) {
 	}
 }
 
-// 저장소의 pilot dataset이 loader를 통과하고, readiness가 실제 상태를 말한다.
-// 이 테스트는 apps/api 밖(tools/evals)을 읽는다 — Nx test input에 반영할 대상이다.
+// 테스트용 pilot dataset(21건 합성 사진)이 loader를 통과하고, readiness가 실제 상태를 말한다.
 func TestLoadPilotDataset(t *testing.T) {
-	ds, err := LoadDataset("../../../../tools/evals/datasets/pilot-v1", contract)
+	ds, err := LoadDataset("testdata/datasets/pilot-v1", contract)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +49,7 @@ func TestLoadPilotDataset(t *testing.T) {
 		t.Fatalf("tier = %s, ready = %v", ds.Manifest.Tier, ds.Readiness.BenchmarkReady)
 	}
 	dev := ds.Readiness.Splits[Dev]
-	if dev.Cases != 7 || dev.Eligible != 7 || len(dev.EligiblePerCategory) != len(contract.Categories) {
+	if dev.Cases != 21 || dev.Eligible != 21 || len(dev.EligiblePerCategory) != len(contract.Categories) {
 		t.Errorf("dev readiness = %+v", dev)
 	}
 	for _, split := range []Split{Validation, HeldOut} {
@@ -303,5 +302,35 @@ func TestSelectRejectsEmptySplit(t *testing.T) {
 	}
 	if _, err := ds.Select(Validation, SelectOptions{AllowDrafts: true}); err == nil || !strings.Contains(err.Error(), "not a pass") {
 		t.Fatalf("err = %v", err)
+	}
+}
+
+// pilot의 기대 facts는 렌더한 원문에 실제로 있다. 원문 전체를 예측 값 하나로 주면 모든 facts를 찾아야 한다.
+func TestPilotFactsAppearInTheirSource(t *testing.T) {
+	root := "testdata/datasets/pilot-v1"
+	ds, err := LoadDataset(root, contract)
+	if err != nil {
+		t.Fatal(err)
+	}
+	annotated := 0
+	for _, c := range ds.Cases {
+		facts := c.Expected.Classification.Facts
+		if len(facts) == 0 {
+			continue
+		}
+		annotated++
+		source, err := os.ReadFile(filepath.Join(root, "fixtures", "sources", c.ID+".txt"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		whole := []ClassificationFact{{Label: "원문", Value: string(source)}}
+		for _, f := range facts {
+			if !factFound(f, whole) {
+				t.Errorf("%s: fact %s %v is not in its source", c.ID, f.ID, f.AcceptedValues)
+			}
+		}
+	}
+	if annotated == 0 {
+		t.Error("no pilot case has expected facts")
 	}
 }

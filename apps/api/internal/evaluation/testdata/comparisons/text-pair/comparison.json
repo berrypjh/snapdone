@@ -1,0 +1,418 @@
+{
+  "schemaVersion": 1,
+  "comparisonId": "text-pair",
+  "baseline": {
+    "runId": "text-base",
+    "variantId": "tv",
+    "trial": 1
+  },
+  "baselineVariant": {
+    "id": "tv",
+    "version": 1,
+    "task": "text-extraction",
+    "adapter": "processing",
+    "provider": "openai",
+    "model": "test-model",
+    "baseHost": "localhost:11434",
+    "contractHash": "5152dd422f81459aeb6c8ed50f4aedd9e0983f4a255ea49cd0d050c1fc3edcfb"
+  },
+  "candidate": {
+    "runId": "text-cand",
+    "variantId": "tv",
+    "trial": 1
+  },
+  "candidateVariant": {
+    "id": "tv",
+    "version": 1,
+    "task": "text-extraction",
+    "adapter": "processing",
+    "provider": "openai",
+    "model": "test-model",
+    "baseHost": "localhost:11434",
+    "contractHash": "5152dd422f81459aeb6c8ed50f4aedd9e0983f4a255ea49cd0d050c1fc3edcfb"
+  },
+  "dataset": {
+    "name": "ocr-fixture",
+    "version": 1,
+    "tier": "software-fixture",
+    "split": "dev",
+    "selectionHash": "930fbab6bd7e9d9260871102a1370ef05ff791de020835a089ad364f767fa290",
+    "caseCount": 3
+  },
+  "policy": {
+    "version": "text-pass-v1",
+    "requireSchemaValid": false
+  },
+  "comparable": true,
+  "incomparable": [],
+  "warnings": [
+    "small sample: 3 paired cases; differences may be noise and no significance test is applied"
+  ],
+  "axes": [
+    {
+      "axis": "quality",
+      "comparable": true,
+      "metrics": [
+        {
+          "name": "raw-exact-match-rate",
+          "direction": "higher-is-better",
+          "baseline": {
+            "availability": "measured",
+            "value": 0.3333333333333333
+          },
+          "candidate": {
+            "availability": "measured",
+            "value": 0
+          },
+          "absoluteDelta": {
+            "availability": "measured",
+            "value": -0.3333333333333333
+          },
+          "deltaPp": {
+            "availability": "measured",
+            "value": -33.33333333333333
+          },
+          "relativePercent": {
+            "availability": "measured",
+            "value": -100
+          },
+          "change": "regressed"
+        },
+        {
+          "name": "normalized-exact-match-rate",
+          "direction": "higher-is-better",
+          "baseline": {
+            "availability": "measured",
+            "value": 1
+          },
+          "candidate": {
+            "availability": "measured",
+            "value": 0.6666666666666666
+          },
+          "absoluteDelta": {
+            "availability": "measured",
+            "value": -0.33333333333333337
+          },
+          "deltaPp": {
+            "availability": "measured",
+            "value": -33.333333333333336
+          },
+          "relativePercent": {
+            "availability": "measured",
+            "value": -33.333333333333336
+          },
+          "change": "regressed"
+        },
+        {
+          "name": "corpus-cer",
+          "direction": "lower-is-better",
+          "baseline": {
+            "availability": "measured",
+            "value": 0
+          },
+          "candidate": {
+            "availability": "measured",
+            "value": 0
+          },
+          "absoluteDelta": {
+            "availability": "measured",
+            "value": 0
+          },
+          "deltaPp": {
+            "availability": "measured",
+            "value": 0
+          },
+          "relativePercent": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "baseline is 0; relative change is undefined"
+          },
+          "change": "unchanged"
+        },
+        {
+          "name": "mean-case-cer",
+          "direction": "lower-is-better",
+          "baseline": {
+            "availability": "measured",
+            "value": 0
+          },
+          "candidate": {
+            "availability": "measured",
+            "value": 0
+          },
+          "absoluteDelta": {
+            "availability": "measured",
+            "value": 0
+          },
+          "deltaPp": {
+            "availability": "measured",
+            "value": 0
+          },
+          "relativePercent": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "baseline is 0; relative change is undefined"
+          },
+          "change": "unchanged"
+        },
+        {
+          "name": "corpus-wer",
+          "direction": "lower-is-better",
+          "baseline": {
+            "availability": "measured",
+            "value": 0
+          },
+          "candidate": {
+            "availability": "measured",
+            "value": 0
+          },
+          "absoluteDelta": {
+            "availability": "measured",
+            "value": 0
+          },
+          "deltaPp": {
+            "availability": "measured",
+            "value": 0
+          },
+          "relativePercent": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "baseline is 0; relative change is undefined"
+          },
+          "change": "unchanged"
+        },
+        {
+          "name": "field-accuracy",
+          "direction": "higher-is-better",
+          "baseline": {
+            "availability": "measured",
+            "value": 1
+          },
+          "candidate": {
+            "availability": "measured",
+            "value": 0.5
+          },
+          "absoluteDelta": {
+            "availability": "measured",
+            "value": -0.5
+          },
+          "deltaPp": {
+            "availability": "measured",
+            "value": -50
+          },
+          "relativePercent": {
+            "availability": "measured",
+            "value": -50
+          },
+          "change": "regressed"
+        },
+        {
+          "name": "important-field-recall",
+          "direction": "higher-is-better",
+          "baseline": {
+            "availability": "measured",
+            "value": 1
+          },
+          "candidate": {
+            "availability": "measured",
+            "value": 1
+          },
+          "absoluteDelta": {
+            "availability": "measured",
+            "value": 0
+          },
+          "deltaPp": {
+            "availability": "measured",
+            "value": 0
+          },
+          "relativePercent": {
+            "availability": "measured",
+            "value": 0
+          },
+          "change": "unchanged"
+        },
+        {
+          "name": "pass-rate",
+          "direction": "higher-is-better",
+          "baseline": {
+            "availability": "measured",
+            "value": 1
+          },
+          "candidate": {
+            "availability": "measured",
+            "value": 0.3333333333333333
+          },
+          "absoluteDelta": {
+            "availability": "measured",
+            "value": -0.6666666666666667
+          },
+          "deltaPp": {
+            "availability": "measured",
+            "value": -66.66666666666667
+          },
+          "relativePercent": {
+            "availability": "measured",
+            "value": -66.66666666666667
+          },
+          "change": "regressed"
+        }
+      ]
+    },
+    {
+      "axis": "reliability",
+      "comparable": true,
+      "metrics": [
+        {
+          "name": "completion-rate",
+          "direction": "higher-is-better",
+          "baseline": {
+            "availability": "measured",
+            "value": 1
+          },
+          "candidate": {
+            "availability": "measured",
+            "value": 1
+          },
+          "absoluteDelta": {
+            "availability": "measured",
+            "value": 0
+          },
+          "deltaPp": {
+            "availability": "measured",
+            "value": 0
+          },
+          "relativePercent": {
+            "availability": "measured",
+            "value": 0
+          },
+          "change": "unchanged"
+        },
+        {
+          "name": "failed",
+          "direction": "lower-is-better",
+          "baseline": {
+            "availability": "measured",
+            "value": 0
+          },
+          "candidate": {
+            "availability": "measured",
+            "value": 0
+          },
+          "absoluteDelta": {
+            "availability": "measured",
+            "value": 0
+          },
+          "deltaPp": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "not a rate"
+          },
+          "relativePercent": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "baseline is 0; relative change is undefined"
+          },
+          "change": "unchanged"
+        },
+        {
+          "name": "timed-out",
+          "direction": "lower-is-better",
+          "baseline": {
+            "availability": "measured",
+            "value": 0
+          },
+          "candidate": {
+            "availability": "measured",
+            "value": 0
+          },
+          "absoluteDelta": {
+            "availability": "measured",
+            "value": 0
+          },
+          "deltaPp": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "not a rate"
+          },
+          "relativePercent": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "baseline is 0; relative change is undefined"
+          },
+          "change": "unchanged"
+        },
+        {
+          "name": "wire-calls",
+          "direction": "lower-is-better",
+          "baseline": {
+            "availability": "measured",
+            "value": 0
+          },
+          "candidate": {
+            "availability": "measured",
+            "value": 0
+          },
+          "absoluteDelta": {
+            "availability": "measured",
+            "value": 0
+          },
+          "deltaPp": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "not a rate"
+          },
+          "relativePercent": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "baseline is 0; relative change is undefined"
+          },
+          "change": "unchanged"
+        }
+      ]
+    },
+    {
+      "axis": "latency",
+      "comparable": false,
+      "reason": "latency is measured only in live runs",
+      "metrics": []
+    },
+    {
+      "axis": "cost",
+      "comparable": false,
+      "reason": "baseline usage is unavailable (no invocation reported usage)",
+      "metrics": []
+    }
+  ],
+  "labels": [],
+  "confidence": {},
+  "cases": {
+    "paired": 3,
+    "unpaired": [],
+    "predictionChanged": 1,
+    "newlyFailed": [
+      {
+        "caseId": "ocr-1",
+        "check": "fields-all-correct",
+        "baseline": "passed",
+        "candidate": "failed",
+        "baselinePrediction": "17 runes, cer 0.0000",
+        "candidatePrediction": "17 runes, cer 0.0000"
+      },
+      {
+        "caseId": "ocr-3",
+        "check": "text-normalized-exact",
+        "baseline": "passed",
+        "candidate": "failed",
+        "baselinePrediction": "0 runes, cer not-applicable (empty reference: see hallucinatedChars)",
+        "candidatePrediction": "2 runes, cer not-applicable (empty reference: see hallucinatedChars)"
+      }
+    ],
+    "fixed": [],
+    "newlyErrored": [],
+    "errorsResolved": [],
+    "newCritical": [],
+    "criticalResolved": []
+  },
+  "gate": null,
+  "conclusion": "descriptive only: on 3 paired cases the quality axis has 0 metrics improved, 4 regressed, 4 unchanged; case checks: 0 fixed, 2 newly failed; cases: 0 newly errored, 0 new critical; not compared: latency, cost. No statistical significance or superiority is claimed."
+}

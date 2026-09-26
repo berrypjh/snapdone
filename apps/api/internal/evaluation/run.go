@@ -27,12 +27,14 @@ type RunMetadata struct {
 	SelectedCaseIDs []string  `json:"selectedCaseIds"`
 	Variants        []Variant `json:"variants"`
 	// 채점 규칙(evaluator)과 그 hash. 규칙이 바뀌면 점수를 비교하지 않는다.
-	Policy              ClassificationPolicy `json:"policy"`
-	EvaluatorPolicyHash string               `json:"evaluatorPolicyHash"`
+	Policy              ScoringPolicy `json:"policy"`
+	EvaluatorPolicyHash string        `json:"evaluatorPolicyHash"`
 	// production category · action · confidence 목록의 hash. 지시가 바뀌어도 같지만, 목록이 바뀌면 점수를 비교하지 않는다.
 	LabelContractHash string   `json:"labelContractHash"`
 	Sampling          Sampling `json:"sampling"`
 	Controls          Controls `json:"controls"`
+	// 실패한 것만 다시 실행했다면 원래 run id. 원래 run에서 끝난 결과는 호출 없이 옮겨 왔다(case의 carriedFrom).
+	RetriedFrom string `json:"retriedFrom,omitempty"`
 }
 
 type RunStatus string
@@ -56,7 +58,7 @@ type Source struct {
 	Commit string `json:"commit"`
 	Branch string `json:"branch,omitempty"`
 	Dirty  bool   `json:"dirty"`
-	// internal/processing · internal/evaluation · cmd/eval의 .go 파일 hash. dirty일 때 무엇을 돌렸는지 남긴다.
+	// internal/processing · internal/evaluation · processingadapter · internal/evalcli · cmd/eval의 .go 파일 hash. dirty일 때 무엇을 돌렸는지 남긴다.
 	// production 지시가 바뀌어도 달라지므로 실험 변수다.
 	SourceHash string `json:"sourceHash"`
 	// internal/evaluation의 .go 파일만의 hash. 채점기가 같은지 본다 — 다르면 같은 채점기로 raw를 다시 요약한 뒤 비교한다.
@@ -77,7 +79,7 @@ type DatasetSelection struct {
 }
 
 // 비교 대상 — adapter · 공급자 · 모델 · 계약. manifest에서 비밀값 없이 그대로 옮긴 것이고 ContractHash는
-// processing.Contract.Hash다.
+// ClassificationContract.Hash다.
 type Variant struct {
 	ID           string `json:"id"`
 	Version      int    `json:"version"`
@@ -88,6 +90,11 @@ type Variant struct {
 	BaseHost     string `json:"baseHost,omitempty"`
 	APIKeyEnv    string `json:"apiKeyEnv,omitempty"`
 	ContractHash string `json:"contractHash"`
+	// 실험 설정. 없으면 production 분류기 그대로다.
+	PromptHash string           `json:"promptHash,omitempty"`
+	Retrieval  *RetrievalConfig `json:"retrieval,omitempty"`
+	Cascade    *CascadeConfig   `json:"cascade,omitempty"`
+	Baseline   *BaselineConfig  `json:"baseline,omitempty"`
 }
 
 // 같은 case를 몇 번 돌렸는지. 흔들림을 보려면 Trials > 1이다.
@@ -156,8 +163,8 @@ func (r RunMetadata) Validate() error {
 	if len(r.SelectedCaseIDs) != r.Dataset.CaseCount {
 		checks = append(checks, errors.New("evaluation: selectedCaseIds must match dataset.caseCount"))
 	}
-	if r.Mode == Live && (!r.Controls.AllowAPI || r.Controls.CallBudget < 1) {
-		checks = append(checks, errors.New("evaluation: a live run has allowApi and a positive callBudget"))
+	if r.Mode == Live && r.callsProvider() && (!r.Controls.AllowAPI || r.Controls.CallBudget < 1) {
+		checks = append(checks, errors.New("evaluation: a live run that calls a model has allowApi and a positive callBudget"))
 	}
 	if r.StartedAt.IsZero() {
 		checks = append(checks, errors.New("evaluation: startedAt is required"))
@@ -174,12 +181,22 @@ func (r RunMetadata) Validate() error {
 	return errors.Join(checks...)
 }
 
+// 모델을 부르는 variant가 있는지. 기준선만 돈 live run은 opt-in · 예산이 없다.
+func (r RunMetadata) callsProvider() bool {
+	for _, v := range r.Variants {
+		if v.Adapter != AdapterBaseline {
+			return true
+		}
+	}
+	return false
+}
+
 func (v Variant) validate() error {
 	checks := []error{
 		identifier("variant.id", v.ID),
 		oneOf("variant.task", v.Task, tasks),
 		nonEmpty("variant.adapter", v.Adapter),
-		oneOf("variant.provider", v.Provider, []string{config.ProviderAnthropic, config.ProviderOpenAI}),
+		oneOf("variant.provider", v.Provider, []string{config.ProviderAnthropic, config.ProviderOpenAI, ProviderNone}),
 		nonEmpty("variant.model", v.Model),
 		hexOf("variant.contractHash", v.ContractHash, sha256.Size),
 	}

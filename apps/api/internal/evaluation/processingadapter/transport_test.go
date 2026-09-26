@@ -1,4 +1,4 @@
-package evaluation
+package processingadapter
 
 import (
 	"context"
@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"snapdone/api/internal/evaluation"
 )
 
 func newCapture(body string, limit int) (*teeBody, *capture) {
@@ -83,7 +85,7 @@ func TestObserverPassesTheRequestThrough(t *testing.T) {
 // 예산이 없으면 base Transport는 실행되지 않는다 — credential이 실린 요청이 나가지 않는다.
 func TestObserverBudgetGateRunsBeforeTheNetwork(t *testing.T) {
 	fake := &fakeTransport{handler: func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(`{}`)) }}
-	obs := newObserver(fake, NewFixedBudget(1))
+	obs := newObserver(fake, evaluation.NewFixedBudget(1))
 	for range 3 {
 		resp, err := obs.RoundTrip(httptest.NewRequest(http.MethodGet, "https://example.test/", nil))
 		if resp != nil {

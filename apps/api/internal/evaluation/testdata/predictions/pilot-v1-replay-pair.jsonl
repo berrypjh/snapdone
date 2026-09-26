@@ -1,0 +1,42 @@
+{"variantId": "replay-example", "caseId": "place-01", "prediction": {"category": "place", "facts": [], "suggestedAction": "save_place", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "event-01", "prediction": {"category": "event", "facts": [], "suggestedAction": "add_to_calendar", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "receipt-01", "prediction": {"category": "receipt", "facts": [], "suggestedAction": "record_expense", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "foreign-text-01", "prediction": {"category": "foreign_text", "facts": [], "suggestedAction": "translate", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "shopping-01", "prediction": {"category": "shopping", "facts": [], "suggestedAction": "save_place", "confidence": "low"}}
+{"variantId": "replay-example", "caseId": "work-01", "prediction": {"category": "work", "facts": [], "suggestedAction": "none", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "other-01", "prediction": {"category": "other", "facts": [], "suggestedAction": "none", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "place-02", "prediction": {"category": "place", "facts": [{"label": "가게 이름", "value": "가상분식 모퉁이점"}, {"label": "주소", "value": "서울 성동구 가상로 45"}], "suggestedAction": "save_place", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "place-03", "prediction": {"category": "place", "facts": [{"label": "가게 이름", "value": "책방 나무그늘"}, {"label": "영업시간", "value": "매일 12:00 - 22:00"}], "suggestedAction": "save_place", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "event-02", "prediction": {"category": "event", "facts": [{"label": "일시", "value": "2026년 11월 14일 (토) 18:30"}, {"label": "장소", "value": "가상 레스토랑 합정"}], "suggestedAction": "add_to_calendar", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "event-03", "prediction": {"category": "event", "facts": [{"label": "날짜", "value": "10월 25일 일요일"}, {"label": "장소", "value": "연남동 가상카페 2층"}], "suggestedAction": "add_to_calendar", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "receipt-02", "prediction": {"category": "receipt", "facts": [{"label": "결제 금액", "value": "21,000원"}, {"label": "주문일", "value": "2026.09.18"}], "suggestedAction": "record_expense", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "receipt-03", "prediction": {"category": "receipt", "facts": [{"label": "합계", "value": "13,300원"}, {"label": "일시", "value": "2026-09-20 19:42"}], "suggestedAction": "record_expense", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "foreign-text-02", "prediction": {"category": "foreign_text", "facts": [{"label": "가격", "value": "980円"}], "suggestedAction": "translate", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "foreign-text-03", "prediction": {"category": "foreign_text", "facts": [], "suggestedAction": "translate", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "shopping-02", "prediction": {"category": "shopping", "facts": [{"label": "총 상품 금액", "value": "78,800원"}], "suggestedAction": "none", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "shopping-03", "prediction": {"category": "shopping", "facts": [], "suggestedAction": "none", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "work-02", "prediction": {"category": "work", "facts": [{"label": "다음 회의", "value": "10월 8일 (목) 10:00"}], "suggestedAction": "none", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "work-03", "prediction": {"category": "work", "facts": [], "suggestedAction": "none", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "other-02", "prediction": {"category": "other", "facts": [], "suggestedAction": "none", "confidence": "high"}}
+{"variantId": "replay-example", "caseId": "other-03", "prediction": {"category": "other", "facts": [], "suggestedAction": "none", "confidence": "high"}}
+{"variantId": "replay-candidate", "caseId": "place-01", "prediction": {"category": "place", "facts": [], "suggestedAction": "save_place", "confidence": "high"}}
+{"variantId": "replay-candidate", "caseId": "event-01", "prediction": {"category": "place", "facts": [], "suggestedAction": "save_place", "confidence": "high"}}
+{"variantId": "replay-candidate", "caseId": "receipt-01", "prediction": {"category": "receipt", "facts": [], "suggestedAction": "none", "confidence": "high"}}
+{"variantId": "replay-candidate", "caseId": "foreign-text-01", "prediction": {"category": "foreign_text", "facts": [], "suggestedAction": "add_to_calendar", "confidence": "high"}}
+{"variantId": "replay-candidate", "caseId": "shopping-01", "prediction": {"category": "shopping", "facts": [], "suggestedAction": "none", "confidence": "low"}}
+{"variantId": "replay-candidate", "caseId": "work-01", "status": "timed-out", "failure": {"class": "timeout", "kind": "timeout", "message": "request timed out"}}
+{"variantId": "replay-candidate", "caseId": "other-01", "status": "failed", "failure": {"class": "provider", "kind": "http-status", "message": "provider returned HTTP 500"}}
+{"variantId": "replay-candidate", "caseId": "place-02", "prediction": {"category": "place", "facts": [{"label": "가게 이름", "value": "가상분식 모퉁이점"}], "suggestedAction": "save_place", "confidence": "high"}}
+{"variantId": "replay-candidate", "caseId": "place-03", "prediction": {"category": "event", "facts": [], "suggestedAction": "add_to_calendar", "confidence": "medium"}}
+{"variantId": "replay-candidate", "caseId": "event-02", "prediction": {"category": "event", "facts": [{"label": "일시", "value": "11월 14일 18:30"}], "suggestedAction": "add_to_calendar", "confidence": "high"}}
+{"variantId": "replay-candidate", "caseId": "event-03", "prediction": {"category": "event", "facts": [{"label": "장소", "value": "연남동 가상카페"}], "suggestedAction": "add_to_calendar", "confidence": "high"}}
+{"variantId": "replay-candidate", "caseId": "receipt-02", "prediction": {"category": "shopping", "facts": [{"label": "결제 금액", "value": "21,000원"}], "suggestedAction": "none", "confidence": "medium"}}
+{"variantId": "replay-candidate", "caseId": "receipt-03", "prediction": {"category": "receipt", "facts": [{"label": "합계", "value": "13,300원"}], "suggestedAction": "record_expense", "confidence": "high"}}
+{"variantId": "replay-candidate", "caseId": "foreign-text-02", "prediction": {"category": "foreign_text", "facts": [], "suggestedAction": "translate", "confidence": "high"}}
+{"variantId": "replay-candidate", "caseId": "foreign-text-03", "status": "failed", "failure": {"class": "provider", "kind": "http-status", "message": "provider returned HTTP 500"}}
+{"variantId": "replay-candidate", "caseId": "shopping-02", "prediction": {"category": "shopping", "facts": [{"label": "총 상품 금액", "value": "78,800원"}], "suggestedAction": "record_expense", "confidence": "high"}}
+{"variantId": "replay-candidate", "caseId": "shopping-03", "prediction": {"category": "shopping", "facts": [], "suggestedAction": "none", "confidence": "low"}}
+{"variantId": "replay-candidate", "caseId": "work-02", "prediction": {"category": "event", "facts": [{"label": "날짜", "value": "10월 8일"}], "suggestedAction": "add_to_calendar", "confidence": "high"}}
+{"variantId": "replay-candidate", "caseId": "work-03", "prediction": {"category": "work", "facts": [], "suggestedAction": "none", "confidence": "high"}}
+{"variantId": "replay-candidate", "caseId": "other-02", "prediction": {"category": "other", "facts": [], "suggestedAction": "none", "confidence": "high"}}
+{"variantId": "replay-candidate", "caseId": "other-03", "prediction": {"category": "work", "facts": [], "suggestedAction": "none", "confidence": "low"}}

@@ -12,8 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"snapdone/api/internal/processing"
 )
 
 // run 디렉터리의 파일 이름. metadata · cases가 정본이고 summary 둘은 파생물이다.
@@ -28,19 +26,19 @@ const (
 // 어느 단계의 쓰기 실패도 성공으로 보고하지 않는다.
 type RunWriter struct {
 	root     string
-	contract processing.Contract
+	contract ClassificationContract
 	now      func() time.Time
 
-	dir   string
-	meta  RunMetadata
-	cases map[string]Case
-	file  *os.File
-	buf   *bufio.Writer
-	err   error
+	dir      string
+	meta     RunMetadata
+	selected map[string]bool
+	file     *os.File
+	buf      *bufio.Writer
+	err      error
 }
 
 // root는 이미 있는 디렉터리여야 하고 dataset 디렉터리(manifest.json이 있는 곳)면 안 된다.
-func NewRunWriter(root string, contract processing.Contract, now func() time.Time) (*RunWriter, error) {
+func NewRunWriter(root string, contract ClassificationContract, now func() time.Time) (*RunWriter, error) {
 	abs, err := filepath.Abs(root)
 	if err != nil {
 		return nil, err
@@ -59,7 +57,7 @@ func NewRunWriter(root string, contract processing.Contract, now func() time.Tim
 }
 
 // run 디렉터리를 만들고 metadata를 running으로 쓴다. 같은 runId가 있으면 오류다 — 덮어쓰지 않는다.
-func (w *RunWriter) Begin(meta RunMetadata, plan Plan) error {
+func (w *RunWriter) Begin(meta RunMetadata) error {
 	if err := identifier("runId", meta.RunID); err != nil {
 		return err
 	}
@@ -71,9 +69,9 @@ func (w *RunWriter) Begin(meta RunMetadata, plan Plan) error {
 		return err
 	}
 	w.meta = meta
-	w.cases = map[string]Case{}
-	for _, c := range plan.cases {
-		w.cases[c.ID] = c.Case
+	w.selected = map[string]bool{}
+	for _, id := range meta.SelectedCaseIDs {
+		w.selected[id] = true
 	}
 	if err := writeJSONAtomic(filepath.Join(w.dir, metadataFile), meta); err != nil {
 		return err
@@ -86,16 +84,14 @@ func (w *RunWriter) Begin(meta RunMetadata, plan Plan) error {
 	return nil
 }
 
-// invocation 하나를 case result 한 줄로 더한다.
-func (w *RunWriter) Result(r InvocationResult) error {
+// 채점을 마친 case result를 한 줄로 더한다. 이 run · 고른 case의 것이고 wire 계약을 지켜야 쓴다.
+func (w *RunWriter) Result(result CaseResult) error {
 	if w.err != nil {
 		return w.err
 	}
-	c, ok := w.cases[r.CaseID]
-	if !ok {
-		return w.fail(fmt.Errorf("evaluation: result for case %s that the plan did not select", r.CaseID))
+	if result.RunID != w.meta.RunID || !w.selected[result.CaseID] {
+		return w.fail(fmt.Errorf("evaluation: result for run %s case %s that this run did not select", result.RunID, result.CaseID))
 	}
-	result := caseResultOf(w.meta, r, c)
 	if err := result.Validate(w.contract); err != nil {
 		return w.fail(err)
 	}
@@ -142,74 +138,8 @@ func (w *RunWriter) Finish(report RunReport) (RunSummary, error) {
 // Dir은 run 디렉터리다. Begin 뒤에만 뜻이 있다.
 func (w *RunWriter) Dir() string { return w.dir }
 
-// runner의 결과를 wire 계약으로 옮긴다. 채점은 05의 contribute와 같다.
-func caseResultOf(meta RunMetadata, r InvocationResult, c Case) CaseResult {
-	obs := Observation{}
-	if r.Observation != nil {
-		obs = *r.Observation
-	}
-	var quality Quality
-	var metrics map[string]Measure
-	switch c.Task {
-	case TextExtraction:
-		k := contributeText(c, obs, r.Ran)
-		quality, metrics = k.Quality, k.Metrics
-	case Translation:
-		k := contributeTranslation(c, obs, r.Ran, meta.Policy)
-		quality, metrics = k.Quality, k.Metrics
-	default:
-		k := contribute(c, obs, r.Ran, processing.DescribeContract(), meta.Policy)
-		quality, metrics = k.Quality, k.Metrics
-	}
-	result := CaseResult{
-		SchemaVersion: CaseResultSchemaVersion, RunID: meta.RunID,
-		InvocationID: fmt.Sprintf("%s/%s/%d", r.VariantID, r.CaseID, r.Trial),
-		CaseID:       c.ID, CaseRevision: c.Revision, VariantID: r.VariantID, Trial: r.Trial, Task: c.Task, Mode: r.Mode,
-		Quality: quality, Input: c.Input, Expected: c.Expected, Metrics: metrics,
-		DurationMs: Missing(NotApplicable, "not invoked"),
-		Usage:      Usage{InputTokens: Missing(Unavailable, "not invoked"), OutputTokens: Missing(Unavailable, "not invoked")},
-		Cost:       Cost{Amount: Missing(NotMeasured, "no price table")},
-	}
-	if !r.Ran {
-		result.Execution = Execution{Status: NotRun, Error: &SanitizedError{Class: OtherError, Message: r.Reason}}
-		return result
-	}
-	result.Execution = Execution{Status: obs.Status, Attempts: obs.Calls}
-	if obs.Failure != nil {
-		result.Execution.Error = &SanitizedError{Class: obs.Failure.Class, Kind: obs.Failure.Kind, Message: obs.Failure.Message}
-	}
-	if obs.Status == Skipped {
-		return result
-	}
-	result.DurationMs = r.Latency
-	result.Usage = obs.Usage
-	// 기록에 usage가 아예 없으면(replay) 값이 없는 것이지 0이 아니다.
-	for _, m := range []*Measure{&result.Usage.InputTokens, &result.Usage.OutputTokens} {
-		if m.Availability == "" {
-			*m = Missing(Unavailable, "not recorded")
-		}
-	}
-	if obs.Result != nil {
-		result.Prediction = &Prediction{Classification: obs.Result}
-	}
-	if obs.TextOutput != nil {
-		text := obs.TextOutput.Text
-		result.Prediction = &Prediction{Text: &text, Fields: obs.TextOutput.Fields, TargetLanguage: obs.TextOutput.TargetLanguage}
-	}
-	// raw 판정은 production adapter의 관측에만 있다. replay 기록 등에 없으면 null로 둔다.
-	if obs.Raw.Syntax.Availability == "" {
-		return result
-	}
-	raw := obs.Raw
-	if c.Provenance.PrivacyReview != Reviewed {
-		raw.Text = missingText(NotMeasured, "case privacy review is not finished; model text withheld")
-	}
-	result.Raw = &raw
-	return result
-}
-
 // raw 파일에서 summary.json · summary.md를 다시 만든다. 모델 API를 부르지 않고 같은 입력이면 같은 byte다.
-func RegenerateSummary(dir string, contract processing.Contract) (RunSummary, error) {
+func RegenerateSummary(dir string, contract ClassificationContract) (RunSummary, error) {
 	summary, err := Summarize(dir, contract)
 	if err != nil {
 		return RunSummary{}, err
@@ -224,7 +154,7 @@ func RegenerateSummary(dir string, contract processing.Contract) (RunSummary, er
 }
 
 // metadata.json과 cases.jsonl을 엄격하게 읽어 요약한다. 잘린 줄 · 깨진 줄은 오류다.
-func Summarize(dir string, contract processing.Contract) (RunSummary, error) {
+func Summarize(dir string, contract ClassificationContract) (RunSummary, error) {
 	f, err := os.Open(filepath.Join(dir, metadataFile))
 	if err != nil {
 		return RunSummary{}, err
@@ -241,7 +171,7 @@ func Summarize(dir string, contract processing.Contract) (RunSummary, error) {
 	return SummarizeResults(meta, results, contract)
 }
 
-func readCaseResults(path string, contract processing.Contract) ([]CaseResult, error) {
+func readCaseResults(path string, contract ClassificationContract) ([]CaseResult, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -302,6 +232,9 @@ func RenderMarkdown(s RunSummary) string {
 	}
 	fmt.Fprintf(&b, "\n- dataset: %s v%d · %s · %s · %d cases · selection %s\n", escape(s.Dataset.Name), s.Dataset.Version, s.Dataset.Tier, s.Dataset.Split, s.Dataset.CaseCount, s.Dataset.SelectionHash[:12])
 	fmt.Fprintf(&b, "- policy: %s\n", escape(s.Policy.Version))
+	if s.RetriedFrom != "" {
+		fmt.Fprintf(&b, "- retried from: %s — completed results carried over without a call; only the rest was called again\n", escape(s.RetriedFrom))
+	}
 	if s.OfficialEligible {
 		b.WriteString("- official benchmark gate: eligible\n")
 	} else {
@@ -311,9 +244,16 @@ func RenderMarkdown(s RunSummary) string {
 	for _, v := range s.Variants {
 		fmt.Fprintf(&b, "\n## variant %s\n\n", escape(v.Variant.ID))
 		fmt.Fprintf(&b, "%s · %s · trials %d\n\n", escape(v.Variant.Provider), escape(v.Variant.Model), v.Trials)
+		fmt.Fprintf(&b, "answers: %s\n\n", answerSource(s.Mode, v.Variant))
+		if m := v.Models; m != nil && v.Variant.Adapter != AdapterBaseline {
+			fmt.Fprintf(&b, "answered by: %s · no model name %d · different from requested %d\n\n", answeredList(m.Answered), m.Unknown, m.Different)
+		}
 		e, o := v.Execution, v.Outcome
 		b.WriteString("### execution\n\n| selected | invocations | attempted | completed | failed | timed-out | unsupported | not-run | cancelled | missing |\n|---|---|---|---|---|---|---|---|---|---|\n")
 		fmt.Fprintf(&b, "| %d | %d | %d | %d | %d | %d | %d | %d | %d | %d |\n\n", e.Selected, e.Invocations, e.Attempted, e.Completed, e.Failed, e.TimedOut, e.Unsupported, e.NotRun, e.Cancelled, e.Missing)
+		if e.Carried > 0 {
+			fmt.Fprintf(&b, "carried from %s without a call: %d\n\n", escape(s.RetriedFrom), e.Carried)
+		}
 		fmt.Fprintf(&b, "outcome: passed %d · failed %d · unscored %d (errors and not-run stay in the accuracy denominator)\n\n", o.Passed, o.Failed, o.Unscored)
 		for _, q := range v.Quality {
 			renderQuality(&b, q)
@@ -361,7 +301,9 @@ func renderQuality(b *strings.Builder, q TrialQuality) {
 	fmt.Fprintf(b, "| joint EM | %s | %d with canonical |\n", measure(c.JointExactMatch), c.Action.WithCanonical)
 	fmt.Fprintf(b, "| pass rate | %s | %d selected |\n", measure(c.PassRate), c.Selected)
 	fmt.Fprintf(b, "| critical rate | %s | %d risk observed |\n", measure(c.Risk.CriticalRate), c.Risk.Observed)
-	fmt.Fprintf(b, "| critical-or-unobserved | %s | %d risk eligible |\n\n", measure(c.Risk.CriticalOrUnobservedRate), c.Risk.Eligible)
+	fmt.Fprintf(b, "| critical-or-unobserved | %s | %d risk eligible |\n", measure(c.Risk.CriticalOrUnobservedRate), c.Risk.Eligible)
+	renderExperimentRows(b, c)
+	b.WriteString("\n")
 	if len(c.Category.MissingLabels) > 0 {
 		fmt.Fprintf(b, "missing gold labels: %s\n\n", escape(strings.Join(c.Category.MissingLabels, ", ")))
 	}
@@ -372,6 +314,49 @@ func renderQuality(b *strings.Builder, q TrialQuality) {
 	}
 	fmt.Fprintf(b, "\nraw model text — syntax valid/invalid/unobserved %d/%d/%d · shape %d/%d/%d · parser %d/%d/%d\n\n",
 		c.RawSyntax.Valid, c.RawSyntax.Invalid, c.RawSyntax.Unobserved, c.RawShape.Valid, c.RawShape.Invalid, c.RawShape.Unobserved, c.Parser.Valid, c.Parser.Invalid, c.Parser.Unobserved)
+}
+
+// 이 variant의 답을 누가 냈는지. 기준선과 replay의 지표는 모델 성능이 아니다.
+func answerSource(mode Mode, v Variant) string {
+	switch {
+	case v.Adapter == AdapterBaseline:
+		return "rule baseline — no model was called; not model performance"
+	case mode == Replay:
+		return "recorded predictions re-scored — no model was called in this run; not model performance"
+	}
+	return "real model calls in this run"
+}
+
+// 답한 모델과 호출 수를 이름 순으로. 없으면 none.
+func answeredList(answered map[string]int) string {
+	if len(answered) == 0 {
+		return "none"
+	}
+	parts := []string{}
+	for _, name := range sortedKeys(answered) {
+		parts = append(parts, fmt.Sprintf("%s ×%d", escape(name), answered[name]))
+	}
+	return strings.Join(parts, ", ")
+}
+
+// 추출값 · 자동 실행 · 비슷한 사례 · 계단식 줄. 옛 산출물처럼 값이 없으면 줄을 쓰지 않는다.
+func renderExperimentRows(b *strings.Builder, c *ClassificationSummary) {
+	if f := c.Facts; f != nil {
+		fmt.Fprintf(b, "| facts recall | %s | %d expected facts in %d cases |\n", measure(f.Recall), f.Expected, f.Annotated)
+		fmt.Fprintf(b, "| action ready | %s | %d scored actions with facts |\n", measure(f.ReadyRate), f.ReadyEligible)
+	}
+	if k := c.Calibration; k != nil {
+		fmt.Fprintf(b, "| high but wrong | %s | %d high |\n", measure(k.HighWrongRate), k.High)
+		fmt.Fprintf(b, "| auto-run precision | %s | %d auto-run (high, action not none) |\n", measure(k.AutoPrecision), k.AutoExecuted)
+		fmt.Fprintf(b, "| auto-run coverage | %s | %d selected |\n", measure(k.AutoCoverage), c.Selected)
+	}
+	if r := c.Retrieval; r != nil {
+		fmt.Fprintf(b, "| similar case top-1 same category | %s | %d queries |\n", measure(r.Top1Rate), r.Queries)
+		fmt.Fprintf(b, "| similar case MRR | %s | %d queries |\n", measure(r.MeanReciprocalRank), r.Queries)
+	}
+	if k := c.Cascade; k != nil {
+		fmt.Fprintf(b, "| cascade escalation rate | %s | %d invocations |\n", measure(k.EscalationRate), k.Invocations)
+	}
 }
 
 // 텍스트 과제의 표. corpus 비율(합의 비율)과 case 평균을 따로 적고 category · action 열은 없다.
@@ -391,6 +376,13 @@ func renderTextQuality(b *strings.Builder, trial int, s TextSummary) {
 	fmt.Fprintf(b, "| important field recall | %s | %d important fields |\n", measure(s.ImportantFieldRecall), s.ImportantFields)
 	fmt.Fprintf(b, "| pass rate | %s | %d selected |\n\n", measure(s.PassRate), s.Selected)
 	fmt.Fprintf(b, "empty references %d (hallucinated runes %d) · over length limit %d · predicted %d of %d\n\n", s.EmptyReferences, s.HallucinatedChars, s.OverLimit, s.Predicted, s.Selected)
+	if len(s.FieldStats) > 0 {
+		b.WriteString("| field | support | important | evaluated | correct | wrong | missing | accuracy |\n|---|---|---|---|---|---|---|---|\n")
+		for _, f := range s.FieldStats {
+			fmt.Fprintf(b, "| %s | %d | %d | %d | %d | %d | %d | %s |\n", escape(f.ID), f.Support, f.Important, f.Evaluated, f.Correct, f.Wrong, f.Missing, measure(f.Accuracy))
+		}
+		b.WriteString("\n")
+	}
 }
 
 // 번역 표. reference 일치는 같은 문자열인지의 진단값이고 의미 품질이 아니다.

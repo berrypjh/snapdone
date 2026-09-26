@@ -30,8 +30,9 @@ type Classifier interface {
 }
 
 type ClaudeClassifier struct {
-	client anthropic.Client
-	model  string
+	client       anthropic.Client
+	model        string
+	instructions string
 }
 
 // Claude API 분류기. timeout · 응답 크기 제한 · redirect 미추적은 httpClient가 가진다.
@@ -42,8 +43,16 @@ func NewClaudeClassifier(apiKey, model string, httpClient *http.Client) *ClaudeC
 			option.WithHTTPClient(httpClient),
 			option.WithRequestTimeout(requestTimeout),
 		),
-		model: model,
+		model:        model,
+		instructions: instructions,
 	}
+}
+
+// 평가 실험용 복사본. 지시만 text로 바꾸고 요청 · 결과 schema · 검증은 그대로다. 서버는 부르지 않는다.
+func (c *ClaudeClassifier) WithInstructions(text string) *ClaudeClassifier {
+	clone := *c
+	clone.instructions = text
+	return &clone
 }
 
 // 모델 API에 쓸 HTTP client. 처리 전체 상한을 넘기지 않고 redirect를 따라가지 않는다.
@@ -61,7 +70,7 @@ func (c *ClaudeClassifier) Classify(ctx context.Context, image []byte, mediaType
 	params := anthropic.BetaMessageNewParams{
 		Model:     anthropic.Model(c.model),
 		MaxTokens: 16000,
-		System:    []anthropic.BetaTextBlockParam{{Text: instructions}},
+		System:    []anthropic.BetaTextBlockParam{{Text: c.instructions}},
 		OutputConfig: anthropic.BetaOutputConfigParam{
 			Format: anthropic.BetaJSONOutputFormatParam{Schema: resultSchema()},
 		},

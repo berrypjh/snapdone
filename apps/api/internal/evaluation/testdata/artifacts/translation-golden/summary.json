@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 1,
+  "runId": "translation-golden",
+  "mode": "replay",
+  "status": "partial",
+  "dataset": {
+    "name": "translation-fixture",
+    "version": 1,
+    "tier": "software-fixture",
+    "split": "dev",
+    "selectionHash": "eee9bfe141cc6fd8a328c5dcb0837a837e3a1f371c6f3cc3d56508d68096dcb9",
+    "caseCount": 3
+  },
+  "policy": {
+    "version": "translation-reference-v1",
+    "requireSchemaValid": false
+  },
+  "officialEligible": false,
+  "reasons": [
+    "run is partial: some invocations did not run",
+    "mode is replay, not a live measurement",
+    "dataset tier is software-fixture, not golden-benchmark",
+    "variant tv trial 1 is incomplete"
+  ],
+  "variants": [
+    {
+      "variant": {
+        "id": "tv",
+        "version": 1,
+        "task": "translation",
+        "adapter": "processing",
+        "provider": "openai",
+        "model": "test-model",
+        "baseHost": "localhost:11434",
+        "contractHash": "5152dd422f81459aeb6c8ed50f4aedd9e0983f4a255ea49cd0d050c1fc3edcfb"
+      },
+      "trials": 1,
+      "execution": {
+        "selected": 3,
+        "invocations": 3,
+        "attempted": 2,
+        "completed": 2,
+        "failed": 0,
+        "timedOut": 0,
+        "unsupported": 0,
+        "notRun": 1,
+        "cancelled": 0,
+        "missing": 0
+      },
+      "outcome": {
+        "passed": 0,
+        "failed": 0,
+        "unscored": 3
+      },
+      "quality": [
+        {
+          "trial": 1,
+          "translation": {
+            "policy": {
+              "version": "translation-reference-v1",
+              "requireSchemaValid": false
+            },
+            "normalization": "text-ws-v1",
+            "unicode": "none",
+            "selected": 3,
+            "evaluated": 2,
+            "notRun": 1,
+            "complete": false,
+            "predicted": 2,
+            "rawExactMatches": 1,
+            "normalizedExactMatches": 1,
+            "rawExactMatchRate": {
+              "availability": "measured",
+              "value": 0.3333333333333333
+            },
+            "normalizedExactMatchRate": {
+              "availability": "measured",
+              "value": 0.3333333333333333
+            },
+            "emptyTranslations": 0,
+            "languageDeclared": 1,
+            "languageMetadataMatches": 1,
+            "languageMetadataRate": {
+              "availability": "measured",
+              "value": 1
+            },
+            "casesWithSpans": 1,
+            "criticalSpans": 2,
+            "spansPreserved": 1,
+            "criticalSpanRecall": {
+              "availability": "measured",
+              "value": 0.5
+            },
+            "semanticSimilarity": {
+              "availability": "unsupported",
+              "value": null,
+              "reason": "no semantic similarity, BLEU, chrF, or judge metric is implemented"
+            },
+            "bleu": {
+              "availability": "unsupported",
+              "value": null,
+              "reason": "BLEU is not implemented; no tokenizer or n-gram library is added"
+            },
+            "chrf": {
+              "availability": "unsupported",
+              "value": null,
+              "reason": "chrF is not implemented"
+            },
+            "judge": {
+              "availability": "not-measured",
+              "value": null,
+              "reason": "phase 2 judge is a documented contract only"
+            },
+            "scored": false,
+            "passed": 0,
+            "unscored": 2,
+            "passRate": {
+              "availability": "not-applicable",
+              "value": null,
+              "reason": "policy translation-reference-v1 does not score cases; use translation-exact-v1 for strict pass/fail"
+            }
+          }
+        }
+      ],
+      "reliability": {
+        "attempted": 2,
+        "completed": 2,
+        "wireCalls": 0,
+        "completionRate": {
+          "availability": "measured",
+          "value": 1
+        },
+        "errorsByClass": {},
+        "errorsByKind": {}
+      },
+      "latency": {
+        "definition": "adapter wall time per invocation in ms; attempted includes timed-out and failed; mean = sum/n; median averages the two middle values for even n; p95 = value at rank ceil(0.95*n) (nearest-rank)",
+        "attempted": {
+          "n": 0,
+          "meanMs": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "replay: latency is not measured"
+          },
+          "medianMs": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "replay: latency is not measured"
+          },
+          "p95Ms": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "replay: latency is not measured"
+          },
+          "note": "replay: latency is not measured"
+        },
+        "completed": {
+          "n": 0,
+          "meanMs": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "replay: latency is not measured"
+          },
+          "medianMs": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "replay: latency is not measured"
+          },
+          "p95Ms": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "replay: latency is not measured"
+          },
+          "note": "replay: latency is not measured"
+        }
+      },
+      "cost": {
+        "wireCalls": 0,
+        "usage": {
+          "inputTokens": {
+            "availability": "unavailable",
+            "value": null,
+            "reason": "no invocation reported usage"
+          },
+          "outputTokens": {
+            "availability": "unavailable",
+            "value": null,
+            "reason": "no invocation reported usage"
+          },
+          "known": 0,
+          "unknown": 2
+        },
+        "estimated": {
+          "availability": "unavailable",
+          "value": null,
+          "reason": "no price table"
+        },
+        "actual": {
+          "availability": "unavailable",
+          "value": null,
+          "reason": "provider invoices are not read"
+        },
+        "pricing": null
+      }
+    }
+  ]
+}

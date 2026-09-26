@@ -314,6 +314,141 @@
             "reason": "baseline is 0; relative change is undefined"
           },
           "change": "unchanged"
+        },
+        {
+          "name": "facts-recall",
+          "direction": "higher-is-better",
+          "baseline": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "no case has expected facts"
+          },
+          "candidate": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "no case has expected facts"
+          },
+          "absoluteDelta": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "baseline or candidate value is not measured"
+          },
+          "deltaPp": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "baseline or candidate value is not measured"
+          },
+          "relativePercent": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "baseline or candidate value is not measured"
+          },
+          "change": "not-comparable"
+        },
+        {
+          "name": "action-ready-rate",
+          "direction": "higher-is-better",
+          "baseline": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "no scored action has expected facts"
+          },
+          "candidate": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "no scored action has expected facts"
+          },
+          "absoluteDelta": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "baseline or candidate value is not measured"
+          },
+          "deltaPp": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "baseline or candidate value is not measured"
+          },
+          "relativePercent": {
+            "availability": "not-applicable",
+            "value": null,
+            "reason": "baseline or candidate value is not measured"
+          },
+          "change": "not-comparable"
+        },
+        {
+          "name": "high-but-wrong-rate",
+          "direction": "lower-is-better",
+          "baseline": {
+            "availability": "measured",
+            "value": 0.5
+          },
+          "candidate": {
+            "availability": "measured",
+            "value": 0
+          },
+          "absoluteDelta": {
+            "availability": "measured",
+            "value": -0.5
+          },
+          "deltaPp": {
+            "availability": "measured",
+            "value": -50
+          },
+          "relativePercent": {
+            "availability": "measured",
+            "value": -100
+          },
+          "change": "improved"
+        },
+        {
+          "name": "auto-run-precision",
+          "direction": "higher-is-better",
+          "baseline": {
+            "availability": "measured",
+            "value": 0.5
+          },
+          "candidate": {
+            "availability": "measured",
+            "value": 1
+          },
+          "absoluteDelta": {
+            "availability": "measured",
+            "value": 0.5
+          },
+          "deltaPp": {
+            "availability": "measured",
+            "value": 50
+          },
+          "relativePercent": {
+            "availability": "measured",
+            "value": 100
+          },
+          "change": "improved"
+        },
+        {
+          "name": "auto-run-coverage",
+          "direction": "higher-is-better",
+          "baseline": {
+            "availability": "measured",
+            "value": 0.6666666666666666
+          },
+          "candidate": {
+            "availability": "measured",
+            "value": 1
+          },
+          "absoluteDelta": {
+            "availability": "measured",
+            "value": 0.33333333333333337
+          },
+          "deltaPp": {
+            "availability": "measured",
+            "value": 33.333333333333336
+          },
+          "relativePercent": {
+            "availability": "measured",
+            "value": 50.000000000000014
+          },
+          "change": "improved"
         }
       ]
     },
@@ -1419,5 +1554,5 @@
       }
     ]
   },
-  "conclusion": "descriptive only: on 3 paired cases the quality axis has 6 metrics improved, 0 regressed, 2 unchanged; case checks: 6 fixed, 0 newly failed; cases: 0 newly errored, 0 new critical. No statistical significance or superiority is claimed."
+  "conclusion": "descriptive only: on 3 paired cases the quality axis has 9 metrics improved, 0 regressed, 2 unchanged; case checks: 6 fixed, 0 newly failed; cases: 0 newly errored, 0 new critical. No statistical significance or superiority is claimed."
 }

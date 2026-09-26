@@ -219,7 +219,7 @@ func acceptedValue(field ExpectedField, value string) bool {
 }
 
 // 텍스트 pass 규칙 v1 — 공백 정규화 뒤 정확히 같고, field 계약이 있으면 전부 맞음. 허용 오차는 없다.
-var DefaultTextPolicy = ClassificationPolicy{Version: "text-pass-v1"}
+var DefaultTextPolicy = ScoringPolicy{Version: "text-pass-v1"}
 
 type TextContribution struct {
 	CaseID    string             `json:"caseId"`
@@ -275,14 +275,14 @@ func contributeText(c Case, obs Observation, ran bool) TextContribution {
 
 // 한 split · variant · trial의 텍스트 집계. corpus 비율은 합의 비율이고 case 평균과 이름을 나눈다. category · action 열은 없다.
 type TextSummary struct {
-	Policy        ClassificationPolicy `json:"policy"`
-	Normalization string               `json:"normalization"`
-	Unicode       string               `json:"unicode"`
-	Selected      int                  `json:"selected"`
-	Evaluated     int                  `json:"evaluated"`
-	NotRun        int                  `json:"notRun"`
-	Complete      bool                 `json:"complete"`
-	Predicted     int                  `json:"predicted"`
+	Policy        ScoringPolicy `json:"policy"`
+	Normalization string        `json:"normalization"`
+	Unicode       string        `json:"unicode"`
+	Selected      int           `json:"selected"`
+	Evaluated     int           `json:"evaluated"`
+	NotRun        int           `json:"notRun"`
+	Complete      bool          `json:"complete"`
+	Predicted     int           `json:"predicted"`
 
 	RawExactMatches          int     `json:"rawExactMatches"`
 	NormalizedExactMatches   int     `json:"normalizedExactMatches"`
@@ -313,12 +313,68 @@ type TextSummary struct {
 	ImportantCorrect     int     `json:"importantCorrect"`
 	FieldAccuracy        Measure `json:"fieldAccuracy"`
 	ImportantFieldRecall Measure `json:"importantFieldRecall"`
+	// field id별 집계. field 계약이 있는 case가 없으면 빠진다(v1 선택 field).
+	FieldStats []FieldStat `json:"fieldStats,omitempty"`
 
 	Passed   int     `json:"passed"`
 	PassRate Measure `json:"passRate"`
 }
 
-func EvaluateTextCases(cases []Case, observations map[string]Observation, policy ClassificationPolicy) (TextSummary, []TextContribution) {
+// field id 하나의 집계 — 어느 field가 자주 틀리는지 본다. case 판정(evaluateFields)을 그대로 세고 새로 맞춰 보지 않는다.
+type FieldStat struct {
+	ID string `json:"id"`
+	// 이 field를 계약에 둔 case 수와, 그중 important로 둔 수.
+	Support   int `json:"support"`
+	Important int `json:"important"`
+	// 예측이 있어 판정한 수. support - evaluated는 실행 실패 · 미실행이라 판정하지 못한 case다.
+	Evaluated int `json:"evaluated"`
+	Correct   int `json:"correct"`
+	Wrong     int `json:"wrong"`
+	Missing   int `json:"missing"`
+	// Correct / Evaluated. field accuracy와 같은 분모 규칙이다.
+	Accuracy Measure `json:"accuracy"`
+}
+
+// case들의 field 계약과 판정을 id별로 모은다. 순서는 id 순이다.
+func fieldStats(cases []Case, contributions []TextContribution) []FieldStat {
+	byID := map[string]*FieldStat{}
+	for i, c := range cases {
+		for _, f := range c.Expected.TextExtraction.Fields {
+			st := byID[f.ID]
+			if st == nil {
+				st = &FieldStat{ID: f.ID}
+				byID[f.ID] = st
+			}
+			st.Support++
+			if f.Important {
+				st.Important++
+			}
+		}
+		if fields := contributions[i].Outcome.Fields; fields != nil {
+			for _, d := range fields.Details {
+				st := byID[d.ID]
+				st.Evaluated++
+				switch d.Status {
+				case "correct":
+					st.Correct++
+				case "wrong":
+					st.Wrong++
+				case "missing":
+					st.Missing++
+				}
+			}
+		}
+	}
+	var stats []FieldStat
+	for _, id := range sortedKeys(byID) {
+		st := *byID[id]
+		st.Accuracy = rate(st.Correct, st.Evaluated, "no case with this field was predicted")
+		stats = append(stats, st)
+	}
+	return stats
+}
+
+func EvaluateTextCases(cases []Case, observations map[string]Observation, policy ScoringPolicy) (TextSummary, []TextContribution) {
 	s := TextSummary{Policy: policy, Normalization: NormalizationWhitespaceV1, Unicode: UnicodeNormalizationNone, Selected: len(cases)}
 	var contributions []TextContribution
 	cerSum, werSum := 0.0, 0.0
@@ -381,6 +437,7 @@ func EvaluateTextCases(cases []Case, observations map[string]Observation, policy
 	s.MeanCaseWER = ratioOrNA(werSum, float64(s.CaseWERs), "no measured case WER")
 	s.FieldAccuracy = rate(s.CorrectFields, s.Fields, "no field contract in the selection")
 	s.ImportantFieldRecall = rate(s.ImportantCorrect, s.ImportantFields, "no important field in the selection")
+	s.FieldStats = fieldStats(cases, contributions)
 	return s, contributions
 }
 

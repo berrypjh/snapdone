@@ -14,8 +14,6 @@ import (
 	"slices"
 	"strings"
 	"unicode/utf8"
-
-	"snapdone/api/internal/processing"
 )
 
 const ManifestSchemaVersion = 1
@@ -132,7 +130,7 @@ type SplitReadiness struct {
 }
 
 // 디렉터리에서 dataset을 읽고 전부 검증한다. 사진은 root 안의 파일만 읽는다(symlink 포함).
-func LoadDataset(dir string, contract processing.Contract) (Dataset, error) {
+func LoadDataset(dir string, contract ClassificationContract) (Dataset, error) {
 	root, err := datasetRoot(dir)
 	if err != nil {
 		return Dataset{}, err
@@ -342,7 +340,7 @@ func blockers(c Case) []string {
 	return reasons
 }
 
-func readinessOf(manifest Manifest, cases []LoadedCase, contract processing.Contract) Readiness {
+func readinessOf(manifest Manifest, cases []LoadedCase, contract ClassificationContract) Readiness {
 	r := Readiness{Tier: manifest.Tier, Splits: map[Split]SplitReadiness{}}
 	if manifest.Tier != GoldenBenchmark {
 		r.Reasons = append(r.Reasons, fmt.Sprintf("tier is %s, not %s", manifest.Tier, GoldenBenchmark))

@@ -2,24 +2,31 @@ package evaluation
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 
 	"snapdone/api/internal/config"
-	"snapdone/api/internal/processing"
 )
 
 const VariantSchemaVersion = 1
 
-// production 분류기를 그대로 부르는 adapter의 이름.
-const AdapterProcessing = "processing"
+// adapter 이름. processing은 production 분류기를 그대로 부르고, baseline은 모델 없이 규칙으로 답한다.
+const (
+	AdapterProcessing = "processing"
+	AdapterBaseline   = "baseline"
+)
+
+// baseline adapter의 provider. 네트워크 · key가 없다.
+const ProviderNone = "none"
 
 // variant manifest 파일(tools/evals/variants/*.json). 비밀값은 없고 key는 환경변수 이름뿐이다.
 type VariantManifest struct {
@@ -38,19 +45,52 @@ type VariantManifest struct {
 	Config               VariantConfig `json:"config"`
 	// 예시 · replay 전용 manifest. live 실행은 거절하고, 최신 모델이나 로컬 설정의 값을 대신 고르지 않는다.
 	Placeholder bool `json:"placeholder,omitempty"`
+	// PromptPath 파일의 내용. LoadVariants가 채운다.
+	Prompt string `json:"-"`
 }
 
-// 아직 지원하지 않는 설정. 값이 있으면 preflight 오류다 — production 지시 · sampling은 고정이고, prompt 변형은
-// 코드 변경(다른 commit의 산출물 비교)으로만 한다.
+// 실험 설정. 비어 있으면 production 분류기 그대로다. temperature · seed · ensemble은 아직 지원하지 않아 preflight 오류다.
 type VariantConfig struct {
 	Temperature *float64        `json:"temperature,omitempty"`
 	Seed        *int64          `json:"seed,omitempty"`
-	PromptPath  string          `json:"promptPath,omitempty"`
-	RAG         json.RawMessage `json:"rag,omitempty"`
 	Ensemble    json.RawMessage `json:"ensemble,omitempty"`
+	// 실험용 지시 파일(manifest 기준 상대 경로). production 지시 대신 보내고 요청 · 결과 schema는 그대로다.
+	PromptPath string `json:"promptPath,omitempty"`
+	// 비슷한 dev 사례를 찾아 예시로 붙인다.
+	Retrieval *RetrievalConfig `json:"retrieval,omitempty"`
+	// 싼 모델의 답이 불확실하면 비싼 모델에 다시 묻는다.
+	Cascade *CascadeConfig `json:"cascade,omitempty"`
+	// 모델 없이 정한 규칙으로 답하는 기준선. adapter가 baseline일 때만.
+	Baseline *BaselineConfig `json:"baseline,omitempty"`
 }
 
-func (c VariantConfig) validate() error {
+// 예시를 고르는 곳은 dataset의 dev split뿐이다. 질문 case 자신과 같은 원본 묶음(sourceGroupId)은 빼고,
+// validation · held-out은 어떤 경우에도 예시가 되지 않는다.
+type RetrievalConfig struct {
+	K int `json:"k"`
+}
+
+// 첫 모델(manifest의 model)의 confidence가 EscalateOn 중 하나이거나 답이 없으면 Model로 다시 묻는다.
+// provider · endpoint · key는 첫 모델과 같다.
+type CascadeConfig struct {
+	Model      string   `json:"model"`
+	EscalateOn []string `json:"escalateOn"`
+}
+
+// 기준선 전략. constant는 늘 같은 답, nearest는 가장 비슷한 dev 사례의 정답을 그대로 낸다(retrieval 필요).
+type BaselineConfig struct {
+	Strategy        string `json:"strategy"`
+	Category        string `json:"category,omitempty"`
+	SuggestedAction string `json:"suggestedAction,omitempty"`
+	Confidence      string `json:"confidence,omitempty"`
+}
+
+const (
+	BaselineConstant = "constant"
+	BaselineNearest  = "nearest"
+)
+
+func (c VariantConfig) validate(adapter string, contract ClassificationContract) error {
 	var unsupported []string
 	if c.Temperature != nil {
 		unsupported = append(unsupported, "temperature")
@@ -58,40 +98,88 @@ func (c VariantConfig) validate() error {
 	if c.Seed != nil {
 		unsupported = append(unsupported, "seed")
 	}
-	if c.PromptPath != "" {
-		unsupported = append(unsupported, "promptPath")
-	}
-	if len(c.RAG) > 0 {
-		unsupported = append(unsupported, "rag")
-	}
 	if len(c.Ensemble) > 0 {
 		unsupported = append(unsupported, "ensemble")
 	}
+	checks := []error{}
 	if len(unsupported) > 0 {
-		return fmt.Errorf("evaluation: config %s is not supported: production prompt and sampling are fixed", strings.Join(unsupported, ", "))
+		checks = append(checks, fmt.Errorf("evaluation: config %s is not supported: sampling is fixed by the production classifier", strings.Join(unsupported, ", ")))
 	}
-	return nil
+	if c.Retrieval != nil && (c.Retrieval.K < 1 || c.Retrieval.K > maxExamples) {
+		checks = append(checks, fmt.Errorf("evaluation: retrieval.k must be 1 to %d", maxExamples))
+	}
+	if c.Cascade != nil {
+		checks = append(checks, nonEmpty("cascade.model", c.Cascade.Model))
+		if len(c.Cascade.EscalateOn) == 0 {
+			checks = append(checks, errors.New("evaluation: cascade.escalateOn needs at least one confidence level"))
+		}
+		for _, level := range c.Cascade.EscalateOn {
+			checks = append(checks, oneOf("cascade.escalateOn", level, contract.Confidence))
+		}
+	}
+	if adapter == AdapterBaseline {
+		return errors.Join(append(checks, c.validateBaseline(contract))...)
+	}
+	if c.Baseline != nil {
+		checks = append(checks, errors.New("evaluation: config.baseline is only for the baseline adapter"))
+	}
+	return errors.Join(checks...)
 }
 
-func (v VariantManifest) Validate(contract processing.Contract) error {
+func (c VariantConfig) validateBaseline(contract ClassificationContract) error {
+	b := c.Baseline
+	if b == nil {
+		return errors.New("evaluation: the baseline adapter needs config.baseline")
+	}
+	if c.PromptPath != "" || c.Cascade != nil {
+		return errors.New("evaluation: a baseline has no prompt or cascade")
+	}
+	switch b.Strategy {
+	case BaselineConstant:
+		return errors.Join(
+			oneOf("baseline.category", b.Category, contract.Categories),
+			oneOf("baseline.suggestedAction", b.SuggestedAction, contract.Actions),
+			oneOf("baseline.confidence", b.Confidence, contract.Confidence),
+		)
+	case BaselineNearest:
+		if c.Retrieval == nil {
+			return errors.New("evaluation: the nearest baseline needs config.retrieval")
+		}
+		if b.Category != "" || b.SuggestedAction != "" || b.Confidence != "" {
+			return errors.New("evaluation: the nearest baseline takes its answer from the retrieved case")
+		}
+		return nil
+	}
+	return oneOf("baseline.strategy", b.Strategy, []string{BaselineConstant, BaselineNearest})
+}
+
+func (v VariantManifest) Validate(contract ClassificationContract) error {
 	checks := []error{
 		schemaVersion("variant", v.SchemaVersion, VariantSchemaVersion),
 		identifier("id", v.ID),
 		oneOf("task", v.Task, tasks),
 		nonEmpty("model", v.Model),
 		hexOf("expectedContractHash", v.ExpectedContractHash, 32),
-		v.Config.validate(),
+		v.Config.validate(v.Adapter, contract),
 	}
 	if v.Version < 1 {
 		checks = append(checks, errors.New("evaluation: version starts at 1"))
 	}
+	c := v.Config
+	if v.Task != ImageClassification && (c.PromptPath != "" || c.Retrieval != nil || c.Cascade != nil || c.Baseline != nil) {
+		checks = append(checks, errors.New("evaluation: prompt, retrieval, cascade, and baseline are only for image-classification"))
+	}
 	if !v.Placeholder && strings.ContainsAny(v.Model, "<>") {
 		checks = append(checks, fmt.Errorf("evaluation: model %q looks like a template; fill it in or mark the manifest placeholder", v.Model))
 	}
-	if _, known := adapters[v.Adapter]; !known {
+	if _, known := adapterTasks[v.Adapter]; !known {
 		checks = append(checks, fmt.Errorf("evaluation: adapter %q is unknown", v.Adapter))
 	}
 	switch v.Provider {
+	case ProviderNone:
+		if v.Adapter != AdapterBaseline || v.Endpoint != "" || v.APIKeyEnv != "" {
+			checks = append(checks, errors.New("evaluation: provider none is only for the baseline adapter and has no endpoint or key"))
+		}
 	case config.ProviderAnthropic:
 		if v.Endpoint != "" {
 			checks = append(checks, errors.New("evaluation: endpoint is only for the openai provider"))
@@ -100,7 +188,10 @@ func (v VariantManifest) Validate(contract processing.Contract) error {
 	case config.ProviderOpenAI:
 		checks = append(checks, validEndpoint(v.Endpoint))
 	default:
-		checks = append(checks, oneOf("provider", v.Provider, []string{config.ProviderAnthropic, config.ProviderOpenAI}))
+		checks = append(checks, oneOf("provider", v.Provider, []string{config.ProviderAnthropic, config.ProviderOpenAI, ProviderNone}))
+	}
+	if v.Adapter == AdapterBaseline && v.Provider != ProviderNone {
+		checks = append(checks, errors.New("evaluation: the baseline adapter uses provider none"))
 	}
 	if err := hexOf("expectedContractHash", v.ExpectedContractHash, 32); err == nil && v.ExpectedContractHash != contract.Hash {
 		checks = append(checks, fmt.Errorf("evaluation: variant %s expects contract %s but production is %s (prompt or schema changed)", v.ID, v.ExpectedContractHash[:12], contract.Hash[:12]))
@@ -124,11 +215,15 @@ func (v VariantManifest) MissingCredential() bool {
 
 // adapter가 이 variant의 task를 지원하는지.
 func (v VariantManifest) Supported() bool {
-	spec, known := adapters[v.Adapter]
-	return known && slices.Contains(spec.tasks, v.Task)
+	return slices.Contains(adapterTasks[v.Adapter], v.Task)
 }
 
-func (v VariantManifest) providerConfig() ProviderConfig {
+// 모델 공급자를 부르는지. baseline은 부르지 않아 --allow-api · 예산이 필요 없다.
+func (v VariantManifest) CallsProvider() bool {
+	return v.Adapter != AdapterBaseline
+}
+
+func (v VariantManifest) ProviderConfig() ProviderConfig {
 	return ProviderConfig{Provider: v.Provider, Model: v.Model, BaseURL: v.Endpoint, APIKeyEnv: v.APIKeyEnv}
 }
 
@@ -141,11 +236,21 @@ func (v VariantManifest) Variant() Variant {
 	return Variant{
 		ID: v.ID, Version: v.Version, Task: v.Task, Adapter: v.Adapter, Provider: v.Provider, Model: v.Model,
 		BaseHost: host, APIKeyEnv: v.APIKeyEnv, ContractHash: v.ExpectedContractHash,
+		PromptHash: promptHash(v.Prompt), Retrieval: v.Config.Retrieval, Cascade: v.Config.Cascade, Baseline: v.Config.Baseline,
 	}
 }
 
+// 실험 지시의 sha256 hex. 없으면 production 지시라 비운다.
+func promptHash(prompt string) string {
+	if prompt == "" {
+		return ""
+	}
+	sum := sha256.Sum256([]byte(prompt))
+	return hex.EncodeToString(sum[:])
+}
+
 // manifest 파일들을 읽고 검증한다. id가 겹치면 거절한다.
-func LoadVariants(paths []string, contract processing.Contract) ([]VariantManifest, error) {
+func LoadVariants(paths []string, contract ClassificationContract) ([]VariantManifest, error) {
 	var variants []VariantManifest
 	for _, path := range paths {
 		f, err := os.Open(path)
@@ -154,6 +259,9 @@ func LoadVariants(paths []string, contract processing.Contract) ([]VariantManife
 		}
 		v, err := DecodeVariant(f, contract)
 		_ = f.Close()
+		if err == nil {
+			v.Prompt, err = readPrompt(filepath.Dir(path), v.Config.PromptPath)
+		}
 		if err != nil {
 			return nil, fmt.Errorf("evaluation: %s: %w", path, err)
 		}
@@ -165,7 +273,26 @@ func LoadVariants(paths []string, contract processing.Contract) ([]VariantManife
 	return variants, nil
 }
 
-func DecodeVariant(r io.Reader, contract processing.Contract) (VariantManifest, error) {
+// manifest 옆의 실험 지시 파일을 읽는다. 경로는 manifest 기준 상대 경로이고 위로 나가지 않는다.
+func readPrompt(dir, rel string) (string, error) {
+	if rel == "" {
+		return "", nil
+	}
+	clean := filepath.ToSlash(filepath.Clean(rel))
+	if filepath.IsAbs(rel) || strings.HasPrefix(clean, "..") {
+		return "", fmt.Errorf("evaluation: promptPath %q must stay next to its manifest or setting file", rel)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(clean)))
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(string(data)) == "" {
+		return "", fmt.Errorf("evaluation: promptPath %s is empty", rel)
+	}
+	return string(data), nil
+}
+
+func DecodeVariant(r io.Reader, contract ClassificationContract) (VariantManifest, error) {
 	var v VariantManifest
 	if err := decodeStrict(r, &v); err != nil {
 		return VariantManifest{}, err
@@ -192,21 +319,14 @@ type Adapter interface {
 	Invoke(ctx context.Context, in AdapterInput) Observation
 }
 
-// adapter 이름 → 지원 task와 생성자. 생성자는 live 실행에서만 불리고 그 자체는 네트워크를 쓰지 않는다.
-type adapterSpec struct {
-	tasks []Task
-	new   func(cfg ProviderConfig, budget CallBudget, base http.RoundTripper) (Adapter, error)
+// adapter 이름 → 지원 task. 무엇을 live로 돌릴 수 있는지의 선언이고, 생성은 주입된 AdapterFactory가 한다.
+// processing adapter는 production 사진 분류기만 부른다 — text-extraction · translation은 production 코드가 없어 replay만.
+var adapterTasks = map[string][]Task{
+	AdapterProcessing: {ImageClassification},
+	AdapterBaseline:   {ImageClassification},
 }
 
-var adapters = map[string]adapterSpec{
-	AdapterProcessing: {
-		tasks: []Task{ImageClassification},
-		new: func(cfg ProviderConfig, budget CallBudget, base http.RoundTripper) (Adapter, error) {
-			key := ""
-			if cfg.APIKeyEnv != "" {
-				key = os.Getenv(cfg.APIKeyEnv)
-			}
-			return newProcessingAdapter(cfg, key, budget, base)
-		},
-	},
-}
+// live 모델 adapter 생성자. Run이 preflight를 통과한 live · 지원 variant마다 한 번 부른다(baseline은 Run이 직접
+// 만든다). 생성 자체는 네트워크를 쓰지 않는다. production 구현은 processingadapter.Factory이고 평가 core는 그
+// package를 모른다.
+type AdapterFactory func(v VariantManifest, budget CallBudget) (Adapter, error)

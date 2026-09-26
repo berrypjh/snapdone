@@ -227,7 +227,7 @@ func TestSchemaInvalidButAccepted(t *testing.T) {
 		t.Errorf("v1 pass = %+v", s.PassRate)
 	}
 
-	strict := ClassificationPolicy{Version: "test-schema-gate", RequireSchemaValid: true}
+	strict := ScoringPolicy{Version: "test-schema-gate", RequireSchemaValid: true}
 	gated, k := EvaluateClassification(cases, obs, contract, strict)
 	if gated.Passed != 0 || k[0].Quality.Checks[2].Name != "schema-valid" || k[0].Quality.Checks[2].Outcome != QualityFailed || k[1].Quality.Outcome != QualityFailed {
 		t.Errorf("gated = %d passed, checks = %+v / %+v", gated.Passed, k[0].Quality.Checks, k[1].Quality.Checks)

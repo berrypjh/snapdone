@@ -103,7 +103,7 @@ func TestDecodeCaseResultRejects(t *testing.T) {
 			r["execution"].(map[string]any)["error"] = map[string]any{"class": "other", "message": "x"}
 		}),
 		"failed without error":  failed(func(r map[string]any) { r["execution"].(map[string]any)["error"] = nil }),
-		"zero attempts":         completed(func(r map[string]any) { r["execution"].(map[string]any)["attempts"] = 0 }),
+		"negative attempts":     completed(func(r map[string]any) { r["execution"].(map[string]any)["attempts"] = -1 }),
 		"unfinished but passed": failed(func(r map[string]any) { r["quality"] = map[string]any{"outcome": "passed", "checks": []any{}} }),
 		"unfinished with prediction": failed(func(r map[string]any) {
 			r["prediction"] = map[string]any{"classification": map[string]any{"category": "event", "facts": []any{}, "suggestedAction": "none", "confidence": "low"}}

@@ -39,6 +39,8 @@
         "default",
         "{workspaceRoot}/tools/evals/datasets/**/*",
         "{workspaceRoot}/tools/evals/variants/**/*",
+        "{workspaceRoot}/tools/evals/experiments/**/*",
+        "{workspaceRoot}/tools/evals/predictions/**/*",
         "!{workspaceRoot}/tools/evals/results/**/*"
       ],
       "options": {
@@ -94,7 +96,7 @@
       "cache": false,
       "options": {
         "cwd": "apps/api",
-        "command": "go test ./cmd/eval ./internal/evaluation -count=1 && go run ./cmd/eval validate --dataset pilot-v1"
+        "command": "go test ./cmd/eval ./internal/evalcli ./internal/evaluation/... -count=1 && go run ./cmd/eval validate --dataset sample-classification && go run ./cmd/eval validate --dataset sample-text-extraction && go run ./cmd/eval validate --dataset sample-translation"
       }
     }
   }

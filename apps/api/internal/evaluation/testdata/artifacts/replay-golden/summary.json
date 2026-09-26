@@ -434,6 +434,41 @@
                 "value": 0.3333333333333333
               }
             },
+            "facts": {
+              "annotated": 0,
+              "expected": 0,
+              "found": 0,
+              "recall": {
+                "availability": "not-applicable",
+                "value": null,
+                "reason": "no case has expected facts"
+              },
+              "readyEligible": 0,
+              "ready": 0,
+              "readyRate": {
+                "availability": "not-applicable",
+                "value": null,
+                "reason": "no scored action has expected facts"
+              }
+            },
+            "calibration": {
+              "high": 1,
+              "highWrong": 0,
+              "highWrongRate": {
+                "availability": "measured",
+                "value": 0
+              },
+              "autoExecuted": 1,
+              "autoCorrect": 1,
+              "autoPrecision": {
+                "availability": "measured",
+                "value": 1
+              },
+              "autoCoverage": {
+                "availability": "measured",
+                "value": 0.3333333333333333
+              }
+            },
             "rawSyntax": {
               "valid": 2,
               "invalid": 0,

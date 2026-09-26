@@ -10,8 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 	"unicode/utf8"
-
-	"snapdone/api/internal/processing"
 )
 
 const ComparisonSchemaVersion = 1
@@ -25,7 +23,7 @@ type RunArtifacts struct {
 }
 
 // metadata · cases를 읽고 요약을 다시 만든다. 저장된 summary.json이 있으면 다시 만든 것과 같아야 한다.
-func LoadRun(dir string, contract processing.Contract) (RunArtifacts, error) {
+func LoadRun(dir string, contract ClassificationContract) (RunArtifacts, error) {
 	f, err := os.Open(filepath.Join(dir, metadataFile))
 	if err != nil {
 		return RunArtifacts{}, err
@@ -176,7 +174,7 @@ type Comparison struct {
 	Candidate        RunRef                     `json:"candidate"`
 	CandidateVariant Variant                    `json:"candidateVariant"`
 	Dataset          DatasetSelection           `json:"dataset"`
-	Policy           ClassificationPolicy       `json:"policy"`
+	Policy           ScoringPolicy              `json:"policy"`
 	Comparable       bool                       `json:"comparable"`
 	Incomparable     []string                   `json:"incomparable"`
 	Warnings         []string                   `json:"warnings"`
@@ -190,7 +188,7 @@ type Comparison struct {
 }
 
 // 두 run 산출물을 비교한다. 모델 API · adapter를 부르지 않는다.
-func Compare(base, cand RunArtifacts, req CompareRequest, contract processing.Contract) (Comparison, error) {
+func Compare(base, cand RunArtifacts, req CompareRequest, contract ClassificationContract) (Comparison, error) {
 	if req.Baseline.Trial == 0 {
 		req.Baseline.Trial = 1
 	}
@@ -230,33 +228,19 @@ func Compare(base, cand RunArtifacts, req CompareRequest, contract processing.Co
 	}
 	c.Cases.Unpaired = unpaired
 	c.Cases.Paired = len(pairs)
-	var passB, passC Measure
-	shapeB, shapeC := 0, 0
-	switch bv.Task {
-	case Translation:
-		bt := translationForTrial(base.Meta, pairResults(pairs, true), req.Baseline.Trial)
-		ct := translationForTrial(cand.Meta, pairResults(pairs, false), req.Candidate.Trial)
-		c.Axes = append(c.Axes, translationAxis(bt, ct))
-		passB, passC = bt.PassRate, ct.PassRate
-		diffCasesByChecks(&c.Cases, pairs)
-	case TextExtraction:
-		bt := textForTrial(base.Meta, pairResults(pairs, true), req.Baseline.Trial)
-		ct := textForTrial(cand.Meta, pairResults(pairs, false), req.Candidate.Trial)
-		c.Axes = append(c.Axes, textAxis(bt, ct))
-		passB, passC = bt.PassRate, ct.PassRate
-		diffCasesByChecks(&c.Cases, pairs)
-	default:
-		bq := classificationForTrial(base.Meta, pairResults(pairs, true), req.Baseline.Trial, contract)
-		cq := classificationForTrial(cand.Meta, pairResults(pairs, false), req.Candidate.Trial, contract)
-		c.Axes = append(c.Axes, qualityAxis(bq, cq))
-		c.Labels = labelDeltas(bq, cq, contract)
-		for _, level := range contract.Confidence {
-			c.Confidence[level] = ConfidenceDelta{Baseline: bq.Confidence[level], Candidate: cq.Confidence[level]}
-		}
-		passB, passC = bq.PassRate, cq.PassRate
-		shapeB, shapeC = bq.RawShape.Invalid, cq.RawShape.Invalid
-		diffCases(&c.Cases, pairs, contract, base.Meta.Policy)
+	scoring := scoringOf(bv.Task)
+	bq := scoring.summarize(base.Meta, pairResults(pairs, true), req.Baseline.Trial, contract)
+	cq := scoring.summarize(cand.Meta, pairResults(pairs, false), req.Candidate.Trial, contract)
+	q := scoring.compare(bq, cq, pairs, contract, base.Meta.Policy, &c.Cases)
+	c.Axes = append(c.Axes, q.axis)
+	if q.labels != nil {
+		c.Labels = q.labels
 	}
+	for level, delta := range q.confidence {
+		c.Confidence[level] = delta
+	}
+	passB, passC := q.passRate[0], q.passRate[1]
+	shapeB, shapeC := q.shapeInvalid[0], q.shapeInvalid[1]
 	br, cr := variantReport(base.Summary, bv.ID), variantReport(cand.Summary, cv.ID)
 	c.Axes = append(c.Axes, reliabilityAxis(br, cr), latencyAxis(base.Meta, cand.Meta, br, cr), costAxis(br, cr))
 	formal := len(c.Warnings) == 0
@@ -441,6 +425,20 @@ func delta(name string, dir Direction, b, c Measure, rate bool) MetricDelta {
 	return d
 }
 
+// 분류의 품질 비교 — 품질 축 · category별 delta · confidence slice · category · action · critical 기준 case 변화.
+func compareClassification(b, c TrialQuality, pairs []casePair, contract ClassificationContract, policy ScoringPolicy, diffs *CaseDiffs) qualityComparison {
+	bq, cq := *b.Classification, *c.Classification
+	diffCases(diffs, pairs, contract, policy)
+	confidence := map[string]ConfidenceDelta{}
+	for _, level := range contract.Confidence {
+		confidence[level] = ConfidenceDelta{Baseline: bq.Confidence[level], Candidate: cq.Confidence[level]}
+	}
+	return qualityComparison{
+		axis: qualityAxis(bq, cq), passRate: [2]Measure{bq.PassRate, cq.PassRate}, shapeInvalid: [2]int{bq.RawShape.Invalid, cq.RawShape.Invalid},
+		labels: labelDeltas(bq, cq, contract), confidence: confidence,
+	}
+}
+
 func qualityAxis(b, c ClassificationSummary) AxisComparison {
 	return AxisComparison{Axis: "quality", Comparable: true, Metrics: []MetricDelta{
 		delta("category-accuracy", HigherIsBetter, b.Category.Accuracy, c.Category.Accuracy, true),
@@ -453,7 +451,29 @@ func qualityAxis(b, c ClassificationSummary) AxisComparison {
 		delta("critical-or-unobserved-rate", LowerIsBetter, b.Risk.CriticalOrUnobservedRate, c.Risk.CriticalOrUnobservedRate, true),
 		delta("raw-shape-invalid", LowerIsBetter, MeasuredValue(float64(b.RawShape.Invalid)), MeasuredValue(float64(c.RawShape.Invalid)), false),
 		delta("raw-syntax-invalid", LowerIsBetter, MeasuredValue(float64(b.RawSyntax.Invalid)), MeasuredValue(float64(c.RawSyntax.Invalid)), false),
+		delta("facts-recall", HigherIsBetter, factsOf(b).Recall, factsOf(c).Recall, true),
+		delta("action-ready-rate", HigherIsBetter, factsOf(b).ReadyRate, factsOf(c).ReadyRate, true),
+		delta("high-but-wrong-rate", LowerIsBetter, calibrationOf(b).HighWrongRate, calibrationOf(c).HighWrongRate, true),
+		delta("auto-run-precision", HigherIsBetter, calibrationOf(b).AutoPrecision, calibrationOf(c).AutoPrecision, true),
+		delta("auto-run-coverage", HigherIsBetter, calibrationOf(b).AutoCoverage, calibrationOf(c).AutoCoverage, true),
 	}}
+}
+
+// 추출값 · 자동 실행 집계가 없는 옛 요약은 값이 없는 것으로 비교한다(0이 아니다).
+func factsOf(s ClassificationSummary) FactMetrics {
+	if s.Facts != nil {
+		return *s.Facts
+	}
+	missing := Missing(Unavailable, "summary predates facts scoring")
+	return FactMetrics{Recall: missing, ReadyRate: missing}
+}
+
+func calibrationOf(s ClassificationSummary) CalibrationMetrics {
+	if s.Calibration != nil {
+		return *s.Calibration
+	}
+	missing := Missing(Unavailable, "summary predates the auto-run check")
+	return CalibrationMetrics{HighWrongRate: missing, AutoPrecision: missing, AutoCoverage: missing}
 }
 
 // 텍스트 과제의 품질 축. corpus 비율과 case 평균을 둘 다 두고 category · action은 없다.
@@ -528,7 +548,7 @@ func describeText(r CaseResult) string {
 	return fmt.Sprintf("%d runes, cer %s", utf8.RuneCountInString(*r.Prediction.Text), measure(r.Metrics["cer"]))
 }
 
-func labelDeltas(b, c ClassificationSummary, contract processing.Contract) []LabelDelta {
+func labelDeltas(b, c ClassificationSummary, contract ClassificationContract) []LabelDelta {
 	var out []LabelDelta
 	for _, label := range contract.Categories {
 		bl, cl := b.Category.Labels[label], c.Category.Labels[label]
@@ -595,7 +615,7 @@ func costAxis(b, c VariantReport) AxisComparison {
 }
 
 // case별 판정을 두 쪽에서 다시 계산해 새로 틀린 것 · 고쳐진 것 · 실행 변화 · critical 변화를 나열한다.
-func diffCases(diffs *CaseDiffs, pairs []casePair, contract processing.Contract, policy ClassificationPolicy) {
+func diffCases(diffs *CaseDiffs, pairs []casePair, contract ClassificationContract, policy ScoringPolicy) {
 	diffs.NewlyFailed, diffs.Fixed = []CaseChange{}, []CaseChange{}
 	diffs.NewlyErrored, diffs.ErrorsResolved = []CaseChange{}, []CaseChange{}
 	diffs.NewCritical, diffs.CriticalResolved = []CaseChange{}, []CaseChange{}
@@ -645,7 +665,7 @@ func diffCases(diffs *CaseDiffs, pairs []casePair, contract processing.Contract,
 	}
 }
 
-func contributionOf(r CaseResult, contract processing.Contract, policy ClassificationPolicy) CaseContribution {
+func contributionOf(r CaseResult, contract ClassificationContract, policy ScoringPolicy) CaseContribution {
 	c := Case{ID: r.CaseID, Revision: r.CaseRevision, Task: r.Task, Expected: r.Expected}
 	obs := Observation{Task: r.Task, Status: r.Execution.Status}
 	if r.Prediction != nil {

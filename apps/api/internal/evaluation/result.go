@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-
-	"snapdone/api/internal/processing"
 )
 
 const CaseResultSchemaVersion = 1
@@ -75,6 +73,25 @@ type CaseResult struct {
 	Cost       Cost    `json:"cost"`
 	// 모델 원문 판정. 호출이 없었으면 null. 원문 텍스트는 개인정보 검토를 마친 case에서만 남긴다.
 	Raw *RawObservation `json:"raw"`
+	// 붙인 예시와 계단식 경로. 쓰지 않은 variant에는 없다.
+	Retrieval *RetrievalTrace `json:"retrieval,omitempty"`
+	Cascade   *CascadeTrace   `json:"cascade,omitempty"`
+	// 이 호출의 모델. 모델을 부르지 않은 결과(미실행 · 미지원 · 모델 이름 없는 replay 기록)에는 없다.
+	Model *ModelTrace `json:"model,omitempty"`
+	// 실패한 것만 다시 실행한 run에서, 호출 없이 옮겨 온 결과의 원래 run id. 이 run에서 부른 결과에는 없다.
+	CarriedFrom string `json:"carriedFrom,omitempty"`
+}
+
+// 요청한 모델과 공급자가 답에 적은 모델. 계단식으로 다시 물었으면 두 번째 모델이다.
+type ModelTrace struct {
+	Requested string `json:"requested"`
+	// 응답 봉투의 model 값. 날짜 붙은 판이거나, 거절 뒤 대체 모델이면 요청과 다르다.
+	Answered Text `json:"answered"`
+}
+
+// 답한 모델이 요청한 모델이나 그 날짜 붙은 판인지.
+func sameModel(requested, answered string) bool {
+	return answered == requested || strings.HasPrefix(answered, requested+"-")
 }
 
 // Attempts는 실제 HTTP 왕복 수(SDK 재시도 포함)다.
@@ -97,9 +114,9 @@ type Check struct {
 
 // 모델이 돌려준 것. 분류는 production Result 그대로, 텍스트 과제는 전체 텍스트와(있다면) field 값이다.
 type Prediction struct {
-	Classification *processing.Result `json:"classification,omitempty"`
-	Text           *string            `json:"text,omitempty"`
-	Fields         map[string]string  `json:"fields,omitempty"`
+	Classification *ClassificationPrediction `json:"classification,omitempty"`
+	Text           *string                   `json:"text,omitempty"`
+	Fields         map[string]string         `json:"fields,omitempty"`
 	// 번역 출력이 선언한 목표 언어. 실제 언어 감지가 아니라 metadata다.
 	TargetLanguage string `json:"targetLanguage,omitempty"`
 }
@@ -121,7 +138,71 @@ type Cost struct {
 	Amount   Measure `json:"amount"`
 }
 
-func DecodeCaseResult(r io.Reader, contract processing.Contract) (CaseResult, error) {
+// invocation 하나를 채점해 wire 계약의 CaseResult로 만든다. 판정 · metric은 task의 score(task.go)가 내고, 개인정보
+// 검토가 끝나지 않은 case의 모델 원문은 여기서 뺀다. 산출물 writer는 이 결과를 검증해 쓰기만 한다.
+func NewCaseResult(meta RunMetadata, r InvocationResult, c Case, contract ClassificationContract) CaseResult {
+	obs := Observation{}
+	if r.Observation != nil {
+		obs = *r.Observation
+	}
+	quality, metrics := scoringOf(c.Task).score(c, obs, r.Ran, meta.Policy, contract)
+	result := CaseResult{
+		SchemaVersion: CaseResultSchemaVersion, RunID: meta.RunID,
+		InvocationID: fmt.Sprintf("%s/%s/%d", r.VariantID, r.CaseID, r.Trial),
+		CaseID:       c.ID, CaseRevision: c.Revision, VariantID: r.VariantID, Trial: r.Trial, Task: c.Task, Mode: r.Mode,
+		Quality: quality, Input: c.Input, Expected: c.Expected, Metrics: metrics,
+		DurationMs: Missing(NotApplicable, "not invoked"),
+		Usage:      Usage{InputTokens: Missing(Unavailable, "not invoked"), OutputTokens: Missing(Unavailable, "not invoked")},
+		Cost:       Cost{Amount: Missing(NotMeasured, "no price table")},
+	}
+	if !r.Ran {
+		result.Execution = Execution{Status: NotRun, Error: &SanitizedError{Class: OtherError, Message: r.Reason}}
+		return result
+	}
+	result.CarriedFrom = r.CarriedFrom
+	result.Execution = Execution{Status: obs.Status, Attempts: obs.Calls}
+	if obs.Failure != nil {
+		result.Execution.Error = &SanitizedError{Class: obs.Failure.Class, Kind: obs.Failure.Kind, Message: obs.Failure.Message}
+	}
+	if obs.Status == Skipped {
+		return result
+	}
+	result.DurationMs = r.Latency
+	result.Usage = obs.Usage
+	result.Retrieval, result.Cascade = obs.Retrieval, obs.Cascade
+	if obs.RequestedModel != "" {
+		answered := obs.EffectiveModel
+		if answered.Availability == "" {
+			answered = missingText(Unavailable, "not recorded")
+		}
+		result.Model = &ModelTrace{Requested: obs.RequestedModel, Answered: answered}
+	}
+	// 기록에 usage가 아예 없으면(replay) 값이 없는 것이지 0이 아니다.
+	for _, m := range []*Measure{&result.Usage.InputTokens, &result.Usage.OutputTokens} {
+		if m.Availability == "" {
+			*m = Missing(Unavailable, "not recorded")
+		}
+	}
+	if obs.Result != nil {
+		result.Prediction = &Prediction{Classification: obs.Result}
+	}
+	if obs.TextOutput != nil {
+		text := obs.TextOutput.Text
+		result.Prediction = &Prediction{Text: &text, Fields: obs.TextOutput.Fields, TargetLanguage: obs.TextOutput.TargetLanguage}
+	}
+	// raw 판정은 production adapter의 관측에만 있다. replay 기록 등에 없으면 null로 둔다.
+	if obs.Raw.Syntax.Availability == "" {
+		return result
+	}
+	raw := obs.Raw
+	if c.Provenance.PrivacyReview != Reviewed {
+		raw.Text = missingText(NotMeasured, "case privacy review is not finished; model text withheld")
+	}
+	result.Raw = &raw
+	return result
+}
+
+func DecodeCaseResult(r io.Reader, contract ClassificationContract) (CaseResult, error) {
 	var result CaseResult
 	if err := decodeStrict(r, &result); err != nil {
 		return CaseResult{}, err
@@ -132,7 +213,7 @@ func DecodeCaseResult(r io.Reader, contract processing.Contract) (CaseResult, er
 	return result, nil
 }
 
-func (r CaseResult) Validate(contract processing.Contract) error {
+func (r CaseResult) Validate(contract ClassificationContract) error {
 	checks := []error{
 		schemaVersion("case result", r.SchemaVersion, CaseResultSchemaVersion),
 		nonEmpty("runId", r.RunID),
@@ -141,7 +222,7 @@ func (r CaseResult) Validate(contract processing.Contract) error {
 		nonEmpty("variantId", r.VariantID),
 		oneOf("task", r.Task, tasks),
 		oneOf("mode", r.Mode, []Mode{Live, Replay}),
-		r.Execution.validate(r.Mode),
+		r.Execution.validate(),
 		r.Quality.validate(r.Execution.Status),
 		r.Input.validate(r.Task),
 		r.Expected.Validate(r.Task, contract),
@@ -149,6 +230,9 @@ func (r CaseResult) Validate(contract processing.Contract) error {
 		r.Usage.InputTokens.Validate(),
 		r.Usage.OutputTokens.Validate(),
 		r.Cost.Amount.Validate(),
+	}
+	if r.CarriedFrom != "" {
+		checks = append(checks, identifier("carriedFrom", r.CarriedFrom))
 	}
 	if r.CaseRevision < 1 || r.Trial < 1 {
 		checks = append(checks, errors.New("evaluation: caseRevision and trial start at 1"))
@@ -166,6 +250,9 @@ func (r CaseResult) Validate(contract processing.Contract) error {
 	if r.Raw != nil {
 		checks = append(checks, r.Raw.Syntax.validate(), r.Raw.Shape.validate(), r.Raw.Parser.validate())
 	}
+	if r.Model != nil {
+		checks = append(checks, nonEmpty("model.requested", r.Model.Requested), oneOf("model.answered availability", r.Model.Answered.Availability, availabilities))
+	}
 	return errors.Join(checks...)
 }
 
@@ -173,16 +260,16 @@ func (j Judgement) validate() error {
 	return oneOf("raw judgement availability", j.Availability, availabilities)
 }
 
-// replay는 기록된 attempts를 그대로 옮기므로 완료됐어도 0일 수 있다. live의 완료는 1회 이상이다.
-func (e Execution) validate(mode Mode) error {
+// replay는 기록된 attempts를 그대로 옮기고 baseline은 모델을 부르지 않으므로, 완료됐어도 0일 수 있다.
+func (e Execution) validate() error {
 	if err := oneOf("execution.status", e.Status, executionStatuses); err != nil {
 		return err
 	}
 	switch {
 	case (e.Status == Skipped || e.Status == NotRun) && e.Attempts != 0:
 		return fmt.Errorf("evaluation: a %s execution has no attempts", e.Status)
-	case e.Attempts < 0 || (e.Status == Completed && mode == Live && e.Attempts < 1):
-		return errors.New("evaluation: a completed live execution has at least one attempt")
+	case e.Attempts < 0:
+		return errors.New("evaluation: attempts is not negative")
 	case e.Status == Completed && e.Error != nil:
 		return errors.New("evaluation: a completed execution has no error")
 	case e.Status != Completed && e.Error == nil:
@@ -241,7 +328,7 @@ func (q Quality) validate(status ExecutionStatus) error {
 }
 
 // 예측은 호출이 끝났을 때만 있고 task와 모양이 맞아야 한다.
-func (p *Prediction) validate(task Task, status ExecutionStatus, contract processing.Contract) error {
+func (p *Prediction) validate(task Task, status ExecutionStatus, contract ClassificationContract) error {
 	if status != Completed {
 		if p != nil {
 			return errors.New("evaluation: an unfinished execution has no prediction")

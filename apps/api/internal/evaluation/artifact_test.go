@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"net/http"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,7 +15,7 @@ import (
 func TestWriterProducesRegenerableArtifacts(t *testing.T) {
 	root := t.TempDir()
 	ds := runnerDataset(t, 2)
-	w, report := writeRun(t, root, ds, &providerFake{}, "run-live", nil, variant("v", "openai"))
+	w, report := writeRun(t, root, ds, &fakeAdapters{}, "run-live", nil, variant("v", "openai"))
 	summary, err := w.Finish(report)
 	if err != nil {
 		t.Fatal(err)
@@ -62,7 +62,7 @@ func TestWriterCancelledRunIsPartial(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fake := &providerFake{}
+	fake := &fakeAdapters{}
 	report, err := Run(ctx, liveRequest(ds, 20, variant("v", "openai")), deps(fake), cancelAfterFirst{w, cancel})
 	if err != nil {
 		t.Fatal(err)
@@ -90,8 +90,8 @@ type cancelAfterFirst struct {
 	cancel context.CancelFunc
 }
 
-func (c cancelAfterFirst) Begin(m RunMetadata, p Plan) error { return c.w.Begin(m, p) }
-func (c cancelAfterFirst) Result(r InvocationResult) error {
+func (c cancelAfterFirst) Begin(m RunMetadata) error { return c.w.Begin(m) }
+func (c cancelAfterFirst) Result(r CaseResult) error {
 	if r.CaseID == "case-a" {
 		c.cancel()
 	}
@@ -101,9 +101,9 @@ func (c cancelAfterFirst) Result(r InvocationResult) error {
 func TestWriterRejectsCollisionAndBadRoots(t *testing.T) {
 	root := t.TempDir()
 	ds := runnerDataset(t, 1)
-	writeRun(t, root, ds, &providerFake{}, "run-dup", nil, variant("v", "openai"))
+	writeRun(t, root, ds, &fakeAdapters{}, "run-dup", nil, variant("v", "openai"))
 	w, _ := NewRunWriter(root, contract, fixedClock)
-	if err := w.Begin(testMeta("run-dup", Live, 1, nil), Plan{}); err == nil || !strings.Contains(err.Error(), "already exists") {
+	if err := w.Begin(testMeta("run-dup", Live, 1, nil)); err == nil || !strings.Contains(err.Error(), "already exists") {
 		t.Errorf("collision err = %v", err)
 	}
 	if _, err := NewRunWriter(ds.Root, contract, fixedClock); err == nil || !strings.Contains(err.Error(), "dataset") {
@@ -112,8 +112,47 @@ func TestWriterRejectsCollisionAndBadRoots(t *testing.T) {
 	if _, err := NewRunWriter(filepath.Join(root, "missing"), contract, fixedClock); err == nil {
 		t.Error("missing root accepted")
 	}
-	if err := w.Begin(testMeta("Bad Id", Live, 1, nil), Plan{}); err == nil {
+	if err := w.Begin(testMeta("Bad Id", Live, 1, nil)); err == nil {
 		t.Error("bad run id accepted")
+	}
+}
+
+// writer는 채점하지 않는다. 이 run이 고른 case의, wire 계약을 지키는 CaseResult만 쓰고 나머지는 run을 멈춘다.
+func TestWriterWritesOnlyValidSelectedResults(t *testing.T) {
+	c := resolved("case-a", "event", "add_to_calendar")
+	c.Revision = 1
+	meta := testMeta("run-w", Replay, 1, []string{"case-a"}, testVariant("v"))
+	good := NewCaseResult(meta, InvocationResult{VariantID: "v", CaseID: "case-a", Trial: 1, Mode: Replay, Ran: true, Observation: &Observation{Status: Completed, Result: predicted("event", "add_to_calendar", "high").Result}, Latency: Missing(NotMeasured, "replay")}, c, contract)
+	other := good
+	other.RunID = "run-x"
+	unselected := good
+	unselected.CaseID = "case-z"
+	broken := good
+	broken.Metrics = map[string]Measure{"category-match": {Availability: Measured}}
+	for name, bad := range map[string]CaseResult{"other run": other, "unselected case": unselected, "invalid wire": broken} {
+		t.Run(name, func(t *testing.T) {
+			w, _ := NewRunWriter(t.TempDir(), contract, fixedClock)
+			if err := w.Begin(meta); err != nil {
+				t.Fatal(err)
+			}
+			if err := w.Result(bad); err == nil {
+				t.Fatal("writer accepted the result")
+			}
+			if err := w.Result(good); err == nil {
+				t.Error("writer kept writing after a rejected result")
+			}
+		})
+	}
+	w, _ := NewRunWriter(t.TempDir(), contract, fixedClock)
+	if err := errors.Join(w.Begin(meta), w.Result(good)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.Finish(RunReport{}); err != nil {
+		t.Fatal(err)
+	}
+	var written CaseResult
+	if err := json.Unmarshal(read(t, filepath.Join(w.Dir(), casesFile)), &written); err != nil || written.Quality.Outcome != Passed {
+		t.Errorf("written = %+v, %v", written.Quality, err)
 	}
 }
 
@@ -121,7 +160,7 @@ func TestWriterRejectsCollisionAndBadRoots(t *testing.T) {
 func TestWriterFinishFailsWhenSummaryCannotBeWritten(t *testing.T) {
 	root := t.TempDir()
 	ds := runnerDataset(t, 1)
-	w, report := writeRun(t, root, ds, &providerFake{}, "run-blocked", nil, variant("v", "openai"))
+	w, report := writeRun(t, root, ds, &fakeAdapters{}, "run-blocked", nil, variant("v", "openai"))
 	if err := os.Mkdir(filepath.Join(w.Dir(), summaryFile), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -144,7 +183,7 @@ func TestWriterResultFailureStopsTheRun(t *testing.T) {
 		t.Fatal(err)
 	}
 	broken := brokenSink{w}
-	_, err = Run(context.Background(), liveRequest(ds, 20, variant("v", "openai")), deps(&providerFake{}), broken)
+	_, err = Run(context.Background(), liveRequest(ds, 20, variant("v", "openai")), deps(&fakeAdapters{}), broken)
 	if err == nil || !strings.Contains(err.Error(), "file already closed") {
 		t.Fatalf("err = %v", err)
 	}
@@ -155,8 +194,8 @@ func TestWriterResultFailureStopsTheRun(t *testing.T) {
 
 type brokenSink struct{ w *RunWriter }
 
-func (b brokenSink) Begin(m RunMetadata, p Plan) error {
-	if err := b.w.Begin(m, p); err != nil {
+func (b brokenSink) Begin(m RunMetadata) error {
+	if err := b.w.Begin(m); err != nil {
 		return err
 	}
 	// 파일을 닫고 버퍼를 아주 작게 해 다음 쓰기가 바로 실패하게 한다.
@@ -164,12 +203,12 @@ func (b brokenSink) Begin(m RunMetadata, p Plan) error {
 	b.w.buf = bufio.NewWriterSize(b.w.file, 16)
 	return nil
 }
-func (b brokenSink) Result(r InvocationResult) error { return b.w.Result(r) }
+func (b brokenSink) Result(r CaseResult) error { return b.w.Result(r) }
 
 func TestSummarizeRejectsBrokenCases(t *testing.T) {
 	root := t.TempDir()
 	ds := runnerDataset(t, 2)
-	w, report := writeRun(t, root, ds, &providerFake{}, "run-broken", nil, variant("v", "openai"))
+	w, report := writeRun(t, root, ds, &fakeAdapters{}, "run-broken", nil, variant("v", "openai"))
 	if _, err := w.Finish(report); err != nil {
 		t.Fatal(err)
 	}
@@ -189,38 +228,6 @@ func TestSummarizeRejectsBrokenCases(t *testing.T) {
 	}
 }
 
-// 모델이 설정된 secret을 되풀이해도 어느 파일에도 남지 않고, 표를 깨는 문자는 escape된다.
-func TestArtifactsCarryNoSecretAndEscapeMarkdown(t *testing.T) {
-	root := t.TempDir()
-	ds := runnerDataset(t, 1)
-	t.Setenv("EVAL_TEST_KEY", secret)
-	echo := `{"category":"event","facts":[{"label":"key","value":"` + secret + `"}],"suggestedAction":"add_to_calendar","confidence":"low"}`
-	fake := &providerFake{before: func(r *http.Request, _ int) (*http.Response, bool) {
-		resp, _ := respond(200, claudeBody("end_turn", ptr(echo), ptr("model|`x"), map[string]any{"input_tokens": 1, "output_tokens": 1}), nil).RoundTrip(r)
-		return resp, true
-	}}
-	v := variant("a", "anthropic")
-	v.Model = "claude|test`model"
-	w, report := writeRun(t, root, ds, fake, "run-secret", nil, v)
-	if _, err := w.Finish(report); err != nil {
-		t.Fatal(err)
-	}
-	for _, name := range []string{metadataFile, casesFile, summaryFile, markdownFile} {
-		data := string(read(t, filepath.Join(w.Dir(), name)))
-		if strings.Contains(data, secret) || strings.Contains(data, "png-bytes") || strings.Contains(data, "secret-note") {
-			t.Errorf("%s leaks", name)
-		}
-	}
-	md := string(read(t, filepath.Join(w.Dir(), markdownFile)))
-	if !strings.Contains(md, "claude\\|test\\`model") {
-		t.Errorf("markdown did not escape the model name: %s", md)
-	}
-	cases := string(read(t, filepath.Join(w.Dir(), casesFile)))
-	if !strings.Contains(cases, "[redacted]") {
-		t.Error("redaction marker missing")
-	}
-}
-
 // privacy 검토가 끝나지 않은 case의 모델 원문은 남기지 않는다.
 func TestWriterWithholdsTextForUnreviewedCases(t *testing.T) {
 	root := t.TempDir()
@@ -234,7 +241,7 @@ func TestWriterWithholdsTextForUnreviewedCases(t *testing.T) {
 	w, _ := NewRunWriter(root, contract, fixedClock)
 	req := liveRequest(ds, 5, variant("v", "openai"))
 	req.AllowDrafts = true
-	dd := deps(&providerFake{})
+	dd := deps(&fakeAdapters{})
 	dd.NewRunID = func() string { return "run-draft" }
 	report, err := Run(context.Background(), req, dd, w)
 	if err != nil {
@@ -327,7 +334,7 @@ func TestWriteReplayExample(t *testing.T) {
 		t.Fatal(err)
 	}
 	_ = os.RemoveAll(filepath.Join(root, "replay-example"))
-	ds, err := LoadDataset("../../../../tools/evals/datasets/pilot-v1", contract)
+	ds, err := LoadDataset("testdata/datasets/pilot-v1", contract)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -351,7 +358,7 @@ func TestWriteReplayExample(t *testing.T) {
 			records["replay-example/"+c.ID] = obs
 		}
 	}
-	req := RunRequest{Dataset: ds, Variants: []VariantManifest{variant("replay-example", "openai")}, Split: Dev, Mode: Replay, Replay: records}
+	req := RunRequest{Dataset: ds, Variants: []VariantManifest{variant("replay-example", "openai")}, Split: Dev, Mode: Replay, Replay: records, Contract: contract}
 	d := Deps{NewRunID: func() string { return "replay-example" }, Source: fakeSource()}
 	report, err := Run(context.Background(), req, d, w)
 	if err != nil {

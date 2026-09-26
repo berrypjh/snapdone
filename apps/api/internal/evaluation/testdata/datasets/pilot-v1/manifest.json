@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "pilot-v1",
-  "version": 1,
+  "version": 2,
   "task": "image-classification",
   "tier": "synthetic-pilot",
   "license": "CC0-1.0",
@@ -9,7 +9,7 @@
   "splits": {
     "dev": {
       "file": "dev.jsonl",
-      "cases": 7
+      "cases": 21
     },
     "validation": {
       "file": "validation.jsonl",

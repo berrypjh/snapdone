@@ -1,4 +1,4 @@
-package evaluation
+package processingadapter
 
 import (
 	"encoding/json"
@@ -6,16 +6,16 @@ import (
 	"slices"
 	"strings"
 
-	"snapdone/api/internal/processing"
+	"snapdone/api/internal/evaluation"
 )
 
 // 모델 원문의 JSON 문법과, production descriptor schema에 대한 모양을 따로 판정한다.
-func judgeRaw(text string, contract processing.Contract) (syntax, shape Judgement) {
+func judgeRaw(text string, schema map[string]any) (syntax, shape evaluation.Judgement) {
 	var value any
 	if err := json.Unmarshal([]byte(text), &value); err != nil {
-		return judged(false, []string{"text is not JSON"}), unjudged(NotApplicable, "text is not JSON")
+		return judged(false, []string{"text is not JSON"}), unjudged(evaluation.NotApplicable, "text is not JSON")
 	}
-	problems := checkShape("$", contract.Schema, value)
+	problems := checkShape("$", schema, value)
 	return judged(true, nil), judged(len(problems) == 0, problems)
 }
 

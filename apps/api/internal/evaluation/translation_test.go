@@ -194,14 +194,13 @@ func TestTranslationLiveIsUnsupported(t *testing.T) {
 	}
 	v := variant("tv", "openai")
 	v.Task = Translation
-	fake := &providerFake{}
-	constructions := countConstructions(t)
+	fake := &fakeAdapters{}
 	report, err := Run(context.Background(), liveRequest(ds, 5, v), deps(fake), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if report.Counts.Skipped != 3 || fake.count() != 0 || *constructions != 0 || report.Metadata.Policy.Version != DefaultTranslationPolicy.Version {
-		t.Errorf("counts = %+v, calls = %d, constructions = %d, policy = %s", report.Counts, fake.count(), *constructions, report.Metadata.Policy.Version)
+	if report.Counts.Skipped != 3 || fake.count() != 0 || fake.constructions != 0 || report.Metadata.Policy.Version != DefaultTranslationPolicy.Version {
+		t.Errorf("counts = %+v, calls = %d, constructions = %d, policy = %s", report.Counts, fake.count(), fake.constructions, report.Metadata.Policy.Version)
 	}
 	in, err := AdapterInputOf(ds.Cases[0].Case, nil)
 	if err != nil || in.Image != nil || in.Text == nil || in.Text.SourceText != ds.Cases[0].Input.Text.SourceText {
@@ -230,7 +229,7 @@ func TestTranslationRunArtifactsAndCompare(t *testing.T) {
 		}
 		d := deps(nil)
 		d.NewRunID = func() string { return runID }
-		report, err := Run(context.Background(), RunRequest{Dataset: ds, Variants: []VariantManifest{v}, Split: Dev, Mode: Replay, Replay: records}, d, w)
+		report, err := Run(context.Background(), RunRequest{Dataset: ds, Variants: []VariantManifest{v}, Split: Dev, Mode: Replay, Replay: records, Contract: contract}, d, w)
 		if err != nil {
 			t.Fatal(err)
 		}

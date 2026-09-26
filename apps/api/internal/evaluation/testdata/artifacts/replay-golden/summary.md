@@ -11,6 +11,8 @@ No single aggregate score is produced. Quality, reliability, latency, and cost a
 
 openai · test-model · trials 1
 
+answers: recorded predictions re-scored — no model was called in this run; not model performance
+
 ### execution
 
 | selected | invocations | attempted | completed | failed | timed-out | unsupported | not-run | cancelled | missing |
@@ -33,6 +35,11 @@ incomplete: 1 of 3 cases not run
 | pass rate | 0.3333 | 3 selected |
 | critical rate | 0.0000 | 2 risk observed |
 | critical-or-unobserved | 0.3333 | 3 risk eligible |
+| facts recall | not-applicable (no case has expected facts) | 0 expected facts in 0 cases |
+| action ready | not-applicable (no scored action has expected facts) | 0 scored actions with facts |
+| high but wrong | 0.0000 | 1 high |
+| auto-run precision | 1.0000 | 1 auto-run (high, action not none) |
+| auto-run coverage | 0.3333 | 3 selected |
 
 missing gold labels: place, receipt, foreign_text, shopping, work, other
 

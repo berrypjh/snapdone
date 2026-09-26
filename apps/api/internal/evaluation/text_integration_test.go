@@ -22,7 +22,7 @@ func replayText(t *testing.T, root, runID, variantID string, records replayMap) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	req := RunRequest{Dataset: ds, Variants: []VariantManifest{v}, Split: Dev, Mode: Replay, Replay: records}
+	req := RunRequest{Dataset: ds, Variants: []VariantManifest{v}, Split: Dev, Mode: Replay, Replay: records, Contract: contract}
 	d := deps(nil)
 	d.NewRunID = func() string { return runID }
 	report, err := Run(context.Background(), req, d, w)
@@ -131,14 +131,13 @@ func TestTextLiveIsUnsupported(t *testing.T) {
 	}
 	v := variant("tv", "openai")
 	v.Task = TextExtraction
-	fake := &providerFake{}
-	constructions := countConstructions(t)
+	fake := &fakeAdapters{}
 	report, err := Run(context.Background(), liveRequest(ds, 5, v), deps(fake), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if report.Counts.Skipped != 3 || report.Counts.Attempted != 0 || fake.count() != 0 || *constructions != 0 || report.Plan.Variants[0].Supported {
-		t.Errorf("counts = %+v, calls = %d, constructions = %d", report.Counts, fake.count(), *constructions)
+	if report.Counts.Skipped != 3 || report.Counts.Attempted != 0 || fake.count() != 0 || fake.constructions != 0 || report.Plan.Variants[0].Supported {
+		t.Errorf("counts = %+v, calls = %d, constructions = %d", report.Counts, fake.count(), fake.constructions)
 	}
 	if _, err := os.Stat("testdata/ocr/replay-predictions.jsonl"); err != nil {
 		t.Error(err)

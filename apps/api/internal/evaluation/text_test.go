@@ -230,3 +230,50 @@ func TestRuneEditDistance(t *testing.T) {
 		}
 	}
 }
+
+// field id별 집계는 case 판정을 그대로 센다. 예측이 없는 case의 field는 support에만 들어가고 정확도 분모에서 빠진다.
+func TestTextFieldStats(t *testing.T) {
+	total := func(important bool) ExpectedField {
+		return ExpectedField{ID: "total", Aliases: []string{"합계"}, AcceptedValues: []string{"12,800원"}, Important: important}
+	}
+	store := ExpectedField{ID: "store", Aliases: []string{}, AcceptedValues: []string{"테스트 카페"}}
+	cases := []Case{
+		textCase("a", "x", "", total(true), store),
+		textCase("b", "x", "", total(true)),
+		textCase("c", "x", "", total(false), store),
+		textCase("d", "x", "", total(true)),
+		textCase("e", "x", ""),
+	}
+	observations := map[string]Observation{
+		"a": textObs("x", map[string]string{"합계": "12,800 원", "store": "테스트  카페"}),
+		"b": textObs("x", map[string]string{"total": "12,800원"}),
+		"c": textObs("x", map[string]string{}),
+		"d": {Task: TextExtraction, Status: TimedOut},
+		"e": textObs("x", nil),
+	}
+	s, _ := EvaluateTextCases(cases, observations, DefaultTextPolicy)
+	if len(s.FieldStats) != 2 || s.FieldStats[0].ID != "store" || s.FieldStats[1].ID != "total" {
+		t.Fatalf("field stats = %+v", s.FieldStats)
+	}
+	st, tot := s.FieldStats[0], s.FieldStats[1]
+	// store: a 공백 정규화 뒤 맞음, c 없음.
+	if st.Support != 2 || st.Important != 0 || st.Evaluated != 2 || st.Correct != 1 || st.Missing != 1 || st.Wrong != 0 || value(t, st.Accuracy) != 0.5 {
+		t.Errorf("store = %+v", st)
+	}
+	// total: a "12,800 원"은 공백이 달라 틀림, b 맞음, c 없음, d timeout이라 판정 안 함.
+	if tot.Support != 4 || tot.Important != 3 || tot.Evaluated != 3 || tot.Correct != 1 || tot.Wrong != 1 || tot.Missing != 1 || !near(value(t, tot.Accuracy), 1.0/3) {
+		t.Errorf("total = %+v", tot)
+	}
+	// 집계와 합이 맞는다.
+	if s.Fields != st.Evaluated+tot.Evaluated || s.CorrectFields != st.Correct+tot.Correct {
+		t.Errorf("summary fields %d/%d vs stats", s.CorrectFields, s.Fields)
+	}
+	none, _ := EvaluateTextCases([]Case{textCase("e", "x", "")}, map[string]Observation{}, DefaultTextPolicy)
+	if none.FieldStats != nil {
+		t.Errorf("no field contract still produced stats: %+v", none.FieldStats)
+	}
+	unpredicted, _ := EvaluateTextCases([]Case{textCase("d", "x", "", total(true))}, map[string]Observation{}, DefaultTextPolicy)
+	if f := unpredicted.FieldStats[0]; f.Evaluated != 0 || f.Accuracy.Availability != NotApplicable {
+		t.Errorf("unpredicted = %+v", f)
+	}
+}

@@ -11,10 +11,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
-	"io"
 	"math"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,66 +21,6 @@ import (
 
 	"snapdone/api/internal/processing"
 )
-
-// ---- adapter_processing에서 옮김
-
-const (
-	secret     = "sk-test-secret-value"
-	goodResult = `{"category":"event","facts":[{"label":"날짜","value":"8월 20일 19시"}],"suggestedAction":"add_to_calendar","confidence":"medium"}`
-)
-
-// Claude Messages API 응답 봉투. 인자로 필드를 뺄 수 있다.
-func claudeBody(stop string, text *string, model *string, usage map[string]any) []byte {
-	m := map[string]any{"id": "msg_1", "type": "message", "role": "assistant", "stop_reason": stop, "content": []map[string]any{}}
-	if text != nil {
-		m["content"] = []map[string]any{{"type": "text", "text": *text}}
-	}
-	if model != nil {
-		m["model"] = *model
-	}
-	if usage != nil {
-		m["usage"] = usage
-	}
-	encoded, _ := json.Marshal(m)
-	return encoded
-}
-
-func chatBody(finish string, content *string, refusal string, model *string, usage map[string]any) []byte {
-	m := map[string]any{}
-	if finish != "" {
-		message := map[string]any{"role": "assistant"}
-		if content != nil {
-			message["content"] = *content
-		}
-		if refusal != "" {
-			message["refusal"] = refusal
-		}
-		m["choices"] = []map[string]any{{"finish_reason": finish, "message": message}}
-	} else {
-		m["choices"] = []map[string]any{}
-	}
-	if model != nil {
-		m["model"] = *model
-	}
-	if usage != nil {
-		m["usage"] = usage
-	}
-	encoded, _ := json.Marshal(m)
-	return encoded
-}
-
-func ptr(s string) *string { return &s }
-
-func respond(status int, body []byte, header map[string]string) *fakeTransport {
-	return &fakeTransport{handler: func(w http.ResponseWriter, _ *http.Request) {
-		for k, v := range header {
-			w.Header().Set(k, v)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(status)
-		_, _ = w.Write(body)
-	}}
-}
 
 // ---- aggregate에서 옮김
 
@@ -136,21 +73,21 @@ func line(runID, variantID, caseID, goldCategory, goldAction string, status Exec
 		result.Reason = "cancelled"
 	}
 	meta := testMeta(runID, Live, 1, nil)
-	return caseResultOf(meta, result, c)
+	return NewCaseResult(meta, result, c, contract)
 }
 
 func f(v float64) *float64 { return &v }
 
 // ---- artifact에서 옮김
 
-// 가짜 Transport로 live run을 돌리고 산출물을 쓴다.
-func writeRun(t *testing.T, root string, ds Dataset, transport *providerFake, runID string, sink func(*RunWriter, RunReport), variants ...VariantManifest) (*RunWriter, RunReport) {
+// 가짜 adapter로 live run을 돌리고 산출물을 쓴다.
+func writeRun(t *testing.T, root string, ds Dataset, fake *fakeAdapters, runID string, sink func(*RunWriter, RunReport), variants ...VariantManifest) (*RunWriter, RunReport) {
 	t.Helper()
 	w, err := NewRunWriter(root, contract, fixedClock)
 	if err != nil {
 		t.Fatal(err)
 	}
-	d := deps(transport)
+	d := deps(fake)
 	d.NewRunID = func() string { return runID }
 	report, err := Run(context.Background(), liveRequest(ds, 20, variants...), d, w)
 	if err != nil {
@@ -191,8 +128,8 @@ func resolved(id, category, action string, forbidden ...string) Case {
 
 func predicted(category, action, confidence string) Observation {
 	return Observation{
-		Status: Completed, Result: &processing.Result{Category: category, SuggestedAction: action, Confidence: confidence, Facts: []processing.Fact{}},
-		Raw: RawObservation{Syntax: judged(true, nil), Shape: judged(true, nil), Parser: judged(true, nil)},
+		Status: Completed, Result: &ClassificationPrediction{Category: category, SuggestedAction: action, Confidence: confidence, Facts: []ClassificationFact{}},
+		Raw: RawObservation{Text: missingText(Unavailable, "not in the replay fixture"), Syntax: judged(true, nil), Shape: judged(true, nil), Parser: judged(true, nil)},
 	}
 }
 
@@ -214,7 +151,11 @@ func near(a, b float64) bool { return math.Abs(a-b) < 1e-9 }
 
 // ---- contract에서 옮김
 
-var contract = processing.DescribeContract()
+// production 계약에서 옮긴 평가용 view. golden의 hash가 실제 production 값이어야 하므로 production에서 읽는다.
+var contract = func() ClassificationContract {
+	c := processing.DescribeContract()
+	return ClassificationContract{Hash: c.Hash, Categories: c.Categories, Actions: c.Actions, Confidence: c.Confidence}
+}()
 
 const imageSHA = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
 
@@ -388,66 +329,14 @@ func variant(id, provider string) VariantManifest {
 	return v
 }
 
-// host로 공급자를 구분해 정상 답을 주고, 요청 본문을 모아 둔다.
-type providerFake struct {
-	mu     sync.Mutex
-	bodies []string
-	calls  int
-	before func(r *http.Request, call int) (*http.Response, bool)
-}
-
-func (f *providerFake) RoundTrip(r *http.Request) (*http.Response, error) {
-	raw, _ := io.ReadAll(r.Body)
-	f.mu.Lock()
-	f.calls++
-	call := f.calls
-	f.bodies = append(f.bodies, string(raw))
-	f.mu.Unlock()
-	if f.before != nil {
-		if resp, handled := f.before(r, call); handled {
-			return resp, nil
-		}
-	}
-	body := chatBody("stop", ptr(goodResult), "", ptr("m"), map[string]any{"prompt_tokens": 10, "completion_tokens": 2})
-	if strings.Contains(r.URL.Host, "anthropic") {
-		body = claudeBody("end_turn", ptr(goodResult), ptr("m"), map[string]any{"input_tokens": 10, "output_tokens": 2})
-	}
-	return respond(200, body, nil).RoundTrip(r)
-}
-
-func (f *providerFake) count() int {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	return f.calls
-}
-
 func fakeSource() Source {
 	return Source{Commit: strings.Repeat("a", 40), Branch: "main", Dirty: false, SourceHash: hash64, EvaluatorHash: hash64, ModuleHash: hash64, GoVersion: "go-test"}
 }
 
 var fixedClock = func() time.Time { return time.Date(2026, 9, 22, 6, 0, 0, 0, time.UTC) }
 
-func deps(transport http.RoundTripper) Deps {
-	return Deps{Now: fixedClock, NewRunID: func() string { return "run-test" }, Transport: transport, Source: fakeSource()}
-}
-
-// 생성자 호출 수를 세는 registry 항목. 테스트 뒤 원래대로 돌린다.
-func countConstructions(t *testing.T) *int {
-	t.Helper()
-	original := adapters[AdapterProcessing]
-	count := 0
-	spec := original
-	spec.new = func(cfg ProviderConfig, budget CallBudget, base http.RoundTripper) (Adapter, error) {
-		count++
-		return original.new(cfg, budget, base)
-	}
-	adapters[AdapterProcessing] = spec
-	t.Cleanup(func() { adapters[AdapterProcessing] = original })
-	return &count
-}
-
 func liveRequest(ds Dataset, budget int, variants ...VariantManifest) RunRequest {
-	return RunRequest{Dataset: ds, Variants: variants, Split: Dev, AllowAPI: true, CallBudget: budget, CaseTimeout: 5 * time.Second}
+	return RunRequest{Dataset: ds, Variants: variants, Split: Dev, AllowAPI: true, CallBudget: budget, CaseTimeout: 5 * time.Second, Contract: contract}
 }
 
 type replayMap map[string]Observation
@@ -457,30 +346,79 @@ func (m replayMap) Lookup(variantID, caseID string, trial int) (Observation, boo
 	return obs, ok
 }
 
-// ---- transport에서 옮김
-
-// 포트를 열지 않고 요청을 handler로 보내는 가짜 Transport. 실제 요청 수를 센다.
-type fakeTransport struct {
-	mu      sync.Mutex
-	calls   int
-	handler func(w http.ResponseWriter, r *http.Request)
+// production 분류기 대신 정해진 관측을 돌려주는 adapter. 호출마다 예산을 하나 쓰고, 예산이 없으면 production
+// adapter처럼 budget-denied 실패를 낸다. HTTP · 재시도 · redaction은 processingadapter 테스트가 본다.
+type fakeAdapters struct {
+	mu            sync.Mutex
+	constructions int
+	calls         int
+	inputs        []AdapterInput
+	// nil이면 정상 답(event · add_to_calendar)이다. call은 1부터 센다.
+	observe func(in AdapterInput, call int) Observation
 }
 
-func (f *fakeTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+func (f *fakeAdapters) factory(v VariantManifest, budget CallBudget) (Adapter, error) {
 	f.mu.Lock()
-	f.calls++
-	f.mu.Unlock()
-	if f.handler == nil {
-		<-r.Context().Done()
-		return nil, r.Context().Err()
-	}
-	rec := httptest.NewRecorder()
-	f.handler(rec, r)
-	return rec.Result(), nil
+	defer f.mu.Unlock()
+	f.constructions++
+	return fakeAdapter{f, v.ProviderConfig(), budget}, nil
 }
 
-func (f *fakeTransport) count() int {
+func (f *fakeAdapters) count() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.calls
+}
+
+type fakeAdapter struct {
+	f      *fakeAdapters
+	cfg    ProviderConfig
+	budget CallBudget
+}
+
+func (a fakeAdapter) Invoke(ctx context.Context, in AdapterInput) Observation {
+	if !a.budget.Allow() {
+		return Observation{Task: in.Task, Status: Failed, Attempts: []HTTPAttempt{{Denied: true}},
+			Failure: &Failure{Class: OtherError, Kind: FailureBudget, Message: "call budget denied the request"}}
+	}
+	a.f.mu.Lock()
+	a.f.calls++
+	call := a.f.calls
+	a.f.inputs = append(a.f.inputs, in)
+	observe := a.f.observe
+	a.f.mu.Unlock()
+	if observe != nil {
+		return observe(in, call)
+	}
+	return answered(a.cfg.Model, "event", "add_to_calendar")
+}
+
+// production adapter가 정상 답에서 내는 모양의 관측.
+func answered(model, category, action string) Observation {
+	obs := predicted(category, action, "medium")
+	obs.Task, obs.RequestedModel, obs.Calls, obs.ElapsedMs = ImageClassification, model, 1, 5
+	obs.Attempts = []HTTPAttempt{{Status: 200, ElapsedMs: 5}}
+	obs.Raw.Text = observedText(`{"category":"` + category + `","facts":[],"suggestedAction":"` + action + `","confidence":"medium"}`)
+	obs.Usage = Usage{InputTokens: MeasuredValue(10), OutputTokens: MeasuredValue(2)}
+	return obs
+}
+
+func deps(fake *fakeAdapters) Deps {
+	d := Deps{Now: fixedClock, NewRunID: func() string { return "run-test" }, Source: fakeSource()}
+	if fake != nil {
+		d.NewAdapter = fake.factory
+	}
+	return d
+}
+
+// ---- 관측 값 생성자. production adapter는 processingadapter 안에 자기 것을 둔다.
+
+func observedText(value string) Text { return Text{Availability: Measured, Value: value} }
+
+func judged(valid bool, problems []string) Judgement {
+	return Judgement{Availability: Measured, Valid: valid, Problems: problems}
+}
+
+func unjudged(availability Availability, reason string) Judgement {
+	return Judgement{Availability: availability, Problems: []string{reason}}
 }

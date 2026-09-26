@@ -10,8 +10,6 @@ import (
 	"slices"
 	"strings"
 	"unicode/utf8"
-
-	"snapdone/api/internal/processing"
 )
 
 // dataset case 파일의 schemaVersion. 모양이 바뀌면 올린다.
@@ -21,7 +19,7 @@ const CaseSchemaVersion = 1
 type Task string
 
 const (
-	// 사진 한 장 → processing.Result. category와 routing(suggestedAction)은 같은 호출의 evaluator다.
+	// 사진 한 장 → ClassificationPrediction(production 결과를 옮긴 것). category와 routing(suggestedAction)은 같은 호출의 evaluator다.
 	ImageClassification Task = "image-classification"
 	// 사진 한 장 → 텍스트. production 코드는 아직 없다.
 	TextExtraction Task = "text-extraction"
@@ -185,7 +183,7 @@ type CriticalSpan struct {
 	Accepted []string `json:"accepted"`
 }
 
-// 값은 processing.Contract의 허용 값이어야 한다. facts는 채점하지 않으므로 없다.
+// 값은 ClassificationContract의 허용 값이어야 한다.
 // 행동은 하나로 강제하지 않는다 — resolved는 하나, adjudicated는 여럿, unresolved는 없음.
 type ClassificationExpected struct {
 	Category          string   `json:"category"`
@@ -193,7 +191,34 @@ type ClassificationExpected struct {
 	AcceptableActions []string `json:"acceptableActions"`
 	// run 전에 정한, 절대 나오면 안 되는 행동.
 	ForbiddenActions []string `json:"forbiddenActions"`
+	// 사진에서 읽어야 하는 값(선택). 없으면 추출값 채점은 not-applicable이다.
+	Facts []ExpectedFact `json:"facts,omitempty"`
 }
+
+// 추출값 하나의 정답. 예측 facts 중 어느 값이든 정규화 뒤 허용 값 하나를 담고 있으면 찾은 것이다. label은 보지 않는다.
+type ExpectedFact struct {
+	ID string `json:"id"`
+	// 사람이 읽는 이름. 비슷한 사례의 예시로 보일 때 쓴다.
+	Label          string   `json:"label"`
+	Kind           FactKind `json:"kind"`
+	AcceptedValues []string `json:"acceptedValues"`
+	// 이 값이 없으면 끝낼 수 없는 행동. 예: 일정 등록에는 날짜.
+	RequiredFor []string `json:"requiredFor"`
+}
+
+type FactKind string
+
+const (
+	// 공백을 빼고 대소문자를 무시해 포함 여부를 본다.
+	FactText FactKind = "text"
+	// 숫자 사이 쉼표를 뺀 수 하나가 예측 값의 수 중에 있어야 한다.
+	FactAmount FactKind = "amount"
+	// 숫자 묶음(앞의 0 제외)이 예측 값의 숫자 묶음 안에 순서대로 이어서 있어야 한다. 2026-09-20 ≈ 2026년 9월 20일.
+	FactDate FactKind = "date"
+	FactTime FactKind = "time"
+)
+
+var factKinds = []FactKind{FactText, FactAmount, FactDate, FactTime}
 
 // 정답 텍스트. nil은 정답이 없는 것이고 ""는 "텍스트 없음"이 정답인 것이다. 둘을 섞지 않는다.
 // text-extraction은 읽기 순서와, 있다면 field 계약을 함께 적는다. facts 값을 이어 붙여 정답으로 삼지 않는다.
@@ -235,6 +260,8 @@ type AdapterInput struct {
 	MediaType string
 	Image     []byte
 	Text      *TextInput
+	// 비슷한 dev 사례와 그 정답. retrieval을 쓰는 variant만. 질문 case의 정답은 없다.
+	Examples []Example
 }
 
 // case와 읽어 온 사진 byte로 adapter 입력을 만든다. 사진 과제는 SHA256이 맞아야 한다.
@@ -254,7 +281,7 @@ func AdapterInputOf(c Case, image []byte) (AdapterInput, error) {
 }
 
 // case 파일 하나를 읽고 검증한다.
-func DecodeCase(r io.Reader, contract processing.Contract) (Case, error) {
+func DecodeCase(r io.Reader, contract ClassificationContract) (Case, error) {
 	var c Case
 	if err := decodeStrict(r, &c); err != nil {
 		return Case{}, err
@@ -265,7 +292,7 @@ func DecodeCase(r io.Reader, contract processing.Contract) (Case, error) {
 	return c, nil
 }
 
-func (c Case) Validate(contract processing.Contract) error {
+func (c Case) Validate(contract ClassificationContract) error {
 	checks := []error{
 		schemaVersion("case", c.SchemaVersion, CaseSchemaVersion),
 		identifier("id", c.ID),
@@ -327,7 +354,7 @@ func (ref ImageRef) validate() error {
 }
 
 // Task에 맞는 정답 하나만 있는지, 분류 정답이 production 계약 안의 값인지.
-func (e Expected) Validate(task Task, contract processing.Contract) error {
+func (e Expected) Validate(task Task, contract ClassificationContract) error {
 	set := 0
 	for _, present := range []bool{e.Classification != nil, e.TextExtraction != nil, e.Translation != nil} {
 		if present {
@@ -380,7 +407,7 @@ func (t TranslationExpected) validate(field string) error {
 	return errors.Join(checks...)
 }
 
-func (e ClassificationExpected) validate(contract processing.Contract) error {
+func (e ClassificationExpected) validate(contract ClassificationContract) error {
 	checks := []error{
 		oneOf("expected.classification.category", e.Category, contract.Categories),
 		oneOf("expected.classification.intent", e.Intent, []Intent{Resolved, Adjudicated, Unresolved}),
@@ -407,6 +434,34 @@ func (e ClassificationExpected) validate(contract processing.Contract) error {
 	}
 	if ok, known := want[e.Intent]; known && !ok(len(e.AcceptableActions)) {
 		checks = append(checks, fmt.Errorf("evaluation: intent %s does not fit %d acceptable actions", e.Intent, len(e.AcceptableActions)))
+	}
+	ids := map[string]bool{}
+	for _, f := range e.Facts {
+		checks = append(checks, f.validate(contract))
+		if ids[f.ID] {
+			checks = append(checks, fmt.Errorf("evaluation: expected.classification repeats fact %s", f.ID))
+		}
+		ids[f.ID] = true
+	}
+	return errors.Join(checks...)
+}
+
+func (f ExpectedFact) validate(contract ClassificationContract) error {
+	checks := []error{
+		identifier("expected.classification.facts id", f.ID),
+		nonEmpty("fact "+f.ID+" label", f.Label),
+		oneOf("fact "+f.ID+" kind", f.Kind, factKinds),
+	}
+	if len(f.AcceptedValues) == 0 || f.RequiredFor == nil {
+		checks = append(checks, fmt.Errorf("evaluation: fact %s needs acceptedValues and requiredFor (use [] for none)", f.ID))
+	}
+	for _, value := range f.AcceptedValues {
+		if normalizeFact(f.Kind, value) == "" {
+			checks = append(checks, fmt.Errorf("evaluation: fact %s accepted value %q is empty after normalization", f.ID, value))
+		}
+	}
+	for _, action := range f.RequiredFor {
+		checks = append(checks, oneOf("fact "+f.ID+" requiredFor", action, contract.Actions))
 	}
 	return errors.Join(checks...)
 }

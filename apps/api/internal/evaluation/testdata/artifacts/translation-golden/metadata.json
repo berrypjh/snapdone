@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "runId": "translation-golden",
+  "startedAt": "2026-09-22T06:00:00Z",
+  "status": "partial",
+  "finishedAt": "2026-09-22T06:00:00Z",
+  "mode": "replay",
+  "source": {
+    "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "branch": "main",
+    "dirty": false,
+    "sourceHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "evaluatorHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "moduleHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "goVersion": "go-test"
+  },
+  "dataset": {
+    "name": "translation-fixture",
+    "version": 1,
+    "tier": "software-fixture",
+    "split": "dev",
+    "selectionHash": "eee9bfe141cc6fd8a328c5dcb0837a837e3a1f371c6f3cc3d56508d68096dcb9",
+    "caseCount": 3
+  },
+  "selectedCaseIds": [
+    "tr-1",
+    "tr-2",
+    "tr-3"
+  ],
+  "variants": [
+    {
+      "id": "tv",
+      "version": 1,
+      "task": "translation",
+      "adapter": "processing",
+      "provider": "openai",
+      "model": "test-model",
+      "baseHost": "localhost:11434",
+      "contractHash": "5152dd422f81459aeb6c8ed50f4aedd9e0983f4a255ea49cd0d050c1fc3edcfb"
+    }
+  ],
+  "policy": {
+    "version": "translation-reference-v1",
+    "requireSchemaValid": false
+  },
+  "evaluatorPolicyHash": "5c25400eb70437a4bb95b0b337e84ddbcd49977616a512f3397d1518158184bb",
+  "labelContractHash": "ba87ebe5a99b4e76002d0d8bf34707bbd9ec4519affa9adf6954d5993b9c2111",
+  "sampling": {
+    "trials": 1,
+    "seed": null
+  },
+  "controls": {
+    "timeoutMs": 120000,
+    "maxAttempts": 1,
+    "concurrency": 1,
+    "allowApi": false,
+    "callBudget": 0,
+    "allowDrafts": false,
+    "allowHeldOut": false
+  }
+}

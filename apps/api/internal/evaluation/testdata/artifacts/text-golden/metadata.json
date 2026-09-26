@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "runId": "text-golden",
+  "startedAt": "2026-09-22T06:00:00Z",
+  "status": "completed",
+  "finishedAt": "2026-09-22T06:00:00Z",
+  "mode": "replay",
+  "source": {
+    "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "branch": "main",
+    "dirty": false,
+    "sourceHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "evaluatorHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "moduleHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "goVersion": "go-test"
+  },
+  "dataset": {
+    "name": "ocr-fixture",
+    "version": 1,
+    "tier": "software-fixture",
+    "split": "dev",
+    "selectionHash": "930fbab6bd7e9d9260871102a1370ef05ff791de020835a089ad364f767fa290",
+    "caseCount": 3
+  },
+  "selectedCaseIds": [
+    "ocr-1",
+    "ocr-2",
+    "ocr-3"
+  ],
+  "variants": [
+    {
+      "id": "tv",
+      "version": 1,
+      "task": "text-extraction",
+      "adapter": "processing",
+      "provider": "openai",
+      "model": "test-model",
+      "baseHost": "localhost:11434",
+      "contractHash": "5152dd422f81459aeb6c8ed50f4aedd9e0983f4a255ea49cd0d050c1fc3edcfb"
+    }
+  ],
+  "policy": {
+    "version": "text-pass-v1",
+    "requireSchemaValid": false
+  },
+  "evaluatorPolicyHash": "8ef446ed530e5ed6899f289b9b9df5123c6347e30acde01ca3b100049bd8389c",
+  "labelContractHash": "ba87ebe5a99b4e76002d0d8bf34707bbd9ec4519affa9adf6954d5993b9c2111",
+  "sampling": {
+    "trials": 1,
+    "seed": null
+  },
+  "controls": {
+    "timeoutMs": 120000,
+    "maxAttempts": 1,
+    "concurrency": 1,
+    "allowApi": false,
+    "callBudget": 0,
+    "allowDrafts": false,
+    "allowHeldOut": false
+  }
+}

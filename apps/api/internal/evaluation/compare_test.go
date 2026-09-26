@@ -106,9 +106,8 @@ func TestCompareSameDataDifferentVariants(t *testing.T) {
 	base := map[string]sideResult{"a": done("event", "add_to_calendar"), "b": done("event", "add_to_calendar"), "c": {TimedOut, "", ""}}
 	cand := map[string]sideResult{"a": done("event", "add_to_calendar"), "b": done("place", "save_place"), "c": done("receipt", "record_expense")}
 	b, c := pairedRuns(t, gold, base, cand)
-	constructions := countConstructions(t)
 	cmp := compare(t, b, c, CompareRequest{})
-	if !cmp.Comparable || len(cmp.Incomparable) != 0 || cmp.Cases.Paired != 3 || *constructions != 0 {
+	if !cmp.Comparable || len(cmp.Incomparable) != 0 || cmp.Cases.Paired != 3 {
 		t.Fatalf("comparison = %+v", cmp)
 	}
 	acc := metric(axis(cmp, "quality"), "category-accuracy")
@@ -329,7 +328,7 @@ func riskyLine(runID, variantID, predictedAction string) CaseResult {
 	obs := predicted("shopping", predictedAction, "high")
 	obs.Calls = 1
 	result := InvocationResult{VariantID: variantID, CaseID: "s", Trial: 1, Mode: Live, Ran: true, Observation: &obs, Latency: MeasuredValue(100)}
-	return caseResultOf(testMeta(runID, Live, 1, nil), result, c)
+	return NewCaseResult(testMeta(runID, Live, 1, nil), result, c, contract)
 }
 
 // usage가 부분적이면 cost 축만 비교하지 않고 quality delta는 그대로 낸다. latency는 live에서만.
@@ -361,15 +360,15 @@ func TestCompareAxesAreIndependent(t *testing.T) {
 func TestWriteComparisonLeavesRunsUntouched(t *testing.T) {
 	root := t.TempDir()
 	ds := runnerDataset(t, 2)
-	writeTwo := func(runID string, fake *providerFake, v VariantManifest) string {
+	writeTwo := func(runID string, fake *fakeAdapters, v VariantManifest) string {
 		w, report := writeRun(t, root, ds, fake, runID, nil, v)
 		if _, err := w.Finish(report); err != nil {
 			t.Fatal(err)
 		}
 		return w.Dir()
 	}
-	baseDir := writeTwo("run-a", &providerFake{}, variant("v", "openai"))
-	candDir := writeTwo("run-b", &providerFake{}, variant("w", "openai"))
+	baseDir := writeTwo("run-a", &fakeAdapters{}, variant("v", "openai"))
+	candDir := writeTwo("run-b", &fakeAdapters{}, variant("w", "openai"))
 	before := map[string][]byte{}
 	for _, dir := range []string{baseDir, candDir} {
 		for _, name := range []string{metadataFile, casesFile, summaryFile, markdownFile} {

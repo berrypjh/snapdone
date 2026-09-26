@@ -3,12 +3,10 @@ package evaluation
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestPlanIsReproducibleAndOrdered(t *testing.T) {
@@ -66,8 +64,7 @@ func TestPlanRejects(t *testing.T) {
 func TestPreflightBlocksWithoutCalls(t *testing.T) {
 	ds := runnerDataset(t, 1)
 	t.Setenv("EVAL_TEST_KEY", "")
-	fake := &providerFake{}
-	constructions := countConstructions(t)
+	fake := &fakeAdapters{}
 	placeholder := variant("p", "openai")
 	placeholder.Placeholder = true
 	cases := map[string]RunRequest{
@@ -88,68 +85,12 @@ func TestPreflightBlocksWithoutCalls(t *testing.T) {
 			}
 		})
 	}
-	if fake.count() != 0 || *constructions != 0 {
-		t.Errorf("transport calls = %d, constructions = %d", fake.count(), *constructions)
+	if fake.count() != 0 || fake.constructions != 0 {
+		t.Errorf("transport calls = %d, constructions = %d", fake.count(), fake.constructions)
 	}
 	plan, _ := NewPlan(cases["missing credential"])
 	if !plan.Variants[0].MissingCredential || !strings.Contains(plan.Preflight[0], "EVAL_TEST_KEY") {
 		t.Errorf("plan = %+v", plan)
-	}
-}
-
-// 예산은 SDK 재시도를 포함한 실제 왕복 수를 센다. 바닥나면 남은 case는 not-run이고 완료된 결과는 남는다.
-func TestRunBudgetCountsRetries(t *testing.T) {
-	ds := runnerDataset(t, 3)
-	t.Setenv("EVAL_TEST_KEY", "k")
-	fake := &providerFake{before: func(r *http.Request, call int) (*http.Response, bool) {
-		if call <= 3 {
-			resp, _ := respond(429, []byte(`{"type":"error"}`), map[string]string{"Retry-After-Ms": "0"}).RoundTrip(r)
-			return resp, true
-		}
-		return nil, false
-	}}
-	var streamed []string
-	report, err := Run(context.Background(), liveRequest(ds, 4, variant("a", "anthropic")), deps(fake), ResultFunc(func(r InvocationResult) {
-		streamed = append(streamed, r.CaseID)
-	}))
-	if err != nil {
-		t.Fatal(err)
-	}
-	c := report.Counts
-	if c.Selected != 3 || c.Planned != 3 || c.Attempted != 2 || c.Completed != 1 || c.Failed != 1 || c.NotRun != 1 || c.WireCalls != 4 || fake.count() != 4 {
-		t.Fatalf("counts = %+v, transport = %d", c, fake.count())
-	}
-	if report.Abort != "budget exhausted" || report.Results[2].Ran || report.Results[2].Reason != "budget exhausted" {
-		t.Errorf("abort = %q, last = %+v", report.Abort, report.Results[2])
-	}
-	if report.Results[0].Observation.Failure.Kind != FailureHTTPStatus || len(report.Results[0].Observation.Attempts) != 3 || report.Results[1].Observation.Status != Completed {
-		t.Errorf("results = %+v", report.Results[:2])
-	}
-	if strings.Join(streamed, ",") != "case-a,case-b,case-c" {
-		t.Errorf("stream = %v", streamed)
-	}
-	if report.Usage.Known != 1 || report.Usage.Unknown != 1 || report.Usage.InputTokens.Availability != Partial || *report.Usage.InputTokens.Value != 10 {
-		t.Errorf("usage = %+v", report.Usage)
-	}
-	if report.Metadata.Controls.CallBudget != 4 || !report.Metadata.Controls.AllowAPI || report.Metadata.Mode != Live || report.Metadata.Policy.Version != DefaultClassificationPolicy.Version {
-		t.Errorf("metadata = %+v", report.Metadata)
-	}
-	if err := report.Metadata.Validate(); err != nil {
-		t.Error(err)
-	}
-}
-
-func TestRunTimeoutDoesNotAbort(t *testing.T) {
-	ds := runnerDataset(t, 2)
-	blocking := &fakeTransport{}
-	req := liveRequest(ds, 5, variant("v", "openai"))
-	req.CaseTimeout = 30 * time.Millisecond
-	report, err := Run(context.Background(), req, deps(blocking), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if report.Abort != "" || report.Counts.TimedOut != 2 || report.Counts.Attempted != 2 || report.Results[1].Observation.Status != TimedOut {
-		t.Errorf("counts = %+v, abort = %q", report.Counts, report.Abort)
 	}
 }
 
@@ -158,8 +99,8 @@ func TestRunCancellationAfterFirstCase(t *testing.T) {
 	ds := runnerDataset(t, 3)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	fake := &providerFake{}
-	report, err := Run(ctx, liveRequest(ds, 10, variant("v", "openai")), deps(fake), ResultFunc(func(r InvocationResult) {
+	fake := &fakeAdapters{}
+	report, err := Run(ctx, liveRequest(ds, 10, variant("v", "openai")), deps(fake), ResultFunc(func(r CaseResult) {
 		if r.CaseID == "case-a" {
 			cancel()
 		}
@@ -177,64 +118,10 @@ func TestRunCancellationAfterFirstCase(t *testing.T) {
 	}
 }
 
-// 요청 도중에 취소되면 그 invocation은 측정이 아니라 not-run이다. 나간 왕복 수는 그대로 센다.
-func TestRunCancellationMidRequest(t *testing.T) {
-	ds := runnerDataset(t, 2)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	fake := &providerFake{before: func(_ *http.Request, call int) (*http.Response, bool) {
-		if call == 1 {
-			cancel()
-		}
-		return nil, false
-	}}
-	report, err := Run(ctx, liveRequest(ds, 10, variant("v", "openai")), deps(fake), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if report.Abort != "cancelled" || report.Counts.NotRun != 2 || report.Counts.Attempted != 0 || report.Counts.WireCalls != 1 {
-		t.Errorf("counts = %+v, abort = %q", report.Counts, report.Abort)
-	}
-	if r := report.Results[0]; r.Ran || r.Reason != "cancelled" || r.WireCalls != 1 {
-		t.Errorf("interrupted = %+v", r)
-	}
-}
-
-// 두 variant는 같은 case 목록을 같은 순서로 받고, 요청에는 정답 · 주석 · id가 실리지 않는다.
-func TestRunTwoVariantsPairedAndNoLeak(t *testing.T) {
-	ds := runnerDataset(t, 2)
-	t.Setenv("EVAL_TEST_KEY", "k")
-	fake := &providerFake{}
-	report, err := Run(context.Background(), liveRequest(ds, 10, variant("a", "anthropic"), variant("o", "openai")), deps(fake), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var order []string
-	for _, r := range report.Results {
-		order = append(order, r.VariantID+"/"+r.CaseID)
-	}
-	if strings.Join(order, ",") != "a/case-a,a/case-b,o/case-a,o/case-b" || report.Counts.Completed != 4 || report.Counts.WireCalls != 4 {
-		t.Errorf("order = %v, counts = %+v", order, report.Counts)
-	}
-	for _, body := range fake.bodies {
-		for _, leak := range []string{"secret-note", "case-a", "case-b", "acceptableActions", "forbiddenActions", "record_expense\"]"} {
-			if strings.Contains(body, leak) {
-				t.Errorf("request carries %q", leak)
-			}
-		}
-	}
-	if len(report.Observations("a", 1)) != 2 || len(report.Observations("o", 2)) != 0 {
-		t.Errorf("observations = %v", report.Observations("a", 1))
-	}
-	if len(report.Metadata.Variants) != 2 || report.Metadata.Variants[1].BaseHost != "localhost:11434" {
-		t.Errorf("metadata variants = %+v", report.Metadata.Variants)
-	}
-}
-
 // 한 번의 호출로 category와 action 두 check가 채점된다.
 func TestRunOneInvocationTwoScorers(t *testing.T) {
 	ds := runnerDataset(t, 1)
-	fake := &providerFake{}
+	fake := &fakeAdapters{}
 	report, err := Run(context.Background(), liveRequest(ds, 10, variant("v", "openai")), deps(fake), nil)
 	if err != nil {
 		t.Fatal(err)
@@ -267,16 +154,15 @@ func TestRunUnsupportedTaskMakesNoCalls(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fake := &providerFake{}
-	constructions := countConstructions(t)
+	fake := &fakeAdapters{}
 	v := variant("v", "openai")
 	v.Task = Translation
 	report, err := Run(context.Background(), liveRequest(ds, 5, v), deps(fake), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if report.Counts.Skipped != 1 || report.Counts.Planned != 0 || report.Counts.Attempted != 0 || fake.count() != 0 || *constructions != 0 {
-		t.Errorf("counts = %+v, calls = %d, constructions = %d", report.Counts, fake.count(), *constructions)
+	if report.Counts.Skipped != 1 || report.Counts.Planned != 0 || report.Counts.Attempted != 0 || fake.count() != 0 || fake.constructions != 0 {
+		t.Errorf("counts = %+v, calls = %d, constructions = %d", report.Counts, fake.count(), fake.constructions)
 	}
 	if r := report.Results[0]; !r.Ran || r.Observation.Status != Skipped || r.Observation.Failure.Kind != FailureUnsupportedTask || !report.Plan.Variants[0].Supported == false && r.Reason != "" {
 		t.Errorf("result = %+v", r)
@@ -289,8 +175,7 @@ func TestRunUnsupportedTaskMakesNoCalls(t *testing.T) {
 // replay는 네트워크 없이 기록을 다시 채점하고 latency를 실측으로 적지 않는다.
 func TestRunReplay(t *testing.T) {
 	ds := runnerDataset(t, 2)
-	fake := &providerFake{}
-	constructions := countConstructions(t)
+	fake := &fakeAdapters{}
 	recorded := predicted("event", "add_to_calendar", "high")
 	recorded.ElapsedMs = 812
 	req := liveRequest(ds, 0, variant("v", "openai"))
@@ -300,8 +185,8 @@ func TestRunReplay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if fake.count() != 0 || *constructions != 0 || report.Counts.WireCalls != 0 || report.Counts.Attempted != 0 || report.Counts.Completed != 1 || report.Counts.NotRun != 1 {
-		t.Errorf("counts = %+v, calls = %d, constructions = %d", report.Counts, fake.count(), *constructions)
+	if fake.count() != 0 || fake.constructions != 0 || report.Counts.WireCalls != 0 || report.Counts.Attempted != 0 || report.Counts.Completed != 1 || report.Counts.NotRun != 1 {
+		t.Errorf("counts = %+v, calls = %d, constructions = %d", report.Counts, fake.count(), fake.constructions)
 	}
 	if r := report.Results[0]; r.Latency.Availability != NotMeasured || r.Mode != Replay || r.Observation.ElapsedMs != 812 {
 		t.Errorf("replayed = %+v", r)
