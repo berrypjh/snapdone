@@ -13,13 +13,16 @@ paths:
 - **경로 · symbol · 테스트 제목은 저장소에 실재해야 한다.** `devhub:check`(freshness)가 전부 대조하고, 어긋나면 실패한다. 없는 것을 추정으로 채우지 않는다
 - 링크는 데이터에 저장하지 않는다. 저장소 레코드의 템플릿(`repository.browse`)에서 렌더할 때 만든다. 줄 번호는 사람이 적지 않는다
 - 카탈로그 불변식은 검사로 지켜진다 — Nx 프로젝트 · 루트 script · `docs/` 마크다운은 **빠짐없이** 덮어야 하고(devhub 자신은 제외), 모든 테스트는 시나리오나 기록이 인용해야 한다
+- **예외: 평가 결과.** `tools/evals/results`는 카탈로그가 아니라 Go가 쓰는 산출물이다. `src/lib/evaluations`가 요청마다(`localEvaluations()` → `connection()`) 읽고 v1 decoder로 검증하며, 맞았는지는 Go 값을 그대로 쓰고 TS에서 다시 채점하지 않는다. id는 식별자 규칙을 지나야 경로에 들어가고 symlink는 따라가지 않는다
+- **예외: 공급자 모델 목록.** `/evals`의 새 비교 실행은 서버가 요청마다 Anthropic · OpenAI 모델 목록 API를 부른다(`lib/evaluations/provider-models.ts`). key는 DevHub 프로세스의 `ANTHROPIC_API_KEY` · `OPENAI_API_KEY`에서만 읽고 요청 헤더에만 쓴다 — 화면 · 브라우저 · 파일 · 오류 문구에 싣지 않는다. key가 없거나 실패하면 이유만 보이고, 모델을 부르는 실행 자체는 하지 않는다(명령 글자만 만든다)
+- `'use client'` 코드는 `node:` 모듈에 닿지 않는다(`lib/client-imports.spec.ts`가 확인). 파일을 읽는 코드와 브라우저가 쓰는 순수 코드는 파일을 나눈다
 
 ## 폴더
 
 ```
 src/domain/      타입과 순수 함수(model · links). React · URL · 커밋 없음
 src/data/        curated 카탈로그. 사람이 쓰고 리뷰한다
-src/lib/         catalog · search · repository · markdown · browser
+src/lib/         catalog · search · repository · markdown · browser · evaluations(평가 산출물 읽기)
 src/components/  shell · entity · source · overview · ui + architecture · canvas · doc · engineering · flow
 src/app/         Next 라우트. 화면 조립만
 ```

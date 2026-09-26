@@ -20,7 +20,7 @@ pnpm verify
 | `pnpm build`                    | `nx run-many -t build --exclude=mobile`        | web · api · devhub. devhub는 git 스냅샷을 페이지에 넣으므로 캐시하지 않는다                                          |
 | `pnpm e2e`                      | `nx run-many -t e2e`                           | web-e2e · devhub-e2e — **`verify`에 포함되지 않는다**                                                                |
 | `pnpm devhub:check`             | `nx run devhub:devhub-check`                   | DevHub catalog이 지금 저장소와 맞는지만 본다. 같은 검사가 `pnpm test`에도 들어 있다                                  |
-| `pnpm eval:check`               | `nx run api:eval-check`                        | 평가 harness offline 테스트 + pilot dataset 검증. 모델 호출 없음. **`verify`에 포함되지 않는다**                     |
+| `pnpm eval:check`               | `nx run api:eval-check`                        | 평가 harness offline 테스트 + sample dataset 검증. 모델 호출 없음. **`verify`에 포함되지 않는다**                    |
 | `pnpm eval`                     | `nx run api:eval`                              | 평가 CLI. `pnpm eval list`처럼 인자를 그대로 넘긴다. `run`만 `--allow-api`가 있을 때 실제 provider 호출              |
 | `pnpm swagger:check`            | `nx run api:swagger-check`                     | `docs/swagger`가 swag 주석과 일치하는지. 파일을 고쳐 쓰지 않는다                                                     |
 | `pnpm swagger` · `pnpm migrate` | `nx run api:swagger` · `nx run api:migrate`    | Swagger 재생성 · DB 마이그레이션 적용(Postgres 필요)                                                                 |
@@ -89,15 +89,15 @@ pnpm exec nx export mobile
 
 ## 테스트 현황 — 솔직하게
 
-| 프로젝트   | 종류             | 명령        | 상태                                                                                                                                                                                                                                                                |
-| ---------- | ---------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| api        | 단위 · DB        | `pnpm test` | Go 테스트 함수 254개(하위 테스트 포함 500회 실행, `go test -v` 기준, 2026-09-22). 그중 54회는 `TEST_DATABASE_URL`이 없거나 env 게이트가 없어 **skip**한다. 평가 harness(`internal/evaluation` · `cmd/eval`) 테스트는 가짜 Transport만 쓰고 provider를 부르지 않는다 |
-| web        | 단위             | `pnpm test` | Vitest 114개 (9 파일)                                                                                                                                                                                                                                               |
-| mobile     | 단위             | `pnpm test` | Vitest 279개 (20 파일)                                                                                                                                                                                                                                              |
-| libs       | 단위             | `pnpm test` | `webview-bridge` 16개 · `auth-contracts` 9개                                                                                                                                                                                                                        |
-| web-e2e    | E2E              | `pnpm e2e`  | 65개 × 3 브라우저 + 오류 주입 2개 × 3                                                                                                                                                                                                                               |
-| devhub     | 단위 · freshness | `pnpm test` | Vitest 301개 (35 파일). catalog ↔ 저장소 검사는 `pnpm devhub:check`로 따로 돈다                                                                                                                                                                                     |
-| devhub-e2e | E2E              | `pnpm e2e`  | 36개 × Chromium. 이 저장소에서 아직 실행 결과가 없다                                                                                                                                                                                                                |
+| 프로젝트   | 종류             | 명령        | 상태                                                                                                                                                                                                                                                                                     |
+| ---------- | ---------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| api        | 단위 · DB        | `pnpm test` | Go 테스트 함수 254개(하위 테스트 포함 500회 실행, `go test -v` 기준, 2026-09-22). 그중 54회는 `TEST_DATABASE_URL`이 없거나 env 게이트가 없어 **skip**한다. 평가 harness(`internal/evaluation` · `internal/evalcli` · `cmd/eval`) 테스트는 가짜 Transport만 쓰고 provider를 부르지 않는다 |
+| web        | 단위             | `pnpm test` | Vitest 114개 (9 파일)                                                                                                                                                                                                                                                                    |
+| mobile     | 단위             | `pnpm test` | Vitest 279개 (20 파일)                                                                                                                                                                                                                                                                   |
+| libs       | 단위             | `pnpm test` | `webview-bridge` 16개 · `auth-contracts` 9개                                                                                                                                                                                                                                             |
+| web-e2e    | E2E              | `pnpm e2e`  | 65개 × 3 브라우저 + 오류 주입 2개 × 3                                                                                                                                                                                                                                                    |
+| devhub     | 단위 · freshness | `pnpm test` | Vitest 301개 (35 파일). catalog ↔ 저장소 검사는 `pnpm devhub:check`로 따로 돈다                                                                                                                                                                                                          |
+| devhub-e2e | E2E              | `pnpm e2e`  | 36개 × Chromium. 이 저장소에서 아직 실행 결과가 없다                                                                                                                                                                                                                                     |
 
 `nx test api` 통과가 DB 검증을 뜻하지 않는다. DB까지 보려면 Postgres를 띄우고 `TEST_DATABASE_URL`을 주고 돌린다(아래 Go 절).
 
@@ -156,7 +156,7 @@ HTTP 테스트는 `httptest`로 실제 Gin router를 부르고, `http.Server` �
 ## 평가 harness
 
 ```bash
-pnpm eval:check      # offline Go 테스트 + pilot dataset 검증 · readiness. 모델 호출 없음, 캐시 없음
+pnpm eval:check      # offline Go 테스트 + sample dataset 검증 · readiness. 모델 호출 없음, 캐시 없음
 pnpm eval list    # dataset · variant 목록. 모델 호출 없음
 ```
 

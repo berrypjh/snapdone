@@ -53,6 +53,8 @@ pnpm dev:devhub    # DevHub → http://localhost:3100 (저장소를 보는 내�
 cp apps/devhub/.env.example apps/devhub/.env.local
 ```
 
+같은 파일에 `ANTHROPIC_API_KEY` · `OPENAI_API_KEY`를 넣으면 `/evals`의 새 비교 실행이 새로고침마다 공급자의 최신 모델 목록을 불러온다. 비워 두면 모델 줄이 비고 이유만 보인다. key는 요청 헤더에만 쓰이고 화면 · 브라우저에 실리지 않는다.
+
 `pnpm dev` 하나로 **web · api · devhub를 함께** 띄울 수도 있다. devhub는 3100에 고정돼 web(3000)과 부딪히지 않는다.
 
 ```bash
