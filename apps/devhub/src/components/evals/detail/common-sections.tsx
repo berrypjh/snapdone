@@ -1,20 +1,10 @@
 import { Table, TableScroll } from '@berrypjh/react-ui';
 
-import type { CaseResult, Mode, VariantReport } from '@/lib/evaluations/contract';
-import {
-  attemptedDurations,
-  executionSegments,
-  failureCounts,
-  histogram,
-  type Spread,
-  tokenSpread,
-} from '@/lib/evaluations/detail';
+import type { Mode, VariantReport } from '@/lib/evaluations/contract';
+import { executionSegments, failureCounts } from '@/lib/evaluations/detail';
 import { formatMeasure } from '@/lib/evaluations/presentation';
 
 import { ExecutionBar } from './execution-bar';
-import { LatencyHistogram } from './latency-histogram';
-
-type Props = { report: VariantReport; cases: CaseResult[]; mode: Mode };
 
 const Missing = ({ text, reason }: { text: string; reason: string | null }) => (
   <p className="typo-body-small text-text-light">
@@ -80,13 +70,12 @@ export function Failures({ report }: { report: VariantReport }) {
   );
 }
 
-/** Go 요약의 중앙값 · p95와, live면 case 시간 분포. replay는 재지 않았다고 적는다. */
-export function Latency({ report, cases, mode }: Props) {
+/** Go 요약의 중앙값 · p95 · 평균. replay는 재지 않았다고 적는다. case별 분포는 notebook의 몫이다. */
+export function Latency({ report, mode }: { report: VariantReport; mode: Mode }) {
   const { attempted, completed, definition } = report.latency;
   if (mode === 'replay' || attempted.n === 0) {
     return <Missing text="측정 안 함" reason={formatMeasure(attempted.medianMs, 'ms').reason} />;
   }
-  const bins = histogram(attemptedDurations(cases, report.variant.id));
   const row = (label: string, stats: typeof attempted) => (
     <tr key={label}>
       <th scope="row">{label}</th>
@@ -130,23 +119,16 @@ export function Latency({ report, cases, mode }: Props) {
           표본 {attempted.n}개 — 백분위가 안정적이지 않음
         </p>
       )}
-      {bins && <LatencyHistogram bins={bins} label={`${report.variant.id} case별 시간`} />}
       <p className="typo-caption-small text-text-light">{definition}</p>
     </div>
   );
 }
 
-const spreadText = (s: Spread | null) =>
-  s
-    ? `case ${s.n}개 · 최소 ${s.min.toLocaleString('ko-KR')} · 중앙 ${s.median.toLocaleString('ko-KR')} · 최대 ${s.max.toLocaleString('ko-KR')}`
-    : '값이 있는 case 없음';
-
-/** token 사용량과 비용. 가격표가 없으면 금액을 짐작하지 않고 Go의 이유를 적는다. */
-export function Usage({ report, cases }: Omit<Props, 'mode'>) {
+/** token 사용량 합과 비용. 가격표가 없으면 금액을 짐작하지 않고 Go의 이유를 적는다. */
+export function Usage({ report }: { report: VariantReport }) {
   const { inputTokens, outputTokens, usageKnown, usageUnknown } = report.cost;
   const estimated = formatMeasure(report.cost.estimated, 'count');
   const actual = formatMeasure(report.cost.actual, 'count');
-  const spread = tokenSpread(cases, report.variant.id);
   const total = (label: string, m: typeof inputTokens) => {
     const d = formatMeasure(m, 'count');
     return (
@@ -168,13 +150,6 @@ export function Usage({ report, cases }: Omit<Props, 'mode'>) {
       <p className="typo-caption-small text-text-light tabular-nums">
         usage를 보고한 호출 {usageKnown} · 보고하지 않은 호출 {usageUnknown}
       </p>
-      {(spread.input || spread.output) && (
-        <p className="typo-caption-small text-text-light">
-          입력 — {spreadText(spread.input)}
-          <br />
-          출력 — {spreadText(spread.output)}
-        </p>
-      )}
       <p className="typo-caption-small text-text-light">
         비용 — 추정 {estimated.text}
         {estimated.reason && ` (${estimated.reason})`} · 실제 {actual.text}

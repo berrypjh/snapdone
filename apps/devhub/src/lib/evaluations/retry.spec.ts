@@ -78,9 +78,9 @@ describe('retry guide', () => {
       'pnpm eval retry --run live-mixed --allow-api --max-api-calls 9',
     );
     expect([guide.calls, guide.carried, guide.retryId]).toEqual([3, 3, 'live-mixed-retry']);
-    expect(guide.probes.map((p) => p.provider)).toEqual(['anthropic']);
-    expect(guide.probes[0].command).toContain('"model":"claude-x-1"');
-    expect(guide.probes[0].command).toContain('$ANTHROPIC_API_KEY');
+    // 명령 글자뿐이다 — 공급자를 부르는 확인 명령이나 key는 없다.
+    expect(JSON.stringify(guide)).not.toContain('curl');
+    expect(JSON.stringify(guide)).not.toContain('API_KEY');
   });
 
   it('says nothing for replay runs or runs without model failures', () => {

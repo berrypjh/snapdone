@@ -13,6 +13,7 @@ import {
   experimentVariants,
   type ModelChoice,
   modelChoices,
+  parseModels,
   PROVIDER_KEY,
   PROVIDER_NAME,
   type ProviderModelList,
@@ -49,26 +50,6 @@ function Choice({ option, meta, toggle }: { option: VariantOption; meta: string;
         <span className="ml-auto shrink-0 pl-3 typo-caption-small text-text-light">{meta}</span>
       )}
     </li>
-  );
-}
-
-function ChoiceList({
-  items,
-  meta,
-  toggle,
-}: {
-  items: VariantOption[];
-  meta: (v: VariantOption) => string;
-  toggle: Toggle;
-}) {
-  return items.length === 0 ? (
-    <p className="typo-caption-small text-text-light">없음</p>
-  ) : (
-    <ul className="flex flex-col">
-      {items.map((v) => (
-        <Choice key={v.ref} option={v} meta={meta(v)} toggle={toggle} />
-      ))}
-    </ul>
   );
 }
 
@@ -112,38 +93,6 @@ function Group({ title, note, children }: { title: string; note: ReactNode; chil
   );
 }
 
-/** 접힌 묶음. 제목에 수와 고른 수를 적어 열지 않아도 무엇이 들었는지 안다. */
-function FoldGroup({
-  title,
-  count,
-  picked,
-  children,
-}: {
-  title: string;
-  count: string;
-  picked: number;
-  children: ReactNode;
-}) {
-  return (
-    <details className="group rounded-md border border-stroke-light">
-      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3">
-        <span className="inline-flex items-center gap-1.5 typo-body-small-strong">
-          <Icon name="chevron-right" className="text-text-light group-open:rotate-90" />
-          {title}
-        </span>
-        <span className="typo-caption-small text-text-light">
-          {count}
-          {picked > 0 && ` · ${picked}개 고름`}
-        </span>
-      </summary>
-      <fieldset className="border-t border-stroke-light px-3 py-2">
-        <legend className="sr-only">{title}</legend>
-        {children}
-      </fieldset>
-    </details>
-  );
-}
-
 /** DevHub 필터(`entity/filter-bar`)와 같은 모양의 작은 글자 버튼. */
 const FILTER =
   'inline-flex min-h-8 items-center rounded-md px-2 typo-caption-small text-text-link hover:bg-background-default aria-pressed:bg-(--ds-background-selected) aria-pressed:text-text-default aria-pressed:typo-body-small-strong';
@@ -169,7 +118,7 @@ function ProviderStatus({ providers }: { providers: ProviderModelList[] }) {
 }
 
 /**
- * 모델을 회사 구분 없이 한 목록으로(출시일 최신순). 회사는 줄마다 표시하고, 회사 필터로 좁힌다. 앞의
+ * 불러온 모델을 회사 구분 없이 한 목록으로(출시일 최신순). 회사는 줄마다 표시하고, 회사 필터로 좁힌다. 앞의
  * SHOWN개만 보이고 나머지는 접는다.
  */
 function ModelPicker({ choices, toggle }: { choices: ModelChoice[]; toggle: Toggle }) {
@@ -177,11 +126,7 @@ function ModelPicker({ choices, toggle }: { choices: ModelChoice[]; toggle: Togg
   const companies = [...new Set(choices.map((c) => c.option.provider))];
   const visible = choices.filter((c) => !company || c.option.provider === company);
   const meta = (c: ModelChoice) =>
-    [
-      PROVIDER_NAME[c.option.provider] ?? c.option.provider,
-      c.created && `출시 ${c.created}`,
-      !c.repo && '새로 불러옴',
-    ]
+    [PROVIDER_NAME[c.option.provider] ?? c.option.provider, c.created && `출시 ${c.created}`]
       .filter(Boolean)
       .join(' · ');
   const list = (items: ModelChoice[]) => (
@@ -212,7 +157,9 @@ function ModelPicker({ choices, toggle }: { choices: ModelChoice[]; toggle: Togg
         </div>
       )}
       {visible.length === 0 ? (
-        <p className="typo-caption-small text-text-light">없음 — 이 회사의 모델 없음</p>
+        <p className="typo-caption-small text-text-light">
+          없음 — 불러온 모델이 없음. 아래에 직접 적는다
+        </p>
       ) : (
         list(visible.slice(0, SHOWN))
       )}
@@ -251,6 +198,9 @@ const KIND: Record<VariantOption['kind'], string> = {
 const SELECT =
   'min-h-8 rounded-md border border-stroke-light bg-background-surface px-2 typo-body-small text-text-default';
 
+const TEXTAREA =
+  'min-h-16 rounded-md border border-stroke-light bg-background-surface px-2 py-1 devhub-code text-text-default';
+
 /** 이보다 많이 고르면 목록을 접고 종류별 수만 보인다. */
 const CHOSEN_OPEN = 4;
 
@@ -271,13 +221,15 @@ function ChosenList({ chosen, toggle }: { chosen: VariantOption[]; toggle: Toggl
               <span className="typo-caption-small text-text-light"> · {v.ref}</span>
             )}
           </span>
-          <IconButton
-            size="sm"
-            aria-label={`${v.label} 빼기`}
-            onClick={() => toggle.set(v.ref, false)}
-          >
-            <Icon name="close" />
-          </IconButton>
+          {toggle.isOn(v.ref) && (
+            <IconButton
+              size="sm"
+              aria-label={`${v.label} 빼기`}
+              onClick={() => toggle.set(v.ref, false)}
+            >
+              <Icon name="close" />
+            </IconButton>
+          )}
         </li>
       ))}
     </ul>
@@ -301,8 +253,9 @@ function ChosenList({ chosen, toggle }: { chosen: VariantOption[]; toggle: Toggl
 }
 
 /**
- * 새 비교 실행. 왼쪽에서 고르고 오른쪽(넓은 화면에서는 따라옴)에서 고른 것 · 옵션 · 명령을 본다. 모델을 부르지 않고
- * 명령 글자만 만든다 — 실행과 key 입력은 사용자의 터미널. 최신 모델은 서버가 새로고침마다 불러와 넘긴다.
+ * 정식 run 명령 만들기. 왼쪽에서 고르고 오른쪽(넓은 화면에서는 따라옴)에서 고른 것 · 옵션 · 명령을 본다. 모델을
+ * 부르지 않고 명령 글자만 만든다 — 실행과 key 입력은 사용자의 터미널. 최신 모델은 서버가 새로고침마다 공급자 목록에서
+ * 불러와 넘기고, 목록에 없는 모델은 직접 적는다. 값의 검증(모델 · key · 설정)은 Go의 `plan`이 한다.
  */
 export function CommandBuilder({
   catalog,
@@ -312,15 +265,12 @@ export function CommandBuilder({
   providers: ProviderModelList[];
 }) {
   const datasets = catalog.datasets;
-  const runnable = (name: string) => {
-    const d = datasets.find((x) => x.name === name);
-    return !!d && catalog.variants.some((v) => v.task === d.task);
-  };
-  const [datasetName, setDatasetName] = useState(
-    datasets.find((d) => runnable(d.name))?.name ?? '',
-  );
+  const live = (name: string) =>
+    datasets.find((x) => x.name === name)?.task === 'image-classification';
+  const [datasetName, setDatasetName] = useState(datasets.find((d) => live(d.name))?.name ?? '');
   const [split, setSplit] = useState<Split>('dev');
   const [selected, setSelected] = useState<string[]>([]);
+  const [modelText, setModelText] = useState('');
   const [oneCase, setOneCase] = useState(true);
   const [runId, setRunId] = useState('');
 
@@ -328,46 +278,35 @@ export function CommandBuilder({
   if (!dataset) {
     return (
       <p className="typo-caption-small text-text-light">
-        없음 — 고를 수 있는 dataset · variant 설정이 없음
+        없음 — live로 돌릴 수 있는 dataset(사진 분류)이 없음
       </p>
     );
   }
-  const photo = dataset.task === 'image-classification';
-  const repo = catalog.variants.filter((v) => v.task === dataset.task);
-  const baselines = repo.filter((v) => v.kind === 'baseline');
-  const models = repo.filter((v) => v.kind === 'model');
-  const experiments = photo ? catalog.experiments : [];
-  const choices = modelChoices(models, photo ? providers : []);
-  const all = [...baselines, ...choices.map((c) => c.option)];
-  // 모델은 고른 순서대로 — 계단식은 먼저 고른 모델이 먼저 답한다.
-  const chosenModels = selected.flatMap((ref) =>
+  const baselines = catalog.variants.filter(
+    (v) => v.task === dataset.task && v.kind === 'baseline',
+  );
+  const experiments = catalog.experiments;
+  const choices = modelChoices(providers);
+  // 모델은 고른 순서대로, 그 뒤에 직접 적은 것 — 계단식은 앞의 모델이 먼저 답한다.
+  const picked = selected.flatMap((ref) =>
     choices.filter((c) => c.option.ref === ref).map((c) => c.option),
   );
+  const typed = parseModels(modelText);
+  const models = [...picked, ...typed.models.filter((m) => !picked.some((p) => p.ref === m.ref))];
   const pickedExperiments = experiments.filter((e) => selected.includes(`${e.id}@`));
   const chosen = [
-    ...all.filter((v) => v.kind === 'baseline' && selected.includes(v.ref)),
-    ...chosenModels,
-    ...experimentVariants(pickedExperiments, chosenModels),
+    ...baselines.filter((v) => selected.includes(v.ref)),
+    ...models,
+    ...experimentVariants(pickedExperiments, models),
   ];
-  const cascadeWaiting = pickedExperiments.some((e) => e.cascade) && !cascadeReady(chosenModels);
-  // 실험 variant(`설정@공급자:모델`)를 빼면 그 설정을 뺀다.
-  const keyOf = (ref: string) => (ref.includes('@') ? ref.slice(0, ref.indexOf('@') + 1) : ref);
+  const cascadeWaiting = pickedExperiments.some((e) => e.cascade) && !cascadeReady(models);
   const toggle: Toggle = {
-    isOn: (ref) => selected.includes(keyOf(ref)),
-    set: (ref, on) => {
-      const key = keyOf(ref);
+    isOn: (ref) => selected.includes(ref),
+    set: (ref, on) =>
       setSelected((current) =>
-        on ? [...current.filter((x) => x !== key), key] : current.filter((x) => x !== key),
-      );
-    },
+        on ? [...current.filter((x) => x !== ref), ref] : current.filter((x) => x !== ref),
+      ),
   };
-  const add = (items: VariantOption[]) =>
-    setSelected((current) => [
-      ...current,
-      ...items.map((v) => v.ref).filter((ref) => !current.includes(ref)),
-    ]);
-  const repoMeta = (v: VariantOption) =>
-    v.kind === 'baseline' ? '호출 없음' : `${PROVIDER_NAME[v.provider] ?? v.provider} · ${v.ref}`;
   const command =
     chosen.length > 0 ? buildCommand(chosen, dataset, { oneCase, runId, split }) : null;
 
@@ -375,14 +314,22 @@ export function CommandBuilder({
     <div className="grid gap-6 xl:grid-cols-[minmax(0,34rem)_minmax(0,1fr)]">
       <div className="flex min-w-0 flex-col gap-5">
         <Group title="규칙 기준선" note="모델 없이 규칙으로 답함 — 모델 옆에 함께 두기를 권장">
-          <ChoiceList items={baselines} meta={repoMeta} toggle={toggle} />
+          {baselines.length === 0 ? (
+            <p className="typo-caption-small text-text-light">없음</p>
+          ) : (
+            <ul className="flex flex-col">
+              {baselines.map((v) => (
+                <Choice key={v.ref} option={v} meta="호출 없음" toggle={toggle} />
+              ))}
+            </ul>
+          )}
         </Group>
         <Group
           title="모델"
           note={
             <>
               최신순
-              {photo && providers.length > 0 && (
+              {providers.length > 0 && (
                 <>
                   {' · '}
                   <ProviderStatus providers={providers} />
@@ -392,16 +339,27 @@ export function CommandBuilder({
           }
         >
           <ModelPicker choices={choices} toggle={toggle} />
+          <label className="flex flex-col gap-1 typo-caption-small text-text-light">
+            직접 적기 — 한 줄에 하나, 공급자:모델
+            <textarea
+              aria-label="모델 직접 적기"
+              className={TEXTAREA}
+              placeholder={'anthropic:claude-opus-5\nopenai:gpt-…'}
+              value={modelText}
+              onChange={(event) => setModelText(event.currentTarget.value)}
+              rows={2}
+            />
+          </label>
+          {typed.invalid.length > 0 && (
+            <p className="typo-caption-small text-text-warning">
+              못 읽음: {typed.invalid.join(' · ')} — 공급자는{' '}
+              {Object.keys(PROVIDER_KEY).join(' · ')}
+            </p>
+          )}
         </Group>
-        <div className="flex flex-col gap-2">
-          <FoldGroup
-            title="실험 설정"
-            count={`${experiments.length}개 · 고른 모델에 얹음`}
-            picked={pickedExperiments.length}
-          >
-            <ExperimentList items={experiments} toggle={toggle} />
-          </FoldGroup>
-        </div>
+        <Group title="실험 설정" note={`${experiments.length}개 · 고른 모델에 얹음`}>
+          <ExperimentList items={experiments} toggle={toggle} />
+        </Group>
       </div>
 
       <aside
@@ -412,11 +370,27 @@ export function CommandBuilder({
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <h3 className="typo-body-small-strong">고른 것 {chosen.length}개</h3>
             <span className="flex flex-wrap gap-1">
-              <button type="button" className={FILTER} onClick={() => add(baselines)}>
+              <button
+                type="button"
+                className={FILTER}
+                onClick={() =>
+                  setSelected((current) => [
+                    ...current,
+                    ...baselines.map((v) => v.ref).filter((ref) => !current.includes(ref)),
+                  ])
+                }
+              >
                 + 기준선
               </button>
-              {chosen.length > 0 && (
-                <button type="button" className={FILTER} onClick={() => setSelected([])}>
+              {(selected.length > 0 || modelText !== '') && (
+                <button
+                  type="button"
+                  className={FILTER}
+                  onClick={() => {
+                    setSelected([]);
+                    setModelText('');
+                  }}
+                >
                   모두 해제
                 </button>
               )}
@@ -446,7 +420,6 @@ export function CommandBuilder({
                 onChange={(event) => {
                   setDatasetName(event.currentTarget.value);
                   setSplit('dev');
-                  setSelected([]);
                 }}
                 className={SELECT}
               >
@@ -456,9 +429,9 @@ export function CommandBuilder({
                       .filter((d) => d.task === t)
                       .sort((a, b) => a.name.localeCompare(b.name))
                       .map((d) => (
-                        <option key={d.name} value={d.name} disabled={!runnable(d.name)}>
+                        <option key={d.name} value={d.name} disabled={!live(d.name)}>
                           {d.name}
-                          {!runnable(d.name) && ' — 기록 재채점만'}
+                          {!live(d.name) && ' — 기록 재채점만'}
                         </option>
                       ))}
                   </optgroup>

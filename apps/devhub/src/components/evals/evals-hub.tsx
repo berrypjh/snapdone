@@ -78,23 +78,28 @@ export const TARGETS: Target[] = [
     name: '기록 재채점',
     setting: 'pnpm eval replay --predictions',
     example: 'predictions/sample-classification.jsonl',
-    note: '호출 없음 · 손으로 쓴 예측 파일을 다시 채점',
+    note: '호출 없음 · 기록된 예측 파일(notebook 실험의 출력 포함)을 다시 채점',
   },
 ];
 
-const METHODS: { name: string; note: string; command?: string }[] = [
+/** 정식 run을 만드는 명령. 값은 전부 Go가 쓰고, 이 화면은 그 결과를 읽기만 한다. */
+const METHODS: { name: string; note: string; command: string }[] = [
   {
     name: '한 run으로 — 권장',
-    note: '위 "새 비교 실행"이 이 방법. 모든 variant가 같은 사례를 한 번에 풀어 run 상세 비교표에서 한눈에',
+    note: '모든 variant가 같은 사례를 한 번에 풀어 run 상세에 나란히. 모델을 부르면 --allow-api와 호출 상한이 필요',
+    command:
+      'pnpm eval run --dataset <dataset> --variant <a> --variant <b> --allow-api --max-api-calls <N> --run-id <run>',
   },
   {
-    name: '짝 비교',
-    note: '새 것만 · 실패한 것만 새 run으로 돌리고 기존 run의 variant와 둘씩. dataset 버전 · 사례 · 채점 규칙 · 채점 코드가 같아야 함. 실패가 있는 run 상세에 채운 명령이 있음',
-    command: 'pnpm eval compare --baseline <run>:<variant> --candidate <run>:<variant>',
+    name: '짝 비교 · gate',
+    note: '두 run의 variant를 둘씩 견줌. dataset 버전 · 사례 · 채점 규칙 · 채점 코드가 같아야 하고, gate 규칙 파일(tools/evals/gates)을 주면 Go가 통과 여부를 판정',
+    command:
+      'pnpm eval compare --baseline <run>:<variant> --candidate <run>:<variant> [--gate tools/evals/gates/<name>.json]',
   },
   {
     name: '먼저 계획만',
-    note: '호출 0 — 호출 수와 빠진 key 확인. 새 비교 실행의 b 명령',
+    note: '호출 0 — 고른 사례 수 · 호출 수 · 빠진 key를 확인',
+    command: 'pnpm eval plan --dataset <dataset> --variant <a> --allow-api --max-api-calls <N>',
   },
 ];
 
@@ -165,7 +170,7 @@ function Tasks({ rows }: { rows: RunRow[] }) {
 
 function Methods() {
   return (
-    <WorkspaceSection id="evals-methods" title="비교하는 방법">
+    <WorkspaceSection id="evals-methods" title="정식 run을 만드는 명령">
       <ol className="flex flex-col divide-y divide-stroke-light">
         {METHODS.map((m, i) => (
           <li key={m.name} className="flex flex-col gap-1 py-2 first:pt-0 last:pb-0">
@@ -173,14 +178,12 @@ function Methods() {
               {i + 1}. {m.name}
             </span>
             <span className="typo-caption-small text-text-light">{m.note}</span>
-            {m.command && (
-              <div className="relative">
-                <Code>{m.command}</Code>
-                <span className="absolute top-1.5 right-1.5">
-                  <CopyButton text={m.command} label={`${m.name} 명령 복사`} variant="icon" />
-                </span>
-              </div>
-            )}
+            <div className="relative">
+              <Code>{m.command}</Code>
+              <span className="absolute top-1.5 right-1.5">
+                <CopyButton text={m.command} label={`${m.name} 명령 복사`} variant="icon" />
+              </span>
+            </div>
           </li>
         ))}
       </ol>
@@ -266,8 +269,9 @@ function Comparisons({ comparisons }: { comparisons: ComparisonEntry[] }) {
 }
 
 /**
- * `/evals` — 평가의 첫 화면. 주 동작(새 비교 실행)을 맨 위에 열어 두고, 자주 보는 것(비교하는 방법 · 과제)은 열고,
- * 일부만 보는 참고(비교할 수 있는 것 · 답 출처별 run · 저장된 짝 비교)는 개수를 적은 제목으로 접는다.
+ * `/evals` — 평가의 첫 화면. 정식 결과를 보는 곳이다. 과제 · 정식 run 명령 만들기 · 명령 예시는 열어 두고, 참고(비교할 수
+ * 있는 것 · 답 출처별 run · 저장된 짝 비교)는 개수를 적은 제목으로 접는다. 탐색 · 실험은 `tools/evals/lab`의 notebook이
+ * 하고, 여기서는 정식 run의 Go 명령 글자만 만든다. 최신 모델은 서버가 새로고침마다 공급자 목록에서 불러와 넘긴다.
  */
 export function EvalsHub({
   rows,
@@ -286,7 +290,9 @@ export function EvalsHub({
       <p className="typo-body-small">
         같은 사진 · 같은 정답 · 같은 채점으로 모델 · 지시 · 설정을 나란히 비교.{' '}
         <span className="text-text-light">
-          값은 <code className="devhub-code">tools/evals/results</code>에 Go가 쓴 산출물 그대로
+          값은 <code className="devhub-code">tools/evals/results</code>에 Go가 쓴 산출물 그대로.
+          탐색 · 지시문 실험 · 임계값 조사는 <code className="devhub-code">tools/evals/lab</code>의
+          notebook에서 하고, 그 결과는 replay로 정식 run이 된 뒤 여기 보인다
         </span>
       </p>
       {withModel === 0 && (
@@ -295,11 +301,11 @@ export function EvalsHub({
           실제 모델을 호출한 run 없음 — 지금 지표는 모델 성능 아님
         </p>
       )}
-      <WorkspaceSection id="evals-new" title="새 비교 실행">
+      <Tasks rows={rows} />
+      <WorkspaceSection id="evals-new" title="정식 run 명령 만들기">
         <CommandBuilder catalog={catalog} providers={providers} />
       </WorkspaceSection>
       <Methods />
-      <Tasks rows={rows} />
       <Targets />
       <Sources rows={rows} />
       <Comparisons comparisons={comparisons} />

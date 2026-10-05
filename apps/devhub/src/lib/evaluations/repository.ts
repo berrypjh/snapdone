@@ -75,7 +75,7 @@ export type EvaluationRepository = {
   /** comparison id 순. */
   listComparisons: () => ComparisonEntry[];
   getComparison: (id: string) => Comparison;
-  /** 명령 만들기에서 고를 variant · dataset(`tools/evals/variants` · `datasets`). */
+  /** 정식 run 명령 만들기에서 고를 dataset · 기준선 · 실험 설정(`tools/evals`). 모델 이름은 없다 — 사용자가 적는다. */
   variantCatalog: () => VariantCatalog;
 };
 

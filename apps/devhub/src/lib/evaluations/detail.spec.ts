@@ -3,17 +3,14 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { removeResults, resultsRepository } from '../../test-support/evaluation-results';
 
 import {
-  attemptedDurations,
   caseFilterCounts,
   caseMetric,
   confusionMatrix,
   executionSegments,
   failureCounts,
-  histogram,
   INVALID_LABEL,
   labelRows,
   parseCaseFilter,
-  spread,
 } from './detail';
 
 afterEach(removeResults);
@@ -41,23 +38,6 @@ describe('execution and failures', () => {
       ['provider', 3],
       ['timeout', 1],
     ]);
-  });
-});
-
-describe('latency and tokens', () => {
-  it('has no samples for replay, so there is no histogram', () => {
-    const r = run('text-golden');
-    expect(attemptedDurations(r.cases, 'tv')).toEqual([]);
-    expect(histogram([])).toBeNull();
-  });
-
-  it('bins measured durations from zero with a nice width and keeps every sample', () => {
-    const bins = histogram([120, 130, 480, 900, 1510]);
-
-    expect(bins?.[0]).toEqual({ from: 0, to: 200, count: 2 });
-    expect(bins?.reduce((sum, b) => sum + b.count, 0)).toBe(5);
-    expect(spread([3, 1, 2, 10])).toEqual({ n: 4, min: 1, median: 2.5, max: 10 });
-    expect(spread([])).toBeNull();
   });
 });
 

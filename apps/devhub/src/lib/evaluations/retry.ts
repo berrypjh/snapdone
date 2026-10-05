@@ -18,20 +18,6 @@ export type FailedVariant = {
 
 const lines = (head: string, args: string[]) => [head, ...args].join(' \\\n  ');
 
-/** 원인 확인용 한 번 호출. 공급자가 거절 이유를 문장으로 돌려준다. key는 환경변수로만. */
-const PROBE: Record<string, (model: string) => string> = {
-  anthropic: (model) =>
-    lines('curl -s https://api.anthropic.com/v1/messages', [
-      '-H "x-api-key: $ANTHROPIC_API_KEY" -H "anthropic-version: 2023-06-01"',
-      '-H "content-type: application/json"',
-      `-d '{"model":"${model}","max_tokens":16,"messages":[{"role":"user","content":"ping"}]}'`,
-    ]),
-  openai: () =>
-    lines('curl -s https://api.openai.com/v1/models', [
-      '-H "Authorization: Bearer $OPENAI_API_KEY"',
-    ]),
-};
-
 export const retryGuide = (run: RunDetail) => {
   const { metadata: m, summary, cases } = run;
   if (m.mode !== 'live') return null;
@@ -67,14 +53,6 @@ export const retryGuide = (run: RunDetail) => {
     '--allow-api',
     `--max-api-calls ${calls * 3}`,
   ]);
-  const probes = [...new Set(failed.map((f) => f.provider))].flatMap((provider) => {
-    const probe = PROBE[provider];
-    const model =
-      summary.variants.find(
-        (r) => r.variant.provider === provider && failed.some((f) => f.id === r.variant.id),
-      )?.variant.model ?? '';
-    return probe ? [{ provider, command: probe(model) }] : [];
-  });
   const carried = summary.variants.reduce((sum, r) => sum + r.execution.completed, 0);
-  return { failed, probes, rerun, retryId, calls, carried };
+  return { failed, rerun, retryId, calls, carried };
 };

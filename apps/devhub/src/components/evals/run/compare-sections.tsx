@@ -7,34 +7,29 @@ import type { CaseFilter } from '@/lib/evaluations/detail';
 import { answerSource, formatMeasure, qualityRows } from '@/lib/evaluations/presentation';
 import {
   caseMatrix,
-  grade,
+  compareCommands,
   MATRIX_FILTERS,
   type MatrixFilter,
   OUTCOME,
   summaryTable,
 } from '@/lib/evaluations/run-view';
 
+import { CopyButton } from '../../source/copy-button';
 import { AnswerSourceChip } from '../answer-source-chip';
 
-export type RunView = { variant: string; base: string; show: MatrixFilter; cases: CaseFilter };
+export type RunView = { variant: string; show: MatrixFilter; cases: CaseFilter };
 
 const LINK = 'text-text-link underline-offset-2 hover:underline';
 
 /** 같은 run 안에서 보기만 바꾼 링크. 선택은 전부 URL에 있다. */
 export const viewHref = (runId: string, view: RunView, hash: string) => {
-  const query = new URLSearchParams({ variant: view.variant, base: view.base });
+  const query = new URLSearchParams({ variant: view.variant });
   if (view.show !== 'all') query.set('show', view.show);
   if (view.cases !== 'all') query.set('cases', view.cases);
   return `/evals/runs/${runId}?${query.toString()}#${hash}`;
 };
 
-const CHANGE = {
-  better: { glyph: '▲', label: '좋아짐', className: 'text-text-success' },
-  worse: { glyph: '▼', label: '나빠짐', className: 'text-text-error' },
-  same: { glyph: '=', label: '같음', className: 'text-text-light' },
-} as const;
-
-/** variant × 대표 지표. 기준 variant와의 차이를 ▲ · ▼와 글자로, 열마다 가장 좋은 값을 굵게 표시한다. */
+/** variant × 대표 지표, Go 값 그대로 나란히. 판정(좋아짐 · 나빠짐 · gate)은 아래 짝 비교 명령의 산출물이 한다. */
 export function SummaryTable({
   runId,
   summary,
@@ -48,8 +43,12 @@ export function SummaryTable({
   mode: Mode;
   view: RunView;
 }) {
-  const { columns, base, rows } = summaryTable(summary, task, view.base);
-  const caption = `variant 비교 — 기준 ${base.variant.id}`;
+  const { columns, rows } = summaryTable(summary, task);
+  const commands = compareCommands(
+    runId,
+    summary.variants.map((r) => r.variant.id),
+  );
+  const caption = 'variant 나란히';
   return (
     <div className="flex flex-col gap-2">
       <TableScroll label={caption} className="rounded-md border border-stroke-light">
@@ -66,7 +65,6 @@ export function SummaryTable({
                   </span>
                 </th>
               ))}
-              <th scope="col">기준 대비</th>
             </tr>
           </thead>
           <tbody>
@@ -87,44 +85,18 @@ export function SummaryTable({
                         {id}
                       </Link>
                       <AnswerSourceChip source={answerSource(mode, row.report.variant)} />
-                      {!row.isBase && (
-                        <Link
-                          href={viewHref(runId, { ...view, base: id }, 'run-compare')}
-                          className={`typo-caption-small ${LINK}`}
-                        >
-                          기준으로
-                        </Link>
-                      )}
                     </span>
                   </th>
                   {row.cells.map((cell, i) => (
                     <td key={columns[i].label} className="align-top">
                       <span
-                        className={
-                          cell.display.missing
-                            ? 'text-text-light'
-                            : cell.best
-                              ? 'typo-body-small-strong'
-                              : undefined
-                        }
-                        title={cell.display.reason ?? undefined}
+                        className={cell.missing ? 'text-text-light' : undefined}
+                        title={cell.reason ?? undefined}
                       >
-                        {cell.display.text}
+                        {cell.text}
                       </span>
-                      {cell.best && (
-                        <span className="block typo-caption-small text-text-light">최고</span>
-                      )}
-                      {cell.delta && (
-                        <span
-                          className={`block typo-caption-small ${CHANGE[cell.delta.change].className}`}
-                        >
-                          <span aria-hidden="true">{CHANGE[cell.delta.change].glyph} </span>
-                          {cell.delta.text} {CHANGE[cell.delta.change].label}
-                        </span>
-                      )}
                     </td>
                   ))}
-                  <td className="align-top typo-caption-small">{grade(row)}</td>
                 </tr>
               );
             })}
@@ -132,9 +104,24 @@ export function SummaryTable({
         </Table>
       </TableScroll>
       <p className="typo-caption-small text-text-light">
-        차이는 기준 variant와의 값 차이(비율은 %p). 서술 비교 — 통계적 유의성은 주장하지 않음.
-        variant 이름을 누르면 아래에 자세히
+        값은 Go 요약 그대로. 어느 쪽이 나은지 · gate 통과 여부는 짝 비교 산출물(
+        <code className="devhub-code">comparison.json</code>)이 정한다. variant 이름을 누르면 아래에
+        자세히
       </p>
+      {commands.length > 0 && (
+        <ul className="flex flex-col gap-2" aria-label="짝 비교 명령">
+          {commands.map((command) => (
+            <li key={command} className="relative">
+              <pre className="overflow-x-auto rounded-md bg-background-default p-3 pr-10 devhub-code">
+                {command}
+              </pre>
+              <span className="absolute top-1.5 right-1.5">
+                <CopyButton text={command} label="짝 비교 명령 복사" variant="icon" />
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -191,7 +178,7 @@ export function AllMetricsTable({ summary }: { summary: RunSummary }) {
 const FILTER =
   'inline-flex min-h-8 items-center gap-1 rounded-md px-2 typo-caption-small text-text-link hover:bg-background-default aria-[current=true]:bg-(--ds-background-selected) aria-[current=true]:text-text-default aria-[current=true]:typo-body-small-strong';
 
-/** case × variant. 칸은 기호와 글자(통과 · 실패 · 미실행)와 예측. 기준보다 나빠진 case를 먼저 찾게 필터를 둔다. */
+/** case × variant. 칸은 기호와 글자(통과 · 실패 · 미실행)와 예측. 필터는 Go 판정으로 묶기만 한다. */
 export function CaseMatrix({
   runId,
   cases,
@@ -203,7 +190,7 @@ export function CaseMatrix({
   variantIds: string[];
   view: RunView;
 }) {
-  const { rows, counts, matches } = caseMatrix(cases, variantIds, view.base);
+  const { rows, counts, matches } = caseMatrix(cases, variantIds);
   const visible = rows.filter(matches[view.show]);
   const caption = `case별 결과 — ${MATRIX_FILTERS[view.show]} ${visible.length}개`;
   return (
@@ -236,9 +223,6 @@ export function CaseMatrix({
                 {variantIds.map((id) => (
                   <th key={id} scope="col" className="devhub-code">
                     {id}
-                    {id === view.base && (
-                      <span className="block typo-caption-small text-text-light">기준</span>
-                    )}
                   </th>
                 ))}
               </tr>

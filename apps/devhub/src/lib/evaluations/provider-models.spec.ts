@@ -79,7 +79,7 @@ describe('provider model lists', () => {
 
     expect(v).toMatchObject({
       ref: 'openai:gpt-4.1-mini',
-      id: 'gpt-4-1-mini',
+      label: 'gpt-4.1-mini',
       apiKeyEnv: 'OPENAI_API_KEY',
     });
   });

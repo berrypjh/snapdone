@@ -12,7 +12,7 @@ import {
 } from './variant-command';
 
 /**
- * 명령 만들기에서 고를 수 있는 variant · 실험 설정 · dataset. `tools/evals/variants` · `experiments` · `datasets`에서 이름과 종류만
+ * 정식 run 명령 만들기에서 고를 수 있는 variant · 실험 설정 · dataset. `tools/evals/variants` · `experiments` · `datasets`에서 이름과 종류만
  * 읽는다. 검증은 Go(`pnpm eval plan`)가 하므로 여기서는 읽을 수 없거나 예시(placeholder)인 것을 빼기만 한다.
  */
 
@@ -60,7 +60,6 @@ const variantOf = (doc: Json): VariantOption | null => {
   const experiment = baseline ? null : experimentOf(config);
   return {
     ref: id,
-    id,
     task,
     kind: baseline ? 'baseline' : experiment ? 'experiment' : 'model',
     provider,

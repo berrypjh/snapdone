@@ -2,8 +2,9 @@ import type { CaseResult, Measure, RunSummary, Task, VariantReport } from './con
 import { type DisplayMeasure, formatMeasure, type MeasureUnit, qualityRows } from './presentation';
 
 /**
- * run 상세의 비교 read model. 값은 Go 요약 · case 결과 그대로이고, 여기서는 variant끼리 나란히 놓고 기준 variant와의
- * 차이 방향만 읽는다(다시 채점하지 않음). 선택은 URL — `?variant=` 자세히 볼 variant, `?base=` 기준, `?show=` case 필터.
+ * run 상세의 read model. 값은 Go 요약 · case 결과 그대로이고, 여기서는 variant끼리 나란히 놓고 case를 묶기만 한다.
+ * 어느 쪽이 나은지 · 무엇이 나빠졌는지는 여기서 판정하지 않는다 — 그것은 `pnpm eval compare`가 쓰는 comparison 산출물이다.
+ * 선택은 URL — `?variant=` 자세히 볼 variant, `?show=` case 필터.
  */
 
 export type Direction = 'higher' | 'lower';
@@ -11,6 +12,7 @@ export type Direction = 'higher' | 'lower';
 type Column = {
   label: string;
   unit: MeasureUnit;
+  /** 지표의 뜻(높을수록 좋은 값인지). 표 머리글의 설명이고 판정에 쓰지 않는다. */
   direction: Direction;
   pick: (r: VariantReport) => Measure | null;
 };
@@ -76,94 +78,35 @@ export const SUMMARY_COLUMNS: Record<Task, Column[]> = {
   ],
 };
 
-export type Change = 'better' | 'worse' | 'same';
+export type SummaryRow = { report: VariantReport; cells: DisplayMeasure[] };
 
-export type SummaryCell = {
-  display: DisplayMeasure;
-  /** 기준 variant와의 차이. 기준 자신이거나 어느 쪽이든 값이 없으면 null. */
-  delta: { text: string; change: Change } | null;
-  /** 이 열에서 가장 좋은 값(같은 값 여럿이면 모두). 값이 둘 이상이고 서로 다를 때만. */
-  best: boolean;
-};
-
-export type SummaryRow = {
-  report: VariantReport;
-  isBase: boolean;
-  cells: SummaryCell[];
-  better: number;
-  worse: number;
-};
-
-const value = (m: Measure | null) => (m && m.availability === 'measured' ? m.value : null);
-
-const deltaText = (diff: number, unit: MeasureUnit) => {
-  const sign = diff > 0 ? '+' : diff < 0 ? '−' : '±';
-  const abs = Math.abs(diff);
-  if (unit === 'rate') return `${sign}${(abs * 100).toFixed(1)}pp`;
-  if (unit === 'ms') return `${sign}${Math.round(abs)} ms`;
-  return `${sign}${abs.toFixed(3)}`;
-};
-
-/** variant × 대표 지표. 기준은 `baseId`(없거나 모르면 첫 variant). */
-export const summaryTable = (summary: RunSummary, task: Task, baseId: string | null) => {
+/** variant × 대표 지표, Go 값 그대로. */
+export const summaryTable = (summary: RunSummary, task: Task) => {
   const columns = SUMMARY_COLUMNS[task];
-  const base = summary.variants.find((r) => r.variant.id === baseId) ?? summary.variants[0];
-  const values = summary.variants.map((r) => columns.map((c) => value(c.pick(r))));
-  const bests = columns.map((c, i) => {
-    const measured = values.map((row) => row[i]).filter((v): v is number => v !== null);
-    if (measured.length < 2 || measured.every((v) => Math.abs(v - measured[0]) < 1e-9)) return null;
-    return c.direction === 'higher' ? Math.max(...measured) : Math.min(...measured);
-  });
-  const baseIndex = summary.variants.indexOf(base);
-  const rows: SummaryRow[] = summary.variants.map((report, r) => {
-    let better = 0;
-    let worse = 0;
-    const cells = columns.map((c, i): SummaryCell => {
+  const rows: SummaryRow[] = summary.variants.map((report) => ({
+    report,
+    cells: columns.map((c) => {
       const measure = c.pick(report);
-      const own = values[r][i];
-      const ref = values[baseIndex][i];
-      let delta: SummaryCell['delta'] = null;
-      if (report !== base && own !== null && ref !== null) {
-        const diff = own - ref;
-        const change: Change =
-          Math.abs(diff) < 1e-9
-            ? 'same'
-            : diff > 0 === (c.direction === 'higher')
-              ? 'better'
-              : 'worse';
-        if (change === 'better') better++;
-        if (change === 'worse') worse++;
-        delta = { text: deltaText(diff, c.unit), change };
-      }
-      return {
-        display: measure
-          ? formatMeasure(measure, c.unit)
-          : {
-              text: '없음',
-              missing: true,
-              availability: 'unavailable',
-              reason: '이 요약에 없는 지표',
-            },
-        delta,
-        best: own !== null && bests[i] !== null && Math.abs(own - (bests[i] as number)) < 1e-9,
-      };
-    });
-    return { report, isBase: report === base, cells, better, worse };
-  });
-  return { columns, base, rows };
+      return measure
+        ? formatMeasure(measure, c.unit)
+        : {
+            text: '없음',
+            missing: true,
+            availability: 'unavailable',
+            reason: '이 요약에 없는 지표',
+          };
+    }),
+  }));
+  return { columns, rows };
 };
 
-/** 기준과 견준 한 줄 판정 — 좋아진 지표만 있으면 개선, 나빠진 것만 있으면 악화, 둘 다면 엇갈림. */
-export const grade = (row: SummaryRow) =>
-  row.isBase
-    ? '기준'
-    : row.better > 0 && row.worse > 0
-      ? `엇갈림 — 좋아짐 ${row.better} · 나빠짐 ${row.worse}`
-      : row.better > 0
-        ? `개선 — 좋아짐 ${row.better}`
-        : row.worse > 0
-          ? `악화 — 나빠짐 ${row.worse}`
-          : '차이 없음';
+/** 이 run의 첫 variant를 기준으로 다른 variant를 짝 비교하는 Go 명령. 판정은 그 명령의 산출물이 한다. */
+export const compareCommands = (runId: string, variantIds: string[]) =>
+  variantIds
+    .slice(1)
+    .map(
+      (id) => `pnpm eval compare --baseline ${runId}:${variantIds[0]} --candidate ${runId}:${id}`,
+    );
 
 export type Outcome = 'passed' | 'failed' | 'unscored' | 'error' | 'not-run' | 'skipped';
 
@@ -199,12 +142,11 @@ const answerOf = (c: CaseResult) =>
     ? `${c.prediction.category} / ${c.prediction.suggestedAction}`
     : null;
 
-export type MatrixFilter = 'all' | 'diff' | 'regressed' | 'failed';
+export type MatrixFilter = 'all' | 'diff' | 'failed';
 
 export const MATRIX_FILTERS: Record<MatrixFilter, string> = {
   all: '전체',
   diff: 'variant끼리 갈림',
-  regressed: '기준보다 나빠짐',
   failed: '모두 실패',
 };
 
@@ -219,8 +161,8 @@ const goldOf = (c: CaseResult) =>
     ? `${c.expected.category} / ${c.expected.acceptableActions.join(' · ') || '행동 없음'}`
     : null;
 
-/** case × variant(trial 1). 기준 variant가 통과했는데 다른 variant가 실패한 case가 "나빠짐"이다. */
-export const caseMatrix = (cases: CaseResult[], variantIds: string[], baseId: string) => {
+/** case × variant(trial 1). 필터는 Go 판정으로 묶기만 한다 — 갈린 case, 모두 실패한 case. */
+export const caseMatrix = (cases: CaseResult[], variantIds: string[]) => {
   const byCase = new Map<string, Map<string, CaseResult>>();
   for (const c of cases) {
     if (c.trial !== 1) continue;
@@ -240,13 +182,9 @@ export const caseMatrix = (cases: CaseResult[], variantIds: string[], baseId: st
         }),
       };
     });
-  const baseIndex = Math.max(0, variantIds.indexOf(baseId));
   const matches: Record<MatrixFilter, (row: MatrixRow) => boolean> = {
     all: () => true,
     diff: (row) => new Set(row.cells.map((cell) => cell?.outcome ?? 'none')).size > 1,
-    regressed: (row) =>
-      row.cells[baseIndex]?.outcome === 'passed' &&
-      row.cells.some((cell, i) => i !== baseIndex && cell?.outcome !== 'passed'),
     failed: (row) =>
       row.cells.every((cell) => cell?.outcome === 'failed' || cell?.outcome === 'error'),
   };

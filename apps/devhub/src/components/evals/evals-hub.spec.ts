@@ -49,7 +49,7 @@ describe('/evals hub', () => {
     expect(html).not.toContain('aria-label="필터"');
   });
 
-  it('explains every kind of comparison and how to run it', () => {
+  it('explains every kind of comparison and the Go commands that make official runs', () => {
     const html = hub();
 
     for (const name of [
@@ -61,58 +61,23 @@ describe('/evals hub', () => {
       expect(html).toContain(name);
     }
     expect(html).toContain('한 run으로 — 권장');
+    expect(html).toContain('pnpm eval run --dataset');
     expect(html).toContain('pnpm eval compare --baseline');
+    expect(html).toContain('tools/evals/gates');
+    expect(html).toContain('pnpm eval plan --dataset');
     expect(html).toContain('실제 모델을 호출한 run 없음');
   });
 
-  it('still explains everything when there is no run yet', () => {
-    const html = hub(false);
-
-    expect(html).toContain('과제 3개');
-    expect(html).toContain('비교할 수 있는 것');
-  });
-
-  it('does not repeat what the right-hand guide already explains', () => {
-    // 칩의 title(마우스를 올렸을 때의 설명)은 어느 화면에서나 같으므로 보이는 글자만 본다.
-    const html = hub().replace(/ title="[^"]*"/g, '');
-
-    expect(html).not.toContain('누가 답했든 지표는 나옴');
-    expect(html).not.toContain('모델 성능이 아님');
-    expect(html).not.toContain('모델이 넘어야 할 최저선');
-  });
-
-  it('puts the new run first, keeps frequent parts open, and folds reference parts', () => {
+  it('builds official run commands from repository files, listed models, and typed model names', () => {
     const html = hub();
-    const at = (text: string) => html.indexOf(text);
 
-    expect(at('새 비교 실행')).toBeLessThan(at('비교하는 방법'));
-    expect(at('비교하는 방법')).toBeLessThan(at('과제 3개'));
-    expect(at('과제 3개')).toBeLessThan(at('비교할 수 있는 것 8가지'));
-    // 참고는 접힌 details — 제목에 개수가 있다.
-    expect(html).toMatch(
-      /<details class="group[^"]*"><summary[^>]*><h2[^>]*>.*비교할 수 있는 것 8가지/,
-    );
-    expect(html).toContain('저장된 짝 비교 1개');
-    expect(html).not.toMatch(/<details[^>]* open/);
-    // 단계와 명령 복사. 예시(placeholder) 설정은 고를 수 없다.
-    expect(html).toContain('고른 것 0개');
-    expect(html).toContain('왼쪽에서 하나 이상 고르면 명령이 만들어짐');
-    // 이름은 왼쪽 한 줄, 부가 정보는 오른쪽 끝, --variant 값은 title에.
-    expect(html).toMatch(/늘 other \/ none<\/span>.*호출 없음/s);
+    expect(html).toContain('정식 run 명령 만들기');
+    // 고를 것: 기준선(파일)과 실험 설정(파일). 모델은 공급자 목록에서 고르거나 직접 적는다.
     expect(html).toContain('--variant baseline-always-other');
-    // 빠른 선택은 고른 것 옆의 작은 버튼.
-    expect(html).toContain('+ 기준선');
-    expect(html).toContain('짝 비교 명령 복사');
-    // run id는 미리 채우지 않음 — 비우면 CLI가 시각으로 정한다.
-    expect(html).toContain('placeholder="비우면 run-시각"');
-    expect(html).not.toContain('my-run');
-    expect(html).not.toContain('anthropic-example');
-  });
-
-  it('lets every dataset and split be chosen, greying out what cannot run live', () => {
-    const html = hub();
-
-    // 과제별 묶음(optgroup), 기록 재채점만 되는 dataset은 고를 수 없음.
+    expect(html).toMatch(/늘 other \/ none<\/span>.*호출 없음/s);
+    expect(html).toContain('aria-label="모델 직접 적기"');
+    expect(html).toContain('지시문 변경');
+    // dataset은 과제별 묶음이고, live adapter가 없는 과제는 고를 수 없다.
     expect(html).toMatch(
       /<optgroup label="사진 분류"><option value="sample-classification" selected="">sample-classification<\/option>/,
     );
@@ -121,6 +86,12 @@ describe('/evals hub', () => {
     );
     expect(html).toContain('dev · 1건');
     expect(html).toMatch(/<option value="validation" disabled="">validation · 0건<\/option>/);
+    // 아무것도 고르지 않은 처음: 명령 없음, run id는 비어 있다.
+    expect(html).toContain('고른 것 0개');
+    expect(html).toContain('왼쪽에서 하나 이상 고르면 명령이 만들어짐');
+    expect(html).toContain('+ 기준선');
+    expect(html).toContain('placeholder="비우면 run-시각"');
+    expect(html).not.toContain('export ANTHROPIC_API_KEY');
   });
 
   it('shows why the latest models are missing when DevHub has no key', () => {
@@ -130,9 +101,8 @@ describe('/evals hub', () => {
     expect(html).toContain(
       'title="ANTHROPIC_API_KEY 없이 DevHub를 띄움 · OPENAI_API_KEY 없이 DevHub를 띄움"',
     );
-    // 모델은 공급자 목록에서만 온다 — key가 없으면 고를 모델이 없다.
+    expect(html).toContain('없음 — 불러온 모델이 없음. 아래에 직접 적는다');
     expect(html).not.toMatch(/title="[^"]* · --variant (anthropic|openai):/);
-    expect(html).not.toContain('저장소 설정 있음');
   });
 
   it('lists models loaded from a provider, newest first, as provider:model choices', () => {
@@ -147,8 +117,7 @@ describe('/evals hub', () => {
 
     expect(html).toContain('최신 목록 Anthropic 1개 · OpenAI 실패(HTTP 401)');
     expect(html).toContain('title="claude-new · --variant anthropic:claude-new"');
-    expect(html).toMatch(/Claude New<\/span>.*Anthropic · 출시 2026-09-01 · 새로 불러옴/s);
-    expect(html).not.toContain('최신 모델');
+    expect(html).toMatch(/Claude New<\/span>.*Anthropic · 출시 2026-09-01/s);
   });
 
   it('narrows models by company only when two companies are listed', () => {
@@ -165,9 +134,47 @@ describe('/evals hub', () => {
       },
     ]);
 
-    // 회사로 나누지 않고, 좁혀 보는 필터만 있다. 빠른 선택 버튼과 같은 모양.
     expect(html).toContain('aria-label="회사로 좁히기"');
     expect(html).toMatch(/aria-pressed="true"[^>]*>.*전체<\/button>/s);
+  });
+
+  it('points exploration at the notebook lab', () => {
+    const html = hub();
+
+    expect(html).toContain('tools/evals/lab');
+  });
+
+  it('still explains everything when there is no run yet', () => {
+    const html = hub(false);
+
+    expect(html).toContain('과제 3개');
+    expect(html).toContain('비교할 수 있는 것');
+    expect(html).toContain('정식 run 명령 만들기');
+  });
+
+  it('does not repeat what the right-hand guide already explains', () => {
+    // 칩의 title(마우스를 올렸을 때의 설명)은 어느 화면에서나 같으므로 보이는 글자만 본다.
+    const html = hub().replace(/ title="[^"]*"/g, '');
+
+    expect(html).not.toContain('누가 답했든 지표는 나옴');
+    expect(html).not.toContain('모델 성능이 아님');
+    expect(html).not.toContain('모델이 넘어야 할 최저선');
+  });
+
+  it('keeps tasks, the builder and commands open, and folds reference parts', () => {
+    const html = hub();
+    const at = (text: string) => html.indexOf(text);
+
+    expect(at('과제 3개')).toBeLessThan(at('정식 run 명령 만들기'));
+    expect(at('정식 run 명령 만들기')).toBeLessThan(at('정식 run을 만드는 명령'));
+    expect(at('정식 run을 만드는 명령')).toBeLessThan(at('비교할 수 있는 것 8가지'));
+    // 참고는 접힌 details — 제목에 개수가 있다.
+    expect(html).toMatch(
+      /<details class="group[^"]*"><summary[^>]*><h2[^>]*>.*비교할 수 있는 것 8가지/,
+    );
+    expect(html).toContain('저장된 짝 비교 1개');
+    expect(html).not.toMatch(/<details[^>]* open/);
+    expect(html).toContain('짝 비교 · gate 명령 복사');
   });
 
   it('points only at example files that exist', () => {

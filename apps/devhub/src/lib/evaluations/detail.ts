@@ -1,4 +1,4 @@
-import type { CaseResult, ClassificationQuality, Measure, VariantReport } from './contract';
+import type { CaseResult, ClassificationQuality, VariantReport } from './contract';
 
 /**
  * run 상세의 read model. Go가 쓴 case 결과와 요약에서 값을 고르고 묶을 뿐 다시 판정하지 않는다. 값이 없는 측정은
@@ -41,75 +41,6 @@ export const failureCounts = (counts: Record<string, number>) =>
   Object.entries(counts)
     .filter(([, n]) => n > 0)
     .sort(([a, x], [b, y]) => y - x || (a < b ? -1 : 1));
-
-const measuredValue = (m: Measure) => (m.availability === 'measured' ? m.value : null);
-
-/** 호출한 case(완료 · 실패 · 시간 초과)의 잰 시간. replay는 재지 않으므로 비어 있다. */
-export const attemptedDurations = (cases: CaseResult[], variantId: string) =>
-  cases.flatMap((c) =>
-    c.variantId === variantId && ['completed', 'failed', 'timed-out'].includes(c.execution.status)
-      ? (() => {
-          const v = measuredValue(c.durationMs);
-          return v === null ? [] : [v];
-        })()
-      : [],
-  );
-
-export type Bin = { from: number; to: number; count: number };
-
-/** 1 · 2 · 5 × 10^n 중 가장 가까운 폭. */
-const niceStep = (raw: number) => {
-  const power = 10 ** Math.floor(Math.log10(raw));
-  const fraction = raw / power;
-  return (fraction <= 1 ? 1 : fraction <= 2 ? 2 : fraction <= 5 ? 5 : 10) * power;
-};
-
-/** 표본을 0부터 같은 폭의 구간으로 센다. 표본이 없으면 null이다. */
-export const histogram = (samples: number[], maxBins = 8): Bin[] | null => {
-  if (samples.length === 0) return null;
-  const max = Math.max(...samples);
-  const width = max <= 0 ? 1 : niceStep(max / maxBins);
-  const count = Math.max(1, Math.floor(max / width) + 1);
-  const bins = Array.from({ length: count }, (_, i) => ({
-    from: i * width,
-    to: (i + 1) * width,
-    count: 0,
-  }));
-  for (const s of samples) bins[Math.min(count - 1, Math.floor(s / width))].count++;
-  return bins;
-};
-
-export type Spread = { n: number; min: number; median: number; max: number };
-
-/** 잰 값의 최소 · 중앙 · 최대. 요약의 합계를 대신하지 않고 case 사이의 퍼짐만 보인다. */
-export const spread = (values: number[]): Spread | null => {
-  if (values.length === 0) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-  return { n: sorted.length, min: sorted[0], median, max: sorted[sorted.length - 1] };
-};
-
-/** case별 token 사용량. 값이 있는 case만 퍼짐에 들어가고 없는 수는 따로 센다. */
-export const tokenSpread = (cases: CaseResult[], variantId: string) => {
-  const mine = cases.filter(
-    (c) =>
-      c.variantId === variantId &&
-      c.execution.status !== 'not-run' &&
-      c.execution.status !== 'skipped',
-  );
-  const values = (pick: (c: CaseResult) => Measure) =>
-    mine.flatMap((c) => {
-      const v = measuredValue(pick(c));
-      return v === null ? [] : [v];
-    });
-  const input = values((c) => c.usage.inputTokens);
-  return {
-    input: spread(input),
-    output: spread(values((c) => c.usage.outputTokens)),
-    unknown: mine.length - input.length,
-  };
-};
 
 export type ConfusionMatrix = {
   /** gold category. */

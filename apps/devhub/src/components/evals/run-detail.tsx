@@ -156,8 +156,8 @@ function VariantDetail({
           <summary className="cursor-pointer typo-body-small text-text-link">펼치기</summary>
           <div className="mt-2 flex flex-col gap-4">
             <ExecutionHealth report={report} />
-            <Latency report={report} cases={cases} mode={mode} />
-            <Usage report={report} cases={cases} />
+            <Latency report={report} mode={mode} />
+            <Usage report={report} />
             <Failures report={report} />
           </div>
         </details>
@@ -181,17 +181,12 @@ const PICK =
 /** URL의 선택을 이 run의 variant로만 받는다. 모르는 값은 첫 variant다. */
 export const parseRunView = (
   run: RunDetail,
-  query: { variant?: unknown; base?: unknown; show?: unknown; cases?: unknown },
+  query: { variant?: unknown; show?: unknown; cases?: unknown },
 ): RunView => {
   const ids = run.summary.variants.map((r) => r.variant.id);
-  const known = (value: unknown) =>
-    typeof value === 'string' && ids.includes(value) ? value : ids[0];
-  return {
-    variant: known(query.variant),
-    base: known(query.base),
-    show: parseMatrixFilter(query.show),
-    cases: parseCaseFilter(query.cases),
-  };
+  const variant =
+    typeof query.variant === 'string' && ids.includes(query.variant) ? query.variant : ids[0];
+  return { variant, show: parseMatrixFilter(query.show), cases: parseCaseFilter(query.cases) };
 };
 
 /** run 하나. 무엇이 성공하고 무엇이 왜 실패했는지를 위에서 아래로 좁혀 간다. 값은 전부 Go 산출물이다. */
@@ -310,7 +305,7 @@ export function RunDetailView({
       {ids.length > 1 && (
         <WorkspaceSection id="run-cases-matrix" title="case별 결과">
           <p className="typo-caption-small text-text-light">
-            같은 case를 variant마다 나란히 — 기준보다 나빠진 case부터 확인
+            같은 case를 variant마다 나란히 — variant끼리 갈린 case부터 확인
           </p>
           <CaseMatrix runId={run.id} cases={run.cases} variantIds={ids} view={view} />
         </WorkspaceSection>

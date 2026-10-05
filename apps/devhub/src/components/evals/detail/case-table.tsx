@@ -197,10 +197,7 @@ function Experiment({ c }: { c: CaseResult }) {
         <p className="typo-caption-small">
           비슷한 사례:{' '}
           {c.retrieval.examples
-            .map(
-              (e) =>
-                `${e.caseId}(${e.category}${e.category === c.expected.category ? ' · 맞음' : ''}, ${e.similarity.toFixed(3)})`,
-            )
+            .map((e) => `${e.caseId}(${e.category}, ${e.similarity.toFixed(3)})`)
             .join(' · ') || '없음'}
         </p>
       )}

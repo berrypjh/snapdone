@@ -163,7 +163,7 @@ export const evaluateModelVariants: Scenario = {
       status: 'implemented',
       source: [
         { path: `${CLI}/execute.go`, symbol: 'cmdReplay' },
-        { path: `${CLI}/replay.go`, symbol: 'loadReplayFixture' },
+        { path: `${EVAL}/replay.go`, symbol: 'LoadReplayFixture' },
       ],
       tests: [
         'go-eval-cli-replay-round-trip',

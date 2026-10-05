@@ -28,7 +28,7 @@ const html = (
   r: ReturnType<typeof resultsRepository>,
   id: string,
   cases: CaseFilter = 'all',
-  query: { variant?: string; base?: string; show?: string } = {},
+  query: { variant?: string; show?: string } = {},
 ) => {
   const run = r.repo.getRun(id);
   return renderToStaticMarkup(
@@ -74,7 +74,7 @@ describe('classification run', () => {
 
     expect(page).toContain('일부만 실행');
     expect(page).toMatch(
-      /aria-current="page"[^>]*href="\/evals\/runs\/replay-golden\?variant=replay-v&amp;base=replay-v&amp;cases=not-run#run-variant"/,
+      /aria-current="page"[^>]*href="\/evals\/runs\/replay-golden\?variant=replay-v&amp;cases=not-run#run-variant"/,
     );
     expect(page).toContain('case — 미실행 1개');
     expect(page).toContain('예측 없음 — 미실행');
@@ -136,7 +136,7 @@ describe('latency', () => {
     expect(page).not.toContain('0 ms');
   });
 
-  it('shows Go median and p95 and a histogram for a live run', () => {
+  it('shows Go median and p95 for a live run, and no chart of its own', () => {
     const r = resultsRepository();
     r.copyRun('text-golden', 'text-live');
     r.edit('text-live/metadata.json', (m) => {
@@ -169,8 +169,9 @@ describe('latency', () => {
 
     expect(page).toContain('<caption>지연 요약</caption>');
     expect(page).toMatch(/중앙값[\s\S]*300 ms[\s\S]*700 ms/);
-    expect(page).toContain('tv case별 시간: case 3개');
     expect(page).toContain('표본 3개');
+    // case별 분포는 notebook의 몫이다. DevHub는 Go 요약만 보인다.
+    expect(page).not.toContain('case별 시간');
   });
 });
 

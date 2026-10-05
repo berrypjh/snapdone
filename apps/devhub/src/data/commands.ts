@@ -166,6 +166,28 @@ export const commands: CommandRef[] = [
     summary: 'Swagger 문서가 최신인지 검사만 함',
     constraints: [],
   },
+  {
+    id: 'eval-lab',
+    source: script('eval:lab'),
+    group: 'run',
+    summary:
+      'Python 연구 workspace(tools/evals/lab)의 JupyterLab. dataset을 pandas로 보는 탐색용이고 채점 · gate · 산출물은 Go 그대로. 모델 호출 없음',
+    constraints: ['port-binding'],
+  },
+  {
+    id: 'eval-lab-setup',
+    source: script('eval:lab:setup'),
+    group: 'workspace',
+    summary: 'uv sync — tools/evals/lab/.venv에 Python 의존성 설치',
+    constraints: [],
+  },
+  {
+    id: 'eval-lab-test',
+    source: script('eval:lab:test'),
+    group: 'check',
+    summary: 'pytest — dataset loader 테스트와 notebook 정책(출력 없이 커밋 · provider 없이 실행)',
+    constraints: [],
+  },
 ];
 
 /** 테스트 종류마다 돌리는 루트 명령(`test`는 Nx로 Vitest와 go test를 함께 돌린다). */
