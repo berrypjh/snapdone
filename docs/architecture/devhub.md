@@ -1684,7 +1684,7 @@ variant가 둘 이상인 run 상세는 variant마다 모든 묶음을 세로로 
 
 - **탐색기의 평가 섹션** — 시나리오 · 기록처럼 섹션 제목(`/evals`, 전체) 아래에 과제 셋(`/evals/tasks/<task>`). 과제는 고정 목록이라 결과 파일을 읽지 않고 그린다. 과제 화면은 개요와 같은 본문에 과제를 고정하고 과제 필터를 뺀다
 - **① variant 비교표** — 행 variant, 열 대표 지표(분류: category 정확도 · 허용 행동 · critical · 행동 완료 · high인데 틀림 · 실행 완료율). 열마다 좋은 방향을 적고, 기준 variant(`?base=`, 기본 첫 variant) 대비 차이를 ▲ · ▼와 "좋아짐 · 나빠짐" 글자로, 값이 서로 다를 때만 가장 좋은 값을 굵게 "최고". 끝 열은 한 줄 판정(개선 · 악화 · 엇갈림 · 차이 없음). 나머지 지표는 접힌 "모든 품질 지표" 표
-- **② case × variant** — 칸은 기호와 글자(통과 · 실패 · 실행 오류 · 미실행)와 예측. 필터(`?show=`) 전체 · variant끼리 갈림 · 기준보다 나빠짐 · 모두 실패. 평균이 좋아져도 나빠진 case를 먼저 찾게 하려는 것
+- **② case × variant** — 칸은 기호와 글자(통과 · 실패 · 실행 오류 · 미실행)와 예측. 필터(`?show=`) 전체 · variant끼리 갈림 · 모두 실패. 평균이 좋아져도 나빠진 case를 먼저 찾게 하려는 것
 - **③ variant 자세히** — `?variant=`로 하나만. 지표 묶음 · 틀린 곳 · case 표는 그 variant만이고, 실행 · 지연 · 사용량은 접었다. case 필터(`?cases=`)는 다른 선택을 지킨다
 - 비교는 Go 값의 차이 방향만 읽는다(`lib/evaluations/run-view.ts`). 다시 채점하지 않고 통계적 유의성을 주장하지 않는다
 - 확인: `lint` · `typecheck` 통과, `nx test devhub` 통과, `pnpm devhub:check` 통과. 실제 화면은 dev 서버 포트가 막혀 보지 못했다
@@ -1693,31 +1693,26 @@ variant가 둘 이상인 run 상세는 variant마다 모든 묶음을 세로로 
 
 `/evals`는 모든 run을 늘어놓는 대신 평가 전체를 설명하는 화면이 됐다. run 목록 · 필터 · 추세는 과제 화면(`/evals/tasks/<task>`)에만 있다. 오른쪽 "읽는 법" 창이 설명하는 것(답 출처 · 기준선 · 지표의 뜻)은 되풀이하지 않고, 가운데에는 그 창에 없는 것(과제 요약 · run 수 · 설정과 예시 파일 · 명령)만 둔다
 
-평가 page는 셸(상단 막대 · 탐색기 · 오른쪽 창)까지 직접 그린다. 그래서 `app/evals/loading.tsx`도 같은 셸을 그리고 작업 영역에만 "평가 결과를 읽는 중…"을 둔다 — 셸 없이 글자만 두면 결과 파일 · 공급자 모델 목록(최대 5초)을 읽는 동안 탐색기가 사라진다.
+평가 page는 셸(상단 막대 · 탐색기 · 오른쪽 창)까지 직접 그린다. 그래서 `app/evals/loading.tsx`도 같은 셸을 그리고 작업 영역에만 "평가 결과를 읽는 중…"을 둔다 — 셸 없이 글자만 두면 결과 파일을 읽는 동안 탐색기가 사라진다.
 
 - **과제** — 과제마다 한 줄 요약(무엇을 재는지 · 실제 호출 가능 여부)과 run 수 · 최근 run
 - **답 출처** — 실제 모델 호출 · 규칙 기준선 · 기록 재채점별 run 수. 실제 모델 run이 없으면 경고 한 줄
 - **비교할 수 있는 것** — 여러 모델 · OpenAI 호환 서비스 · 내 컴퓨터의 오픈소스 · 지시문 변경 · 비슷한 사례 예시 · 계단식 · 규칙 기준선 · 기록 재채점. 줄마다 설정 이름과 `tools/evals`의 예시 파일(spec이 실재 확인)
-- **비교하는 방법** — 맨 위. 한 run으로(권장) · 짝 비교 · 먼저 계획만, 명령마다 복사 버튼(`CopyButton`)
-- **명령 만들기** — `tools/evals/variants`의 설정(예시 · placeholder 제외) · 공급자 목록의 모델 · `tools/evals/experiments`의 모델 없는 실험 설정을 체크박스로 고르면(실험 설정은 고른 모델마다 `<설정>@공급자:모델`로 얹고, 계단식은 같은 회사 모델 정확히 둘 — 먼저 고른 것이 먼저 답함, 모자라면 이유 한 줄) key 설정 · 계획 · 실행 명령을 만든다. 모델 호출 상한은 case 수 × variant별 호출(기준선 0 · 계단식 2) × 재시도 여유 3. 모델을 부르지 않고 글자만 만드는 client 컴포넌트이고, 목록은 서버가 `variantCatalog()`로 읽어 넘긴다
+- **정식 run을 만드는 명령** — 한 run으로(권장) · 짝 비교 · gate · 먼저 계획만. Go 명령 글자와 복사 버튼(`CopyButton`)뿐이다. 실험 명령을 골라 만들어 주던 "명령 만들기"와 공급자 모델 목록은 67에서 뺐다
 
-## 65. 구현 상태 — 새 비교 실행을 맨 위로, 참고는 접기, 새로고침으로 최신 모델
+## 65. 구현 상태 — 새 비교 실행을 맨 위로, 참고는 접기 (67에서 실험 실행 UI는 제거)
 
-설계 시스템 지침(GOV.UK details · accordion, NN/g 진행적 공개 · 데스크톱 accordion, USWDS, Primer, Carbon code snippet)과 개발 도구의 실행 화면(GitHub Actions "Run workflow" · clone 패널, Stripe quickstart)을 조사해 `/evals`를 보편적인 배치로 바꿨다.
+이 절의 "새 비교 실행"(체크박스로 variant · 모델을 골라 명령을 만드는 client 컴포넌트)과 "새로고침으로 최신 모델"(서버가 요청마다 Anthropic · OpenAI 모델 목록 API를 부름)은 67에서 뺐다. 남은 것은 배치 원칙이다.
 
-- **주 동작을 맨 위에 열어 둠** — "새 비교 실행"은 설정 + 미리보기 두 칸. 왼쪽은 고르기 — 규칙 기준선, **모델은 회사 구분 없이 한 목록**(새로고침 때 공급자에서 불러온 모델 — 저장소에 모델만 고르는 설정 파일이 있으면 모델 이름으로 합쳐 중복 없이. 지금은 그런 파일이 없어 key 없이 띄우면 모델 줄이 비고 이유만 보임, 출시일 최신순, 회사 필터는 DevHub 필터 모양의 작은 글자 버튼, 앞 10개 뒤는 접음, 불러오기 상태는 묶음 설명 한 줄에), 접은 실험 설정. 줄은 한 줄 — 이름(저장소 모델은 짧은 설정 이름)은 왼쪽, 회사 · 출시일 · "새로 불러옴"은 오른쪽 끝에 작게, 실제 모델 이름과 `--variant` 값은 title. 오른쪽(넓은 화면에서 따라옴)은 고른 것(빠른 선택 · 모두 해제 · 빼기 버튼) · 옵션 · 명령 — 명령은 한 블록에 하나(key 설정 · 계획 · 실행), 옵션마다 한 줄(줄 끝 `\`로 이어져 그대로 실행)이고 복사는 블록 제목 줄 오른쪽. 고른 것은 기준선 → 모델 → 실험 순이고 종류별 수 한 줄, 4개보다 많으면 목록(빼기)은 접는다. 명령은 key 설정 → 실행이 기본이고 계획은 "먼저 호출 없이 계획 보기"로 접는다. run id와 1건만은 한 줄. run id는 미리 채우지 않는다(예시 이름을 그대로 써서 run이 거절되거나 헷갈리는 실수) — 비우면 `--run-id`를 빼고 CLI가 `run-<UTC 시각>`으로 정하며, placeholder와 실행 명령 아래 한 줄이 그렇게 알린다. dataset · split은 늘 고를 수 있다(dataset은 과제별 묶음, 묶음 안은 이름순) — 기록 재채점만 되는 dataset과 0건인 split은 이유와 함께 고를 수 없게 두고, split이 dev가 아니면 `--split`, held-out이면 `--allow-held-out`을 명령에 더한다. 왼쪽 칸은 34rem으로 묶어 이름과 부가 정보가 멀어지지 않게 한다. key는 고른 variant가 필요로 하는 환경변수 이름만
-- **자주 보는 것은 열어 둠** — 비교하는 방법(짝 비교만 명령과 복사) · 과제
+- **자주 보는 것은 열어 둠** — 과제 · 정식 run을 만드는 명령(명령마다 복사)
 - **일부만 보는 참고는 접음** — 비교할 수 있는 것 · 답 출처별 run · 저장된 짝 비교. 제목(`h2`)은 `summary` 안에 있고 개수를 담는다. 모두 닫힌 채 시작하고 여러 개를 함께 열 수 있으며, 접힘 안에 접힘을 두지 않는다
 - **dataset이 많아질 때** — 과제 화면의 dataset 필터는 그 과제의 run이 있는 dataset만 보이고, 6개보다 많으면 버튼 줄 대신 선택 목록 + "보기"(GET 폼, JavaScript 없이 동작, 과제 필터는 hidden으로 유지)
-- **새로고침으로 최신 모델** — 서버가 요청마다 Anthropic(`/v1/models`) · OpenAI(`/v1/models`) 목록을 부른다(5초 제한, 최신순, OpenAI는 음성 · 임베딩 · 이미지 생성 등 이름으로 제외). key는 DevHub 프로세스 환경변수에서만 읽고 결과 · 오류에 싣지 않는다. key가 없으면 "불러오지 않음 — …없이 DevHub를 띄움", 실패하면 이유를 모델 목록 위 한 줄에
-- **설정 파일 없이 실행** — 불러온 모델은 `--variant anthropic:<model>` · `--variant openai:<model>`로 실행한다(Go `evalcli`의 `inlineVariant`, production 지시 그대로 · key는 공급자별 환경변수)
-- 모델 고르기는 묶음마다 `fieldset` · `legend`, 한 줄에 하나, 아무것도 미리 고르지 않음
 
 ## 66. 구현 상태 — 실패한 호출 다시 실행 안내
 
 run은 덮어쓰지 않는다(같은 run id는 Go가 거절). 일부 모델만 실패했을 때 성공한 모델을 다시 부르지 않고, 실패한 것까지 한 run에 모아 한 비교표로 보게 한다 — Go `pnpm eval retry`가 끝난 결과는 호출 없이 옮기고 실패 · 미실행만 다시 부른다.
 
-- **run 상세** — live run에서 모델 variant의 호출이 실패 · 시간 초과 · 미실행이면 "실패한 호출 N개 — 다시 실행 안내"(`run/retry-guide.tsx`). variant별 실패 수와 오류(class · kind · 문구), "성공한 결과 N개는 호출 없이 옮기고 실패한 M개만 다시 부름 → 새 run `<runId>-retry`", 1 원인 확인(공급자별 한 번 호출 — 거절 이유는 결과에 저장하지 않으므로), 2 `pnpm eval retry --run <runId> --allow-api --max-api-calls <실패 × 3>`. 명령은 `lib/evaluations/retry.ts`가 summary · case 결과에서 채우고 복사 버튼을 단다
+- **run 상세** — live run에서 모델 variant의 호출이 실패 · 시간 초과 · 미실행이면 "실패한 호출 N개 — 다시 실행 안내"(`run/retry-guide.tsx`). variant별 실패 수와 오류(class · kind · 문구), "성공한 결과 N개는 호출 없이 옮기고 실패한 M개만 다시 부름 → 새 run `<runId>-retry`", 그리고 `pnpm eval retry --run <runId> --allow-api --max-api-calls <실패 × 3>`. 명령은 `lib/evaluations/retry.ts`가 summary · case 결과에서 채우고 복사 버튼을 단다. 거절 이유는 결과에 저장하지 않으므로 원인 확인은 공급자 콘솔이나 터미널에서 한다(공급자를 부르는 확인 명령은 67에서 뺐다)
 - **이어서 실행한 run** — 실행 요약에 "이어서 실행 — `<원래 run>`(링크)에서 실패한 것만 다시 부름", variant 줄에 "N개 옮김"(metadata `retriedFrom` · execution `carried`)
 - **추세 · 이전 run** — 다시 실행한 run이 완료되면 원래 run은 품질 추세와 "이전 run" 짝에서 빠진다(`trendOverview`, 추세 설명에 제외 수). 옮긴 결과가 같은 값으로 두 번 찍히고, 원래 run의 호출 실패(0%)가 성능 향상처럼 보이는 것을 막는다. 원래 run은 목록 · 상세에 그대로
 - **`/evals` 비교하는 방법** — "일부 모델만 실패했으면 `pnpm eval retry --run <run id>` — 한 run에 모음, 명령은 그 run 상세에" 한 줄
@@ -1737,3 +1732,14 @@ pnpm --dir apps/web exec berry-react-ui summary
 pnpm --dir apps/web exec berry-react-ui find <query>
 pnpm --dir apps/web exec berry-react-ui api <Symbol>
 ```
+
+## 67. 구현 상태 — DevHub는 관찰만: 판정 · 연구 차트 제거, 정식 run 명령 만들기는 유지
+
+Python 연구 workspace(`tools/evals/lab`)가 탐색 · 지시문 · 모델 실험 · 임계값 조사를 맡으면서 `/evals`는 정식 결과를 보는 곳으로 좁혔다. Notebook = 탐색, DevHub = 정식 결과 관찰. 정식 live run(`pnpm eval run`)은 notebook이 대신하지 않으므로 그 명령을 조립해 주는 화면은 남긴다.
+
+- **뺀 것** — TS에 복사돼 있던 Go의 variant id 규칙, `detail/latency-histogram.tsx`와 `cases.jsonl`에서 만들던 지연 분포 · token 퍼짐, run 상세의 기준 variant 대비 차이(▲ · ▼) · 열별 "최고" · 개선/악화 판정 · "기준보다 나빠짐" 필터, case 표의 비슷한 사례 "맞음" 표시, 다시 실행 안내의 공급자 확인 curl
+- **남긴 것** — 산출물 reader · decoder(`repository.ts` · `decode.ts` · `contract.ts`), run 목록 · 과제 화면 · 추세, run 상세(Go 요약 값을 variant끼리 나란히, 모든 품질 지표, case별 결과는 갈림 · 모두 실패로만 묶음, variant 자세히, Go 요약의 지연 · 사용량 · 실패 분포, case 표), 짝 비교 화면과 gate 결과, 다시 실행 명령
+- **정식 run 명령 만들기**(`command-builder.tsx` · `lib/evaluations/variant-command.ts` · `variant-catalog.ts`) — 저장소의 dataset · split(case 수) · 규칙 기준선 · 실험 설정을 고르고, 모델은 서버가 새로고침마다 공급자 목록 API(`provider-models.ts`, key는 DevHub 프로세스 환경변수, 없으면 이유만)에서 불러온 것을 고르거나 `공급자:모델`로 직접 적는다(모델 이름은 어느 파일에도 없다). `pnpm eval plan` · `run` 명령과 호출 상한(case × variant별 호출 × 재시도 여유 3) · 필요한 key 환경변수 이름이 나온다. 명령 글자만 만들고 실행 · 검증(`plan`)은 사용자 터미널과 Go가 한다
+- **더한 것** — run 상세의 variant 표 아래에 짝 비교 명령(`pnpm eval compare --baseline <run>:<첫 variant> --candidate <run>:<variant>`)과 복사 버튼. 어느 쪽이 나은지는 그 명령이 쓰는 `comparison.json`이 정한다
+- **규칙** — TS는 통과 여부 · 정확도 · gate 결과 · 비교 가능 여부를 정하지 않는다. 표시용 묶음(상태 조각 합, 실패 수 정렬, Go confusion 행 합)과 명령 글자만 만든다. `.claude/rules/devhub.md`에 적었다
+- 확인: `lint` · `typecheck` · `nx test devhub` · `pnpm devhub:check` 통과. `nx build devhub`와 실제 화면은 포트가 막힌 세션에서 보지 못했다

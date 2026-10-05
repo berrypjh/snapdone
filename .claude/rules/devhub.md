@@ -14,7 +14,7 @@ paths:
 - 링크는 데이터에 저장하지 않는다. 저장소 레코드의 템플릿(`repository.browse`)에서 렌더할 때 만든다. 줄 번호는 사람이 적지 않는다
 - 카탈로그 불변식은 검사로 지켜진다 — Nx 프로젝트 · 루트 script · `docs/` 마크다운은 **빠짐없이** 덮어야 하고(devhub 자신은 제외), 모든 테스트는 시나리오나 기록이 인용해야 한다
 - **예외: 평가 결과.** `tools/evals/results`는 카탈로그가 아니라 Go가 쓰는 산출물이다. `src/lib/evaluations`가 요청마다(`localEvaluations()` → `connection()`) 읽고 v1 decoder로 검증하며, 맞았는지는 Go 값을 그대로 쓰고 TS에서 다시 채점하지 않는다. id는 식별자 규칙을 지나야 경로에 들어가고 symlink는 따라가지 않는다
-- **예외: 공급자 모델 목록.** `/evals`의 새 비교 실행은 서버가 요청마다 Anthropic · OpenAI 모델 목록 API를 부른다(`lib/evaluations/provider-models.ts`). key는 DevHub 프로세스의 `ANTHROPIC_API_KEY` · `OPENAI_API_KEY`에서만 읽고 요청 헤더에만 쓴다 — 화면 · 브라우저 · 파일 · 오류 문구에 싣지 않는다. key가 없거나 실패하면 이유만 보이고, 모델을 부르는 실행 자체는 하지 않는다(명령 글자만 만든다)
+- **DevHub는 관찰, notebook은 탐색.** `/evals`는 정식 run · 비교 · gate 결과와 case 증거를 보이고, 정식 run의 Go 명령 글자를 만들어 준다(`command-builder.tsx` — 저장소의 dataset · 기준선 · 실험 설정과 사용자가 적은 모델 이름으로 `pnpm eval plan/run`을 조립, 실행은 사용자 터미널). 공급자 API는 모델 목록 조회(`lib/evaluations/provider-models.ts`, 요청마다 Anthropic · OpenAI `/v1/models`)에만 쓴다 — key는 DevHub 프로세스의 `ANTHROPIC_API_KEY` · `OPENAI_API_KEY`에서만 읽고 요청 헤더에만 쓰며 화면 · 브라우저 · 파일 · 오류 문구에 싣지 않고, key가 없으면 이유만 보이고 모델은 직접 적는다. 모델을 부르는 실행은 하지 않는다. 어느 variant가 나은지 · 무엇이 나빠졌는지 · gate 통과 여부를 TS에서 정하지 않는다(그것은 `comparison.json`). 탐색 · 지시문 실험 · 임계값 조사는 `tools/evals/lab`의 notebook이 한다
 - `'use client'` 코드는 `node:` 모듈에 닿지 않는다(`lib/client-imports.spec.ts`가 확인). 파일을 읽는 코드와 브라우저가 쓰는 순수 코드는 파일을 나눈다
 
 ## 폴더

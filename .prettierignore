@@ -16,3 +16,8 @@ apps/api/docs/swagger
 # byte-exact golden artifacts compared by go test (EVAL_UPDATE_GOLDEN=1 regenerates)
 apps/api/internal/evaluation/testdata/artifacts
 apps/api/internal/evaluation/testdata/comparisons
+
+# Jupyter rewrites notebook JSON on every save; uv owns its lock file and venv
+tools/evals/lab/notebooks
+tools/evals/lab/uv.lock
+tools/evals/lab/.venv

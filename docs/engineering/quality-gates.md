@@ -21,7 +21,7 @@ pnpm verify
 | `pnpm e2e`                      | `nx run-many -t e2e`                           | web-e2e · devhub-e2e — **`verify`에 포함되지 않는다**                                                                |
 | `pnpm devhub:check`             | `nx run devhub:devhub-check`                   | DevHub catalog이 지금 저장소와 맞는지만 본다. 같은 검사가 `pnpm test`에도 들어 있다                                  |
 | `pnpm eval:check`               | `nx run api:eval-check`                        | 평가 harness offline 테스트 + sample dataset 검증. 모델 호출 없음. **`verify`에 포함되지 않는다**                    |
-| `pnpm eval`                     | `nx run api:eval`                              | 평가 CLI. `pnpm eval list`처럼 인자를 그대로 넘긴다. `run`만 `--allow-api`가 있을 때 실제 provider 호출              |
+| `pnpm eval`                     | `nx run api:eval`                              | 평가 CLI. `pnpm eval list`처럼 인자를 그대로 넘긴다. `run` · `retry`만 `--allow-api`가 있을 때 실제 provider 호출    |
 | `pnpm swagger:check`            | `nx run api:swagger-check`                     | `docs/swagger`가 swag 주석과 일치하는지. 파일을 고쳐 쓰지 않는다                                                     |
 | `pnpm swagger` · `pnpm migrate` | `nx run api:swagger` · `nx run api:migrate`    | Swagger 재생성 · DB 마이그레이션 적용(Postgres 필요)                                                                 |
 
@@ -160,7 +160,7 @@ pnpm eval:check      # offline Go 테스트 + sample dataset 검증 · readiness
 pnpm eval list    # dataset · variant 목록. 모델 호출 없음
 ```
 
-`api:eval`의 `run`만 실제 provider를 부르고, `--allow-api`와 `--max-api-calls N`이 둘 다 있어야 한다. `pnpm test` · `pnpm verify`는 `test` target만 돌리므로 유료 실행이 섞이지 않는다. 산출물은 `tools/evals/results/`(git ignore)에 쓴다. 자세한 것은 [agent-evaluation.md](../architecture/agent-evaluation.md).
+`api:eval`의 `run` · `retry`만 실제 provider를 부르고, `--allow-api`와 `--max-api-calls N`이 둘 다 있어야 한다. `pnpm test` · `pnpm verify`는 `test` target만 돌리므로 유료 실행이 섞이지 않는다. 산출물은 `tools/evals/results/`(git ignore)에 쓴다. 자세한 것은 [agent-evaluation.md](../architecture/agent-evaluation.md).
 
 ## API 연결 확인
 

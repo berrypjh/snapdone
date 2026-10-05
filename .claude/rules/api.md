@@ -13,7 +13,7 @@ Go 표준 레이아웃. module은 `snapdone/api`, 진입점은 `cmd/server`.
 cmd/server/main.go               서버 기동 · 미적용 마이그레이션 시 기동 거부 · graceful shutdown · Swagger 일반 정보
 cmd/migrate/main.go              마이그레이션 적용 (배포 단계에서 1회)
 cmd/eval/main.go                 평가 harness CLI bootstrap (nx run api:eval). signal context와 종료 코드만, 명령은 internal/evalcli
-internal/evalcli/                평가 CLI 명령 · flag · 경로 · replay JSONL · git lineage · 종료 코드. 서버 · DB 없이 분류기를 부름. 모델을 부르는 run은 --allow-api가 있을 때만 실제 provider 호출(기준선만이면 호출 0). retrieve는 비슷한 사례 검색만 잼. retry는 이전 run의 끝난 결과를 옮기고 실패 · 미실행만 다시 부름
+internal/evalcli/                평가 CLI 명령 · flag · 경로 풀기 · git lineage · 출력 · 종료 코드. 데이터 계약은 갖지 않는다(replay 기록 · variant 참조는 evaluation). 서버 · DB 없이 분류기를 부름. 모델을 부르는 run은 --allow-api가 있을 때만 실제 provider 호출(기준선만이면 호출 0). retrieve는 비슷한 사례 검색만 잼. retry는 이전 run의 끝난 결과를 옮기고 실패 · 미실행만 다시 부름
 docs/swagger/                    swag가 생성한 Swagger 2.0 (docs.go · swagger.json · swagger.yaml). 손으로 고치지 않는다
 internal/config/                 환경변수 로딩 · 인증 설정 검증
 internal/httpserver/             http.Server · Gin router(router.go) · middleware · DTO(dto.go) · 핸들러와 Swagger 주석
@@ -23,7 +23,7 @@ internal/auth/                   인증 저장소 (사용자 · 세션 · grant 
 internal/google/                 Google OIDC authorize URL · token 교환 · ID token claim 검사
 internal/processing/             사진 처리 작업 저장소 · 공용 지시 · 결과 검증(result.go) · 분류기(claude.go · openai.go) · 백그라운드 처리(processor.go). 분류기의 WithInstructions는 평가 실험용 복사본이고 서버는 부르지 않음
 internal/onboarding/             온보딩 진행(단계 · 사용 목적) 저장소와 저장 규칙(Validate)
-internal/evaluation/             평가 core — dataset · variant(실험 설정) · runner · 기준선 · 비슷한 사례 검색 · 채점(추출값 · 자동 실행 점검 포함) · 산출물 · 비교. internal/processing을 import하지 않고 평가 소유 계약 view · 예측 타입만 씀. cmd/server가 import하지 않음. 설계는 docs/architecture/agent-evaluation.md
+internal/evaluation/             평가 core — dataset · variant(실험 설정 · `[설정@]공급자:모델` 참조) · replay 기록(predictions JSONL) · runner · 기준선 · 비슷한 사례 검색 · 채점(추출값 · 자동 실행 점검 포함) · 산출물 · 비교. internal/processing을 import하지 않고 평가 소유 계약 view · 예측 타입만 씀. cmd/server가 import하지 않음. 설계는 docs/architecture/agent-evaluation.md
 internal/evaluation/processingadapter/  core ↔ production 분류기 다리 — production 생성자 · HTTP client를 그대로 쓰고 Transport 관찰 · 예산 · redaction · 결과를 평가 모양으로 옮김. evalcli가 Factory를 주입
 ```
 

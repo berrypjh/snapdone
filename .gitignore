@@ -104,3 +104,10 @@ vitest.config.*.timestamp*
 
 # 평가 실행 산출물
 /tools/evals/results/
+
+# Python research lab (tools/evals/lab); out/ is disposable notebook output
+.venv/
+__pycache__/
+.pytest_cache/
+.ipynb_checkpoints/
+/tools/evals/lab/out/
