@@ -1,12 +1,10 @@
 package evalcli
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"strings"
 
-	"snapdone/api/internal/config"
 	"snapdone/api/internal/evaluation"
 	"snapdone/api/internal/evaluation/processingadapter"
 )
@@ -48,54 +46,25 @@ func (s *selection) bind(fs *flag.FlagSet) {
 	fs.StringVar(&s.policy, "policy", "", "scoring policy version (default per task; translation-exact-v1 turns translation into strict pass/fail)")
 }
 
-// 설정 파일 없이 부르는 모델. `anthropic:<model>` · `openai:<model>`은 production 지시 그대로인 variant가 되고,
-// key는 공급자별 환경변수(ANTHROPIC_API_KEY · OPENAI_API_KEY)에서 읽는다. 다른 모양이면 파일 이름으로 본다.
-var inlineProviders = map[string]evaluation.VariantManifest{
-	"anthropic": {Provider: config.ProviderAnthropic, APIKeyEnv: "ANTHROPIC_API_KEY"},
-	"openai":    {Provider: config.ProviderOpenAI, Endpoint: "https://api.openai.com/v1", APIKeyEnv: "OPENAI_API_KEY"},
-}
-
-func inlineVariant(ref string, contract evaluation.ClassificationContract) (evaluation.VariantManifest, bool, error) {
-	provider, model, found := strings.Cut(ref, ":")
-	base, known := inlineProviders[provider]
-	if !found || !known {
-		return evaluation.VariantManifest{}, false, nil
-	}
-	v := base
-	v.SchemaVersion, v.Version, v.Task, v.Adapter = evaluation.VariantSchemaVersion, 1, evaluation.ImageClassification, evaluation.AdapterProcessing
-	v.ID, v.Model, v.ExpectedContractHash = evaluation.ModelID(model), model, contract.Hash
-	if err := v.Validate(contract); err != nil {
-		return evaluation.VariantManifest{}, false, fmt.Errorf("variant %s: %w", ref, err)
-	}
-	return v, true, nil
-}
-
-// `<설정>@<공급자>:<모델>[,<다시 물을 모델>]`. 설정은 tools/evals/experiments/<설정>.json이고 모델은 적지 않는다.
-func experimentVariant(p paths, ref string, contract evaluation.ClassificationContract) (evaluation.VariantManifest, bool, error) {
-	setting, model, found := strings.Cut(ref, "@")
-	if !found {
-		return evaluation.VariantManifest{}, false, nil
-	}
-	model, escalate, _ := strings.Cut(model, ",")
-	base, ok, err := inlineVariant(model, contract)
-	if err == nil && !ok {
-		err = errors.New("after @ comes anthropic:<model> or openai:<model>")
-	}
-	if err == nil {
-		base, err = evaluation.WithExperiment(base, p.experiment(setting), escalate, contract)
-	}
+// 파일 없이 만드는 variant — `[실험 설정@]공급자:모델`. 그 모양이 아니면 ok가 false라 파일 이름으로 본다.
+// 모양 · id 규칙은 evaluation.VariantRef가 정하고 여기서는 설정 이름을 경로로 풀기만 한다.
+func refVariant(p paths, ref string, contract evaluation.ClassificationContract) (evaluation.VariantManifest, bool, error) {
+	r, ok, err := evaluation.ParseVariantRef(ref)
 	if err != nil {
 		return evaluation.VariantManifest{}, false, fmt.Errorf("variant %s: %w", ref, err)
 	}
-	return base, true, nil
-}
-
-// 파일 없이 만드는 variant — 실험 설정@모델이거나 공급자:모델. 둘 다 아니면 ok가 false라 파일 이름으로 본다.
-func refVariant(p paths, ref string, contract evaluation.ClassificationContract) (evaluation.VariantManifest, bool, error) {
-	if strings.Contains(ref, "@") {
-		return experimentVariant(p, ref, contract)
+	if !ok {
+		return evaluation.VariantManifest{}, false, nil
 	}
-	return inlineVariant(ref, contract)
+	setting := ""
+	if r.Setting != "" {
+		setting = p.experiment(r.Setting)
+	}
+	v, err := r.Manifest(setting, contract)
+	if err != nil {
+		return evaluation.VariantManifest{}, false, fmt.Errorf("variant %s: %w", ref, err)
+	}
+	return v, true, nil
 }
 
 func (s *selection) request(mode evaluation.Mode) (evaluation.RunRequest, error) {

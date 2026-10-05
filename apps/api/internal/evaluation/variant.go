@@ -47,6 +47,8 @@ type VariantManifest struct {
 	Placeholder bool `json:"placeholder,omitempty"`
 	// PromptPath 파일의 내용. LoadVariants가 채운다.
 	Prompt string `json:"-"`
+	// 파일 없이 VariantRef로 만들었으면 그 참조. 파일에서 읽은 manifest는 비어 있다.
+	Ref string `json:"-"`
 }
 
 // 실험 설정. 비어 있으면 production 분류기 그대로다. temperature · seed · ensemble은 아직 지원하지 않아 preflight 오류다.
@@ -235,9 +237,19 @@ func (v VariantManifest) Variant() Variant {
 	}
 	return Variant{
 		ID: v.ID, Version: v.Version, Task: v.Task, Adapter: v.Adapter, Provider: v.Provider, Model: v.Model,
-		BaseHost: host, APIKeyEnv: v.APIKeyEnv, ContractHash: v.ExpectedContractHash,
+		BaseHost: host, APIKeyEnv: v.APIKeyEnv, ContractHash: v.ExpectedContractHash, Ref: v.Ref,
 		PromptHash: promptHash(v.Prompt), Retrieval: v.Config.Retrieval, Cascade: v.Config.Cascade, Baseline: v.Config.Baseline,
 	}
+}
+
+// 모델 공급자를 부르는 variant가 하나라도 있는지. 기준선만이면 opt-in · 예산 없이 돈다.
+func CallsProvider(variants []VariantManifest) bool {
+	for _, v := range variants {
+		if v.CallsProvider() {
+			return true
+		}
+	}
+	return false
 }
 
 // 실험 지시의 sha256 hex. 없으면 production 지시라 비운다.

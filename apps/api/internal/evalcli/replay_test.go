@@ -63,8 +63,30 @@ func TestReplayReportCompare(t *testing.T) {
 	}
 	broken := filepath.Join(dir, "broken.jsonl")
 	_ = os.WriteFile(broken, []byte(`{"variantId":"v1","caseId":"sf-dev-01","status":"failed","prediction":{"category":"place","facts":[],"suggestedAction":"save_place","confidence":"high"}}`+"\n"), 0o644)
-	if code, _, stderr := cli(t, context.Background(), "replay", "--dataset", fixtureDataset, "--variant", v1, "--predictions", broken, "--out", out, "--run-id", "broken"); code != ExitIncomplete || !strings.Contains(stderr, "predictions line 1") {
+	if code, _, stderr := cli(t, context.Background(), "replay", "--dataset", fixtureDataset, "--variant", v1, "--predictions", broken, "--out", out, "--run-id", "broken"); code != ExitIncomplete || !strings.Contains(stderr, "broken.jsonl line 1") {
 		t.Errorf("broken fixture: exit %d %s", code, stderr)
+	}
+	if _, err := os.Stat(filepath.Join(out, "broken")); err == nil {
+		t.Error("a rejected fixture must not leave a run directory behind")
+	}
+}
+
+// 고른 case에 맞지 않는 기록(오타 · 다른 variant)은 버려지지만 조용하지는 않다. run은 그 case가 not-run이라 partial이다.
+func TestReplayWarnsAboutUnmatchedRecords(t *testing.T) {
+	provider := &fakeProvider{}
+	stub(t, provider)
+	dir := t.TempDir()
+	out := filepath.Join(dir, "results")
+	v := writeVariant(t, dir, "v1", "openai", "m1")
+	fixture := filepath.Join(dir, "predictions.jsonl")
+	_ = os.WriteFile(fixture, []byte(`{"variantId":"v1","caseId":"sf-dev-01","prediction":{"category":"place","facts":[],"suggestedAction":"save_place","confidence":"high"}}`+"\n"+
+		`{"variantId":"v1","caseId":"sf-dev-2","prediction":{"category":"receipt","facts":[],"suggestedAction":"record_expense","confidence":"high"}}`+"\n"), 0o644)
+	code, stdout, stderr := cli(t, context.Background(), "replay", "--dataset", fixtureDataset, "--variant", v, "--predictions", fixture, "--out", out, "--run-id", "typo")
+	if code != ExitIncomplete || !strings.Contains(stderr, "1 replay records match no selected variant/case/trial and are ignored: v1/sf-dev-2/1") || !strings.Contains(stdout, "not-run 1") {
+		t.Errorf("exit %d\n%s%s", code, stdout, stderr)
+	}
+	if provider.count() != 0 {
+		t.Errorf("replay made %d provider calls", provider.count())
 	}
 }
 
@@ -146,17 +168,20 @@ func TestPublicReplayDemos(t *testing.T) {
 		{"sample-text-extraction", "text-extraction-replay", "sample-text-extraction.jsonl", nil, "text"},
 		// reference가 사람 검토 전(draft)이라 명시적으로 연다. 요약은 공식 benchmark가 아니라고 적는다.
 		{"sample-translation", "translation-replay", "sample-translation.jsonl", []string{"--allow-drafts"}, "translation"},
+		// Python 연구 workspace(tools/evals/lab)의 writer가 쓴 기록. Python이 쓰고 Go가 읽는 경계가 그대로인지 본다.
+		{"sample-classification", "replay-example", "lab-example.jsonl", nil, "classification"},
 	}
 	for _, d := range demos {
-		t.Run(d.dataset, func(t *testing.T) {
+		runID := strings.TrimSuffix(d.predictions, ".jsonl")
+		t.Run(runID, func(t *testing.T) {
 			args := append([]string{"replay", "--root", repoRoot, "--out", out, "--dataset", d.dataset, "--variant", d.variant,
-				"--predictions", "tools/evals/predictions/" + d.predictions, "--run-id", d.dataset}, d.extra...)
+				"--predictions", "tools/evals/predictions/" + d.predictions, "--run-id", runID}, d.extra...)
 			code, stdout, stderr := cli(t, context.Background(), args...)
 			if code != ExitOK || !strings.Contains(stdout, "(replay): completed") {
 				t.Fatalf("exit %d\n%s%s", code, stdout, stderr)
 			}
 			var summary map[string]any
-			if err := json.Unmarshal(mustRead(t, filepath.Join(out, d.dataset, "summary.json")), &summary); err != nil {
+			if err := json.Unmarshal(mustRead(t, filepath.Join(out, runID, "summary.json")), &summary); err != nil {
 				t.Fatal(err)
 			}
 			quality := summary["variants"].([]any)[0].(map[string]any)["quality"].([]any)[0].(map[string]any)

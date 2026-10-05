@@ -37,7 +37,7 @@ func TestUsageErrors(t *testing.T) {
 
 // -h는 flag 목록을 한 번만 찍는다(필수 flag 누락 때만 한 번 더).
 func TestHelpPrintsFlagsOnce(t *testing.T) {
-	for _, command := range []string{"list", "validate", "plan", "run", "replay", "report", "compare", "retrieve"} {
+	for _, command := range []string{"list", "validate", "plan", "run", "replay", "report", "retry", "compare", "retrieve"} {
 		code, _, stderr := cli(t, context.Background(), command, "-h")
 		if code != ExitUsage || strings.Count(stderr, "-root string") != 1 {
 			t.Errorf("%s -h: exit %d, root flag printed %d times", command, code, strings.Count(stderr, "-root string"))

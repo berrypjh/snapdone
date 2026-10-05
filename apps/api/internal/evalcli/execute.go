@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"snapdone/api/internal/evaluation"
 	"snapdone/api/internal/evaluation/processingadapter"
@@ -28,7 +29,7 @@ func cmdRun(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	if err != nil {
 		return fail(stderr, err)
 	}
-	if !*dryRun && callsProvider(req.Variants) && (!s.allowAPI || s.maxCalls < 1) {
+	if !*dryRun && evaluation.CallsProvider(req.Variants) && (!s.allowAPI || s.maxCalls < 1) {
 		fmt.Fprintln(stderr, "eval: run calls a real provider; pass --allow-api and --max-api-calls N (or --dry-run)")
 		return ExitUsage
 	}
@@ -41,16 +42,6 @@ func cmdRun(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return ExitOK
 	}
 	return execute(ctx, req, s, stdout, stderr)
-}
-
-// 모델을 부르는 variant가 하나라도 있는지. 기준선만이면 --allow-api 없이 돈다.
-func callsProvider(variants []evaluation.VariantManifest) bool {
-	for _, v := range variants {
-		if v.CallsProvider() {
-			return true
-		}
-	}
-	return false
 }
 
 // plan · preflight · lineage 수집 뒤에야 adapter가 만들어진다. 산출물은 writer가 쓰고 partial이면 3이다.
@@ -125,11 +116,33 @@ func cmdReplay(ctx context.Context, args []string, stdout, stderr io.Writer) int
 	if err != nil {
 		return fail(stderr, err)
 	}
-	fixture, err := loadReplayFixture(s.paths.under(*predictions), req.Dataset.Manifest.Task)
+	fixture, err := evaluation.LoadReplayFixture(s.paths.under(*predictions), req.Dataset.Manifest.Task)
 	if err != nil {
 		return fail(stderr, err)
 	}
 	req.Replay = fixture
 	req.AllowAPI, req.CallBudget = false, 0
+	warnUnmatched(req, fixture, stderr)
 	return execute(ctx, req, s, stdout, stderr)
+}
+
+// 고른 variant · case에 맞지 않는 기록은 조용히 버려지지 않고 경고로 보인다 — case id 오타나 다른 variant의 기록이다.
+func warnUnmatched(req evaluation.RunRequest, fixture evaluation.ReplayFixture, stderr io.Writer) {
+	plan, err := evaluation.NewPlan(req)
+	if err != nil {
+		return
+	}
+	var variants []string
+	for _, v := range req.Variants {
+		variants = append(variants, v.ID)
+	}
+	unmatched := fixture.Unmatched(variants, plan.SelectedCaseIDs, plan.Trials)
+	if len(unmatched) == 0 {
+		return
+	}
+	shown := unmatched
+	if len(shown) > 5 {
+		shown = shown[:5]
+	}
+	fmt.Fprintf(stderr, "eval: %d replay records match no selected variant/case/trial and are ignored: %s\n", len(unmatched), strings.Join(shown, ", "))
 }

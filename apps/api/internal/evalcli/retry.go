@@ -6,8 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"os"
-	"strings"
 	"time"
 
 	"snapdone/api/internal/evaluation"
@@ -80,40 +78,21 @@ func retryRequest(p paths, meta evaluation.RunMetadata, contract evaluation.Clas
 	}, nil
 }
 
+// 산출물에 참조가 남은 variant는 그 참조로, 아니면 같은 id의 manifest 파일로 다시 만든다.
 func retryVariant(p paths, v evaluation.Variant, contract evaluation.ClassificationContract) (evaluation.VariantManifest, error) {
-	file := p.variant(v.ID)
-	if _, err := os.Stat(file); err == nil {
-		loaded, err := evaluation.LoadVariants([]string{file}, contract)
+	if v.Ref == "" {
+		loaded, err := evaluation.LoadVariants([]string{p.variant(v.ID)}, contract)
 		if err != nil {
 			return evaluation.VariantManifest{}, err
 		}
 		return loaded[0], nil
 	}
-	ref := v.Provider + ":" + v.Model
-	if setting := experimentOf(p, v.ID); setting != "" {
-		ref = setting + "@" + ref
-		if v.Cascade != nil {
-			ref += "," + v.Cascade.Model
-		}
-	}
-	manifest, ok, err := refVariant(p, ref, contract)
+	manifest, ok, err := refVariant(p, v.Ref, contract)
 	if err != nil {
 		return evaluation.VariantManifest{}, err
 	}
 	if !ok || manifest.ID != v.ID {
-		return evaluation.VariantManifest{}, errors.New("variant " + v.ID + ": no tools/evals/variants/" + v.ID + ".json or experiment setting to run it again")
+		return evaluation.VariantManifest{}, errors.New("variant " + v.ID + ": its ref " + v.Ref + " no longer makes the same variant")
 	}
 	return manifest, nil
-}
-
-// id가 `<설정>-<모델>`인 실험 설정의 이름. 없으면 빈 문자열이다.
-func experimentOf(p paths, id string) string {
-	entries, _ := os.ReadDir(p.experiments())
-	for _, e := range entries {
-		name, isJSON := strings.CutSuffix(e.Name(), ".json")
-		if isJSON && strings.HasPrefix(id, name+"-") {
-			return name
-		}
-	}
-	return ""
 }

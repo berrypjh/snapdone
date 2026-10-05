@@ -90,6 +90,8 @@ type Variant struct {
 	BaseHost     string `json:"baseHost,omitempty"`
 	APIKeyEnv    string `json:"apiKeyEnv,omitempty"`
 	ContractHash string `json:"contractHash"`
+	// 파일 없이 `[설정@]공급자:모델`로 만든 variant면 그 참조. retry가 같은 variant를 다시 만드는 근거다.
+	Ref string `json:"ref,omitempty"`
 	// 실험 설정. 없으면 production 분류기 그대로다.
 	PromptHash string           `json:"promptHash,omitempty"`
 	Retrieval  *RetrievalConfig `json:"retrieval,omitempty"`
