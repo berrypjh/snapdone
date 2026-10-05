@@ -1,0 +1,6 @@
+{
+  "version": "example-v1",
+  "maxNewCriticalErrors": 0,
+  "maxPassRateDropPp": 2,
+  "maxSchemaInvalidIncrease": 0
+}

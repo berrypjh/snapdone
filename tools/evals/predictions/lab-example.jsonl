@@ -1,0 +1,2 @@
+{"variantId": "replay-candidate", "caseId": "event-01", "trial": 1, "status": "timed-out", "failure": {"class": "timeout", "kind": "timeout", "message": "request timed out"}}
+{"variantId": "replay-example", "caseId": "event-01", "trial": 1, "status": "completed", "prediction": {"category": "event", "facts": [{"label": "날짜", "value": "2026-10-03"}, {"label": "시간", "value": "19:30"}], "suggestedAction": "add_to_calendar", "confidence": "high"}}
