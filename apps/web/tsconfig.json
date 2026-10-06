@@ -47,6 +47,9 @@
       "path": "../../libs/webview-bridge"
     },
     {
+      "path": "../../libs/processing"
+    },
+    {
       "path": "../../libs/onboarding"
     },
     {

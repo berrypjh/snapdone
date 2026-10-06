@@ -4,10 +4,10 @@ import { useActionState, useState } from 'react';
 import Link from 'next/link';
 
 import { Box, Button, Radio, RadioGroup } from '@berrypjh/react-ui';
+import type { ProcessingPreferences } from '@snapdone/processing';
 
 import { loginPage } from '@/lib/auth/redirect';
 import { saveProcessingPreference } from '@/lib/processing-preferences/actions';
-import type { ProcessingPreferences } from '@/lib/processing-preferences/preferences';
 import {
   confirmedValue,
   type ImageType,

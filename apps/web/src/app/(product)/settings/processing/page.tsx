@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 
 import { Stack } from '@berrypjh/react-ui';
+import type { ProcessingPreferences } from '@snapdone/processing';
 import type { Metadata } from 'next';
 
 import { InAppReady } from '@/components/in-app-ready';
@@ -16,7 +17,6 @@ import { ProcessingPreferenceForm } from '@/components/settings/processing-prefe
 import { loginPage } from '@/lib/auth/redirect';
 import { readCredential, requireSession } from '@/lib/auth/session';
 import { fetchPreferences } from '@/lib/processing-preferences/api';
-import type { ProcessingPreferences } from '@/lib/processing-preferences/preferences';
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,

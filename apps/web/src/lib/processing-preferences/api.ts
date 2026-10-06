@@ -1,6 +1,8 @@
+import { parsePreferences, type ProcessingPreferences } from '@snapdone/processing';
+
 import { apiFetch, bearer } from '../api';
 
-import { parsePreferences, type PreferenceUpdate, type ProcessingPreferences } from './preferences';
+import type { PreferenceUpdate } from './preferences';
 
 const request = async (
   path: string,

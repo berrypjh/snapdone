@@ -6,6 +6,7 @@ const nextConfig = {
   transpilePackages: [
     '@snapdone/auth-contracts',
     '@snapdone/onboarding',
+    '@snapdone/processing',
     '@snapdone/webview-bridge',
   ],
   /** The first-image upload goes through a Server Action; Go accepts images up to 7,500,000 bytes plus multipart overhead. */

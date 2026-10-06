@@ -1,5 +1,6 @@
+import type { ProcessingPreferences } from '@snapdone/processing';
+
 import type { SaveResponse } from './actions';
-import type { ProcessingPreferences } from './preferences';
 
 export type ImageType = keyof ProcessingPreferences;
 

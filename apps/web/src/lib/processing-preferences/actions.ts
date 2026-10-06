@@ -1,9 +1,11 @@
 'use server';
 
+import type { ProcessingPreferences } from '@snapdone/processing';
+
 import { fromAllowedOrigin, readCredential } from '../auth/session';
 
 import { savePreference } from './api';
-import { parseUpdate, type ProcessingPreferences } from './preferences';
+import { parseUpdate } from './preferences';
 
 /**
  * 처리 방식 저장 결과. 오류는 던지지 않고 값으로 돌려준다 — production에서 Action 오류 내용은 가려진다.
