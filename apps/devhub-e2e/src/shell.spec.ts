@@ -10,7 +10,6 @@ test.describe('shell', () => {
 
     await expect(page.getByRole('banner')).toHaveCount(1);
     await expect(page.getByRole('main')).toHaveCount(1);
-    await expect(page.getByRole('navigation', { name: '보기' })).toBeVisible();
     await expect(page.getByRole('navigation', { name: '저장소 항목' })).toBeVisible();
     await expect(page.getByRole('complementary', { name: '탐색기' })).toBeVisible();
     await expect(page.getByRole('complementary', { name: '상세 정보' })).toBeVisible();
@@ -33,9 +32,9 @@ test.describe('shell', () => {
     await page.goto('/');
     const skip = page.getByRole('link', { name: '본문으로 건너뛰기' });
 
-    for (const view of ['시나리오', '아키텍처', '문서', '기록', '엔지니어링', '개요']) {
+    for (const view of ['시나리오', '아키텍처', '문서', '기록', '개요']) {
       const link = page
-        .getByRole('navigation', { name: '보기' })
+        .getByRole('navigation', { name: '저장소 항목' })
         .getByRole('link', { name: view, exact: true });
       await link.click();
       await expect(link).toHaveAttribute('aria-current', 'page');
@@ -46,7 +45,7 @@ test.describe('shell', () => {
 
   test('starts the keyboard at the skip link again after a navigation', async ({ page }) => {
     await page.goto('/');
-    const scenarios = page.getByRole('navigation', { name: '보기' }).getByRole('link', {
+    const scenarios = page.getByRole('navigation', { name: '저장소 항목' }).getByRole('link', {
       name: '시나리오',
     });
     await tabTo(page, scenarios);
@@ -65,7 +64,7 @@ test.describe('shell', () => {
     const inspector = page.getByRole('complementary', { name: '상세 정보' });
 
     await page
-      .getByRole('navigation', { name: '보기' })
+      .getByRole('navigation', { name: '저장소 항목' })
       .getByRole('link', { name: '아키텍처' })
       .click();
     await expect(page).toHaveURL('/architecture');
@@ -119,7 +118,7 @@ test.describe('top bar on wide screens', () => {
     for (const width of [1024, 1280, 1530, 1920]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`/scenarios/${SCENARIO.id}`);
-      const views = await page.getByRole('navigation', { name: '보기' }).boundingBox();
+      const search = await page.getByRole('combobox', { name: '저장소 검색' }).boundingBox();
       const theme = await page.getByRole('group', { name: '화면 테마' }).boundingBox();
       const bar = await page.getByRole('banner').boundingBox();
       const overflows = await page.evaluate(
@@ -130,7 +129,7 @@ test.describe('top bar on wide screens', () => {
         oneRow: true,
         overflows: false,
       });
-      expect(Math.abs((theme?.y ?? 0) - (views?.y ?? 0)), `${width}px`).toBeLessThan(8);
+      expect(Math.abs((theme?.y ?? 0) - (search?.y ?? 0)), `${width}px`).toBeLessThan(8);
     }
   });
 });
@@ -271,7 +270,6 @@ test.describe('narrow viewport', () => {
   test('keeps a one-row top bar in view, with the views in the explorer', async ({ page }) => {
     await page.goto(`/scenarios/${SCENARIO.id}`);
     const bar = page.getByRole('banner');
-    await expect(page.getByRole('navigation', { name: '보기' })).toBeHidden();
     await expect(page.getByRole('combobox', { name: '저장소 검색' })).toBeHidden();
     expect((await bar.boundingBox())?.height).toBeLessThan(64);
 
