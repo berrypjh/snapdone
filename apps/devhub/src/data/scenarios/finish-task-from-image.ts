@@ -127,10 +127,10 @@ export const finishTaskFromImage: Scenario = {
           meaning: '캘린더 · 알림 패키지 없음',
         },
         {
-          terms: ['Calendar', 'Receipt', 'Expense'],
+          terms: ['Calendar', 'RecordExpense(', 'recordExpense'],
           scope: PRODUCT_SOURCE,
           meaning:
-            '캘린더 등록 · 지출 기록을 하는 코드(타입 · 함수) 없음. 분류 결과의 값 이름(add_to_calendar · record_expense)과 한글 예시 문구만 있음',
+            '캘린더 등록 · 지출 기록을 하는 코드(타입 · 함수) 없음. 분류 결과의 값 이름(add_to_calendar · record_expense), 고른 처리 방식을 저장만 하는 설정, 한글 예시 문구만 있음',
         },
         ACTION_SURFACE,
       ],

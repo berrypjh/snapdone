@@ -6,6 +6,7 @@ const OAUTH = 'apps/api/internal/httpserver/oauth.go';
 const HANDOFF = 'apps/api/internal/httpserver/handoff.go';
 const PROCESSING = 'apps/api/internal/httpserver/processing.go';
 const ONBOARDING = 'apps/api/internal/httpserver/onboarding.go';
+const PREFERENCE = 'apps/api/internal/httpserver/preference.go';
 
 /** swag(`nx run api:swagger`)이 생성한다. Go 테스트가 등록된 route와 같은 상태로 지킨다. */
 export const swaggerDocument: SourceRef = { path: 'apps/api/docs/swagger/swagger.json' };
@@ -129,6 +130,22 @@ export const apis: ApiRef[] = [
     method: 'POST',
     path: '/v1/onboarding/complete',
     handler: { path: ONBOARDING, symbol: 'handlers.completeOnboarding' },
+    alsoHead: false,
+    exposure: 'always',
+  },
+  {
+    id: 'get-processing-preferences',
+    method: 'GET',
+    path: '/v1/processing-preferences',
+    handler: { path: PREFERENCE, symbol: 'handlers.processingPreferences' },
+    alsoHead: true,
+    exposure: 'always',
+  },
+  {
+    id: 'put-processing-preference',
+    method: 'PUT',
+    path: '/v1/processing-preferences/{imageType}',
+    handler: { path: PREFERENCE, symbol: 'handlers.setProcessingPreference' },
     alsoHead: false,
     exposure: 'always',
   },
