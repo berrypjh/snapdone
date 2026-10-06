@@ -53,7 +53,7 @@ const BLOCKED_PORT = [
   'nx run web:build',
 ];
 
-const BLOCKED_SECRET = [
+const SECRET_COMMANDS_LEFT_TO_PLUGIN = [
   "printf 'x' > apps/web/probe.key",
   "node -e \"require('fs').readFileSync('.env')\"",
   'grep . .env.local',
@@ -116,12 +116,11 @@ describe('포트 바인딩으로 이 환경에서 실패하는 명령', () => {
   }
 });
 
-describe('Read deny가 닿지 않는 secret 접근', () => {
-  for (const command of BLOCKED_SECRET) {
+// secret 우회 읽기는 berry-dev plugin hook이 막는다. 로컬 hook이 같은 판정을 다시 하면 두 번 실행된다.
+describe('secret 접근은 berry-dev plugin hook에 맡긴다', () => {
+  for (const command of SECRET_COMMANDS_LEFT_TO_PLUGIN) {
     test(command, () => {
-      const reason = decide(command);
-      assert.ok(reason, '차단되지 않았다');
-      assert.match(reason, /secret 파일/);
+      assert.equal(decide(command), null, '로컬 hook이 secret 판정을 다시 했다');
     });
   }
 });
