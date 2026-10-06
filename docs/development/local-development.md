@@ -79,7 +79,7 @@ curl -i http://127.0.0.1:8080/health
 
 ### 앱 안 WebView 화면 보기
 
-mobile 홈의 "기록 보기"는 web의 `/history`를 WebView로 연다. **web dev 서버가 떠 있어야 한다.**
+mobile 홈의 "기록 보기" · "기본 처리 설정"은 web의 `/history` · `/settings/processing`을 WebView로 연다. **web dev 서버가 떠 있어야 한다.**
 
 홈은 로그인했고 온보딩을 마친 사용자에게만 열린다. 앱과 web 모두 첫 결과 화면에서 "완료"를 누르면 온보딩을 마치고 홈으로 간다. 온보딩을 거치지 않고 홈만 보려면 그 사용자의 `profiles.onboarding_step`을 직접 `complete`로 바꾼다.
 

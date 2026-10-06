@@ -16,7 +16,7 @@ Nx Workspace (repository root)
 | 영역          | 상태                                                                                                                                                               |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Nx workspace  | integrated, pnpm workspaces                                                                                                                                        |
-| `apps/web`    | Next.js App Router. `(product)` 홈 · `/history`, `(auth)` 로그인 · 온보딩 · callback · 핸드오프, 브라우저 셸과 앱 WebView 모드                                     |
+| `apps/web`    | Next.js App Router. `(product)` 홈 · `/history` · `/settings/processing`, `(auth)` 로그인 · 온보딩 · callback · 핸드오프, 브라우저 셸과 앱 WebView 모드            |
 | `apps/mobile` | Expo. React Navigation native stack — 로그인 · 온보딩 소개 · 네이티브 홈 · WebView 콘텐츠 화면                                                                     |
 | `apps/api`    | module `snapdone/api`. `/health` · 인증 · 온보딩 진행 · 사진 분류, Postgres. 평가 harness는 서버와 분리된 개발자 CLI([agent-evaluation.md](./agent-evaluation.md)) |
 | `libs/`       | `webview-bridge` · `auth-contracts` · `onboarding` (모두 web · mobile이 사용)                                                                                      |

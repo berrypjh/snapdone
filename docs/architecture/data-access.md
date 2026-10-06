@@ -4,16 +4,17 @@
 
 ## 지금 있는 것
 
-| 위치                                          | 역할                                                                                                      |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `apps/web/src/lib/api.ts`                     | web이 base URL을 읽는 유일한 지점, `/health` 호출                                                         |
-| `apps/web/src/lib/auth/api.ts`                | web 인증 호출 (Server Action · Route Handler · 세션 확인)                                                 |
-| `apps/mobile/src/lib/api.ts`                  | mobile이 base URL을 읽는 유일한 지점, `/health` 호출                                                      |
-| `apps/mobile/src/auth/api.ts`                 | mobile 인증 호출                                                                                          |
-| `apps/web/src/lib/onboarding/api.ts`          | web 온보딩 진행 · 사진 처리 호출. Server Action(`actions.ts`)이 서버에서 부른다                           |
-| `apps/mobile/src/onboarding/progressApi.ts`   | mobile 온보딩 진행 호출                                                                                   |
-| `apps/mobile/src/onboarding/processingApi.ts` | mobile 사진 처리 호출 (multipart 업로드 · 작업 조회). credential은 `AuthController.authorized`로만 받는다 |
-| `tools/scripts/check-api-health.mjs`          | 개발자용 연결 확인 명령 (`pnpm health`)                                                                   |
+| 위치                                             | 역할                                                                                                      |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `apps/web/src/lib/api.ts`                        | web이 base URL을 읽는 유일한 지점, `/health` 호출                                                         |
+| `apps/web/src/lib/auth/api.ts`                   | web 인증 호출 (Server Action · Route Handler · 세션 확인)                                                 |
+| `apps/mobile/src/lib/api.ts`                     | mobile이 base URL을 읽는 유일한 지점, `/health` 호출                                                      |
+| `apps/mobile/src/auth/api.ts`                    | mobile 인증 호출                                                                                          |
+| `apps/web/src/lib/onboarding/api.ts`             | web 온보딩 진행 · 사진 처리 호출. Server Action(`actions.ts`)이 서버에서 부른다                           |
+| `apps/web/src/lib/processing-preferences/api.ts` | web 처리 방식 조회 · 유형 하나 변경. Server Action(`actions.ts`)이 서버에서 부른다                        |
+| `apps/mobile/src/onboarding/progressApi.ts`      | mobile 온보딩 진행 호출                                                                                   |
+| `apps/mobile/src/onboarding/processingApi.ts`    | mobile 사진 처리 호출 (multipart 업로드 · 작업 조회). credential은 `AuthController.authorized`로만 받는다 |
+| `tools/scripts/check-api-health.mjs`             | 개발자용 연결 확인 명령 (`pnpm health`)                                                                   |
 
 HTTP 클라이언트 라이브러리는 없다. Node와 React Native 모두 `fetch`를 기본 제공한다.
 

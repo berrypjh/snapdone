@@ -23,12 +23,14 @@ internal/auth/                   인증 저장소 (사용자 · 세션 · grant 
 internal/google/                 Google OIDC authorize URL · token 교환 · ID token claim 검사
 internal/processing/             사진 처리 작업 저장소 · 공용 지시 · 결과 검증(result.go) · 분류기(claude.go · openai.go) · 백그라운드 처리(processor.go)
 internal/onboarding/             온보딩 진행(단계 · 사용 목적) 저장소와 저장 규칙(Validate)
+internal/preference/             이미지 유형별 처리 방식(텍스트 · 영수증) 저장소. 유형마다 타입과 허용 값이 다르고 기본값은 DB 컬럼 DEFAULT
 internal/evaluation/             평가 core — dataset · variant · runner · 채점 · 산출물 · 비교. internal/processing을 import하지 않고, cmd/server가 import하지 않음. 설계는 docs/architecture/agent-evaluation.md
 internal/evaluation/processingadapter/  core ↔ production 분류기 다리. evalcli가 Factory를 주입
 ```
 
 - **Nx 때문에 Go 관례를 바꾸지 않는다.** Nx는 `project.json`의 `nx:run-commands`로 `go` 명령을 감싸기만 한다
-- endpoint 목록의 정본은 `router.go`와 `docs/swagger/`다 — `/health`, `/v1/auth/*`(OAuth · WebView 핸드오프 포함), `/v1/onboarding`, `/v1/processing-jobs`
+- endpoint 목록의 정본은 `router.go`와 `docs/swagger/`다 — `/health`, `/v1/auth/*`(OAuth · WebView 핸드오프 포함), `/v1/onboarding`, `/v1/processing-jobs`, `/v1/processing-preferences`
+- **처리 방식은 유형 하나씩 바꾼다.** `PUT /v1/processing-preferences/{imageType}`은 그 유형의 컬럼만 UPDATE하고 바뀐 뒤의 전체를 돌려준다. 전체를 통째로 바꾸는 쓰기를 두지 않는다 — 오래된 화면이 다른 유형의 값을 덮어쓴다
 - **온보딩 진행은 서버가 가진다.** mobile과 web이 같은 진행을 읽고 써서 어느 쪽에서든 이어 간다. **단계 순서는 서버가 강제한다** — 같은 단계를 다시 저장하거나 한 단계 앞으로만 가고(`onboarding.CanMove`), 어기면 409 `onboarding_out_of_order`다. 검사와 쓰기는 한 UPDATE 안에서 일어난다
 - **사진은 저장하지 않는다.** 처리 요청은 작업만 만들고 202로 돌아가며, 분류는 백그라운드에서 끝나 결과만 `processing_jobs`에 남는다
 - **모델은 설정으로 고른다.** `PROCESSING_PROVIDER`(`anthropic` · `openai` 호환)와 `PROCESSING_MODEL`. 모델을 바꾸려고 코드를 고치지 않는다. 모든 공급자가 같은 지시 · 결과 schema를 쓰고 `parseResult`가 결과를 다시 검사한다. 새 공급자는 `Classifier` 구현 하나를 더한다
