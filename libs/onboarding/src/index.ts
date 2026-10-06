@@ -1,5 +1,6 @@
 export {
   MAX_IMAGE_BYTES,
+  parseJob,
   POLL_INTERVAL_MS,
   ProcessingApiError,
   type ProcessingFailure,
