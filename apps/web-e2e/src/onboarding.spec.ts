@@ -1,18 +1,23 @@
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 
-import { signIn } from './support/fixture';
+import { processFirstPhoto, signIn } from './support/fixture';
 
-/** 1×1 PNG. The fake API does not read it; Go would judge the format by its content. */
-const PHOTO = {
-  name: 'receipt.png',
-  mimeType: 'image/png',
-  buffer: Buffer.from(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-    'base64',
-  ),
+/** Words that would claim the suggested work was already done. Nothing runs it yet. */
+const DONE = /완료했습니다|기록 완료|정리 완료|저장했습니다|번역 완료|번역했습니다/;
+
+/** The first result screen: the heading, then only what the fake API read from the photo. */
+const expectResult = async (page: Page, facts: { term: string; value: string }) => {
+  await expect(page.getByRole('heading', { level: 1, name: '사진을 확인했습니다' })).toBeVisible();
+  await expect(page.getByRole('img', { name: '선택한 사진' })).toBeVisible();
+  // Exactly the server's facts: no store, date, or payment method the server did not send.
+  await expect(page.getByRole('term')).toHaveText([facts.term]);
+  await expect(page.getByRole('definition')).toHaveText([facts.value]);
+  await expect(page.getByRole('heading', { level: 2, name: '추천 작업' })).toBeVisible();
+  await expect(page.getByText('아직 이 작업을 실행하지 않았습니다.')).toBeVisible();
+  await expect(page.getByRole('main')).not.toContainText(DONE);
 };
 
-test('a browser user goes from the intro through purposes to the first photo', async ({
+test('a browser user goes from the intro through the first result to the home page', async ({
   page,
   context,
   baseURL,
@@ -30,11 +35,36 @@ test('a browser user goes from the intro through purposes to the first photo', a
   await next.click();
   await expect(page).toHaveURL(/\/onboarding\/first-image$/);
 
-  await page.locator('input[type="file"]').setInputFiles(PHOTO);
-  await expect(page.getByRole('heading', { name: '사진을 처리할까요?' })).toBeVisible();
-  await page.getByRole('button', { name: '처리하기' }).click();
+  await processFirstPhoto(page);
 
-  await expect(page.getByRole('status')).toHaveText('다음 단계는 준비 중입니다.');
+  await expectResult(page, { term: '금액', value: '12,000원' });
+  await expect(page.getByText('영수증 사진')).toBeVisible();
+  await expect(page.getByText('지출 정보 정리', { exact: true })).toBeVisible();
+  await expect(page.getByText('일부 정보는 사진과 함께 확인해 주세요.')).toHaveCount(0);
+
+  await page.getByRole('button', { name: '완료' }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('이미지 액션 라우터');
+
+  // The server now has the onboarding finished, so it does not open again.
+  await page.goto('/onboarding');
+  await expect(page).toHaveURL(/\/$/);
+});
+
+test('a foreign-language photo shows what was read and suggests a translation it has not done', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await signIn(context, baseURL ?? '', 'first-image', 'foreign_text');
+  await page.goto('/onboarding/first-image');
+
+  await processFirstPhoto(page);
+
+  await expectResult(page, { term: '문장', value: 'Exit only' });
+  await expect(page.getByText('텍스트 / 외국어 사진')).toBeVisible();
+  await expect(page.getByText('번역', { exact: true })).toBeVisible();
+  await expect(page.getByText('일부 정보는 사진과 함께 확인해 주세요.')).toBeVisible();
 });
 
 test('unsure stays alone and a skip also reaches the first photo', async ({

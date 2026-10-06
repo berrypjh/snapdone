@@ -4,7 +4,8 @@
  * document, apps/api/docs/swagger) with in-memory state. Nothing here ships: the product has no switch to a fake provider.
  *
  * `/__fixture/*` lets a test mint sessions and inject faults. Fault settings are global, so only
- * the serial `faults` Playwright projects change them.
+ * the serial `faults` Playwright projects change them. The photo result is chosen per user when
+ * the session is minted, so parallel tests never share it.
  */
 import { createHash, randomBytes } from 'node:crypto';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
@@ -30,8 +31,10 @@ const handoffGrants = new Map<string, { challenge: string; next: string; parent:
 const faults = { startStatus: 0, startDelayMs: 0, startCalls: 0 };
 /** Onboarding purposes per user. Absent means unanswered (`null`). */
 const purposes = new Map<string, string[]>();
-/** Processing jobs finish on their first lookup. */
-const jobs = new Map<string, string>();
+/** The result every photo of a user gets. Absent means a receipt. */
+const userResults = new Map<string, PhotoResult>();
+/** Processing jobs, owned by one user, finish on their first lookup. */
+const jobs = new Map<string, { userId: string; result: PhotoResult }>();
 
 const token = () => randomBytes(32).toString('base64url');
 const s256 = (verifier: string) => createHash('sha256').update(verifier).digest('base64url');
@@ -118,12 +121,22 @@ const progressBody = (session: Session) => ({
   purposes: purposes.get(session.userId) ?? null,
 });
 
-const RESULT = {
-  category: 'receipt',
-  facts: [{ label: '금액', value: '12,000원' }],
-  suggestedAction: 'record_expense',
-  confidence: 'high',
-};
+/** Results a classifier could return (Go `processing.Result`). Only the server's facts, nothing more. */
+const RESULTS = {
+  receipt: {
+    category: 'receipt',
+    facts: [{ label: '금액', value: '12,000원' }],
+    suggestedAction: 'record_expense',
+    confidence: 'high',
+  },
+  foreign_text: {
+    category: 'foreign_text',
+    facts: [{ label: '문장', value: 'Exit only' }],
+    suggestedAction: 'translate',
+    confidence: 'medium',
+  },
+} as const;
+type PhotoResult = keyof typeof RESULTS;
 
 const routes: Record<string, Handler> = {
   'GET /v1/auth/capabilities': (_req, res) => send(res, 200, { providers: ['google'] }),
@@ -237,21 +250,45 @@ const routes: Record<string, Handler> = {
     send(res, 200, progressBody(session));
   },
 
+  /** Go `Store.Complete`: from first-image (or again from complete) for every session of the user. Purposes stay. */
+  'POST /v1/onboarding/complete': async (req, res) => {
+    for await (const _chunk of req);
+    const session = authorized(req, res);
+    if (!session) return;
+    if (session.step !== 'first-image' && session.step !== 'complete') {
+      return send(res, 409, { error: 'onboarding_out_of_order' });
+    }
+    for (const other of sessions.values()) {
+      if (other.userId === session.userId) other.step = 'complete';
+    }
+    send(res, 200, progressBody(session));
+  },
+
   'POST /v1/processing-jobs': async (req, res) => {
     for await (const _chunk of req);
-    if (!authorized(req, res)) return;
+    const session = authorized(req, res);
+    if (!session) return;
     const jobId = `job-${token().slice(0, 8)}`;
-    jobs.set(jobId, 'running');
+    const result = userResults.get(session.userId) ?? 'receipt';
+    jobs.set(jobId, { userId: session.userId, result });
     send(res, 202, { jobId, status: 'running' });
   },
 
   'GET /__fixture/health': (_req, res) => send(res, 200, { status: 'ok' }),
 
-  /** `{ onboardingStep, kind }` → `{ credential }`. */
+  /**
+   * `{ onboardingStep, kind, result }` → `{ credential }`. A first-image user skipped the purposes.
+   * `result` is what this user's photos come back as.
+   */
   'POST /__fixture/sessions': async (req, res) => {
     const body = await readJson(req);
-    const step = body.onboardingStep === 'intro' ? 'intro' : 'complete';
-    const { credential } = newSession(step, body.kind === 'mobile' ? 'mobile' : 'web');
+    const step: Step =
+      body.onboardingStep === 'intro' || body.onboardingStep === 'first-image'
+        ? body.onboardingStep
+        : 'complete';
+    const { credential, session } = newSession(step, body.kind === 'mobile' ? 'mobile' : 'web');
+    if (step === 'first-image') purposes.set(session.userId, []);
+    if (body.result === 'foreign_text') userResults.set(session.userId, 'foreign_text');
     send(res, 200, { credential });
   },
 
@@ -271,9 +308,12 @@ createServer((req, res) => {
   const jobLookup = /^\/v1\/processing-jobs\/([^/]+)$/.exec(url.pathname);
   if (req.method === 'GET' && jobLookup) {
     const jobId = decodeURIComponent(jobLookup[1] ?? '');
-    if (!authorized(req, res)) return;
-    if (!jobs.has(jobId)) return send(res, 404, { error: 'job_not_found' });
-    return send(res, 200, { jobId, status: 'completed', result: RESULT });
+    const session = authorized(req, res);
+    if (!session) return;
+    const job = jobs.get(jobId);
+    // Go answers another user's job the same as a missing one.
+    if (job?.userId !== session.userId) return send(res, 404, { error: 'job_not_found' });
+    return send(res, 200, { jobId, status: 'completed', result: RESULTS[job.result] });
   }
   const handler = routes[`${req.method} ${url.pathname}`];
   if (!handler) return send(res, 404, { error: 'provider_unavailable' });

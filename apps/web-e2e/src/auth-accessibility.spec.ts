@@ -5,6 +5,7 @@ import {
   GOOGLE,
   IN_APP_USER_AGENT,
   overflowsSideways,
+  processFirstPhoto,
   signIn,
 } from './support/fixture';
 
@@ -60,6 +61,26 @@ for (const scheme of SCHEMES) {
     });
   }
 }
+
+test('the first result at 320px takes focus on its heading and completes with the keyboard', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await signIn(context, baseURL ?? '', 'first-image');
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto('/onboarding/first-image');
+  await processFirstPhoto(page);
+
+  await expect(page.getByRole('heading', { level: 1, name: '사진을 확인했습니다' })).toBeFocused();
+  expect(await overflowsSideways(page)).toBe(false);
+
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: '완료' })).toBeFocused();
+  await page.keyboard.press('Enter');
+
+  await expect(page).toHaveURL(/\/$/);
+});
 
 test('signs in with the keyboard alone', async ({ page }) => {
   await answerGoogle(page, 'returning');
