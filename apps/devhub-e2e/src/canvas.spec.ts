@@ -112,7 +112,8 @@ test.describe('structured list', () => {
     await page.keyboard.press('Enter');
 
     const nodes = page.getByRole('list', { name: '구성 요소' }).getByRole('article');
-    await expect(nodes).toHaveCount(3);
+    // The four libraries: auth-contracts, onboarding, processing, webview-bridge.
+    await expect(nodes).toHaveCount(4);
     const link = nodes.first().getByRole('heading').getByRole('link');
     await expect(link).toHaveAttribute('href', /\?kind=library$/);
 
