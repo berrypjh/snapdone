@@ -39,26 +39,26 @@ layout.tsx
 - **theme은 light / dark 두 가지이고 `<html data-theme>` 하나가 소유한다.** light는 공용 `:root`, dark는 공용 `[data-theme="dark"]` 값이다. body와 모든 공용 컴포넌트가 `<html>` 아래라 한 속성으로 함께 바뀐다
 - 처음 방문하면 **시스템 설정(`prefers-color-scheme`)을 따르고**, 헤더의 "다크 모드" 스위치로 고르면 `localStorage`(`snapdone-theme`)에 저장해 그 선택이 이긴다. 선택이 없을 때는 시스템 설정이 바뀌면 즉시 따라간다
 - 서버는 방문자의 theme을 모르므로 `data-theme`을 렌더하지 않는다. head 스크립트가 hydration 전에 넣어 **깜빡임이 없고**, 그 차이 때문에 `<html>`에만 `suppressHydrationWarning`을 둔다. JS가 없으면 `:root`(light)로 보인다
-- `ThemeProvider`는 쓰지 않는다. 고정 `mode`의 `<div data-theme>`는 사용자 선택과 다른 두 번째 theme 주인이 된다. SSR에서 system mode를 처리하는 공용 API가 없다는 점은 upstream 요청 대상이다
+- `ThemeProvider`는 쓰지 않는다. 고정 `mode`의 `<div data-theme>`는 사용자 선택과 다른 두 번째 theme 주인이 된다.
 - `color-scheme`을 theme에 맞춰 스크롤바 · 기본 form control도 함께 바뀐다
 - Mobile은 시스템 설정을 따른다 — `useColorScheme()` → 공용 `ThemeProvider mode`, `app.json` `userInterfaceStyle: "automatic"`. 앱 안 전환 스위치는 아직 없다
-- **공용 컴포넌트는 `@berrypjh/react-ui`에서 바로 import한다.** 1.1.1부터 hook을 쓰는 컴포넌트 모듈이 `'use client'`를 스스로 보존하므로 앱에 client 경계 파일을 두지 않는다
+- **공용 컴포넌트는 `@berrypjh/react-ui`에서 바로 import한다.** 패키지가 `'use client'`를 스스로 보존하므로 앱에 client 경계 파일을 두지 않는다
 
 ## Color
 
 **공용 토큰 이름으로만 쓴다.** Tailwind 기본 팔레트는 `--color-*: initial`로 제거했으므로 `bg-blue-500` 같은 클래스는 존재하지 않는다.
 
-| 쓰는 곳                   | Web class / CSS                                                | 공용 변수                                   | light 값                           |
-| ------------------------- | -------------------------------------------------------------- | ------------------------------------------- | ---------------------------------- |
-| 페이지 바닥               | `body` `background-color`                                      | `--ds-background-surface`                   | `#FFFFFF`                          |
-| 카드, 올라온 면           | `bg-background-surface`                                        | `--ds-background-surface`                   | `#FFFFFF`                          |
-| 사이드바, 보조 블록       | `bg-background-default`                                        | `--ds-background-default`                   | `#F2F4F7`                          |
-| 본문, 제목                | `body` `color` · `text-text-default`                           | `--ds-text-default`                         | `#101828`                          |
-| 설명문 · 캡션 · 상태 문구 | `text-text-light`                                              | `--ds-text-light`                           | `#475467`                          |
-| 구분선, 카드 테두리       | `border-stroke-light`                                          | `--ds-stroke-light`                         | `#D0D5DD`                          |
-| 주요 동작                 | 공용 `Button variant="contained"` (로그인 "Google로 계속하기") | `--ds-primary-btn-*`                        | `#047857`                          |
-| 포커스 링                 | 전역 `:focus-visible`                                          | `--ds-stroke-primary`                       | `#059669`                          |
-| 완료 · 주의 · 실패        | `text-text-success` · `-warning` · `-error`                    | `--ds-text-success` · `-warning` · `-error` | `-error`만 로그인 오류 문구에서 씀 |
+| 쓰는 곳                   | Web class / CSS                                                | 공용 변수                                   | light 값  |
+| ------------------------- | -------------------------------------------------------------- | ------------------------------------------- | --------- |
+| 페이지 바닥               | `body` `background-color`                                      | `--ds-background-surface`                   | `#FFFFFF` |
+| 카드, 올라온 면           | `bg-background-surface`                                        | `--ds-background-surface`                   | `#FFFFFF` |
+| 사이드바, 보조 블록       | `bg-background-default`                                        | `--ds-background-default`                   | `#F2F4F7` |
+| 본문, 제목                | `body` `color` · `text-text-default`                           | `--ds-text-default`                         | `#101828` |
+| 설명문 · 캡션 · 상태 문구 | `text-text-light`                                              | `--ds-text-light`                           | `#475467` |
+| 구분선, 카드 테두리       | `border-stroke-light`                                          | `--ds-stroke-light`                         | `#D0D5DD` |
+| 주요 동작                 | 공용 `Button variant="contained"` (로그인 "Google로 계속하기") | `--ds-primary-btn-*`                        | `#047857` |
+| 포커스 링                 | 전역 `:focus-visible`                                          | `--ds-stroke-primary`                       | `#059669` |
+| 완료 · 주의 · 실패        | `text-text-success` · `-warning` · `-error`                    | `--ds-text-success` · `-warning` · `-error` | —         |
 
 공용 토큰에 "muted text" 역할이 따로 없어 설명문과 캡션을 모두 `text-text-light`로 쓴다. `text-text-secondary`는 공용 라이브러리에서 **갈색 계열**이라 설명문에 쓰지 않는다.
 
@@ -74,7 +74,7 @@ layout.tsx
 | caption             | `typo-caption-default`    | `--ds-caption-default-*`    | 14 / 20 / 400               |
 | button              | `typo-body-medium-strong` | `--ds-body-medium-strong-*` | 16 / 24 / 600               |
 
-**line-height는 공용 값을 따른다.** caption은 20/14 ≈ 1.43으로 한국어 기준(1.5 이상)보다 낮다 — 공용 라이브러리 우선 원칙에 따라 그대로 쓰고, 보편 기준 여부는 shared-stack upstream 과제로 올렸다.
+**line-height는 공용 값을 따른다.** caption은 20/14 ≈ 1.43으로 한국어 기준(1.5 이상)보다 낮다 — 공용 라이브러리 우선 원칙에 따라 그대로 쓴다.
 
 폰트는 공용 변수의 font stack을 쓴다. **Pretendard는 설치하지 않았으므로** 실제로는 `'Apple SD Gothic Neo'` → `'Malgun Gothic'` → `system-ui`로 떨어진다.
 
@@ -175,9 +175,9 @@ Mobile은 터치 기반이라 focus 링 대신 pressed 상태와 `accessibilityR
 ```
 
 - **데스크톱 사이드바를 모바일에 복제하지 않는다.** 헤더 + 스크롤 본문 구조다
-- 헤더는 native stack이 그린다. 색은 `navigationTheme`이 공용 토큰에서 만든다 — 배경 `background.surface`, 제목 `text.default`, 뒤로 가기 `text.primary`, 구분선 `stroke.light`. 글꼴은 플랫폼 기본이다. WebView 화면 제목은 web의 `ready` 메시지가 바꾼다. 홈 헤더 오른쪽에 "로그아웃"(`components/auth/LogoutButton`)이 있다. 온보딩은 소개 화면 본문에 두고, 이어서 열어 소개로 돌아갈 수 없는 단계에서는 헤더 오른쪽에 둔다
-- 복원 · 로그인 · 온보딩 소개 화면은 native header 없이 `components/auth/AuthShell`이 상하좌우 inset을 모두 가진다. 온보딩 목적 선택은 뒤로 가기용 native header(제목 없음 · 구분선 없음)를 보이고 `AuthShell edges`에서 top을 뺀다
-- `AppShell`의 `SafeAreaView` `edges`는 `['left','right']`다. top은 header가 가져간다. **bottom을 일부러 뺐다** — 나중에 bottom navigation이 하단 inset을 직접 가져가야 이중 패딩이 안 생긴다
+- 헤더는 native stack이 그리고, 색은 `navigationTheme`이 공용 토큰에서 만든다. WebView 화면 제목은 web의 `ready` 메시지가 바꾼다
+- native header가 없는 화면(복원 · 로그인 · 온보딩 소개)은 `components/auth/AuthShell`이 상하좌우 inset을 모두 가진다
+- `AppShell`의 `SafeAreaView` `edges`는 `['left','right']`다. top은 header가 가져간다. **bottom을 일부러 뺐다** — bottom navigation이 하단 inset을 직접 가져가야 이중 패딩이 안 생긴다
 - `android.edgeToEdgeEnabled: true`이므로 Safe Area 처리는 선택이 아니라 필수다
 - **가짜 탭을 만들지 않는다.** 실제 화면이 생길 때 bottom navigation을 넣는다
 

@@ -34,7 +34,7 @@ nvm use
 pnpm install
 ```
 
-`pnpm install`은 Node·pnpm 버전이 고정값과 다르면 경고한다. `prepare` 스크립트가 husky를 설치해 `.husky/`의 훅이 활성화된다. Go 모듈은 `go.mod`에 고정돼 있고 첫 `go` 명령이 받는다(직접 의존성은 pgx · Gin · gin-swagger · swaggo/files, tool은 swag).
+`pnpm install`은 Node·pnpm 버전이 고정값과 다르면 경고한다. `prepare` 스크립트가 husky를 설치해 `.husky/`의 훅이 활성화된다. Go 모듈은 `go.mod`에 고정돼 있고 첫 `go` 명령이 받는다.
 
 ## 실행
 
@@ -47,13 +47,13 @@ pnpm dev:mobile   # Expo (Metro 개발 서버)
 pnpm dev:devhub    # DevHub → http://localhost:3100 (저장소를 보는 내부 도구)
 ```
 
-**DevHub의 "에디터에서 열기"는 개발 서버에서만 보인다.** 파일 경로 옆의 그 링크는 이 컴퓨터의 절대 경로를 쓰므로 빌드된 페이지에는 들어가지 않는다. 기본 에디터는 VS Code이고, 다른 에디터는 `DEVHUB_EDITOR`로 고른다 — `antigravity` · `cursor` · `vscode` · `windsurf` · `zed` · `idea` · `webstorm`, 또는 `{path}`가 들어간 URL 형식을 직접 적는다. 설정은 이 머신에만 남는 로컬 env 파일에 한 줄로 둔다 — `apps/devhub/.env.example`을 복사해서 쓴다.
+**DevHub의 "에디터에서 열기"는 개발 서버에서만 보인다**(이 컴퓨터의 절대 경로를 쓴다). 기본 에디터는 VS Code이고, 다른 에디터는 `DEVHUB_EDITOR`로 고른다 — `antigravity` · `cursor` · `vscode` · `windsurf` · `zed` · `idea` · `webstorm`, 또는 `{path}`가 들어간 URL 형식. 로컬 env 파일에 둔다.
 
 ```bash
 cp apps/devhub/.env.example apps/devhub/.env.local
 ```
 
-같은 파일에 `ANTHROPIC_API_KEY` · `OPENAI_API_KEY`를 넣으면 `/evals`의 "정식 run 명령 만들기"가 새로고침마다 공급자의 최신 모델 목록을 불러온다. 비워 두면 모델은 직접 적는다. key는 요청 헤더에만 쓰이고 화면 · 브라우저에 실리지 않으며, 모델을 부르는 실행은 DevHub가 하지 않는다. 모델 · 지시문 실험은 `tools/evals/lab`의 notebook에서 한다(`pnpm eval:lab`).
+같은 파일에 `ANTHROPIC_API_KEY` · `OPENAI_API_KEY`를 넣으면 `/evals`의 명령 만들기가 공급자의 모델 목록을 불러온다. 비워 두면 모델은 직접 적는다. 모델 · 지시문 실험은 `tools/evals/lab`의 notebook에서 한다(`pnpm eval:lab`).
 
 `pnpm dev` 하나로 **web · api · devhub를 함께** 띄울 수도 있다. devhub는 3100에 고정돼 web(3000)과 부딪히지 않는다.
 
@@ -61,11 +61,12 @@ cp apps/devhub/.env.example apps/devhub/.env.local
 pnpm dev
 ```
 
-**mobile은 여기에 포함되지 않는다.** Metro 개발 서버는 QR 코드를 출력하고 `r`(리로드) 같은 키 입력을 받는 대화형 프로세스라, 다른 서버 로그와 한 터미널에 섞이면 쓰기 어렵다. 자기 터미널에서 `pnpm dev:mobile`로 띄운다.
+**mobile은 여기에 포함되지 않는다.** Metro는 QR과 키 입력을 쓰는 대화형 프로세스라 자기 터미널에서 `pnpm dev:mobile`로 띄운다.
 
-`pnpm dev:mobile`(`nx start mobile`)이 QR과 `i` · `a` 키 입력을 보여주는 것은 `apps/mobile/package.json`의 `nx.targets.start.continuous: false` 덕분이다. Nx는 태스크 하나만 돌릴 때 TUI를 끄고, 그때 **continuous 태스크에는 가상 터미널(PTY)을 주지 않는다.** 그러면 Expo가 stdout을 터미널로 보지 않아 비대화형 모드로 떠서 QR이 사라진다. `@nx/expo` 플러그인이 `start`를 `continuous: true`로 추론하므로 이 덮어쓰기를 지우지 않는다.
+QR이 안 보이면 두 가지를 본다.
 
-QR이 여전히 안 보이면 `CI` 환경변수가 설정돼 있는지 본다 — Expo는 `CI`가 있으면 비대화형으로 뜬다.
+- `apps/mobile/package.json`의 `nx.targets.start.continuous: false`가 있는지 — 없으면 Nx가 PTY를 주지 않아 Expo가 비대화형으로 뜬다
+- `CI` 환경변수가 설정돼 있는지 — Expo는 `CI`가 있으면 비대화형으로 뜬다
 
 동작 확인:
 
@@ -131,7 +132,7 @@ cd apps/web && pnpm exec vitest
 pnpm exec playwright install chromium firefox webkit
 ```
 
-Playwright가 테스트 전용 가짜 인증 API(`apps/web-e2e/src/support/fake-api.mts`, `127.0.0.1:4010`)와 그 API를 `API_BASE_URL`로 보는 `next dev`(:3000)를 직접 띄운다. 실제 Go API와 연결된 dev 서버를 잘못 재사용하지 않도록 **재사용하지 않으므로, 실행 전에 `pnpm dev:web`을 끈다.** 인증 오류 주입 spec(`auth-faults.spec.ts`)은 다른 브라우저 project가 끝난 뒤 따로 돈다. spec 파일마다 Playwright를 따로 띄우는 `e2e-ci--*` target은 같은 포트를 두고 충돌하므로 `pnpm e2e`(또는 `playwright test <spec>`)로 돌린다.
+Playwright가 가짜 인증 API(`127.0.0.1:4010`)와 `next dev`(:3000)를 직접 띄우므로 **실행 전에 `pnpm dev:web`을 끈다.** `e2e-ci--*` target은 포트가 충돌하므로 `pnpm e2e`(또는 `playwright test <spec>`)로 돌린다.
 
 `pnpm health`는 설정된 주소로 `/health`를 호출해서 200과 `{"status":"ok"}`를 확인한다. 주소를 바꿔서 확인할 수도 있다.
 
@@ -154,9 +155,7 @@ API_BASE_URL=http://localhost:9000 pnpm health
 
 ### `pnpm build`에 mobile이 없는 이유
 
-`mobile`의 `build` target은 로컬 빌드가 아니라 **EAS 클라우드 빌드**(`eas build`)다. Expo 계정과 자격 증명이 필요하고 원격에서 돈다. 로컬 검사 명령에 섞이면 안 되므로 제외했다.
-
-모바일 번들을 로컬에서 만들려면:
+`mobile`의 `build` target은 **EAS 클라우드 빌드**다. 모바일 번들을 로컬에서 만들려면:
 
 ```bash
 pnpm exec nx export mobile   # apps/mobile/dist 에 JS 번들 생성
@@ -169,8 +168,6 @@ pnpm exec nx graph              # 브라우저로 그래프 열기
 pnpm exec nx show projects      # 현재 프로젝트 목록
 pnpm exec nx show project api   # 특정 프로젝트의 실제 target 확인
 ```
-
-target 이름이 헷갈리면 문서를 믿지 말고 `nx show project <name>`으로 확인한다.
 
 ## 환경변수
 
@@ -325,7 +322,7 @@ pnpm lint --skip-nx-cache
 
 **Expo SDK 버전 고정**
 
-이 저장소는 Expo **SDK 56**에 고정되어 있다. `@nx/expo`가 아직 SDK 57을 지원하지 않는다. mobile에 패키지를 추가할 때는 버전을 임의로 고르지 말고 SDK가 지정한 값을 쓴다.
+Expo **SDK 56**에 고정되어 있다(`@nx/expo`가 57 미지원). mobile 패키지 버전은 SDK가 지정한 값을 쓴다.
 
 ```bash
 node -e "console.log(require('expo/bundledNativeModules.json')['패키지명'])"
@@ -333,7 +330,7 @@ node -e "console.log(require('expo/bundledNativeModules.json')['패키지명'])"
 
 그리고 **루트 `package.json`에 실제 버전을, `apps/mobile/package.json`에는 `"*"`를** 적는다. 루트에 빠뜨리면 `"*"`가 레지스트리 최신 버전으로 해석되어 SDK와 어긋난 패키지가 들어온다.
 
-**사본이 갈리면 안 되는 패키지는 `pnpm-workspace.yaml`의 `overrides`로 못박는다** (`react` · `react-dom` · `react-native` · `react-native-svg` · `@berrypjh/react-native-ui`). `"*"`는 루트 버전을 바꿔도 lock에 기록된 옛 해석을 유지하므로, overrides가 없으면 루트 React를 내려도 앱이 옛 버전에 남아 React와 react-native가 두 벌씩 설치된다. 그 상태에서는 Expo Go가 이렇게 멈춘다.
+**사본이 갈리면 안 되는 패키지는 `pnpm-workspace.yaml`의 `overrides`로 못박는다** (`react` · `react-dom` · `react-native` · `react-native-svg` · `@berrypjh/react-native-ui`). `"*"`는 lock의 옛 해석을 유지해서, overrides가 없으면 React와 react-native가 두 벌씩 설치되고 Expo Go가 이렇게 멈춘다.
 
 ```
 Render Error — Cannot read property 'default' of undefined

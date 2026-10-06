@@ -21,12 +21,11 @@ Next.js App Router. 소스는 `src/`, alias는 `@/*` → `./src/*`.
 같은 코드가 브라우저 단독 서비스와 앱 WebView 양쪽에서 열린다 ([target-architecture.md](../../docs/architecture/target-architecture.md#제품-구성--네이티브-셸--웹-콘텐츠)).
 
 - **폰 폭(320–767px)을 기본으로 설계한다.** WebView는 항상 이 폭이다
-- in-app 판별은 User-Agent의 `SnapdoneApp/` 하나로, **판별 함수 한 곳**에서만 한다. 컴포넌트가 User-Agent를 직접 읽지 않는다
+- in-app 판별은 User-Agent의 `SnapdoneApp/` 하나로, `src/lib/in-app.ts`의 `isInAppRequest()`(서버)에서만 한다. 컴포넌트가 User-Agent를 직접 읽지 않는다. `(product)` layout이 읽어 `AppShell inApp`으로 넘긴다
 - in-app 모드에서는 셸(헤더 · 사이드바)만 숨긴다. 화면 내용을 환경별로 따로 만들지 않는다
 - 카메라 · 사진 · 공유 시트를 web에서 구현하지 않는다. in-app 모드에서는 앱에 메시지로 요청한다
 - 앱과 주고받는 메시지는 `libs/`의 계약 타입만 쓴다. 문자열 메시지를 흩어 쓰지 않는다
 - 로그인 토큰을 URL · JS 전역으로 받지 않는다. 핸드오프는 [data-access.md](../../docs/architecture/data-access.md#webview-로그인-핸드오프)
-- 판별은 `src/lib/in-app.ts`의 `isInAppRequest()`(서버, User-Agent) 하나다. `(product)` layout이 읽어 `AppShell inApp`으로 넘긴다 — 앱 안에서는 header · sidebar · SkipLink 없이 `main`만 렌더한다
 - WebView로 열리는 페이지는 `<InAppReady title="…" />`로 앱에 준비 완료와 제목을 알린다. 브라우저에서는 아무 일도 하지 않는다
 - 앱 모드 계약은 `apps/web-e2e/src/in-app.spec.ts`가 앱 User-Agent로 고정한다
 - 앱 안 `/login`은 Google 버튼 대신 안내를 보이고 `auth-required`를 보낸다. 앱이 `/auth/handoff/start` → ready(`handoff-ready`) → `/auth/handoff`로 세션을 넘긴다(`src/lib/auth/handoff.ts`). 메시지는 `<InAppMessage message={…} />`로 보낸다
@@ -49,7 +48,7 @@ Tailwind v4 + `@berrypjh/react-ui`. 색 · 타입 스케일 · radius · shadow�
 - spacing은 `p-1 p-2 p-3 p-4 p-5 p-6 p-8`(4/8/12/16/20/24/32)만 쓴다
 - 브레이크포인트는 `md`(768px) 하나다. 고정 폭(`w-[380px]` 등)은 320px에서 넘친다
 - focus는 `global.css`의 전역 `:focus-visible` 하나로 처리한다
-- shared 컴포넌트는 `@berrypjh/react-ui`에서 바로 import한다. 1.1.1부터 hook을 쓰는 컴포넌트 모듈이 `'use client'`를 스스로 보존하므로 앱에 client 경계 파일을 두지 않는다
+- shared 컴포넌트는 `@berrypjh/react-ui`에서 바로 import한다. 패키지가 `'use client'`를 스스로 보존하므로 앱에 client 경계 파일을 두지 않는다
 - theme은 **`<html data-theme>` 하나가 소유한다** (light = 공용 `:root`, dark = 공용 `[data-theme="dark"]`). 저장된 선택이 없으면 시스템 설정을 따르고, `src/lib/theme.ts`의 head 스크립트가 첫 paint 전에 적용한다. 전환 UI는 헤더의 `ThemeSwitch`(공용 `Switch`) 하나다
 - 고정 `mode`를 가진 `ThemeProvider`로 감싸지 않는다 — `<div data-theme>`가 사용자 선택과 다른 두 번째 theme 주인이 된다. 색은 CSS 변수가 바꾸므로 컴포넌트에서 theme을 분기하지 않는다
 

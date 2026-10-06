@@ -13,7 +13,7 @@ Go 표준 레이아웃. module은 `snapdone/api`, 진입점은 `cmd/server`.
 cmd/server/main.go               서버 기동 · 미적용 마이그레이션 시 기동 거부 · graceful shutdown · Swagger 일반 정보
 cmd/migrate/main.go              마이그레이션 적용 (배포 단계에서 1회)
 cmd/eval/main.go                 평가 harness CLI bootstrap (nx run api:eval). signal context와 종료 코드만, 명령은 internal/evalcli
-internal/evalcli/                평가 CLI 명령 · flag · 경로 풀기 · git lineage · 출력 · 종료 코드. 데이터 계약은 갖지 않는다(replay 기록 · variant 참조는 evaluation). 서버 · DB 없이 분류기를 부름. 모델을 부르는 run은 --allow-api가 있을 때만 실제 provider 호출(기준선만이면 호출 0). retrieve는 비슷한 사례 검색만 잼. retry는 이전 run의 끝난 결과를 옮기고 실패 · 미실행만 다시 부름
+internal/evalcli/                평가 CLI 명령 · flag · 출력 · 종료 코드. 데이터 계약은 evaluation이 가짐. 서버 · DB 없이 분류기를 부르고, 실제 provider 호출은 --allow-api가 있을 때만
 docs/swagger/                    swag가 생성한 Swagger 2.0 (docs.go · swagger.json · swagger.yaml). 손으로 고치지 않는다
 internal/config/                 환경변수 로딩 · 인증 설정 검증
 internal/httpserver/             http.Server · Gin router(router.go) · middleware · DTO(dto.go) · 핸들러와 Swagger 주석
@@ -21,17 +21,18 @@ internal/database/               pgx pool · 마이그레이션 (migrations/*.sq
 internal/database/databasetest/  테스트용 격리 schema
 internal/auth/                   인증 저장소 (사용자 · 세션 · grant · transaction) · 토큰 · AES-GCM · OAuth 흐름(oauth.go)
 internal/google/                 Google OIDC authorize URL · token 교환 · ID token claim 검사
-internal/processing/             사진 처리 작업 저장소 · 공용 지시 · 결과 검증(result.go) · 분류기(claude.go · openai.go) · 백그라운드 처리(processor.go). 분류기의 WithInstructions는 평가 실험용 복사본이고 서버는 부르지 않음
+internal/processing/             사진 처리 작업 저장소 · 공용 지시 · 결과 검증(result.go) · 분류기(claude.go · openai.go) · 백그라운드 처리(processor.go)
 internal/onboarding/             온보딩 진행(단계 · 사용 목적) 저장소와 저장 규칙(Validate)
-internal/evaluation/             평가 core — dataset · variant(실험 설정 · `[설정@]공급자:모델` 참조) · replay 기록(predictions JSONL) · runner · 기준선 · 비슷한 사례 검색 · 채점(추출값 · 자동 실행 점검 포함) · 산출물 · 비교. internal/processing을 import하지 않고 평가 소유 계약 view · 예측 타입만 씀. cmd/server가 import하지 않음. 설계는 docs/architecture/agent-evaluation.md
-internal/evaluation/processingadapter/  core ↔ production 분류기 다리 — production 생성자 · HTTP client를 그대로 쓰고 Transport 관찰 · 예산 · redaction · 결과를 평가 모양으로 옮김. evalcli가 Factory를 주입
+internal/evaluation/             평가 core — dataset · variant · runner · 채점 · 산출물 · 비교. internal/processing을 import하지 않고, cmd/server가 import하지 않음. 설계는 docs/architecture/agent-evaluation.md
+internal/evaluation/processingadapter/  core ↔ production 분류기 다리. evalcli가 Factory를 주입
 ```
 
 - **Nx 때문에 Go 관례를 바꾸지 않는다.** Nx는 `project.json`의 `nx:run-commands`로 `go` 명령을 감싸기만 한다
-- endpoint는 `GET /health`와 `/v1/auth/{capabilities,session,logout}`, `/v1/auth/oauth/{start,cancel,callback}` · `/v1/auth/exchange` · `/v1/auth/handoff/{start,exchange}`(WebView 핸드오프, `internal/auth/handoff.go`), `/v1/onboarding`(온보딩 진행 조회 · 저장), `/v1/processing-jobs`(사진 처리 시작 · 조회)이다.
-- **온보딩 진행은 서버가 가진다.** mobile과 web이 같은 진행을 읽고 써서 어느 쪽에서든 이어 간다. 저장은 `intro` · `purpose` · `first-image`만 받고(목적은 `first-image`에서만, 빈 목록은 건너뜀), 마친(`complete`) 뒤에는 409다. **단계 순서는 서버가 강제한다** — 같은 단계를 다시 저장하거나 한 단계 앞으로만 가고(`onboarding.CanMove`), 건너뛰거나 되돌아가면 409 `onboarding_out_of_order`다. 검사와 쓰기는 한 UPDATE 안에서 일어난다. `complete`로 바꾸는 코드는 아직 없다
-- **사진은 저장하지 않는다.** 처리 요청은 작업만 만들고 202로 돌아가며, 분류는 백그라운드에서 끝나 결과만 `processing_jobs`에 남는다.
-- **모델은 설정으로 고른다.** `PROCESSING_PROVIDER=anthropic`(Claude SDK) 또는 `openai`(OpenAI · Ollama 등 OpenAI 호환 Chat Completions, 표준 라이브러리 HTTP)와 `PROCESSING_MODEL`. 모델을 바꾸려고 코드를 고치지 않는다. 모든 공급자가 같은 지시 · 결과 schema를 쓰고, 결과는 공급자와 무관하게 `parseResult`가 허용 값으로 다시 검사한다. 새 공급자는 `Classifier` 구현 하나를 더하는 것으로 끝낸다 처리 시간 상한을 넘긴 작업은 조회 시 failed로 보인다(서버 재시작 대비). 형식은 파일 내용으로 판별해 JPEG · PNG · GIF · WebP만, 크기는 Claude API 이미지 상한(base64 10 MB)에 맞춘 원본 7,500,000 byte까지 받는다
+- endpoint 목록의 정본은 `router.go`와 `docs/swagger/`다 — `/health`, `/v1/auth/*`(OAuth · WebView 핸드오프 포함), `/v1/onboarding`, `/v1/processing-jobs`
+- **온보딩 진행은 서버가 가진다.** mobile과 web이 같은 진행을 읽고 써서 어느 쪽에서든 이어 간다. **단계 순서는 서버가 강제한다** — 같은 단계를 다시 저장하거나 한 단계 앞으로만 가고(`onboarding.CanMove`), 어기면 409 `onboarding_out_of_order`다. 검사와 쓰기는 한 UPDATE 안에서 일어난다
+- **사진은 저장하지 않는다.** 처리 요청은 작업만 만들고 202로 돌아가며, 분류는 백그라운드에서 끝나 결과만 `processing_jobs`에 남는다
+- **모델은 설정으로 고른다.** `PROCESSING_PROVIDER`(`anthropic` · `openai` 호환)와 `PROCESSING_MODEL`. 모델을 바꾸려고 코드를 고치지 않는다. 모든 공급자가 같은 지시 · 결과 schema를 쓰고 `parseResult`가 결과를 다시 검사한다. 새 공급자는 `Classifier` 구현 하나를 더한다
+- 업로드는 파일 내용으로 판별한 JPEG · PNG · GIF · WebP만, 원본 7,500,000 byte까지(Claude API 이미지 상한 base64 10 MB 기준)
 - **provider 토큰을 앱 · web으로 보내지 않는다.** callback은 60초 result code만 복귀 URI(서버 설정)로 redirect한다. ID token 서명 생략은 token endpoint에서 TLS로 직접 받은 경우에만 허용하고, 클라이언트가 보낸 토큰에는 쓰지 않는다
 - 외부 HTTP 호출은 timeout · 응답 크기 제한 · redirect 미추적을 둔다. 테스트는 포트를 열지 않고 `http.Client.Transport`로 가짜 응답을 준다(샌드박스가 포트 바인딩을 막는다)
 - **스키마 변경은 `internal/database/migrations/`에 번호를 올린 새 SQL 파일로만 한다.** 이미 적용된 파일은 고치지 않는다. 서버는 마이그레이션을 적용하지 않고, 미적용 파일이 있으면 기동을 거부한다. 적용은 `nx run api:migrate`(Nx 내장 `nx migrate`와 다르다)
@@ -42,7 +43,7 @@ internal/evaluation/processingadapter/  core ↔ production 분류기 다리 —
 
 - **Gin은 `internal/httpserver` 안에서만 쓴다.** `auth` · `database` · `google` · `config`와 `cmd/`는 Gin을 import하지 않고, `gin.Context`를 핸들러 밖으로 넘기지 않는다. 핸들러는 DTO를 도메인 입력(예: `auth.StartInput`)으로 직접 옮기고 도메인 오류를 상태 코드로 바꾼다
 - **`net/http.Server`가 수명주기를 가진다.** timeout · graceful shutdown은 `http.Server`에 있고 Gin engine은 `Handler`일 뿐이다. `gin.Default()` · `router.Run()`을 쓰지 않는다
-- route는 `router.go` 한 곳에서 `/v1` → `/auth` → `/oauth` · `/handoff` group으로 등록한다. `/health`는 `/v1` 밖이다. GET route는 `get()` helper로 HEAD도 받는다(ServeMux 시절 동작)
+- route는 `router.go` 한 곳에서 `/v1` → `/auth` → `/oauth` · `/handoff` group으로 등록한다. `/health`는 `/v1` 밖이다. GET route는 `get()` helper로 HEAD도 받는다
 - router 동작: 다른 메서드 405(`Allow` 포함), 없는 경로 404, trailing slash · 대소문자 · 중복 slash 교정 redirect 없음(404)
 - 인증 설정이 없으면 route를 빼지 않고 `requireConfigured` middleware가 503을 돌려준다
 - `/v1/auth` group 전체에 `Cache-Control: no-store` · `Referrer-Policy: no-referrer`와 4 KiB 본문 상한(`limitBody`)이 걸린다. binding(`ShouldBindJSON`)은 상한 뒤에 돈다
@@ -61,7 +62,7 @@ internal/evaluation/processingadapter/  core ↔ production 분류기 다리 —
 
 ## Dependency
 
-직접 의존성: `github.com/jackc/pgx/v5`(Postgres 드라이버, 2026-09-17 승인), `github.com/gin-gonic/gin` · `github.com/swaggo/gin-swagger` · `github.com/swaggo/files`(HTTP 경계 · Swagger UI, 2026-09-18 승인), `github.com/anthropics/anthropic-sdk-go`(사진 분류용 Claude API 공식 SDK, 2026-09-19 승인), tool `github.com/swaggo/swag/cmd/swag`. 그 외 외부 의존성을 추가하려면 표준 라이브러리 · 기존 의존성으로 안 되는 이유를 먼저 설명하고 사용자 승인을 받는다. ORM · 마이그레이션 도구 · DI · 설정 · 로깅 · validation wrapper · JWT · 메일 SDK · UUID는 넣지 않았다. `go-playground/validator`는 Gin의 간접 의존성이며 직접 import하지 않는다.
+직접 의존성: `pgx/v5`(Postgres) · `gin` · `swaggo/gin-swagger` · `swaggo/files`(HTTP · Swagger UI) · `anthropic-sdk-go`(사진 분류), tool `swaggo/swag/cmd/swag`. 그 외 외부 의존성은 표준 라이브러리 · 기존 의존성으로 안 되는 이유를 먼저 설명하고 사용자 승인을 받는다. ORM · 마이그레이션 도구 · DI · 설정 · 로깅 · validation wrapper · JWT · UUID는 넣지 않는다. `go-playground/validator`는 직접 import하지 않는다.
 
 ## Config
 

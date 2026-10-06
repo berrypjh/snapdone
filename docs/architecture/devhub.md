@@ -3,7 +3,8 @@
 DevHub(저장소 구조 · 시나리오 탐색 web app)의 조사와 설계 결정을 담은 문서다.
 
 - **Part I (1–15절) Discovery** — DevHub를 만들기 전에 **로컬 저장소의 실제 상태**를 조사한 기록. 다음 단계는 저장소를 다시 추측하지 않고 여기서 출발한다
-- **Part II (16–27절) Design** — Part I을 근거로 정한 목적 · 범위 · 도메인 모델 · 상태 의미 · IA · 링크 정책 · 데이터 소유 · 접근성 · 의존성 · 단계 경계. DevHub UI는 아직 구현하지 않았다
+- **Part II (16–27절) Design** — Part I을 근거로 정한 목적 · 범위 · 도메인 모델 · 상태 의미 · IA · 링크 정책 · 데이터 소유 · 접근성 · 의존성 · 단계 경계
+- **Part III (28절) 구현** — 구현하면서 Part II와 다르게 정한 것, 검사 규칙, 알려진 한계
 
 Part I 기준:
 
@@ -43,14 +44,12 @@ Part I 기준:
 
 git에는 보이지 않지만 다음 단계 판단에 영향을 주는 것만 적는다. 내용은 읽지 않았다.
 
-| 경로                                                                   | 상태                                                                                                                                                                                                                                              |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/scenario-atlas/`                                                 | (2026-09-19 기준 없음) **이전 시도의 잔여물.** 빌드 산출물(`.next/` · `out/` · `dist/` · `next-env.d.ts`)과 빈 디렉터리(`src/app/{scenarios,code,architecture}` 등)뿐, 소스 · `package.json` · `project.json`이 없다. Nx 프로젝트로 잡히지 않는다 |
-| `docs/scenarios/`                                                      | (2026-09-19 기준 없음) 빈 디렉터리                                                                                                                                                                                                                |
-| `docs/temp/`                                                           | 없음. 화면 기획서 원문도 로컬에 없다 (15절)                                                                                                                                                                                                       |
-| `apps/api/.env` · `apps/api/.env.dev.local`                            | 존재. Nx가 `apps/api/.env`를 태스크 환경에 넣어 `nx test api`의 `internal/config` 테스트를 깨뜨릴 수 있다 (`local-development.md`)                                                                                                                |
-| `apps/web/.env` · `apps/mobile/.env`                                   | 존재. web은 문서가 안내하는 `.env.local`이 아니라 `.env`다                                                                                                                                                                                        |
-| `apps/*/dist` · `libs/*/dist` · `apps/web/.next` · `apps/mobile/.expo` | 빌드 · 타입 산출물                                                                                                                                                                                                                                |
+| 경로                                                                   | 상태                                                                                                                               |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/temp/`                                                           | 없음. 화면 기획서 원문도 로컬에 없다 (15절)                                                                                        |
+| `apps/api/.env` · `apps/api/.env.dev.local`                            | 존재. Nx가 `apps/api/.env`를 태스크 환경에 넣어 `nx test api`의 `internal/config` 테스트를 깨뜨릴 수 있다 (`local-development.md`) |
+| `apps/web/.env` · `apps/mobile/.env`                                   | 존재. web은 문서가 안내하는 `.env.local`이 아니라 `.env`다                                                                         |
+| `apps/*/dist` · `libs/*/dist` · `apps/web/.next` · `apps/mobile/.expo` | 빌드 · 타입 산출물                                                                                                                 |
 
 ## 3. Nx Project Inventory
 
@@ -355,18 +354,14 @@ DevHub 후보 컴포넌트의 prop (`api <Symbol>`, 스타일 · ref · aria 계
 
 **`devhub`** — 디렉터리 `apps/devhub`, Nx 이름 `devhub`, 패키지 `@snapdone/devhub`, tag `type:app`. E2E는 `apps/devhub-e2e`.
 
-처음 이름은 `repo-atlas`였다(25절). 2026-09-19에 `devhub`로 바꿨다. 저장소 지도에서 성능 · 크기 등을 함께 보는 종합 개발 문서로 넓어질 예정이라, 규모가 커지기 전에 폴더 · Nx 이름 · 루트 script(`dev:devhub` · `devhub:check`) · 환경변수(`DEVHUB_COMMIT_SHA` · `DEVHUB_BRANCH`) · 화면 이름을 한 번에 바꿨다. 이 문서의 이전 절에 남은 기록도 새 이름으로 고쳐 읽히게 했다.
-
 - 제품 앱(`web` · `mobile` · `api`)과 섞이지 않게 **개발용 도구**임을 이름이 말한다. 사용자 제품 이름("이미지 액션 라우터")이나 `web` 접두사를 쓰지 않는다
 - 루트 `docs/`(마크다운 문서)와 헷갈리는 `docs` · `devdocs`, 이미 있는 `tools/`와 겹치는 `tools`는 쓰지 않는다
-- `scenario-atlas`는 쓰지 않았다. 조사 당시 `apps/scenario-atlas/`에 이전 시도의 빌드 잔여물이 있었다. 2026-09-19 기준 그 디렉터리는 없다
 - 새 앱은 `nx run-many`의 대상이 되므로 `pnpm lint` · `typecheck` · `test` · `build` · `verify` 범위가 늘어난다. `web-e2e`처럼 implicit dependency를 두지 않는 한 다른 프로젝트의 affected에는 영향이 없다
 
 ## 15. Open questions
 
 Part II에서 답한 질문은 결정 절을 적어 두었다. 남은 질문은 27절 끝에 모았다.
 
-1. `apps/scenario-atlas/` 잔여물과 빈 `docs/scenarios/`를 지울지 — **해결: 2026-09-19 기준 둘 다 없다**
 2. DevHub는 저장소 파일을 빌드 시점에 읽는가, 실행 중에 읽는가 — **결정: 빌드 시점, 정적 출력** (23 · 25절)
 3. 시나리오 데이터의 원본을 어디에 둘 것인가 — **결정: `apps/devhub/src/data`** (23절)
 4. 그래프 시각화가 필요한가 — **결정: MVP는 목록 · 표가 기본이고 그림은 네이티브 DOM/SVG 보조** (21 · 24절)
@@ -757,8 +752,6 @@ range:     …#L<start>-L<end>   (GeneratedRange.commit == 스냅샷 commit일 �
 
 ## 24. Dependency policy
 
-2026-09-18 다시 확인: `@xyflow/react` · `reactflow`는 `node_modules`에 없고, `pnpm-lock.yaml`에 0건, 어느 `package.json`에도 없다. dagre · elkjs · d3도 없다(1 · 11절). **설치하지 않았다.**
-
 | 요구사항 (Part I 근거)                                                       | 네이티브 DOM/SVG                     | React Flow (`@xyflow/react`)                             |
 | ---------------------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------- |
 | 노드 규모: 아키텍처 약 15개(프로젝트 7 · 런타임 · 외부), 시나리오 단계 ≤ 8개 | 충분                                 | 과함 — 수백 노드용 설계                                  |
@@ -784,9 +777,6 @@ React Flow는 다음 중 하나가 **실제로** 생기면 Phase 3에서 4단계
 | 스택              | Next.js App Router, 빌드 시 데이터를 읽는 정적 출력. `apps/web`의 관례(kebab-case 파일 · Tailwind preset · 공용 UI 직접 import) |
 | 제품과의 관계     | 제품 앱을 import하지 않는다. 제품 web · WebView(`WEB_VIEW_PATHS`)에 연결하지 않는다. 인증 · Go API 호출 없음                    |
 | 빌드 · 검증       | `nx run-many`에 자연히 포함된다(루트 스크립트 변경 없음). implicit dependency를 두지 않는다                                     |
-
-- `scenario-atlas`는 쓰지 않았다 — 조사 당시 같은 경로에 이전 시도의 빌드 잔여물이 있었다(2절). 지금은 없다
-- 앱을 만드는 것은 이 문서 범위가 아니다
 
 ## 26. Phase boundaries
 
@@ -828,893 +818,63 @@ React Flow는 다음 중 하나가 **실제로** 생기면 Phase 3에서 4단계
 1. GitHub 저장소가 private이면 SHA permalink는 권한 있는 사람에게만 열린다. 공개 여부와 그 경우의 대안(상대 경로만 표시)을 정해야 한다
 2. DevHub를 로컬 전용으로 쓸지, 정적 출력을 어딘가에 게시할지. 게시한다면 스냅샷 · 경로가 외부에 나간다
 3. generated JSON 커밋 방식을 받아들일지 — 대안은 build · test 전에 collector를 target 의존으로 돌리는 것(Nx 중첩 실행)
-4. 한국어 GitHub heading slug 규칙 — Phase 2 문서 anchor 전에 확인
-5. Part I 15절 미결 1 · 5 · 6 · 7 · 8
-
-## 28. 구현 상태 — Phase 1 앱 골격
-
-2026-09-18, 기준 커밋 `4940176` 위의 미커밋 변경.
-
-### 생성
-
-`@nx/next:application`(Nx 23.1.1)으로 만들었다. 플래그는 `nx g @nx/next:application --help`에서 확인한 것만 썼다.
-
-```
-nx g @nx/next:application --directory=apps/devhub --name=devhub --linter=eslint \
-  --unitTestRunner=none --e2eTestRunner=none --tags=type:app --useProjectJson=false \
-  --skipPackageJson --skipFormat --interactive=false
-```
-
-- `--skipPackageJson` — 기본값이면 루트 `package.json`을 고친다(dry-run으로 확인). 버전 이동을 막았다
-- `--unitTestRunner=none` — 선택지가 `jest` · `none`뿐이다. 저장소는 Vitest를 쓴다
-- `--useProjectJson=false` — `apps/web`처럼 Nx 설정을 `package.json` `nx`에 둔다
-- `--swc`는 기본값(true)을 뒀다. `false`면 `.babelrc`가 생겨 Next가 Babel로 컴파일한다(dry-run으로 확인)
-- AI 세션 샌드박스가 `.vscode/extensions.json` 쓰기를 막아 generator가 실패했고, 사용자 터미널에서 같은 명령으로 실행했다
-
-generator가 앱 밖에 남긴 변경과 처리
-
-| 파일                      | generator가 한 일            | 처리                                                                                    |
-| ------------------------- | ---------------------------- | --------------------------------------------------------------------------------------- |
-| `.prettierrc`             | 새로 만듦 (`singleQuote`)    | 지움. 이 저장소는 `package.json` `prettier` 키를 쓴다(`quality-gates.md`)               |
-| `nx.json`                 | JSON 재직렬화(배열 줄바꿈)만 | Prettier로 원래 모양 복원. 내용 변경 없음                                               |
-| `.vscode/extensions.json` | JSON 재직렬화만              | 원래 모양 복원                                                                          |
-| `.gitignore`              | 끝 줄바꿈만 제거             | 복원                                                                                    |
-| `tsconfig.json` (루트)    | —                            | `nx sync`가 `apps/devhub` project reference를 추가했다. **유지** (`nx sync:check` 필수) |
-
-앱 안에서 generator 산출물을 `apps/web` 관례로 바꿨다: `.swcrc` · `src/app/api/hello` · `page.module.css` · Nx 소개 page/CSS 삭제, `tsconfig.json` · `eslint.config.mjs`(`@berrypjh/eslint-config/react` + `core-web-vitals`) · `postcss.config.mjs` · `tailwind.config.mjs`(`@berrypjh/react-ui/tailwind`)를 web과 같은 모양으로, `package.json`에 `projectType: application`과 web과 같은 `typecheck` target.
-
-### 현재 모양
-
-| 항목        | 값                                                                                                                                                                |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Nx 프로젝트 | `devhub`, `application`, tag `npm:private` · `type:app`. graph 의존 없음(들어오고 나가는 edge 0)                                                                  |
-| target      | `build` · `dev` (c) · `start` (c) · `serve-static` (c) · `build-deps` · `watch-deps` (c) · `lint` · `typecheck` · `test`(29절에서 `vitest.config.ts`를 두어 생김) |
-| 의존성      | `@berrypjh/react-ui` `^1.1.2` · `next` `~16.1.6` · `react`/`react-dom` `19.2.3` — web과 같은 선언, 루트 버전 변경 없음                                            |
-| import      | `next`, `@berrypjh/react-ui`, `@berrypjh/react-ui/styles.css`, `tailwindcss`뿐. 제품 앱 · `libs/` · private 패키지 없음                                           |
-| 화면        | `/` smoke page 하나 — `header`(제품명) · `main`(h1 "Snapdone DevHub", 저장소 `berrypjh/snapdone`, "DevHub skeleton"). 테마 스크립트 · 셸 · 데이터 없음            |
-
-### E2E 결정
-
-generator 기본값(`--e2eTestRunner=playwright`)은 `apps/devhub-e2e`를 만든다(dry-run으로 확인). **만들지 않았다.**
-
-- smoke page에는 E2E가 고정할 동작이 없다
-- generator 산출물은 `apps/web-e2e`의 가짜 API · 포트 · 브라우저 구성과 무관한 예제 spec이라 그대로 쓸 수 없다
-- DevHub E2E는 Phase 1 화면(목록 정본 · inspector route · 320px · 키보드, 21절)이 생길 때 추가한다. 그때 web(3000)과 겹치지 않는 포트를 정한다
-
-### 남은 wiring
-
-- ~~`pnpm-lock.yaml`에 `apps/devhub` importer가 없다~~ — 사용자가 `pnpm install`을 실행해 importer가 추가됐다(새 패키지 없음, lock +15줄)
-- `nx build devhub`는 AI 세션에서 Turbopack PostCSS 워커가 포트를 열지 못해 실패한다(`binding to a port … Operation not permitted`, web과 같은 원인). 사용자 터미널에서 확인한다
-- **`pnpm dev` · `pnpm build`의 범위가 넓어졌다.** 둘 다 `nx run-many`라 `dev` · `build` target이 있는 `devhub`도 함께 돈다(`nx show projects --with-target dev` → `devhub` · `api` · `web`). `README.md` · `local-development.md`의 "`pnpm dev`는 web과 api를 함께 띄운다"는 이제 틀리다. 두 Next dev 서버가 같은 기본 포트(3000)를 원한다. 루트 스크립트에서 뺄지, 포트를 정할지는 결정 대상이다(문서 · 스크립트 수정은 하지 않았다)
-
-## 29. 구현 상태 — 도메인 모델 · curated 데이터
-
-`apps/devhub/src/domain`(타입 · 파생 함수)과 `src/data`(curated 사실)를 만들었다. 화면(`src/app`)은 아직 데이터를 읽지 않는다 — 사실과 표현이 분리된 채로 시작한다.
-
-### 파일
-
-| 경로                           | 내용                                                                                                             |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `src/domain/model.ts`          | 타입만. React · URL · SHA 없음                                                                                   |
-| `src/domain/links.ts`          | `sourceUrl`(스냅샷 commit으로 permalink 파생) · `commandLine`(실행 문자열 파생) · `isCanonicalPath`              |
-| `src/data/repository.ts`       | 저장소 1건 (`berrypjh/snapdone`, remote에서 `.git` 제거)                                                         |
-| `src/data/projects.ts`         | application 5 (`web` · `mobile` · `api` · `web-e2e` · `devhub`), library 2 (`auth-contracts` · `webview-bridge`) |
-| `src/data/external-systems.ts` | `postgres` · `google-oidc`                                                                                       |
-| `src/data/apis.ts`             | `NewRouter`가 등록하는 route 11개 — Swagger에 있는 10개 + dev 전용 `/swagger/*any`                               |
-| `src/data/contracts.ts`        | bridge UA 토큰 1 · 메시지 3 (`ready` · `auth-required` · `handoff-ready`) · auth wire 타입 3                     |
-| `src/data/relations.ts`        | workspace-dependency 5 · runtime 7                                                                               |
-| `src/data/documents.ts`        | `AGENTS.md` · `README.md` · `.claude/README.md` · `docs/**/*.md` 7개                                             |
-| `src/data/index.ts`            | `catalog` — 위를 한 객체로 묶는다                                                                                |
-
-### 관계 두 종류
-
-| kind                   | 뜻                                                                                | 데이터                                                                                                                                                                                                                                           |
-| ---------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `workspace-dependency` | manifest가 선언한 Nx graph edge. 빌드 구조일 뿐 실행 중 호출을 뜻하지 않는다      | `web`/`mobile` → `auth-contracts`/`webview-bridge` (`workspace:*`), `web-e2e` → `web` (implicit)                                                                                                                                                 |
-| `runtime`              | 실행 중에 일어나는 일. Nx graph와 무관하다 (`web` → `api` edge는 Nx graph에 없다) | `web` → `api` http-call(6 API) · `mobile` → `api` http-call(7 API) · `google-oidc` → `api` browser-redirect · `api` → `google-oidc` http-call · `api` → `postgres` persistence · `mobile` → `web` webview-host · `web` → `mobile` bridge-message |
-
-`devhub`에는 어느 쪽 관계도 없다 — 제품과 분리돼 있다는 사실 그대로다.
-
-### 22절 설계와 다르게 한 것
-
-- **`SourceRef`에 `repository` 필드를 두지 않았다.** 저장소가 하나이고 catalog가 그 저장소를 소유하므로, 레코드마다 같은 ID를 복사하지 않는다. 저장소가 둘이 되면 그때 넣는다
-- **`Project` 대신 `ApplicationRef` · `LibraryRef` 두 타입**(`kind`로 구분)으로 두었다. `web-e2e`는 `role: 'test'`인 application이다
-- **`Runtime` 노드를 아직 만들지 않았다.** 지금 데이터에서 필요한 곳이 없다. 런타임 경계는 relation의 `interaction` · `summary`에 있고, 시나리오 단계가 런타임을 가리켜야 할 때 추가한다
-- **`RepositorySnapshot`은 타입만 있다.** SHA를 데이터에 적지 않는다. commit은 링크를 렌더할 때 인자로 받는다(collector가 생기면 거기서 온다)
-- **`TestRef` · `ImplementationStatus`는 타입만 있다.** 시나리오 데이터가 들어올 때 쓴다
-- **`src/generated/`는 아직 없다.** collector 대신 validator가 manifest · `swagger.json`을 직접 읽는다. 그래서 Nx 명령은 manifest에 **명시된** target만 쓸 수 있다(플러그인이 추론한 `mobile:export` 같은 target은 collector 이후)
-
-### curated / generated 경계 (지금)
-
-| 사실                                                        | 원본                                                                | 누가 맞는지 보장하나                       |
-| ----------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------ |
-| 프로젝트 ID · 경로 · tag · 패키지 이름                      | Nx manifest (`package.json` `nx`, `project.json`)                   | validator가 manifest와 **집합 일치** 검사  |
-| workspace 의존                                              | manifest의 `workspace:*` · `implicitDependencies`                   | validator 집합 일치                        |
-| API route                                                   | `apps/api/docs/swagger/swagger.json`(Go 테스트가 route와 일치 보장) | validator 집합 일치                        |
-| 루트 스크립트 · 명시 target                                 | `package.json` · manifest                                           | validator                                  |
-| 문서 목록 · 제목                                            | `docs/**/*.md`, 첫 `#` 줄                                           | validator 집합 · 제목 일치                 |
-| 요약 · 역할 · runtime relation 의미 · 명령 제약 · 계약 분류 | **curated** (사람이 판단)                                           | 근거 path · symbol 존재만 validator가 확인 |
-
-### 테스트
-
-`vitest.config.ts`(web · libs와 같은 node 환경)를 두자 `@nx/vitest` 플러그인이 `test` target을 추론했다. 새 의존성 없음 — jsdom · testing-library를 넣지 않았다.
-
-- `src/domain/links.spec.ts` — permalink · 실행 문자열 · 경로 규칙
-- `src/data/catalog.spec.ts` — 위 표의 validator. ID 유일성, 모든 SourceRef가 정규 경로이고 존재하며 symbol이 파일에 글자로 있음(Go 메서드는 receiver 패턴), 레코드에 SHA · URL · `#L` 없음, 관계가 존재하는 노드 · API · 계약만 가리킴, http-call relation의 API 경로가 근거 파일에 글자로 있음, contract 이름이 정의 파일에 있음, 모든 contract의 owner가 library
-- 틀린 symbol · Swagger에 없는 API · 선언과 다른 의존 edge를 각각 넣어 해당 테스트가 실패하는 것을 확인하고 되돌렸다
-
-## 30. 구현 상태 — curated 시나리오 · step trace
-
-2026-09-18, HEAD `4940176` 기준. 모든 step의 source · test · 문서 heading을 이 커밋에서 다시 읽고 확인했다. 데이터는 `apps/devhub/src/data/scenarios/`(시나리오 1개당 파일 1개), `tests.ts`(TestRef 109개), `runtimes.ts`(6개)다.
-
-### 모델 확장 (29절 대비)
-
-| 추가                        | 이유                                                                                                                                                |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Scenario` · `ScenarioStep` | step마다 사용자 의도(`intent`) · 시스템 동작(`behavior`) · runtime · 담당 노드(`owner`) · 상태 · source · API · 계약 · 테스트 · 문서 · `next`       |
-| `RuntimeRef` (6)            | 같은 web 코드가 브라우저 · Next 서버 · 앱 WebView에서 돈다. 18.1의 Runtime을 여기서 도입했다                                                        |
-| `TestRef.id` · `requires`   | 테스트를 ID로 참조하고, 무엇이 없으면 skip · 실행 불가인지(`database` · `port-binding` · `browser-binaries`)를 적는다                               |
-| `DocumentLink`              | 문서 ID + heading 글자 그대로                                                                                                                       |
-| `EvidenceGap`               | 증거가 보여주지 않는 것을 숨기지 않고 적는다 — failing-test · runtime-unverified · external-unverified · code-not-found · config-required · no-test |
-| `AbsenceCheck`              | "코드 없음" 주장의 근거. validator가 매번 다시 검색한다                                                                                             |
-| `ScenarioStep.via`          | 다른 시나리오를 거쳐 돌아오는 지점(보호 page → 로그인 → 복귀)                                                                                       |
-
-신뢰도 등급(19.3)은 넣지 않았다. 검증 수준은 각 TestRef의 `requires`와 시나리오 gap으로 드러난다.
-
-### 시나리오
-
-| id                          | 상태            | step | runtime                                            | 테스트 (환경 조건별)   | gap                                                        |
-| --------------------------- | --------------- | ---- | -------------------------------------------------- | ---------------------- | ---------------------------------------------------------- |
-| `app-entry-session-restore` | implemented     | 7    | mobile-app · go-api · next-server                  | 없음 13 · DB 1 · E2E 1 | runtime-unverified                                         |
-| `browser-google-login`      | implemented     | 6    | next-server · browser · go-api                     | 없음 7 · DB 3 · E2E 4  | external-unverified                                        |
-| `mobile-google-login`       | implemented     | 7    | mobile-app · system-auth-browser · go-api          | 없음 11 · DB 3         | runtime-unverified · external-unverified · config-required |
-| `onboarding-intro`          | **partial**     | 7    | go-api · mobile-app · next-server                  | 없음 4 · DB 1 · E2E 4  | code-not-found(완료) · runtime-unverified                  |
-| `mobile-history-webview`    | implemented     | 4    | mobile-app · mobile-webview                        | 없음 6 · E2E 3         | runtime-unverified                                         |
-| `webview-auth-handoff`      | implemented     | 6    | next-server · mobile-webview · mobile-app · go-api | 없음 10 · E2E 6 · DB 3 | runtime-unverified                                         |
-| `protected-history-access`  | implemented     | 4    | next-server                                        | 없음 7 · E2E 4         | code-not-found(기록 내용)                                  |
-| `logout-session-revocation` | implemented     | 3    | next-server · mobile-app · go-api                  | 없음 8 · E2E 1 · DB 1  | runtime-unverified                                         |
-| `auth-failure-recovery`     | implemented     | 5    | go-api · next-server · browser · mobile-app        | 없음 9 · E2E 6         | runtime-unverified                                         |
-| `webview-recovery`          | implemented     | 4    | mobile-app                                         | 없음 6 · E2E 2         | runtime-unverified                                         |
-| `finish-task-from-image`    | documented-only | 7    | (목표) mobile-app · browser · go-api               | 없음                   | code-not-found — 7 step 모두 부재 검색으로 뒷받침          |
-
-"없음"은 AI 세션에서도 도는 단위 테스트 수, "DB"는 `TEST_DATABASE_URL`이 없으면 skip되는 Go 테스트, "E2E"는 포트 · 브라우저가 필요한 Playwright다. **Go OAuth · 핸드오프 · 세션 저장소 테스트는 전부 DB가 필요하다** — `go test -json`으로 skip 목록을 확인했다.
-
-### 구현과 제품 목표를 섞지 않는 장치
-
-- `track: 'product-target'`인 시나리오는 상태가 documented-only · planned · not-found만 될 수 있고 step에 source가 있으면 validator가 실패한다
-- `track: 'developer'`(2026-09-22 추가)는 사용자 화면이 아니라 개발자가 저장소 안에서 돌리는 흐름(평가 harness)이다. 상태 규칙은 `current`와 같고 runtime `go-cli`를 쓴다. 개요 · 탐색기 · 필터에 세 번째 구분으로 보인다
-- documented-only step은 source 없이 문서 근거와 **부재 검색**을 가져야 한다. 부재 검색은 lockfile의 카메라 · 사진 · 캘린더 · 모델 SDK 패키지, web의 파일 입력 · 붙여넣기, bridge의 촬영 · 공유 메시지, Swagger · 마이그레이션의 image · upload, 소스의 Calendar · Receipt · undo · automation을 찾는다
-- 온보딩 소개의 예시(영수증 · 공연 포스터 · 맛집 캡처)는 `EXAMPLES` 고정 문구로 기록했다. 해당 기능 step으로 만들지 않았다
-- 검색어 `action`은 쓰지 않는다 — `transaction`(OAuth transaction 테이블 · Swagger)에 걸려 아무것도 증명하지 못한다는 것을 validator 첫 실행이 잡았다
-
-### 새로 드러난 사실
-
-- `onboarding-intro/finish` — onboarding_step을 complete로 바꾸는 SQL이 API 코드에 없다(부재 검색). 앱과 web 모두 첫 사진 처리 뒤 "준비 중" 문구에서 멈춘다
-- `onboarding-intro/route-web-after-login` — implemented. `completeLogin`이 온보딩 전 사용자를 `/onboarding`으로 보낸다(12절 #1 해결). E2E는 실행하지 못했다
-- `webview-recovery/load-failure` — WebView 로드 실패 뒤 재시도 분기를 직접 검사하는 테스트가 없다(no-test)
-- `app-entry-session-restore/web-home` — web `/`는 세션을 Go에 확인하지 않는다. cookie 존재만으로 헤더에 로그아웃을 둔다
-
-### validator (`src/data/scenarios.spec.ts`)
-
-시나리오 ID · step ID 유일성, `next`는 같은 시나리오의 다른 step, `via`는 다른 시나리오, runtime · owner · API · 계약 · 테스트 · 문서 ID 존재, 문서 heading이 글자 그대로 있음, step source의 경로 · symbol 존재, 상태별 증거(implemented → source, partial → source + gap, documented-only → 문서 + 부재 검색, not-found → 부재 검색), 시나리오 상태 = step 상태에서 파생, implemented 시나리오에 테스트 ≥ 1, 부재 검색 재실행, TestRef의 파일 · Go 함수 · Vitest/Playwright 제목 존재, 모든 TestRef가 어딘가에서 인용됨.
-
-product-target step에 implemented, 틀린 테스트 제목, 없는 `next`, implemented 시나리오 안의 not-found step을 각각 넣어 해당 테스트가 실패하는 것을 확인하고 되돌렸다.
-
-## 31. 구현 상태 — application shell
-
-그림(그래프) 없이 탐색 · 정보 밀도 · 시맨틱 레이아웃을 먼저 확정했다. 20절 IA를 따르되 아래가 다르다.
-
-### 구조
-
-```
-SkipLink "본문으로 건너뛰기" → #main-content (49절부터 #devhub-main)
-header (banner)            제품명 · owner/name · 기본 브랜치 · 검색(비활성 SearchField) · nav "보기"
-div (lg: 15rem | 1fr | 20rem, xl: 18rem | 1fr | 24rem, 칸마다 따로 스크롤 / lg 미만: 세로로 쌓임)
-├─ aside "탐색기"          nav "저장소 항목": 개요 + SECTIONS(시나리오 · 애플리케이션 · 라이브러리 · 문서 · 엔지니어링)
-├─ main#main-content (49절부터 #devhub-main)  header(eyebrow · h1) · 그림 자리(figure) · 목록(정본)
-└─ aside "상세 정보"       header(종류 · h2 · 상태) · nav "상세 목차" · 개요 · 소스 · 문서 · 테스트
-```
-
-| route             | workspace                                                  | inspector            |
-| ----------------- | ---------------------------------------------------------- | -------------------- |
-| `/`               | 저장소 · 섹션별 개수 · 시나리오 상태별 개수(데이터에서 셈) | 비어 있음(안내 문구) |
-| `/<section>`      | 그 섹션의 항목 목록                                        | 비어 있음            |
-| `/<section>/<id>` | 요약 + 그림 자리 + 정본 목록(단계 · 관계 · 인용 · 명령)    | 선택한 항목의 근거   |
-
-- 정적 route다(`generateStaticParams`, `dynamicParams = false`). 선택 상태가 URL이라 JS 없이 읽히고 링크를 공유할 수 있다
-- 탐색기 · 목록은 전부 `catalog`에서 만든다(`src/lib/catalog/entities.ts` `SECTIONS`). 시나리오는 "현재 동작"과 "제품 목표 — 아직 구현되지 않음"으로 나눠 보인다
-- 20.4의 `/architecture` · `/docs`는 `/applications` · `/documents`로 두었다 — 탐색기 섹션과 route를 1:1로 맞췄다. 아키텍처 보기는 애플리케이션 · 라이브러리 두 섹션을 연다
-- inspector 섹션은 20.3의 6개 중 개요 · 소스 · 문서 · 테스트 4개다. 관계 · 명령은 workspace 목록에 있다
-- 소스는 경로 · symbol 글자만 보인다. 스냅샷 commit을 아직 연결하지 않아 permalink(22절)를 만들지 않는다 — 데이터에 SHA를 적지 않는 원칙을 지킨다
-
-### 공용 UI · 토큰
-
-- `@berrypjh/react-ui` 1.1.2에서 조회해 썼다(`berry-react-ui api`): `SkipLink` · `SearchField`(`inputProps`로 `aria-label`) · `Chip`(passive `<span>`, `leading`은 `aria-hidden`) · `VisuallyHidden`
-- 상태 칩 색은 Chip의 공식 확장점인 `--ui-chip-fg` · `--ui-chip-border-color`에 공용 `--ds-text-*` · `--ds-stroke-*`를 넣었다. 상태마다 글리프(● ◐ ○ ◇ ×)와 글자 라벨이 함께 있어 색만으로 구분하지 않는다
-- 새 CSS 변수는 없다. DevHub utility 둘만 더했다 — `devhub-grid`(`--ds-stroke-light`로 그린 격자), `devhub-code`(공용 monospace 토큰이 없어 Tailwind `--font-mono`)
-- 배경은 `--ds-background-default`(캔버스) 위에 `--ds-background-surface`(패널), 선택은 `bg-background-selected`
-
-### 검증
-
-- `nx lint` · `typecheck` · `test`(69) devhub 통과. `src/lib/catalog/entities.spec.ts` — 섹션이 catalog 전부를 담음, 항목 route가 유일하고 되돌아옴, inspector 빈 섹션마다 이유가 있음, 시나리오 inspector가 인용 테스트를 모두 보임, 제품 목표에는 소스가 없음
-- 렌더 구조는 `react-dom/server`로 한 번 그려 확인했다(임시 spec, 커밋하지 않음): `main` 1 · `h1` 1, 탭 순서 SkipLink → 보기 nav → 탐색기 → workspace → 상세 목차, 비활성 검색은 탭 순서에 없음, 선택 항목 `aria-current="page"`
-- **`nx build devhub`는 AI 세션에서 실패한다**(Turbopack PostCSS 워커 포트 바인딩, web과 같은 원인). 1920×1200 화면 · 실제 브라우저 탭 이동 · 포커스 링은 사용자 터미널에서 확인해야 한다
-
-## 32. 구현 상태 — scenario flow viewer
-
-시나리오 화면의 그림 자리를 읽기 전용 흐름 viewer로 바꿨다. 외부 graph 라이브러리 없이 DOM node + SVG edge다(24절 결정). 편집 · 연결 만들기 · 끌어서 옮기기는 없다.
-
-### 모델 — 데이터와 좌표의 분리
-
-| 층     | 파일                                            | 내용                                                                                                           |
-| ------ | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| 데이터 | `src/data/scenarios/*`                          | 변경 없음. 좌표 · 색 · 크기를 담지 않는다                                                                      |
-| 배치   | `src/lib/catalog/flow.ts` `flowModel(scenario)` | 렌더할 때마다 데이터에서 계산. lane = 시나리오가 실제로 거치는 runtime만, column = `next`를 따라 왼쪽 → 오른쪽 |
-| 보기   | `src/lib/browser/viewport.ts`                   | pan · zoom · fit · reveal 순수 함수(screen = content × k + x, y)                                               |
-| 화면   | `src/components/flow/*`                         | `usePanZoom` · `FlowToolbar` · `FlowLanes` · `FlowEdges` · `FlowNode` · `ScenarioFlow`(조립만)                 |
-
-- **lane 순서**: 사용자 쪽에서 서버 쪽으로 — 브라우저 · 시스템 인증 브라우저 · 앱 · 앱 WebView · Next 서버 · Go API. 없는 runtime lane은 만들지 않는다
-- **column**: 앞 단계에서 들어오는 `next`가 없으면 0, 있으면 가장 깊은 선행 단계 + 1. 앞 단계로 돌아가는 `next`는 깊이를 늘리지 않고 점선 루프로 그린다. 같은 lane · column의 단계는 lane 안에서 세로로 쌓는다
-- **"사용자 의도 → 런타임 → 구현 → 계약/API → 검증"**: lane을 따로 두지 않고 node 안에 적었다 — 의도(제목) · runtime · 담당 · 첫 source 경로(+개수) · API/계약/테스트 개수 · 경유 시나리오. 계약 · 테스트는 단계와 다대다라 별도 lane으로 두면 runtime처럼 읽힌다
-- 참조 흐름은 `mobile-history-webview`(앱 → 앱 WebView, `webview-auth-handoff` 경유)다. 네 runtime에 걸친 `webview-auth-handoff`도 같은 방식으로 그려진다. 11개 시나리오 전부 겹침 없이 배치되는지 테스트가 본다
-
-### 선택 · route
-
-```
-/scenarios/<id>                  layout(셸 + 흐름 그림) + page(시나리오 inspector)
-/scenarios/<id>/steps/<stepId>   같은 layout + page(단계 inspector)
-```
-
-- 흐름 그림은 `app/[section]/[id]/layout.tsx`에 있다. 단계 사이를 이동해도 layout이 다시 마운트되지 않아 pan · zoom이 유지된다. 오른쪽 inspector는 child page가 route에서 만든다 — **viewer 상태는 inspector 데이터에 닿지 않는다**(`usePanZoom`의 `useState`뿐, inspector는 `inspectStep(scenario, step)`)
-- node는 단계 URL로 가는 진짜 `<a>`(Next `Link`, `scroll={false}`)다. 선택은 `useSelectedLayoutSegments()`로 URL에서 읽고 `aria-current="page"`로 표시한다. 새로고침 · 공유가 된다
-- `DevHubShell`은 inspector 데이터 대신 `inspector` slot을 받도록 바꿨다(route page가 채운다)
-
-### 상호작용 · 접근성
-
-- pan: 배경 끌기(pointer capture, node · 버튼 위에서는 시작하지 않음), 휠, node에 포커스한 채 방향키. zoom: Ctrl/⌘ + 휠(pointer 기준), + −, 버튼. fit: 0, 버튼, 처음 열 때. zoom 40–200%
-- transition · animation 없음 — reduced motion을 깨지 않는다
-- 키보드로 화면 밖 node에 포커스하면 그 node가 보이도록 최소한만 pan한다(`revealRect`)
-- node 글자는 zoom에 따라 작아질 수 있지만 link의 접근 이름에 전체 의도가 들어 있고, inspector와 아래 단계 목록에 원문이 그대로 있다
-- edge SVG · lane 띠는 `aria-hidden`이다. 다음 단계는 node · 단계 목록 · inspector "다음"에 글자로 있다
-- 상태: 칩 글리프 + 글자, 코드 없는 단계는 점선 테두리, 루프는 점선 화살표, 선택은 2px 테두리 — 색만으로 구분하지 않는다
-- viewport는 탭 정지점이 아니다(`jsx-a11y/no-noninteractive-tabindex`). 키보드 pan · zoom은 node에서 올라오는 key 이벤트로 처리한다
-
-### 검증
-
-- `nx lint` · `typecheck` · `test`(90) devhub 통과. 새 테스트: `flow.spec.ts`(참조 흐름 lane · 순서 · edge, 핸드오프 4 lane, 11개 시나리오 겹침 없음 · 캔버스 안, 루프 표시, 단계 inspector), `viewport.spec.ts`(zoom 기준점 고정, fit, reveal, clamp)
-- 렌더 구조는 `react-dom/server`로 확인했다(임시 spec · 임시 config, 커밋하지 않음, `useSelectedLayoutSegments`를 mock): transform layer 하나 안에 SVG(`aria-hidden`)와 node `<ol>`, node 4개가 단계 URL `<a>`, 선택 단계만 `aria-current="page"`, node 글자에 순서 · runtime · 상태 · 의도 · 담당 · 경로 · 개수 · 경유
-- **`nx build devhub` · 브라우저 동작(끌기 · 휠 · 키보드 · fit 화면)은 AI 세션에서 확인하지 못했다** — 빌드는 포트 바인딩으로 실패, dev 서버 · 브라우저를 띄울 수 없다
-
-## 33. 구현 상태 — architecture view
-
-`/architecture` · `/architecture/<nodeId>`. 32절의 viewer를 `components/canvas/`(`CanvasViewport` · `CanvasEdges` · `usePanZoom`)로 뽑아 시나리오 흐름과 아키텍처 그림이 같은 pan/zoom 표면을 쓴다. 두 번째 graph engine · 자동 배치 · 새 의존성은 없다.
-
-### node 10 — 코드나 실제 호출 근거가 있는 것만
-
-36절에서 `devhub-e2e`가 더해져 지금은 node 11 · 관계 18이다. 아래 표는 이 절 시점의 기록이다.
-
-| node                                | 종류                  | 근거                                                                              |
-| ----------------------------------- | --------------------- | --------------------------------------------------------------------------------- |
-| `web` · `mobile` · `api`            | 애플리케이션 · 제품   | Nx manifest                                                                       |
-| `web-e2e`                           | 애플리케이션 · 테스트 | Nx manifest                                                                       |
-| `devhub`                            | 애플리케이션 · 도구   | Nx manifest. 이 절 시점에는 관계 없음 — 36절에서 `devhub-e2e`와 관계 2개가 생김   |
-| `auth-contracts` · `webview-bridge` | 라이브러리            | Nx manifest                                                                       |
-| 브라우저 · PostgreSQL · Google OIDC | 외부                  | `RootLayout` · `startGoogleLogin` / `database.Open` · compose / `Client.Exchange` |
-
-node마다 documented-by(`docs`)가 있다 — target-architecture의 영역별 절, quality-gates "E2E 범위", local-development "로컬 Postgres" 등.
-
-### 관계 16 — 세 종류를 섞지 않는다
-
-| 종류 (선 모양 · 글자)                  | 관계                                                                                                                                                                                                                                  |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Nx 의존 5 (짧은 점선 · "Nx 의존")      | `web`/`mobile` → `auth-contracts`/`webview-bridge`(`workspace:*`), `web-e2e` → `web`(implicit)                                                                                                                                        |
-| 실행 중 호출 10 (실선, 인증은 긴 점선) | 브라우저 → web 페이지 요청 · web → api / mobile → api HTTP 호출 · api → postgres 저장 · mobile → web WebView로 엶 · web → mobile bridge 메시지 · web → Google / mobile → Google / Google → api 인증 redirect · api → Google HTTP 호출 |
-| 검증 1 (일점쇄선 · "검증")             | `web` verified-by `web-e2e` — Playwright가 next dev와 가짜 인증 API를 띄운다                                                                                                                                                          |
-
-이번에 더한 관계는 모두 source 근거가 있다: 브라우저 → web(`RootLayout` · `startGoogleLogin` · `authCookies`), web → Google(`startGoogleLogin`의 `redirect(authorizeUrl)`), mobile → Google(`systemAuthBrowser`의 `openAuthSessionAsync`), web verified-by web-e2e(`playwright.config.mts` `webDev` · `fakeApi`). `browser-redirect` interaction은 `auth-redirect`로 이름을 바꿨다.
-
-### Nx graph와 비교 (2026-09-18, `nx graph --file`)
-
-- Nx edge 5개(`static` 4 · `implicit` 1)는 curated `workspace-dependency` 5개와 **정확히 같다**. validator가 매번 manifest(Nx가 읽는 그 원본)와 집합 일치를 검사한다
-- Nx에는 `api`(Go)의 어떤 관계도, 실행 중 호출도, 검증도 없다 — **불일치가 아니라 Nx가 볼 수 없는 것**이다. 그래서 관계 종류를 나눴다
-- `web-e2e` → `web`은 Nx에서 implicit 의존 한 줄이지만, 의미로는 반대 방향의 "web verified-by web-e2e"다. 두 관계를 따로 둔다
-- `devhub`는 Nx에서도 edge가 없다
-
-### 경계 3 — `src/data/boundaries.ts`
-
-| 경계         | 가로지르는 관계                                   |
-| ------------ | ------------------------------------------------- |
-| WebView 경계 | WebView로 엶 · bridge 메시지                      |
-| API 경계     | web → api · mobile → api · api → postgres         |
-| 인증 경계    | web/mobile → Google · Google → api · api → Google |
-
-각 경계는 존재하는 관계 · 문서 heading만 가리킨다(validator).
-
-### 시나리오 ↔ 아키텍처
-
-- 단계의 아키텍처 node는 **새로 적지 않고 파생한다**(`stepNodeIds`): 담당(`owner`) + source 경로가 속한 프로젝트 + API handler의 프로젝트 + 계약의 소유 lib. 예: 핸드오프 `request-code` → mobile · api · webview-bridge
-- 시나리오 · 단계 inspector의 "연결 → 아키텍처에서 보기"가 `/architecture/<id>`로, node inspector의 "관련 시나리오 단계"가 단계 URL로 간다. 애플리케이션 · 라이브러리 상세에도 아키텍처 링크가 있다
-- 모든 단계 → node → 같은 단계로 되돌아오는지 테스트가 본다
-
-### 그림에서 뺀 것
-
-제품 목표 시나리오(`finish-task-from-image`)의 단계 — 사진 입력 · 이미지 분석 · 행동 제안 · 실행(캘린더 · 영수증) · 결과 · 자동화 — 는 node가 아니다. 아키텍처 화면 맨 아래 "문서에만 있는 구성 — 그림에 없음" 목록에 상태 칩과 함께 두었다. 별도 target 그림은 만들지 않았다.
-
-### 검증
-
-- `nx lint` · `typecheck` · `test`(101) devhub 통과. 새 `architecture.spec.ts`: 위치가 node와 정확히 일치 · 겹침 없음, 관계 없는 node는 `standalone` 이유가 있을 때만, 외부 node는 source 근거, documented-by · 경계 heading 존재, 모든 관계가 그려짐, **어떤 edge도 끝점이 아닌 node 아래를 지나지 않음**(곡선 표본 검사 — 첫 실행에서 `mobile-opens-google`이 `api` 아래를 지나는 것을 잡아 bend를 고쳤다), 경계 관계 존재, 단계 ↔ node 왕복
-- 렌더 확인(임시 spec, 커밋하지 않음): 지도 node 10개가 `/architecture/<id>` 링크, edge 글자 16개, 선택 node만 `aria-current`, api inspector → 관련 단계 링크, 핸드오프 단계 inspector → `/architecture/mobile` · `api` · `webview-bridge`
-- **`nx build devhub`는 포트 바인딩으로 실패**(같은 원인). 브라우저 확인은 사용자 터미널에서 한다
-
-## 34. 구현 상태 — repository navigation
-
-inspector의 소스 · 문서 · 테스트 · API · 명령에서 저장소의 실제 위치로 간다. 22절 정책을 구현했다.
-
-### 스냅샷 (`src/lib/repository/snapshot.ts`, 서버 전용)
-
-1. 빌드 환경 `DEVHUB_COMMIT_SHA`(40자 hex일 때만) · `DEVHUB_BRANCH`(안전한 이름일 때만)
-2. 없으면 저장소 루트(`pnpm-workspace.yaml`이 있는 가장 가까운 상위 디렉터리)에서 `git rev-parse HEAD` — `execFileSync`, shell 없음, 5초 timeout, 출력 검증
-3. 그래도 없으면 `unavailable` — commit은 `null`이고 가짜 SHA로 채우지 않는다. 브랜치 링크만 주고 상단 바에 "스냅샷 커밋을 알 수 없음"
-
-같이 읽는 것: `git status --porcelain`(로컬 변경 여부 → "커밋 이후 로컬 변경 있음"), `git ls-tree -r --name-only <commit>`(스냅샷 커밋에 있는 경로). 프로세스마다 한 번만 읽는다. 데이터 파일에는 SHA가 없다.
-
-### 링크 정책 (`src/domain/links.ts`, 순수 함수)
-
-- `RepositoryRef.browse` 템플릿(`{base}/blob/{rev}/{path}` · `{base}/tree/{rev}/{path}` · `#L{start}-L{end}`)으로만 URL을 만든다. 호스트를 코드에 박지 않는다 — GitLab 모양 템플릿으로도 테스트했다. 링크 글자도 `webUrl`의 host(`github.com`)에서 온다
-- **정본은 commit permalink**, 보조가 "최신 `<branch>`에서 보기"
-- 경로는 정규 저장소 상대 경로만 받고 segment마다 `encodeURIComponent`한다(공백 · `%` · `?` · `[section]` · 한글). 루트 · 빈/`.`/`..` segment · 백슬래시 · 제어 문자 · `#` · URL은 거부한다
-- revision은 40자 SHA 또는 안전한 브랜치 이름만
-- line anchor는 **생성된** range가 같은 commit일 때만 붙는다. 지금 생성기가 없어 실제로 붙는 곳은 없다
-
-### 링크를 만들지 않는 경우 (`src/lib/repository/source-links.ts`)
-
-| gap              | 조건                                   | 화면                                    |
-| ---------------- | -------------------------------------- | --------------------------------------- |
-| `invalid-path`   | 정규 경로가 아님                       | 이유 문구, 링크 없음                    |
-| `missing`        | 디스크에 없음                          | 이유 문구, 링크 없음                    |
-| `not-committed`  | 스냅샷 커밋에 없음(미커밋 · untracked) | 이유 문구, 링크 없음 — 누르면 404이므로 |
-| `unknown-commit` | 스냅샷 커밋을 알 수 없음               | 브랜치 링크만                           |
-
-지금 `apps/devhub/**`와 이 문서는 untracked라 `not-committed`로 표시된다. 커밋되면 링크가 생긴다.
-
-### inspector
-
-- 소스 · 문서 · 테스트 항목마다 "`github.com`에서 보기 @ `<short sha>`" · "최신 `main`에서 보기" · "경로 복사"(clipboard, 결과를 `role="status"`로 알림). 새 창 링크는 `rel="noopener noreferrer"`, 접근 이름에 경로와 "새 창"
-- **API** 절(단계 · 시나리오에 API가 있을 때): `METHOD route`(+HEAD), handler 소스, 생성된 Swagger 문서(`apps/api/docs/swagger/swagger.json`). 개발 전용 `/swagger/*any`는 "Swagger에 없음"
-- **"연결 → 이 테스트를 돌리는 명령"**: 테스트 runner에서 루트 명령으로(`vitest` · `go-test` → `pnpm test`, `playwright` → `pnpm e2e`, `node-test` → `pnpm test:hooks`) — 명령 화면에 실행 조건과 "명령 복사"
-- 상단 바 · 개요에 스냅샷(`4940176` · git · 로컬 변경 있음)
-
-### 보안
-
-- href는 저장소 metadata(검증된 https `webUrl` · 템플릿) + 검증된 revision + 인코딩된 정규 경로로만 만든다. 사용자 입력 · query string을 href에 쓰지 않는다. validator가 `webUrl`이 https이고 query · hash · 끝 `/`가 없으며 템플릿이 `{base}/`로 시작하는지 본다
-- git은 인자 배열로만 부르고(shell 없음) 실패는 `null`이다
-- 로컬 에디터 deep link(`vscode://` 절대 경로)와 소스 미리보기 · 내용 복사는 만들지 않았다(Phase 2 · 3)
-
-### 검증
-
-- `nx lint` · `typecheck` · `test`(121) devhub 통과. 새 테스트: `links.spec.ts`(permalink · 디렉터리 · commit 없음 · generated range만 anchor · 다른 호스트 템플릿 · 공백/특수문자/한글 인코딩 · 잘못된 경로 11종 거부 · 잘못된 revision 거부), `snapshot.spec.ts`(env 우선 · 잘못된 env 무시 · git 실패 시 unavailable · dirty · 안전한 브랜치만, `linksFor`의 gap 4종), `catalog.spec.ts`(저장소 템플릿 신뢰 · runner → 명령 존재)
-- 실제 저장소로 렌더 확인(임시 spec): 스냅샷 `4940176…` · git · dirty, `mobile-history-webview` inspector에 소스 · 문서 · 테스트마다 commit permalink와 main 링크, 핸드오프 `issue-code` 단계에 handler와 `swagger.json` 링크, untracked 문서 · `apps/devhub/package.json`은 `not-committed`, 없는 경로는 `missing`
-- **GitHub에서 열리는지는 확인하지 못했다.** 대표 URL 6개가 익명 요청에 모두 404다. `github.com/berrypjh`는 200, `git ls-remote origin`(인증)은 HEAD `4940176`을 돌려주므로 저장소는 있고 **private**이다 — 접근 권한이 있는 로그인 세션에서만 열린다(22.3 미결 1). URL 모양은 GitHub 규칙과 같다
-- `nx build devhub`는 포트 바인딩으로 실패(같은 원인)
-
-## 35. 구현 상태 — global search
-
-상단 바 검색 하나로 시나리오 · 단계 · 애플리케이션 · 라이브러리 · 아키텍처 구성 요소 · 개념(경계 · 런타임) · 문서 · API · 계약 · 소스 파일 · symbol · 테스트 · 명령을 찾는다. 새 dependency는 없다.
-
-### 색인 (`src/lib/search/search-index.ts`)
-
-- `catalog`에서 파생한다. 따로 적는 목록이 없다. 소스 파일 · symbol은 `src/lib/repository/source-usage.ts`가 단계 · 관계 증거 · manifest · API handler · 계약 정의 · 테스트에 나온 경로를 모아 만든다(483개 항목)
-- 항목마다 이동할 곳이 앱 안에 있다. 소스 · symbol · API · 계약 · 테스트는 새 화면 `/source?path=…`로 간다 — 그 파일을 인용하는 단계 · API · 계약 · 테스트 · 관계 · 구성 요소와 inspector(34절 링크). `path`는 `sourceUsage()`의 조회 키로만 쓰고 없으면 404다
-- 개념: 경계 → `/architecture#boundary-<id>`, 런타임 → `/scenarios?runtime=<id>`
-
-### 순위
-
-fuzzy 없이 결정적이다. tier가 작을수록 앞이고, 같은 tier는 종류 순서 → 짧은 이름 → 이름 순이다.
-
-| tier | 조건                                                                |
-| ---- | ------------------------------------------------------------------- |
-| 0    | 이름(label · id · 경로 · 파일명 · route)과 정확히 같음              |
-| 1    | 이름 또는 `/` `.` `-`로 나눈 조각의 prefix                          |
-| 2    | 검색어의 모든 단어가 token(camelCase · 구분자 분리)과 같거나 prefix |
-| 3    | 이름 · 본문의 substring                                             |
-| 4    | 관련 항목(인용하는 시나리오 · API · 계약)에서만 일치                |
-
-NFC · 소문자로 비교한다. 목록에는 종류별 5개 · 전체 30개까지 순위 그대로 보이고, 전체 개수는 따로 알린다. 대표 검색어: `webview` → WebView 경계(0) 다음 시나리오들(1), `handoff` → `handoff.ts` · `handoff.go`(0), `session` → 계약 `Session` · `session.ts`(0), `history` → 기록 시나리오(1), `auth-contracts` → 라이브러리(0), `/v1/auth/handoff/start` → API(0), `quality-gates` → 문서 하나(0).
-
-### 화면 · 키보드 (`src/components/shell/global-search.tsx`)
-
-- 공용 `SearchField`의 제안 목록(APG list-autocomplete combobox)을 그대로 쓴다. 포커스는 입력에 남고 활성 항목은 `aria-activedescendant`, ↑↓ 이동 · Enter 선택 · Escape 닫기는 SearchField가 처리한다. 처음부터 `suggestions`를 넘겨 입력 도중 역할이 바뀌지 않는다
-- 추가한 것: ⌘K / Ctrl+K(다른 수식키 없이)로 입력에 포커스 · 전체 선택(`aria-keyshortcuts`), 결과 수 `role="status"`, 결과 없음 문구
-- 결과 종류는 설명 앞 글자("라이브러리 · …")로 보인다. 색만으로 구분하지 않는다
-- 최근 검색 · 분석은 없다
-
-### 필터 (`src/lib/catalog/filters.ts` · `src/components/entity/filter-bar.tsx`)
-
-- 시나리오 목록: 트랙 · 상태 · 런타임. 서버에서 query를 허용 값으로 검증해 거른다. 남는 게 없으면 "조건에 맞는 시나리오가 없습니다"와 "필터 모두 해제"
-- 아키텍처: 종류(애플리케이션 · 라이브러리 · 외부). client에서 query를 읽어(`Suspense`, fallback은 전체 그림) 노드와 양 끝이 남은 관계만 그린다. 노드 링크에 필터를 유지한다. 남는 게 없으면 빈 상태 문구
-- 필터는 링크다. 선택된 값은 `aria-current` · ✓ · 굵기로 표시한다. URL에는 선택한 필터만 남는다
-
-### 검증
-
-- `nx lint` · `typecheck` · `test`(147) devhub 통과. 새 테스트: `search-index.spec.ts`(tier 순서 · 결정성 · 대소문자 · 빈/없는 검색어 · 대표 검색어), `search-view.spec.ts`(⌘K · Ctrl+K 판정, 종류 글자, 결과 수 문구, 서버 렌더 markup — combobox · 접근 이름 · 단축키 · status), `filters.spec.ts`, `architecture-map.spec.ts`(종류 필터 · 끊긴 관계 제거 · 링크의 필터 유지 · 빈 상태)
-- 컴포넌트 렌더 테스트를 위해 `vitest.config.ts`에 JSX 변환(`oxc.jsx`)과 tsconfig 경로를 켰다. 환경은 node 그대로다
-- **브라우저 키보드 동작(↑↓ · Enter · Escape · ⌘K 포커스)은 실행해 보지 못했다.** DOM 테스트 환경(jsdom 등)이 없고 설치하지 않았다. SearchField 동작은 설치된 빌드 코드를 읽어 확인했다
-- `nx build devhub`는 포트 바인딩으로 실패(같은 원인)
-
-## 36. 구현 상태 — 접근성 · DevHub E2E
-
-그림 없이도 같은 정보를 볼 수 있게 했고, 핵심 키보드 경로를 E2E로 적었다. 새 dependency는 없다.
-
-### 점검 결과와 고친 것
-
-| 항목          | 전                                                        | 후                                                                                                                                           |
-| ------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| landmark      | banner · 탐색기 aside · main · 상세 정보 aside            | 그대로. 상세 정보 aside에 `id` · `tabIndex=-1`(49절에서 id를 `devhub-inspector`로 바꿈)                                                      |
-| 건너뛰기      | "본문으로 건너뛰기" 하나                                  | "상세 정보로 건너뛰기" 추가. 선택된 노드 바로 뒤에 "이 단계(구성 요소)의 상세 정보로 이동"                                                   |
-| 그림 대안     | 시나리오는 그림 아래 짧은 단계 목록, 아키텍처는 관계 목록 | 그림 · 목록 전환(공용 `SegmentControl`, `aria-pressed`). 목록은 단계마다 실행 위치 · 담당 · 소스 · API · 계약 · 테스트 · 다음, 노드마다 관계 |
-| 선택 표시     | 테두리 · 배경색 + `aria-current`                          | 글자 "· 선택됨" 추가, 그림 위 요약 줄에 "선택: …"                                                                                            |
-| 화면 밖 선택  | 포커스를 받을 때만 보이게 이동                            | deep link로 열어도 선택된 노드를 보이게 이동                                                                                                 |
-| 그림 요약     | 영역 이름 · 조작 안내                                     | "단계 N개 · 연결 N개 · 선택: …"를 보이는 글자로 두고 `aria-describedby`에 연결                                                               |
-| 배율          | `aria-hidden` 숫자                                        | `<output>`(status)                                                                                                                           |
-| 좁은 화면     | 탐색기 전체 목록이 본문 위를 차지, 상단 바가 옆으로 넘침  | `lg` 아래에서 탐색기는 "탐색기" 버튼(`aria-expanded`) 뒤로 접힌다. 본문 머리에 "상세 정보로 이동". 저장소 · 보기 줄은 줄바꿈                 |
-| 대비          | —                                                         | 쓰는 글자 · 배경 토큰 쌍이 모두 4.5:1 이상(가장 낮은 것이 선택 배경 위 성공색 4.57:1)                                                        |
-| 움직임 · 툴팁 | —                                                         | DevHub 자체 transition · animation 없음(공용 컴포넌트는 reduced motion을 따른다). `title` 툴팁에만 있는 정보 없음. `div` onClick 없음        |
-
-선택하면 Next가 새 route segment의 첫 요소로 포커스를 옮긴다(`layout-router`의 scroll · focus 처리). 노드 · 목록 링크는 `scroll={false}`라 포커스가 노드에 남고, 한 번의 Tab이 상세 정보 건너뛰기로 간다. 검색 결과나 상단 보기로 다른 레이아웃에 가면 포커스는 문서 처음으로 돌아가고, 다음 Tab이 "본문으로 건너뛰기"다(42절).
-
-### E2E 프로젝트 `devhub-e2e`
-
-- web-e2e와 같은 모양(`package.json`의 `nx` · `type:e2e` · `implicitDependencies`)으로 만들고 `@nx/playwright:configuration`으로 설정을 생성했다. 이미 있는 `@nx/playwright` · `@playwright/test`만 쓴다
-- `next dev --port 3100`만 띄운다. web-e2e의 가짜 인증 API는 가져오지 않았다
-- Chromium만 돈다. macOS WebKit은 Tab이 링크를 건너뛰어 키보드 경로 검증 의미가 달라진다
-- 17개: shell landmark · 건너뛰기 둘 · 좁은 화면(본문 우선 · 탐색기 접기 · 상세 정보 이동 · 가로 넘침 없음) · ⌘K · 결과 수 · 종류 글자 · 화살표와 Enter로 열기 · Escape · 결과 없음 · 노드 선택 → 상세 정보 → 소스 링크 · deep link · 배율 조절 · 시나리오 목록 · 아키텍처 목록(필터 유지) · 아키텍처 노드 선택
-
-### 검증
-
-- `nx lint` · `typecheck` · `test`(157) devhub, `lint` · `typecheck` devhub-e2e 통과. 새 단위 테스트: `scenario-outline.spec.ts`(모든 시나리오의 단계 · 링크, 실행 위치 · 소스 · API · 테스트 글자), `scenario-flow.spec.ts`(요약 · 선택 · 건너뛰기 · 배율 버튼 이름), `architecture-map.spec.ts`(요약 · 선택, 목록이 그림과 같은 노드 · 관계를 담는지)
-- 새 프로젝트가 생기자 catalog 검증이 manifest 누락을 잡았다. `devhub-e2e` 노드와 관계 둘(implicitDependencies · 검증)을 넣었고, `devhub`는 관계가 생겨 "관계 없음" 설명을 뺐다
-- 이 세션에서 E2E를 실행하지 못했다. dev 서버 포트 바인딩이 막혀 있다. `playwright test --list`로 17개가 잡히는 것까지 확인했다
-- 접근성 자동 검사(axe 등)는 넣지 않았다. 필요하면 `@axe-core/playwright`를 별도로 제안한다
-
-## 37. 구현 상태 — freshness 검증 · MVP 최종 검증
-
-저장소가 바뀌면 DevHub가 조용히 낡지 않고 테스트가 실패하게 했다. AST 인덱서 · CI · 새 dependency는 없다.
-
-### 먼저 고친 원인 — Nx 캐시가 낡은 통과를 재생했다
-
-catalog 검증은 `apps/*` · `libs/*` · `docs/` · 루트 `package.json` · git 상태를 읽는데, `devhub:test`의 inputs는 자기 프로젝트 파일뿐이었다. `docs/`에 임시 md를 하나 넣고 확인했다.
-
-| 실행                         | 결과                                                 |
-| ---------------------------- | ---------------------------------------------------- |
-| `vitest run` (직접)          | `cover every markdown file under docs/` 실패         |
-| `nx test devhub` (고치기 전) | `[local cache]` · 157 통과 — 낡은 결과를 그대로 재생 |
-| `nx test devhub` (고친 뒤)   | 실패                                                 |
-| `nx run devhub:devhub-check` | 실패                                                 |
-
-`devhub`의 `test` · `build` · `devhub-check`를 `cache: false`로 두었다(`apps/devhub/package.json`). `build`도 같은 이유다 — 정적 페이지에 빌드 시점의 git 스냅샷(SHA · 추적 경로)이 들어가는데 inputs에 git이 없다. `pnpm verify` 스크립트는 바꾸지 않았다. `pnpm test`가 이미 devhub 테스트를 돌린다.
-
-### `pnpm devhub:check`
-
-루트 스크립트 `devhub:check` → `nx run devhub:devhub-check` → `vitest run src/data src/domain src/lib/repository/snapshot src/lib/catalog/architecture.spec`. freshness spec 7개 파일만 돈다(약 2초). 같은 spec이 `nx test devhub`에도 들어 있어 `pnpm test` · `pnpm verify`에서 자동으로 돈다.
-
-### 실행
-
-`pnpm dev:devhub`(`nx dev devhub`) → http://localhost:3100. `dev` · `start` · `serve-static`을 3100에 고정해 `pnpm dev`가 web(3000)과 함께 띄워도 부딪히지 않고, `devhub-e2e`는 이미 떠 있는 3100 서버를 재사용한다. 그 전에는 둘 다 `next dev` 기본값 3000을 썼다.
-
-### 규칙
-
-| 묶음           | 규칙                                                                                                                                                                                                                                               | 위치                                                      |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| schema · graph | 컬렉션별 id 유일, 시나리오 안 단계 id 유일, 관계 양 끝 · `next` · `via` · runtime · owner · API · 계약 · 테스트 · 문서 id 존재, 경계 → 관계 id 존재                                                                                                | `catalog.spec` · `scenarios.spec` · `architecture.spec`   |
-| 파일           | catalog이 인용한 **모든** 경로(manifest · 외부 근거 · handler · Swagger · 계약 · 관계 근거 · 문서 · 테스트 · 단계 source, 320건 · 고유 112개)가 정규 경로이고 디스크에 있다. `docs/**/*.md`는 빠짐없이 catalog에 있다                              | `freshness.spec` · `catalog.spec`                         |
-| 문서 heading   | 인용한 heading이 글자 그대로 있다. 제품 한 문장은 인용한 heading 아래에 글자 그대로 있다                                                                                                                                                           | `scenarios.spec` · `architecture.spec` · `freshness.spec` |
-| Nx project     | `nx graph --file`로 Nx가 실제로 보는 project 8개 = catalog project. manifest의 `workspace:*` · `implicitDependencies` = catalog의 Nx 의존 관계                                                                                                     | `freshness.spec` · `catalog.spec`                         |
-| 명령           | 루트 script가 부르는 target(`nx run-many -t` · `nx run p:t` · `nx <target> <project>`)이 Nx가 추론한 target까지 포함해 존재한다                                                                                                                    | `freshness.spec` · `catalog.spec`                         |
-| 시나리오 의미  | `implemented`는 source 필수, `partial`은 source + 공백, `documented-only` · `not-found`는 source 없음 + 부재 검색, 제품 목표 트랙은 source 없음. 단계 source에 테스트 · 문서 · e2e 파일 금지. 흐름 그림은 코드를 주장하는 단계에만 source를 그린다 | `scenarios.spec` · `freshness.spec`                       |
-| API · 계약     | 항상 노출되는 route = 생성된 Swagger, 개발 전용 route는 Swagger에 없음, 계약 literal이 정의 파일에 있음                                                                                                                                            | `catalog.spec`                                            |
-| 링크           | 인용한 모든 경로의 permalink · 브랜치 링크가 `RepositoryRef` 템플릿 + 스냅샷 + 인코딩된 경로에서만 나온다. 데이터에 URL · SHA · `#L` 없음                                                                                                          | `freshness.spec` · `catalog.spec` · `links.spec`          |
-| 스냅샷         | env → git → unavailable 순서, 잘못된 env 무시, 실패 시 가짜 SHA 없음. DevHub 코드에 40자 SHA 없음. unavailable이면 상단 바가 "스냅샷 커밋을 알 수 없음 — main 브랜치 링크만 제공", 소스마다 "최신 main에서 보기"와 "고정 링크가 없습니다"          | `snapshot.spec` · `snapshot-view.spec` · `freshness.spec` |
-
-규칙이 실제로 잡는지 데이터를 일부러 망가뜨려 확인하고 되돌렸다. 없는 target 이름(`api:swagger-verify`), 단계 source를 spec 파일로 바꾸기, 인용 파일 이름 바꾸기 — 셋 다 해당 규칙이 실패했고 실패 메시지에 인용한 레코드(`step webview-auth-handoff/start: …`)가 나왔다.
-
-### symbol 검사의 한계
-
-`symbolPattern`은 글자 검사다. `Type.method`는 Go receiver 모양(`func (x *Type) method(`)으로, 나머지는 앞뒤가 식별자 문자가 아닌 단어로 찾는다.
-
-- false positive: 주석 · 문자열 · 다른 선언에 같은 단어가 있으면 통과한다. 선언이 지워져도 사용처가 남으면 못 잡는다
-- false negative: 재export · 생성 코드 · 다른 파일에 있는 선언은 실패한다(그래서 그런 symbol은 인용하지 않았다)
-- 여러 언어의 정확한 symbol index는 Phase 2다. 테스트 제목도 따옴표 안 글자로만 확인하고, 그 테스트가 통과하는지는 보지 않는다
-
-### 제품 한 문장
-
-개요에 "제품" 절을 더했다. `docs/product/product-principles.md` "한 문장 정의"의 문장을 그대로 인용하고(글자가 바뀌면 `freshness.spec` 실패), 현재 동작 시나리오 10개와 아직 구현되지 않은 제품 목표를 트랙별로 나눠 보여 준다.
-
-### 알려진 공백
-
-- `nx affected`는 DevHub가 저장소 전체를 읽는 것을 모른다. `apps/web`이나 `docs/`만 바꾸면 affected에 devhub가 없다. 인용된 파일을 바꿨으면 `pnpm devhub:check`를 따로 돌린다(`pnpm test`는 run-many라 항상 돈다). 실측 매핑과 이 안내를 repo-verify skill에 적었다
-- 방향이 한쪽이다. catalog이 인용한 것이 사라지면 잡지만, 새 소스 파일 · 새 테스트 · 새 route 파일을 catalog이 모르는 것은 잡지 못한다. 예외는 Nx project · manifest 의존 · `docs/**/*.md` · Swagger route로, 이쪽은 양방향이다
-- `next build`는 검사를 돌리지 않는다. `pnpm verify`는 test 뒤에 build를 돌리지만 `nx build devhub`만 돌리면 검사 없이 빌드된다
-- `next dev`는 프로세스마다 스냅샷을 한 번 읽는다. 개발 서버를 띄운 뒤 커밋하면 다시 띄워야 새 SHA가 보인다
-- Nx project 검사는 설치된 `node_modules/.bin/nx`를 부른다(daemon 끔, 약 0.3초). nx가 없으면 테스트가 실패한다 — 건너뛰지 않는다
-- 저장소가 private이라 permalink는 권한 있는 로그인 세션에서만 열린다(34절)
-
-### 최종 검증 (2026-09-19)
-
-| 명령                                                      | 결과                                                                                                                                                                                                                                                         |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `nx run-many -t lint,typecheck,test -p devhub,devhub-e2e` | 통과. devhub Vitest 169개 (16 파일)                                                                                                                                                                                                                          |
-| `pnpm devhub:check`                                       | 통과. 7 파일 · 107개                                                                                                                                                                                                                                         |
-| `pnpm verify`                                             | `format:check` · `lint` · `typecheck` 통과, `test`에서 멈춤 — DevHub와 무관한 기존 실패 2건: web `callback.spec.ts` 온보딩 이동(12절 #1, `apps/web` 변경 없음), api `internal/config` 5개(Nx가 `apps/api/.env`를 넣음, `NX_LOAD_DOT_ENV_FILES=false`로 통과) |
-| `pnpm test:hooks`                                         | 49개 통과                                                                                                                                                                                                                                                    |
-| `pnpm build`                                              | web · api는 캐시 재생, `devhub:build`는 포트 바인딩으로 실패(이 세션 제약)                                                                                                                                                                                   |
-| `nx e2e devhub-e2e`                                       | 실행하지 못함 — 이 세션에서 포트 바인딩이 막혀 있다. `--list` 17개까지만 확인                                                                                                                                                                                |
-
-### MVP 인수 — DevHub에서 답을 찾는 곳
-
-| 질문                             | 어디서                                                               | 지금 답(예: `webview-auth-handoff` · `exchange` 단계)                                                                |
-| -------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| 1. 무엇을 하려는 제품인가        | `/` 개요 "제품"                                                      | 사진과 스크린샷을 넣으면 무엇을 하려던 것인지 알아채고, 그 일을 대신 끝내주는 앱 (product-principles § 한 문장 정의) |
-| 2. 실제 구현된 consumer flow     | `/` "현재 동작" · `/scenarios?track=current`                         | 10개 — 9개 구현됨, 온보딩 소개는 일부 구현                                                                           |
-| 3. mobile · web · API 중 어디    | 단계 inspector "런타임 · 담당" · 흐름 lane · 목록 "실행 위치"        | Next 서버 · 담당 web                                                                                                 |
-| 4. 담당 source                   | inspector "소스" · 목록 "소스"                                       | `apps/web/src/app/(auth)/auth/handoff/route.ts` 외 5개(web → api `handlers.handoffExchange` · `Handoff.Exchange`)    |
-| 5. 거치는 contract · API         | 단계 inspector 개요의 API · 계약, "API" 절                           | `POST /v1/auth/handoff/exchange` · 계약 `Session` (auth-contracts)                                                   |
-| 6. 관련 docs                     | 시나리오 inspector "문서"                                            | `docs/architecture/data-access.md` § WebView 로그인 핸드오프                                                         |
-| 7. 관련 tests                    | inspector "테스트" · 목록 "테스트"                                   | vitest 3 · go-test 2 · playwright 3                                                                                  |
-| 8. local verification command    | inspector "연결 → 이 테스트를 돌리는 명령" · `/engineering/<id>`     | `pnpm test` · `pnpm e2e`(포트 · 브라우저 필요), DevHub 자체는 `pnpm devhub:check`                                    |
-| 9. GitHub permalink              | inspector 소스마다 "github.com에서 보기 @ 4940176"                   | `https://github.com/berrypjh/snapdone/blob/4940176…/apps/web/src/app/(auth)/auth/handoff/route.ts`                   |
-| 10. 구현되지 않은 product target | `/` "제품 목표 — 아직 구현되지 않음" · 아키텍처 "문서에만 있는 구성" | 사진으로 할 일 끝내기 — 7단계 모두 문서에만 있음, 부재 검색으로 코드 없음 확인                                       |
-
-## 38. 구현 상태 — 디자인 토큰 점검 · 라이트/다크
-
-공용 UI의 `dist/AGENTS.md` 규칙(런타임 테마는 `--ds-*` CSS 변수와 `data-theme`, namespace를 동적으로 고르지 않는다)에 맞춰 점검했다.
-
-### 토큰 사용 점검
-
-- DevHub 코드의 `var(--ds-*)`는 모두 `styles.css`에 정의돼 있다. hex · `rgb()` · `white`/`black` 같은 원시 색은 없다. Tailwind 색 클래스는 전부 preset 키다(`--color-*: initial`로 기본 팔레트를 지웠다)
-- **고친 것 — 선택 배경이 불투명했다.** `bg-background-selected`는 preset이 `rgb(var(--ds-background-selected-rgb) / 1)`로 만든다. 토큰 값은 8% 투명(`#10B98114`)인데 `-rgb` 변수에는 알파가 없어 선택 항목이 진한 초록 면이 됐다. 그 위 `text-light`는 3.03:1, `text-link`는 2.16:1이었다. 탐색기 · 상단 보기 · 필터는 `bg-(--ds-background-selected)`로, 그림의 선택 노드는 자기 면(`surface`/`default`) 위에 토큰을 `background-image`로 겹쳐 쓴다. 컴파일한 CSS에서 `background-color: var(--ds-background-selected)`를 확인했다
-- 36절의 대비 수치는 투명한 선택 배경을 가정했었다. 이제 실제로 그렇다
-
-### 라이트/다크
-
-- `<html data-theme>`에 `light` · `dark`만 쓴다. 라이브러리가 `:root`를 라이트, `[data-theme="dark"]`를 다크로 정의하므로 `<html>`에 두면 `body` 배경까지 따라온다. `ThemeProvider`는 `<div data-theme>`로 감싸 `body` · 스크롤바가 따라오지 않고 첫 화면 전에 적용할 수 없어 쓰지 않았다
-- `<head>`의 인라인 스크립트(`src/lib/browser/theme.ts`)가 첫 paint 전에 저장된 선택, 없으면 OS 설정(`prefers-color-scheme`)을 적용한다. 저장소가 막혀도 OS 설정은 적용된다
-- 상단 바 "화면 테마" — 공용 `SegmentControl`(라이트 · 다크, `aria-pressed`). 선택은 `localStorage`(`devhub-theme`)에 브라우저별로 남는다
-- 라이브러리가 `color-scheme`을 두지 않아 `global.css`에서 라이트/다크에 맞춘다(네이티브 입력 · 스크롤바)
-- 대비(토큰 값으로 계산): 라이트 가장 낮은 글자 쌍 4.57:1, 다크 4.72:1(선택 배경 위 `text-error`). 포커스 링은 라이트 3.19:1 이상, 다크 5.44:1 이상. 선택된 SegmentControl · 건너뛰기 링크 글자는 4.98:1(라이트) · 5.62:1(다크)
-
-### 검증
-
-- `nx lint` · `typecheck` · `test`(173) devhub 통과. `theme.spec.ts`: 저장된 선택 우선 · OS 설정 · 잘못된 저장값 · 저장소 차단, 스위치가 이름 있는 그룹의 두 버튼
-- E2E `theme.spec.ts` 2개 추가(다크 OS에서 다크로 시작, 키보드로 전환 후 새로고침에도 유지) — 이 세션에서 실행하지 못했다
-- 실제 브라우저 화면은 보지 못했다. 대비는 토큰 값 계산이다
-
-## 39. 구현 상태 — 상세 정보 가독성 · 아이콘
-
-상세 정보(우측)가 읽기 어렵다는 문제를 먼저 쟀다. 원인은 내용보다 반복이었다.
-
-| `webview-auth-handoff` › `exchange` 단계           | 전   | 후                      |
-| -------------------------------------------------- | ---- | ----------------------- |
-| 링크                                               | 43   | 22 (목차 6 · 연결 포함) |
-| 버튼                                               | 16   | 11 (파일당 복사 1)      |
-| 보이는 글자 덩어리                                 | 166  | 95                      |
-| "…에서 보기 · 최신 main에서 보기 · 경로 복사" 묶음 | 16번 | 0                       |
-
-- 파일 단위로 묶었다(`src/lib/catalog/reference-groups.ts`). 소스는 프로젝트 → 파일 → symbol, 테스트는 프로젝트 → 파일 → 실행기 · 실행 조건 · 제목. 같은 파일을 여러 symbol · 테스트가 인용해도 파일 줄은 한 번이다. 프로젝트 제목 아래에서는 `apps/web/` 같은 앞부분을 반복하지 않는다
-- 파일 이름이 링크다(`FileRow`) — 스냅샷 커밋 permalink, 커밋을 모르면 브랜치 링크와 "최신 main 기준" 글자. 옆에 복사 아이콘 버튼(공용 `IconButton`, 이름은 "경로 복사: <전체 경로>"). 폴더는 흐리게, symbol은 코드 칩으로
-- "최신 main에서 보기"는 파일마다 두지 않고 `/source` 페이지(파일 하나)에만 둔다. 커밋 고정 링크가 정본이라는 22절 정책과 같다
-- 섹션 제목에 요약을 붙였다 — 소스 "web 4 · api 2", 테스트 "vitest 3 · go-test 2 · playwright 3"
-- 개요에서 비어 있는 사실(경유 · 증거 공백 · 부재 검색이 없을 때)은 보이지 않는다. 섹션이 비었을 때의 "없음 — 이유"는 그대로다
-- 아이콘: 공용 UI에 아이콘 세트가 없어 `src/components/ui/icon.tsx`에 선 아이콘을 SVG로 그렸다(새 dependency 없음). 그림의 보기 조절도 축소 · 확대를 −/+ 아이콘으로 바꿨다. "화면에 맞추기"와 같은 테두리 버튼(공용 `Button` `outlined`)에 아이콘만 넣고 이름은 `aria-label`로 "축소" · "확대" 그대로 둔다. 그리고 뜻이 아이콘만으로 전해지지 않는 "화면에 맞추기"는 글자로 뒀다. 모두 `aria-hidden`이고 `currentColor`라 라이트/다크를 따른다. 뜻은 옆 글자가 말한다 — 아이콘만으로 전하는 정보는 없다. 아이콘만 보이는 버튼은 복사 · 축소 · 확대 · 라이트/다크이고, 모두 접근 이름이 있다(복사는 상태 알림 `role="status"`도)
-- 마우스 hover로 여는 방식은 쓰지 않았다(키보드 · 터치에서 열리지 않고, 안의 링크를 누르기 어렵다)
-
-### 검증
-
-- `nx lint` · `typecheck` · `test`(181) devhub 통과. `reference-groups.spec.ts`(파일 한 번 · symbol 모음 · 저장소 그룹 · 테스트 파일의 실행기와 조건 한 번), `inspector.spec.ts`(섹션마다 파일 링크 = 서로 다른 파일 수, 복사 버튼도 같은 수, 파일별 main 링크 없음, 요약 줄, 빈 사실 없음, 커밋을 모를 때 브랜치 링크와 글자)
-- 기존 E2E의 소스 링크 선택자(`/에서 보기/`)는 새 접근 이름에도 맞는다. 브라우저 화면과 E2E는 이 세션에서 보지 못했다
-
-## 40. 구현 상태 — 목록 보기 정돈
-
-"그림 / 목록"의 목록도 39절과 같은 방식으로 정리했다.
-
-### 시나리오 목록 (`flow/scenario-outline.tsx`)
-
-- 항목마다 아이콘과 이름(`Term`, 공유 컴포넌트): 실행 위치 · 담당 · 소스 · API · 계약 · 테스트 · 다음 · 경유. "실행 위치 1"처럼 뜻 없는 개수는 뺐다
-- 소스 · 테스트는 프로젝트 → 파일로 묶는다(39절의 `groupSources` · `groupTests`). 파일 이름은 DevHub 안의 `/source` 페이지 링크(`FileEntry`), 폴더는 흐리게, symbol · 계약은 칩. 테스트 실행기와 실행 조건은 파일당 한 번. GitHub 링크와 복사는 상세 정보에만 둔다
-- 요약 줄은 뜻이 있을 때만: 소스는 프로젝트가 둘 이상일 때 "web 2 · api 1", 테스트는 실행기별 개수
-- API · 계약 · 경유는 있을 때만 보인다. 소스 · 테스트는 비면 "없음"을 남긴다 — 제품 목표 단계에서는 그것이 정보다
-- "다음"은 바로 아래 단계가 아닐 때(분기 · 되돌아감 · 건너뜀)만 보인다
-
-WebView 로그인 핸드오프 기준: 링크 46 → 37, 전체 경로 반복 20 → 0, 빈 "없음" 줄 7 → 0. 보이는 글자 조각 수는 137 → 235로 늘었다 — 파일 이름 · 폴더 · 칩이 짧은 조각으로 나뉜 것이라 가독성 지표로 쓰지 않는다.
-
-### 아키텍처 목록 (`architecture/architecture-outline.tsx`)
-
-- 관계를 "나가는 관계 / 들어오는 관계"로 나눴다. 줄마다 자기 이름을 반복하지 않고, 상대 노드 이름이 링크다(필터 유지). 관계 종류 글자는 그림의 선 이름과 같다
-- 종류(애플리케이션 · 제품 등)는 제목 오른쪽, 경로 · 요약은 그 아래
-
-### 검증
-
-- `nx lint` · `typecheck` · `test`(183) devhub 통과. 시나리오 목록: 단계마다 파일 링크 = 서로 다른 소스 · 테스트 파일 수(모든 시나리오), 제품 목표 단계는 소스 · 테스트 "없음" 둘만 있고 API · 계약이 없음, "다음"은 바로 아래가 아닐 때만. 아키텍처 목록: 제목 링크가 그림의 노드와 같음, 노드마다 링크 = 1 + 걸린 관계 수
-- E2E 목록 테스트의 소스 링크 선택자를 새 접근 이름(`… — apps/…`)과 `/source` 링크로 바꿨다. 브라우저 화면과 E2E는 이 세션에서 보지 못했다
-
-## 41. 고친 것 — 패널 끝에서 페이지 전체가 더 내려감
-
-넓은 화면에서 패널을 끝까지 스크롤한 뒤 휠을 더 굴리면 페이지 전체가 한 번 더 내려갔다. 단계 · 시나리오처럼 상세 정보가 긴 페이지에서만 생겼다.
-
-- 원인: 스크린리더 전용 글자(`VisuallyHidden` · `sr-only`)는 `position: absolute`다. 세 스크롤 패널(탐색기 · 본문 · 상세 정보)에 `position`이 없어서 이 글자의 기준 상자가 페이지가 됐고, 패널이 잘라 내지 못한 채 패널 아래쪽 위치에 놓여 문서 높이를 화면보다 길게 늘렸다. 상세 정보 속 숨은 글자는 개요 0개, 문서 2개, 단계 22개, 시나리오 52개였다 — 긴 페이지에서만 생긴 이유다
-- 고침: 세 패널에 `relative`. 스크롤이 페이지로 넘어가는 것만 막는 `overscroll-behavior`는 쓰지 않았다 — 늘어난 문서 높이를 가릴 뿐이다
-- 확인: E2E `desktop panes`(단계 · 시나리오 · 아키텍처 페이지에서 상세 정보를 끝까지 내리고 휠을 더 굴려도 문서 높이 = 화면 높이, `scrollY` 0). 이 세션에서는 실행하지 못했다
-
-## 42. 고친 것 — 상단 보기를 누르면 "본문으로 건너뛰기"가 나타남
-
-상단의 개요 · 시나리오 · 아키텍처 · 문서 · 엔지니어링을 누르면 좌측 상단에 "본문으로 건너뛰기"가 떴다. 의도한 동작이 아니었다.
-
-- 원인: 이 링크들은 다른 레이아웃으로 간다. Next는 새로 그린 route의 첫 HTML 요소에 `focus()`를 거는데(`layout-router`, `sticky` · `fixed` · 크기 0인 요소만 건너뜀), 그 첫 요소가 페이지마다 그리던 셸 맨 앞의 SkipLink였다(1px `absolute`라 건너뛰지 않음). 공용 SkipLink는 `:focus`만으로도 드러나서 마우스 클릭 뒤에도 보였다. 같은 레이아웃 안의 이동(노드 · 목록, `scroll={false}`)에서는 생기지 않았다
-- 고침: 건너뛰기 링크 둘을 셸에서 루트 레이아웃의 `<body>` 맨 앞으로 옮겼다. 이동 후 Next가 포커스하려는 첫 요소는 셸의 레이아웃 `div`(포커스 불가)라 아무것도 드러나지 않는다. 키보드는 이동 뒤 다음 Tab이 "본문으로 건너뛰기"다 — 처음 페이지를 열 때와 같다. 공용 SkipLink 스타일은 바꾸지 않았다
-- 확인: `app/layout.spec.ts`(body가 건너뛰기 링크 둘로 시작, 셸에는 없음). E2E: 상단 보기 다섯 개를 마우스로 눌러도 건너뛰기 링크가 포커스되지 않고 1px로 숨음, 키보드로 이동한 뒤 Tab이 건너뛰기 링크. 검색 E2E의 "이동 뒤 포커스가 남는다"는 "이동 뒤 Tab이 건너뛰기 링크"로 바꿨다. 이 세션에서 E2E는 실행하지 못했다
-
-## 43. 구현 상태 — 내비게이션 · 제목 · 테마 아이콘
-
-아이콘은 알아보는 데 도움이 되는 곳에만 넣었다. 글자는 모두 남기고 아이콘은 장식(`aria-hidden`)이다.
-
-| 위치                                                      | 아이콘                                                 | 이유                                                                                  |
-| --------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------- |
-| 상단 보기(개요 · 시나리오 · 아키텍처 · 문서 · 엔지니어링) | 집 · 경로 · 층 · 문서 · 터미널                         | 자주 오가는 곳이라 모양으로 찾게                                                      |
-| 탐색기의 개요 · 아키텍처 링크, 섹션 제목                  | 상단과 같은 모양(애플리케이션 창 · 라이브러리 책 추가) | 같은 곳은 어디서나 같은 모양                                                          |
-| 제품명                                                    | 허브 모양 하나                                         | 좌측 상단 기준점                                                                      |
-| 본문 제목 위 분류 줄                                      | 그 보기의 아이콘                                       | 지금 어느 보기인지. 제목(h1)에는 넣지 않았다                                          |
-| 라이트 / 다크                                             | 해 · 달만 (글자 없음)                                  | 누구나 아는 모양. 버튼 이름은 `aria-label`로 "라이트" · "다크", 눌림은 `aria-pressed` |
-
-- 넣지 않은 곳: 탐색기의 개별 항목(줄마다 같은 아이콘이 반복된다), 상세 정보 머리(아래 섹션에 이미 있다)
-- 보기와 아이콘의 짝은 `src/components/ui/view-icons.ts` 한 곳에 둔다
-- 확인: `layout.spec.ts`(셸의 DevHub 아이콘이 모두 `aria-hidden`, 보기 링크 이름이 글자 그대로), `theme.spec.ts`(두 버튼이 아이콘만 보이고 이름은 "라이트" · "다크"). 화면은 이 세션에서 보지 못했다
-
-## 44. 고친 것 — `domain/links.ts`가 바이너리 파일이 됨
-
-- 증상: `file`이 `data`, git이 바이너리(`numstat` `- -`)로 판정했다. 커밋하면 리뷰에 내용 대신 "Binary files differ"만 보인다. 이름 일괄 변경(`grep -I`)에서도 빠져 주석에 "Atlas"가 남았다
-- 원인: 경로의 제어 문자를 거르는 정규식 `CONTROL`에 NUL · 0x1F · 0x7F가 이스케이프가 아닌 날 바이트로 들어 있었다. 파일을 쓴 편집 도구가 `\u0000` 같은 이스케이프를 실제 문자로 풀어 저장했다(다시 쓸 때 같은 현상을 재현해 확인)
-- 고침: 파일을 새로 쓰고 그 줄을 `/[\u0000-\u001f\u007f]/` 글자 그대로(순수 UTF-8 텍스트)로 바꿨다. 동작은 같다. 남은 "Atlas"도 고쳤다
-- 재발 방지: `links.spec.ts`에 NUL · DEL이 든 경로 거부를 더했고, `devhub:check`(`freshness.spec`)가 `apps/devhub*`의 날 제어 문자를 잡는다 — 날 NUL이 든 임시 파일로 실패하는 것을 확인했다. 이번에 바꾼 파일 141개를 모두 검사해 다른 파일에는 없었다
-
-## 45. 구현 상태 — 좌우 패널 구분선
-
-- 탐색기: 위의 개요 · 아키텍처 묶음과 섹션(시나리오 · 애플리케이션 · 라이브러리 · 문서 · 엔지니어링) 사이에 선. 시나리오 안의 현재 동작 / 제품 목표는 한 섹션이라 선 없이 둔다
-- 상세 정보: 머리(분류 · 제목 · 상태 · 목차)와 섹션(개요 · 소스 · 문서 · 테스트 · API · 연결) 사이에 선
-- CSS 테두리(`divide-y` · `divide-stroke-light`, 토큰 `--ds-stroke-light`)로만 그린다. 섹션마다 제목이 있어 스크린리더가 읽는 구분자(`<hr>` · 공용 `Divider`)는 넣지 않았다. 컴파일한 CSS에서 규칙이 생성되는 것을 확인했다. 화면은 이 세션에서 보지 못했다
-
-## 46. 구현 상태 — 엔지니어링 명령 화면
-
-- 명령을 터미널 한 줄(`>_` 아이콘 · 테두리 상자)로 보이고, 바로 옆에 복사 아이콘 버튼(39절과 같은 `CopyButton` `icon`, 이름은 "명령 복사: <명령>", 복사하면 체크)을 둔다. 전에는 상자 아래 글자 버튼이었다
-- 긴 명령은 줄바꿈해 가로로 넘치지 않는다
-- 실행 조건은 경고 아이콘 + "실행 조건: 포트 필요 · 브라우저 필요", 조건이 없으면 확인 아이콘 + "조건 없음 — 어디서나 돈다". 색만으로 구분하지 않는다
-- 확인: `entity-summary.spec.ts`(명령 줄 · 복사 버튼 이름 · 글자 버튼 없음 · 조건 두 경우). 화면은 이 세션에서 보지 못했다
-
-## 47. 구현 상태 — 엔지니어링 재구성
-
-명령 페이지는 세 줄짜리 카드 하나뿐이라 빈 공간이 많았고(설명 · 조건은 상세 정보가 한 번 더 보였다), 목록은 명령 21개를 설명 없이 한 줄씩 나열했다.
-
-- 명령마다 용도 묶음(`CommandRef.group`)을 둔다 — 실행 5 · 검사 7 · 빌드 · 전체 검증 2 · API 작업 4 · 저장소 도구 3. 이름과 한 줄 설명은 `COMMAND_GROUP`(`lib/catalog/labels.ts`)
-- 목록(`/engineering`): 묶음마다 카드. 명령은 "명령 줄(링크) · 복사 아이콘 · 설명 · 조건(있을 때만)"의 한 줄이라 페이지에 들어가지 않고 복사할 수 있다
-- (48절에서 대체 — 명령마다 따로 있던 페이지는 없어졌다) 명령 페이지: 카드 1 "명령" — 명령 줄과 복사, **실제로 실행되는 내용**과 그 출처(`package.json › scripts.lint`, `apps/api/project.json › targets.migrate`), 설명, 조건. 카드 2 "같은 묶음 · …" — 같은 묶음의 다른 명령(지금 명령은 링크 대신 표시)
-- 실제로 실행되는 내용은 정의 파일에서 빌드 시점에 읽는다(`lib/catalog/command-definition.ts`). 적혀 있지 않은 target(Nx 추론)은 지어내지 않고 보이지 않는다 — 지금 21개 모두 정의가 있다
-- 부품은 `components/engineering/command.tsx` 한 곳
-- 확인: `command-definition.spec.ts`(스크립트 · Nx target 본문, 전부 정의 있음, 추론 target은 null), `engineering/command.spec.ts`(묶음 빠짐 · 빈 묶음 없음, 목록의 묶음 제목 · 명령마다 복사, 명령 페이지의 실행 내용 · 출처 · 같은 묶음). 화면은 이 세션에서 보지 못했다
-
-## 48. 구현 상태 — 엔지니어링은 묶음 단위로 탐색
-
-탐색기의 엔지니어링 아래에 명령 21개가 하나씩 나열되던 것을 묶음 5개(실행 · 검사 · 빌드 · 전체 검증 · API 작업 · 저장소 도구)로 바꿨다. 명령은 묶음 안에 나열된다.
-
-- 항목: `/engineering/<묶음>`(`run` · `check` · `build` · `api` · `workspace`). `COMMAND_GROUPS`(`lib/catalog/entities.ts`)가 catalog 명령을 `group`으로 모아 만든다. 명령마다 따로 있던 페이지는 없다
-- 묶음 페이지: 묶음 설명과 명령 수, 그리고 명령마다 카드 — 명령 줄(제목)과 복사, 설명, 실제로 실행되는 내용과 출처, 조건. 카드마다 `#command-<id>` 위치가 있다
-- 명령을 가리키는 링크는 모두 `commandHref`(`/engineering/<묶음>#command-<id>`) 하나로 간다: 검색 결과, 상세 정보의 "이 테스트를 돌리는 명령", 섹션 목록의 명령 줄
-- 상세 정보: 묶음 단위(설명 · 명령 · 실행 조건 합집합 · 정의 파일)
-- 섹션 목록(`/engineering`)은 묶음마다 명령 한 줄씩과 "<묶음> 열기" 링크
-- 확인: `engineering/command.spec.ts`(모든 명령이 정확히 한 묶음, 탐색기 항목 = 묶음 5개, 모든 `commandHref`가 실제 묶음 페이지의 실제 카드를 가리킴, 묶음 페이지의 카드 · 복사 · 실행 내용 · 조건, 섹션 목록), `entity-summary.spec.ts`, `entities.spec.ts`. 화면은 이 세션에서 보지 못했다
-
-## 49. 구현 상태 — 문서 화면
-
-`it-tech-blog/apps/accessibility-zone`의 문서 화면(본문 + "이 페이지에서" 목차, 절 앵커, 코드 블록, 표)을 참고해 DevHub의 문서 페이지를 다시 만들었다. 전에는 문서 내용을 보여 주지 않았다(인용한 시나리오 목록과 GitHub 링크뿐). 참고 앱의 코드는 가져오지 않았다 — 그 앱은 TSX로 글을 쓰고 `lucide-react`를 쓰지만, DevHub는 저장소의 마크다운을 그대로 읽는다.
-
-- 마크다운: `lib/markdown/markdown.ts`. 새 dependency 없이 문서가 실제로 쓰는 문법만 — 제목 · 문단 · 목록(중첩, 목록 안 코드) · 번호 목록 · 표(GFM, `\|` 이스케이프) · 코드 블록 · 인용 · 구분선, 인라인 코드 · 굵게 · 링크. HTML · 이미지는 없다(문서에 없다). 절 id는 GitHub 방식(`slug`)이라 문서끼리 이미 쓰는 `#…` 링크가 그대로 통한다
-- 링크: `lib/markdown/doc-links.ts`. 카탈로그 문서는 DevHub 문서 페이지(`/documents/<id>#절`), 다른 저장소 파일은 스냅샷 고정 링크(새 창), 외부 주소는 새 창 + 아이콘 + "(새 창)", 같은 문서 절은 `#`
-- 화면(`components/doc`): 읽기 폭(46rem) 본문(`.devhub-prose`, 토큰만), 절 제목(h2 위 구분선, 마우스를 올리거나 포커스하면 `#` 링크), 코드 블록(언어 라벨 + 복사 아이콘), 표(공용 `Table` · `TableScroll`, 캡션은 가장 가까운 절 제목), 인용(강조 상자). 페이지 제목은 문서의 `# 제목`, 그 아래 경로와 GitHub 링크, 끝에 "이 문서를 인용한 시나리오"
-- "이 페이지에서": (51절에서 본문 안으로 옮김) 상세 정보 맨 위(DevHub는 오른쪽 칸이 상세 정보라 목차를 거기 둔다). 스크롤에 따라 읽는 절을 `aria-current="location"`으로 표시
-- id 충돌을 고쳤다: `devhub.md`의 "inspector" 절 id가 상세 정보 aside의 id와 같아 "상세 정보로 건너뛰기"가 본문 절로 갔다. 앱 id를 `devhub-main` · `devhub-inspector`로 바꿨다(문서 제목은 자유 글이라 앱 쪽에 접두어)
-- 확인: `markdown.spec.ts`(문법별, 카탈로그 문서 전부 해석 시 기호가 글자로 새지 않음 · 절 id 유일), `doc-links.spec.ts`, `doc-content.spec.ts`(문서 전부 렌더 — 기호 누출 없음, 절마다 id와 `#` 링크, 목차 = 절 제목, 표마다 캡션, 코드 블록마다 복사, 문서 간 링크가 DevHub 안에 머묾), `document-page.spec.ts`(문서 페이지 전체에서 id가 한 번씩 — 옛 id로 되돌리면 `devhub` 페이지가 실패하는 것을 확인), `devhub:check`의 "document links"(문서 간 링크 · 절 앵커 · 파일이 실제로 있음). 화면은 이 세션에서 보지 못했다
-
-## 50. 구현 상태 — 반응형 칸 폭과 탐색기 서랍
-
-- 칸 폭: `lg`에서 `15rem | 1fr | 20rem`, `xl`부터 `18rem | 1fr | 24rem`. 전에는 `lg`부터 18rem · 24rem 고정이라 1024px에서 본문이 352px로 폰(390px)보다 좁았다. 이제 1024px에서 464px, 1280px에서 608px
-- 본문 여백: `sm` 미만 16px(`p-4`), 이상 24px(`p-6`). 320px에서 여백이 겹쳐 글 폭이 216px까지 줄던 것을 줄였다
-- 탐색기(`lg` 미만): 본문 위에 펼쳐지던 접기 목록(`NarrowDisclosure`)을 왼쪽에서 들어오는 서랍으로 바꿨다(`explorer-drawer.tsx`). 여는 버튼은 상단 바 맨 앞 메뉴 아이콘(공용 `IconButton`, 이름 "탐색기", `aria-expanded` · `aria-controls`), 서랍 안에 "탐색기 닫기" 아이콘. 뒤는 `neutral-ne900` 50%로 어둡게, 서랍은 `shadow-4`
-- 공용 UI에 drawer · dialog가 없어(`berry-react-ui find drawer|dialog|modal|sheet|overlay` 결과 없음) 직접 만들었다. 포커스를 가두는 모달이 아니라 펼침(disclosure)이다 — Escape · 닫기 버튼 · 어두운 배경 · 포커스가 서랍 밖으로 나가면 닫히고, 경로가 바뀌면(항목 선택) 닫힌다. 열 때 현재 항목(없으면 첫 링크)으로, Escape · 닫기로 닫을 때 버튼으로 포커스를 돌린다. 닫힌 서랍은 `invisible`이라 Tab에 걸리지 않는다. 움직임 줄이기 설정이면 전환 없음
-- `lg` 이상은 전과 같은 왼쪽 칸이고 버튼은 없다
-- 상단 바(`lg` 미만): 전에는 제품명 · 저장소 · 스냅샷 · 검색 · 보기 5개 · 테마가 줄바꿈되며 여러 줄을 차지했고 스크롤하면 사라졌다. 이제 한 줄을 화면 위에 고정한다(`sticky`) — 메뉴(탐색기 서랍) · 제품명(좁으면 말줄임) · 검색 아이콘 · 테마. 보기 nav는 숨긴다: 탐색기 서랍에 개요 · 아키텍처 · 시나리오 · 문서 · 엔지니어링이 모두 있다. 저장소 · 스냅샷 줄도 숨긴다: 개요 페이지에 같은 줄이 있다. 검색은 아이콘이나 ⌘K로 둘째 줄(전체 폭)에 열리고, 결과를 고르면 닫힌다. 고정 바가 앵커를 가리지 않게 `scroll-padding-top`(3.75rem)을 준다. `lg` 이상은 전과 같다
-  - 확인: E2E `shell.spec.ts` 세 건(고정된 한 줄 · 보기 nav 숨김, 검색 열기 · ⌘K · 결과 선택 후 닫힘, 320px까지 가로 넘침 없음)과 좁은 화면 이동 테스트를 서랍 경유로 고침. 실행하지 못했다
-- 상단 바(`lg` 이상): 줄바꿈(`flex-wrap`)이 남아 있어 1530px에서 테마 버튼만 둘째 줄로 내려갔다 — 제품명 · 저장소/스냅샷 · 검색 `w-96` · 보기 5개 · 테마 · 간격의 합(약 1,680px)이 화면보다 넓었다. 이제 한 줄에 고정한다(`lg:flex-nowrap`): 저장소/스냅샷 줄은 `xl`부터 보이고 모자라면 말줄임으로 먼저 줄어든다(`shrink-[4]` · `truncate`), 검색은 18rem을 기준으로 10rem~24rem 사이에서 늘고 줄며, 보기 · 테마는 줄지 않는다. 확인: E2E "stays on one row from 1024px up…"(1024 · 1280 · 1530 · 1920px, 실행 못 함)
-- 좁은 화면에서 상단 "아키텍처"나 탐색기 항목으로 가면 화면이 상세 정보까지 내려가 있었다
-  - 원인: Next(16.1.7)는 이동 뒤 새 **page segment**의 첫 요소로 스크롤하고(`router-reducer/ppr-navigations.js`가 leaf segment만 모은다) 그 요소에 `focus()`를 건다(`layout-router.js` `handlePotentialScroll`). 캔버스를 유지하는 두 레이아웃(`[section]/[id]` · `architecture`)은 page가 상세 정보 aside였다. `lg` 미만에서는 aside가 본문 아래라 그 위치로 스크롤됐고, 넓은 화면에서도 aside(`tabIndex=-1`)에 포커스가 가서 다음 Tab이 "본문으로 건너뛰기"가 아니었다. 42절의 "이동 후 포커스는 셸 div"는 page가 셸 전체를 그리는 route에만 맞았다
-  - 고침: 상세 정보를 parallel route 슬롯 `@inspector`로 옮기고, page(`children`)는 본문 머리(`WorkspaceHeader`)만 그린다. 레이아웃은 `WorkspaceFrame` 안에 page를 맨 앞에 둔다. 두 슬롯 모두 모든 URL에 대응하고, Next 규칙대로 `default.tsx`(404)를 둔다. `useSelectedLayoutSegment(s)`는 `children` 기준이라 page 쪽 경로(`steps/[stepId]` · `[nodeId]`)를 그대로 유지했다
-  - 확인: `route-segments.spec.ts`(네 page의 첫 요소가 `header` — 옛 page(aside)로 돌리면 실패하는 것을 확인), E2E `shell.spec.ts` 두 건(넓은 화면: 캔버스 보기로 이동 뒤 상세 정보에 포커스 없음 · 다음 Tab이 건너뛰기 / 좁은 화면: 이동 뒤 `scrollY` 0 · 제목이 화면 안). E2E와 `nx build devhub`는 이 세션에서 실행하지 못했다
-- 넘김: 좁은 화면에서는 상세 정보가 본문 아래라, 다음 단계 · 구성 요소로 가려면 그림까지 다시 올라가야 했다. 상세 정보 첫 줄(종류 글자) 오른쪽 끝에 ‹ › 화살표 한 쌍을 둔다 — 단계는 `nav "단계 이동"`(`scenario.steps` 순서 = 흐름 번호), 구성 요소는 `nav "구성 요소 이동"`(아키텍처 목록 순서). 글자 버튼 · 글자 링크는 상세 정보 안에서 이질적이어서, 메일 · 이슈 뷰어처럼 제목 줄 끝의 아이콘 화살표로 바꿨다. 공용 `IconButton`은 `component`를 받지 않아 라우터 링크가 될 수 없으므로(`href`만 주면 전체 새로고침), `component`를 받는 공용 `Button`(sm · text · secondary, 아이콘만)에 `Link`를 얹었다. 서버 컴포넌트는 함수(`Link`)를 client 컴포넌트에 넘길 수 없어 `components/entity/pager.tsx`는 `'use client'`다. 이웃이 없는 쪽은 같은 모양의 비활성 버튼("이전 단계 없음")으로 자리를 지킨다. 접근 이름은 "다음 단계: <의도>", 마우스를 올리면 `title`로 "다음 단계"
-  - 링크는 `#devhub-inspector`를 붙여(`components/shell/workspace.tsx` `detailsHref`), 이동 뒤 Next가 새 상세 정보로 스크롤하고 포커스한다 — 넘김 버튼 자리에 머문다
-  - 구성 요소 넘김은 URL의 종류 필터(`?kind=`) 안에서 돌고 링크에 필터를 유지한다(`architecture/node-pager.tsx`, client — 정적 fallback은 전체 순서). 필터 밖 노드(관계로 들어온 경우)는 전체 순서로 넘긴다
-  - 관계: 구성 요소 상세 정보의 "관계" 줄(`web → api · HTTP` 등)이 상대 노드로 가는 링크다. 같은 `detailsHref`라 구조를 따라 읽어도 상세 정보에 머문다
-  - 순서 계산은 `lib/browser/pager.ts` `pagerOf` 하나다
-  - 확인: `pager.spec.ts`, `architecture/node-pager.spec.ts`(목록 순서와 같음, 필터 안 넘김 · 필터 유지, 필터 밖은 전체, 관계 링크), `inspector.spec.ts` "step pager"(화살표의 주소 · 접근 이름, 이웃 없는 쪽은 비활성), E2E `shell.spec.ts` 두 건(실행 못 함)
-- 시나리오 목록 보기: 단계마다 시스템 동작 · 실행 위치 · 담당 · 소스 · API · 계약 · 테스트 · 다음 · 경유를 모두 펼쳐, 단계를 고르면 나오는 상세 정보와 내용이 같았다(21절 "목록은 단계마다 … 테스트 · 다음"을 바꾼다). 목록은 요약, 상세 정보는 근거로 나눴다(목록-상세). 목록은 흐름 그림이 보여 주는 만큼만 글로 — 번호 · 의도(단계 링크) · 상태 · "실행 위치 · 담당 · API n · 계약 n · 테스트 n" 한 줄, 바로 아래 단계가 아닌 다음 단계가 있으면 "다음 n단계". 고른 단계는 목록에서도 `aria-current` · 배경 · "· 선택됨" 글자로 표시한다(`useSelectedLayoutSegments`, client). 소스 · API · 계약 · 테스트 파일 · 경유는 상세 정보에만 있다. 목록에서만 쓰던 `FileEntry`는 지웠다. 확인: `scenario-outline.spec.ts`(모든 단계 · 요약 한 줄 · 파일 링크와 `dl` 없음 · 다음 표시 규칙 · 선택 표시), E2E `canvas.spec.ts` "shows the scenario as step summaries…"(실행 못 함)
-- 문서 · 소스 페이지의 "경로 복사"(`SourceActions`)도 글자 버튼에서 경로 옆 복사 아이콘으로 바꿔 `FileRow`와 맞췄다. 접근 이름은 그대로 "경로 복사: <전체 경로>"
-- 확인: 단위 테스트(당시 258개) · lint · typecheck 통과. E2E `shell.spec.ts` "opens the explorer as a drawer…"(왼쪽 끝에서 열림, 현재 항목 포커스, Escape로 닫히고 버튼으로 복귀, 닫기 버튼, 항목 선택 시 닫힘)를 더했지만 이 세션에서는 실행하지 못했다. 화면도 보지 못했다
-
-## 51. 구현 상태 — "이 페이지에서"를 본문 안으로
-
-상세 정보 맨 위에 두었던 목차는 좁은 화면에서 본문 아래(상세 정보는 본문 뒤에 쌓인다)로 밀려 쓰기 불편했다. 참고 문서 앱(`accessibility-zone`의 `DocLayout`)처럼 목차를 본문 영역 안에 둔다(`components/doc/document-layout.tsx`).
-
-- 본문 영역이 넓으면(컨테이너 48rem 이상) 본문 오른쪽에 목차 열. 스크롤을 따라오고(`sticky`), 길면 그 안에서 스크롤된다
-- 좁으면 본문 맨 위에 접힌 "이 페이지에서"(`<details>`, 기본 접힘, 절 수 표시). 참고 앱은 좁을 때 목차를 숨기지만, 그러면 좁은 화면에서 절로 갈 방법이 없어 접어 둔다
-- 기준은 화면 폭이 아니라 본문 영역 폭(컨테이너 쿼리 `@container` · `@3xl`)이다. 좌우 칸이 화면 폭마다 다른 몫을 가져가기 때문이다
-- 상세 정보의 목차 섹션과 `Inspection.outline`은 뺐다
-- 문서 페이지는 가운데 열에 둔다(`DOCUMENT_COLUMN`, 최대 61rem = 본문 46rem + 목차 열). 제목(`WorkspaceHeader`의 `className`) · 경로와 링크 · 본문 · 인용한 시나리오가 같은 열이라 왼쪽 끝이 맞는다. 참고 앱의 `mx-auto` · 최대 폭 방식이다
-- 확인: `doc-content.spec.ts`(본문 안에 접힌 목차와 옆 열 목차가 있고 둘 다 절 제목과 같은 항목, 접힌 목차가 본문보다 앞, 상세 정보에는 없음), E2E `document.spec.ts`(1920px에서 옆 열이 보이고 스크롤해도 보임 · 문서 열의 좌우 여백이 같음, 390px에서 접힌 목차를 키보드로 펼쳐 절로 이동), `doc-content.spec.ts`의 "document page column"(제목과 본문 묶음이 같은 열). E2E와 화면은 이 세션에서 보지 못했다
-
-## 52. 구현 상태 — 사이트 좌우 여백 · 그림 크게 보기
-
-참고 문서 앱(`accessibility-zone`)을 다시 보고 두 가지를 맞췄다.
-
-- 사이트 좌우 여백: 그 앱은 셸 전체를 최대 1440px로 묶어 가운데 둔다(`max-w-[1440px] mx-auto`). DevHub는 옆 칸이 둘(18rem + 24rem)이라 같은 값이면 본문이 768px로 줄어, 그 앱이 본문에 남기는 폭(약 1160px)을 기준으로 셸을 최대 115rem(1840px)으로 묶고 가운데 둔다. 그보다 넓은 화면에서만 셸 좌우에 옅은 선(`min-[115rem]:border-x`)
-- 본문 안쪽 좌우 여백: 그 앱처럼 `sm`부터 32px(`sm:px-8`, 전에는 24px). 폰(16px)과 위아래 여백은 50절 그대로
-- 그림 크게 보기: 시나리오 흐름 · 아키텍처 그림의 보기 조절에 "크게 보기"(확대 모서리 아이콘, 공용 `Button` outlined, 이름 "크게 보기"). 누르면 같은 그림을 창 전체를 채우는 모달 `<dialog>`로 연다 — Escape로 닫힘, 뒤는 비활성, 닫으면 버튼으로 포커스 복귀가 브라우저 기본 동작이다. 머리에 제목과 "닫기". 창이 열린 뒤에 그림을 그려 창 크기에 맞춰 맞추기(fit)를 한다. 안에서 단계 · 노드를 고르면 창은 열린 채 선택만 바뀌고, "상세 정보로 이동" 같은 페이지 안 링크는 창을 먼저 닫고 이동한다
-- 전체 화면 API(`requestFullscreen`)는 쓰지 않았다: iPhone Safari가 요소 전체 화면을 지원하지 않는다. `<dialog>`는 모든 브라우저에서 창 크기만큼 연다. 공용 UI에 dialog가 없어 브라우저 기본을 쓴다(새 dependency 없음)
-- 고친 것 — "크게 보기"가 열리자마자 닫혔다(`pnpm dev:devhub`에서). App Router는 `next.config`에 `reactStrictMode`가 없으면 StrictMode를 켜고(`next/dist/build/define-env.js`), 개발 모드에서 effect를 실행 → 정리 → 재실행한다. 정리에서 부른 `dialog.close()`가 `close` 이벤트를 큐에 넣고(HTML 사양상 비동기), 그 이벤트가 다시 연 뒤에 도착해 `onClose`로 창을 내렸다. 정리에서 닫지 않고, 이미 열려 있으면 다시 열지 않는다(`openModal`). 창이 페이지에서 빠지면 브라우저가 모달 층에서 걷어 낸다. 확인: `canvas-viewport.spec.ts` "openModal"(두 번 불러도 `showModal` 한 번). E2E `canvas-expand.spec.ts`가 개발 서버에서 돌았다면 잡았을 문제다 — 이 세션에서는 실행하지 못했다
-- 화살표 표식 id를 그림마다 따로(`useId`) 둔다. 크게 보기로 같은 그림이 두 번 그려질 때 `canvas-arrow` id가 겹쳤다
-- 확인: `canvas/canvas-viewport.spec.ts`(크게 보기 버튼 · 처음엔 dialog 없음, 두 그림의 표식 id가 다름), E2E `canvas-expand.spec.ts`(키보드로 열어 더 큰 그림, Escape로 닫고 버튼 포커스, 닫기 버튼, 안에서 단계 선택 후에도 열림, 2560px에서 셸 1840px · 가운데). `layout.spec.ts`의 셸 첫 요소 검사를 클래스 순서와 상관없게 고쳤다. E2E와 화면은 이 세션에서 보지 못했다
-
-## 53. 구현 상태 — 그림 조작 도구 정돈
-
-- 그림 위의 긴 안내 문장을 걷어 냈다. 위 줄에는 요약(개수 · 선택)과 오른쪽 "도움말" 버튼만 둔다. 도움말은 누를 때 펼치는 패널이고 "조작"(`kbd` 키 목록)과 "범례"(실제 선 · 상자 모양 견본)로 나뉜다. 닫혀 있어도 그림의 `aria-describedby`에 남아 스크린 리더는 그대로 읽는다
-- 범례 견본은 그림이 쓰는 dash 값을 그대로 쓴다. 시나리오는 코드 있는/없는 단계 상자와 앞 단계로 돌아가는 점선, 아키텍처는 `DASH` · `AUTH_REDIRECT_DASH`에서 만든다. 선 모양을 바꾸면 범례도 따라 바뀐다
-- 확대 도구는 지도 앱처럼 그림 오른쪽 아래에 떠 있는 한 묶음("보기 조절")이다: 축소 · 배율 · 확대 | 화면에 맞추기 | 크게 보기. 모두 아이콘 버튼이고 `aria-label`과 `title`(툴팁)을 가진다. 페이지 순서상 그림의 항목보다 앞에 둬 키보드가 먼저 닿는다. "크게 보기" 창 안에서는 크게 보기 버튼이 없다
-- 확인: `canvas/canvas-viewport.spec.ts`(도움말이 처음엔 `hidden` · `aria-expanded="false"`, 그림 설명에 포함, 범례 견본의 dash, 도구 묶음의 네 버튼과 100%), `flow/scenario-flow.spec.ts`(네 도구의 이름). 기존 E2E(`canvas.spec.ts` "보기 조절" 그룹 · 버튼 이름 · `status`)와 호환된다. E2E와 화면은 이 세션에서 보지 못했다
-
-## 54. 구현 상태 — 셸과 바깥 여백의 배경 구분
-
-- 참고 문서 앱처럼 셸 전체(상단 바 · 탐색기 · 작업 영역 · 상세 정보)를 `background-surface`로, 셸 밖 여백(`body`)을 `background-default`로 둔다. 두 토큰은 한 단계 차이(라이트 `#FFFFFF` / `#F2F4F7`, 다크 `#1D2939` / `#101828`)라 넓은 화면에서 본문 영역이 미세하게 떠 보인다
-- 전에는 셸에 배경이 없어 작업 영역 · 탐색기가 바깥과 같은 회색이었고, 상단 바 · 상세 정보만 흰색이었다
-- 따라 바꾼 것: 탐색기 항목 hover를 `background-default`로(상단 바 탭과 같은 방식, surface 위에서 보이도록), 아직 그리지 않은 관계 그림 자리를 캔버스와 같은 `background-default`로. 코드 블록 · 명령 칸 · 캔버스 같은 안쪽 영역은 원래 `background-default`라 surface 위에서 구분된다
-- 확인: lint · typecheck · test. 화면은 이 세션에서 보지 못했다
-
-## 55. 구현 상태 — 아키텍처 화면 정돈 · 하단 여백
-
-- 그림과 목록을 시나리오 화면처럼 "구성 요소와 관계" 섹션 카드 안에 둔다. 종류 필터와 그림/목록 전환을 한 줄에 놓는다(`ViewSwitch`의 `tools`: 필터 왼쪽, 전환 오른쪽). 개수는 필터가 걸린 값을 보여 주는 그림 요약에만 둔다 — 섹션 제목에 두면 필터를 걸었을 때 두 숫자가 어긋난다
-- 그림의 구성 요소에 종류 아이콘을 붙였다(애플리케이션 · 라이브러리는 탐색 아이콘, 외부는 지구본 `globe`, `NODE_KIND_ICON`). 저장소 밖 시스템은 점선 테두리로 그리고 범례에 "저장소 안 프로젝트 / 저장소 밖 시스템" 상자 견본을 더했다. 목록 보기의 종류 표시에도 같은 아이콘을 쓴다
-- 관계 한 줄은 "A → B" 뒤에 관계 이름을 태그(`background-default`, `text-light` 약 7:1)로 붙인다. 경계는 구분선으로 나누고, 경계를 넘는 관계는 왼쪽 선으로 들여 그 경계의 근거로 읽히게 했다. 관계 목록 제목의 개수는 캡션으로 낮췄다
-- "문서에만 있는 구성"은 시나리오마다 제목(시나리오 링크 · 단계 수)을 달고 단계를 그 아래 들여 둔다
-- 모든 화면의 아래쪽 여백: 작업 영역 `pb-12`(3rem) · `sm:pb-16`(4rem), 상세 정보 · 탐색기 `pb-12`. 참고 문서 앱은 본문 위아래를 2rem, `lg`부터 3rem 띄운다. `<main>`은 `WorkspaceFrame` 하나뿐이라 모든 화면에 적용된다
-- 확인: `architecture-map.spec.ts`(외부만 점선, 범례 상자), `architecture-sections.spec.ts`(관계 태그, 목표 시나리오 제목 링크). 기존 E2E의 필터 · 목록 · 선택 흐름은 이름과 역할을 바꾸지 않았다. E2E와 화면은 이 세션에서 보지 못했다
-
-## 56. 구현 상태 — 온보딩 진행 · 사진 처리 카탈로그
-
-온보딩 진행을 서버로 옮기고 web 온보딩 · 첫 사진 처리를 더한 뒤, 새로 생긴 구성 · 호출 · 계약 · 테스트를 catalog에 넣었다.
-
-- **node** — 라이브러리 `onboarding`(`libs/onboarding`)과 외부 `image-model`(이미지 분류 모델: Claude API 또는 OpenAI 호환 서버, 근거 `ClaudeClassifier.Classify` · `OpenAIClassifier.Classify` · `loadProcessing`). 그림 자리는 `onboarding` [0, 4] · `image-model` [3, 3]
-- **관계** — Nx 의존 3(`web` · `mobile` → `onboarding`, `onboarding` → `auth-contracts`)과 실행 중 호출 `api-calls-image-model`(API 경계에 넣었다). `web-calls-api` · `mobile-calls-api`에 `GET`/`PUT /v1/onboarding` · `POST /v1/processing-jobs` · `GET /v1/processing-jobs/{jobId}`를 더했고, `api-persists-to-postgres`의 근거에 온보딩 · 처리 저장소를 더했다
-- **계약** — `OnboardingStep` · `LoginResponse`(auth-contracts), `Purpose` · `SavedProgress` · `ProgressUpdate` · `ProcessingJob`(onboarding)
-- **시나리오** — 새 `onboarding-first-photo`(partial): 목적 선택(앱 · web) → 진행 저장 → 사진 고르기(앱 · web) → 업로드 → 분류 → 결과 기다리기(앱 · web) → 결과 보기(not-found, 결과 필드를 그리는 화면 부재 검색). `onboarding-intro`의 소개 단계가 `via`로 이 시나리오를 가리킨다. `browser-google-login`의 callback 단계에 로그 레벨(취소 Info · state 불일치 Warn · 장애 Error) 테스트를 더했다
-- **validator** — 호출 근거 검사가 경로 변수를 이해한다. `{jobId}` 같은 segment는 호출 코드의 template placeholder(`${...}`)와 맞춘다. 전에는 경로를 글자 그대로 찾아 변수 있는 route를 호출 관계에 넣을 수 없었다
-- 라이브러리가 셋이 되어 `devhub-e2e`의 `?kind=library` 목록 기대 개수를 3으로 고쳤다
-- 확인: `nx test devhub`는 `docs/temp/temp.md`가 문서 목록에 없다는 1건만 실패한다(작업 전부터 있던 실패 — 임시 문서라 catalog에 넣지 않는다). E2E는 이 세션에서 돌리지 못했다
-
-## 57. 고친 것 — 처음 실행한 E2E 실패 6건
-
-42 · 50~55절에서 더했지만 실행하지 못했던 E2E를 사용자 터미널에서 처음 돌렸다. 36개 중 6개가 `--workers=1`에서도 같은 자리에서 실패했다. 임시 진단 spec으로 브라우저 상태를 찍어 원인을 확인한 뒤 고쳤다.
-
-- **"크게 보기"를 Tab 40번 안에 못 찾음** — 페이지 맨 위부터 세면 버튼까지 59칸이다(상단 10 · 탐색기 43 · 그림 도구 6). 테스트가 틀렸다. 다른 테스트처럼 "본문으로 건너뛰기"로 본문에 들어간 뒤 센다(`enterMain`을 `support/keyboard.ts`로 옮김)
-- **이동 뒤 첫 Tab이 건너뛰기 링크가 아님(3건)** — 다른 레이아웃으로 가면 셸이 통째로 바뀌어 포커스가 `body`에 남고, 키보드 시작점은 건너뛰기 링크 **뒤**에 놓였다. 다음 Tab은 개발 모드에서는 Next 개발 도구, 그 뒤는 검색창이었다. 42절의 "이동 후 다음 Tab은 건너뛰기 링크"는 성립하지 않았다. 루트 레이아웃 맨 앞에 포커스 자리(`NavigationFocus`, `tabIndex=-1`)를 두고, 이동 뒤 포커스가 `body`에 있을 때만 그 자리에 둔다. 그림에서 노드를 고르는 이동처럼 포커스가 남는 경우는 건드리지 않는다
-- **1280px에서 가로 넘침** — 셸 grid에 열 정의가 없어 암묵적 `auto` 열이 상단 바의 min-content(1355px)만큼 넓어졌다. `xl`부터 보이는 저장소 줄은 `truncate`라도 min-content를 글자 전체 길이로 센다. 열을 `grid-cols-1`(`minmax(0, 1fr)`)로 정했다
-- **서랍을 열어도 현재 항목에 포커스가 가지 않음** — 원인이 둘이었다. 열리는 순간 서랍은 아직 `visibility: hidden`(0.2초 전환 중)이라 `focus()`가 먹히지 않았다. 또 선택자 `'[aria-current] , a'`는 문서 순서상 먼저 나오는 "개요"를 골랐다. 열 때는 `visibility`를 전환하지 않고, 닫을 때만 밀려 나간 뒤 숨긴다. 현재 항목이 없을 때만 첫 링크를 고른다. 같은 진단에서 `motion-reduce:transition-none`이 `max-lg:transition-[…]`에 밀려 적용되지 않던 것도 확인해 `max-lg:motion-reduce:transition-none`으로 고쳤다
-- 확인: 사용자 터미널(`--workers=1`)에서 네 가지를 모두 고친 뒤 전체 `nx e2e devhub-e2e`가 통과했다(E2E 36개. 원인을 찍던 임시 진단 spec은 확인 뒤 지웠다). `layout.spec.ts`는 `body`가 포커스 자리 다음에 건너뛰기 링크 둘로 시작하는지 본다
-
-## 58. 구현 상태 — 기록 섹션
-
-설계 판단 · 고친 문제 · 구현 결과를 이 문서에 절 번호로 쌓는 대신 `docs/records/`로 분리하고, DevHub에 `기록` 섹션(`/records`)을 더했다.
-
-- 목록은 날짜 · 종류(설계 결정 · 문제 해결 · 구현) · 제목 · 한 줄 요약을 최신순으로 보인다. 본문은 문서와 같은 렌더러로 읽는다 — 목차 · 표 · 코드 블록 · 소스 링크가 같다
-- curated 데이터는 `apps/devhub/src/data/records.ts`(`RecordRef`), 본문은 `docs/records/<날짜>-<id>.md`. 등록하지 않으면 `docs/` 전수 확인이 실패한다
-- 기록 한 건의 본문은 네 절로 쓴다 — `상황`(문제 해결이면 `증상`) · `판단`(또는 `원인`) · `반영` · `검증`. 설계 문서가 "지금 무엇이 맞는지"를 적는다면 기록은 "언제 · 무엇을 · 왜 그렇게 정했는지"를 적고, 나중에 고쳐 쓰지 않는다 — 판단이 뒤집히면 새 기록을 쓰고 이전 기록에서 링크한다
-- 기록은 **자기가 다루는 것을 지목한다** — 파일(`sources`) · 그 규칙을 담은 문서(`docs`) · 그것을 지키는 테스트(`tests`). 상세 정보의 소스 · 문서 · 테스트 섹션이 시나리오와 같은 모양으로 보여 주므로, 본문을 읽지 않아도 어느 코드 · 어느 문서 이야기인지 알 수 있다
-- 지목한 것은 모두 검사한다 — 경로와 symbol은 저장소와 대조하고, 문서 id · heading과 테스트 id는 카탈로그에 있는 것이어야 한다. 테스트를 지목하지 않은 기록은 빈 칸 대신 "확인 방법은 본문의 검증 절에 있다"는 이유를 보인다
-- 문서와 기록이 서로를 링크하면 DevHub 안에서 열린다(링크 해석이 두 섹션을 함께 본다). 전역 검색에 `기록` 종류가 붙었다
-- 검사: `docs/` 아래 마크다운 전수 확인이 문서와 기록을 함께 보고, 기록은 파일 이름이 `<date>-<id>.md`와 같은지 · 날짜가 실재하는지 · 요약이 한 줄인지 · 첫 줄이 `# 제목`인지 · 본문 링크가 모두 열리는지 본다
-- 첫 기록 6건은 설계 결정 넷(제품 구성 · web의 API 호출 경로 · WebView 로그인 핸드오프 · React 버전 고정)과 문제 해결 둘(Nx의 `.env` 로딩 · 온보딩 소개 화면 접근성)이다. web · mobile · api를 고루 덮는다
-- **이 절 이후의 기록은 이 문서가 아니라 `docs/records/`에 쓴다.** 28~57절은 옮기지 않았다 — 옮기려면 절마다 날짜 · 종류를 정하고 문서 안 링크를 함께 고쳐야 한다
-- 확인: `devhub:typecheck` · `devhub:lint` · `nx test devhub` 통과. 화면과 E2E는 이 세션에서 보지 못했다
-
-## 59. 구현 상태 — 근거 파일을 에디터에서 바로 열기
-
-경로를 복사해 에디터에서 다시 찾는 한 단계를 없앴다. 22.2에서 제외했던 로컬 에디터 deep link를 **개발 서버 한정**으로 넣은 것이다. 제외 사유 둘을 각각 없앤 뒤에 넣은 것이라 22.2의 판단은 그대로다.
-
-- 링크를 만드는 `editorHref`는 `NODE_ENV`가 `development`일 때만 값을 낸다. 빌드된 페이지에는 링크 요소 자체가 없어 개인 절대 경로가 산출물에 들어가지 않는다
-- 어느 에디터로 열지는 `DEVHUB_EDITOR`로 고른다 — 이름(`antigravity` · `cursor` · `vscode` · `windsurf` · `zed` · `idea` · `webstorm`) 또는 `{path}`가 들어간 URL 형식. 기본값은 VS Code이고, 설정은 devhub의 로컬 env 파일에 둔다. 모르는 이름이면 기본값으로 돌아간다
-- 경로는 저장소 상대 경로만 받는다(`isCanonicalPath`). 저장소 밖 경로 · `..`는 링크가 되지 않는다
-- 자리는 경로가 이미 보이는 두 곳이고 **모양은 한 가지다.** 경로 줄 오른쪽에 그 경로에 딸린 행동을 아이콘 버튼으로 모은다 — 에디터, 그다음 복사. 상세 정보의 파일 줄(`FileRow`)과 문서 · 기록 · 소스 화면 머리(`SourceActions`)가 같은 묶음을 쓴다
-- 아이콘만 있으므로 이름표(`에디터에서 열기: <경로>`)와 툴팁을 단다. 복사와 같은 공용 `IconButton`이고 `href`가 있으면 링크로 렌더된다
-- 경로 줄 아래는 **원격 보기 전용**이다 — "github에서 보기 @ <sha> · 최신 main에서 보기"를 가운뎃점으로 묶는다. 가운뎃점은 장식이라 읽기 순서에서 빠지고, 링크가 하나뿐이면 구분자도 없다
-- 검사는 모드를 **명시적으로** 말한다. 로컬 env 파일이 테스트 실행의 `NODE_ENV`를 정하므로, 모드를 적지 않은 검사는 머신에 따라 통과 여부가 갈린다
-- 확인: `editor-link.spec.ts` 4건(production에서 null · development에서 절대 경로 · 환경변수 반영 · 저장소 밖 경로 거부)과 두 모드의 렌더 결과. **에디터가 실제로 열리는지는 사람이 확인해야 한다** — 이 세션에서는 dev 서버를 띄울 수 없다
-
-## 60. 구현 상태 — 폴더를 역할별로 정리
-
-`src/components`(31개) · `src/lib`(21개 + spec)이 한 폴더에 평평하게 쌓여 있어 역할별로 묶었다. 파일 내용은 옮기지 않았고 import 경로와 카탈로그 · 문서가 인용하는 경로만 따라 고쳤다.
-
-```
-components/  shell · entity · source · overview · ui        (architecture · canvas · doc · engineering · flow는 그대로)
-lib/         catalog · search · repository · markdown · browser
-```
-
-- `components/shell`은 셸과 이동(탐색기 · 상단 바 · 작업 영역 · 테마 · 검색), `entity`는 항목 화면(머리 · 요약 · 목록 · 상세 정보 · 넘김 · 필터), `source`는 경로와 그 행동(파일 줄 · 경로 줄 · 에디터 · 복사), `overview`는 개요 카드, `ui`는 모양 조각(아이콘 · 용어 · 접기)
-- `lib/catalog`은 카탈로그에서 화면 데이터를 만드는 것, `search`는 색인과 결과, `repository`는 저장소 · 스냅샷 · 링크, `markdown`은 문서 파싱과 문서 링크, `browser`는 브라우저에서만 쓰는 것(테마 · 뷰포트 · 앵커 표식 · 넘김 계산)
-- 함께 고친 것: `devhub-check` 타깃의 경로, 기록이 인용하는 `sources` 경로, 카탈로그에 등록한 devhub 테스트 경로, spec 안에 상수로 박혀 있던 저장소 경로
-- 확인: `lint` · `typecheck` 통과, `nx test devhub` 35개 파일 308개 전부 통과, `pnpm devhub:check` 115개 통과. 경로 인용이 하나라도 어긋나면 freshness 검사가 잡는다
-
-## 61. 결정 — 카탈로그는 제품만 담는다
-
-DevHub는 api · web · mobile과 그 `libs/`를 보여 주는 도구다. **자기 자신은 카탈로그에 담지 않는다.** 도구가 도구를 설명하면 제품을 보러 온 사람이 걸러 읽어야 한다.
-
-- 뺀 것: 노드 `devhub` · `devhub-e2e`, 그 둘이 걸린 관계 둘, 문서 `docs/architecture/devhub.md`(이 문서), DevHub 자신을 주제로 한 기록 둘(링크 템플릿 · 에디터에서 열기)과 그 기록이 인용하던 devhub 자체 테스트 11건, 아키텍처 격자의 자리 둘
-- 남긴 것: `pnpm dev:devhub` · `pnpm devhub:check` 명령. 저장소를 돌리는 명령이고, 루트 script를 빠짐없이 덮는다는 기존 규칙이 이 둘을 요구한다. `AGENTS.md` · `README.md` 같은 문서 본문의 언급도 그 문서의 내용이라 그대로 둔다
-- 따라서 비게 된 것도 지웠다 — 애플리케이션 `role`의 `tooling`. devhub 하나를 위한 값이었다
-- 저장소 전체와 대조하던 검사 넷은 이 범위를 알게 했다(`test-support/scope.ts`) — Nx 프로젝트 목록 · manifest 대조 · 워크스페이스 의존 · `docs/` 마크다운 전수 확인
-- 이 문서는 저장소에 그대로 남는다. DevHub 화면에서만 빠진다
-
-## 62. 구현 상태 — 평가 화면을 DevHub 규칙에 맞춤
-
-`/evals` · `/evals/runs/<id>` · `/evals/compare/<id>`는 따로 자라면서 넓은 표 · 테두리 경고 상자 · `~다` 문장을 썼다. 다른 화면(개요 · 아키텍처 · 엔지니어링 · 상세 정보)의 방식으로 맞췄다.
-
-- **답 출처를 먼저** — variant마다 `● 실제 모델 호출` · `◇ 규칙 기준선` · `○ 기록 재채점` 칩을 둔다. 판정은 metadata(mode · adapter)만 보는 `answerSource`이고 다시 채점하지 않는다. 모델 호출이 없는 run은 맨 위에 경고 한 줄
-- **목록이 기본** — run 목록은 6열 표에서 구분선 목록(run 링크 + 상태 칩, 메타 한 줄, 들여쓴 variant)으로. 개요의 수는 "칩 … 수" 목록(시나리오 상태와 같은 모양). 필터는 공용 `FilterBar`
-- **지표는 묶음으로** — run 상세의 품질 표 하나를 한눈에 · 분류 · 행동 · 안전 · 추출값과 자동 실행 · 실험 묶음으로 나눴다. 묶음마다 제목과 한 줄 설명, 줄마다 한국어 이름 · 설명 · 값과 막대. 여러 열이 필요한 것(category별 · field별 · case 표)만 `TableScroll` 표로 남겼다
-- **경고는 한 줄** — `role="note"` 테두리 상자를 없애고 `Icon warning` + `text-text-warning` 줄로(엔지니어링 명령의 실행 조건과 같은 모양)
-- **오른쪽 창** — 상세 정보와 같은 머리(종류 · 제목 · 목차 링크)와 구분선 섹션 넷(답 출처 · 규칙 기준선 · 지표 · 읽을 때 주의) — 목차가 한 줄. 섹션마다 제목 아래 한 줄 요약, 기준선은 읽는 이름 먼저 · id는 작은 코드, 지표는 묻는 질문별 묶음(맞혔나 · 끝낼 수 있나 · 믿어도 되나 · 실험 설정)을 제목 없이 간격으로만 나누고 이름 옆에 "낮을수록 좋음", 주의(빈 값 · 추세 · 공식 판정)는 상세 정보의 개요처럼 왼쪽 이름 · 오른쪽 설명
-- **문장** — 화면 글은 명사형 종결과 "없음 — 이유"로. 제목 계층은 section `h2` → 묶음 `h3` → 그 안의 소제목 `h4`
-- 확인: `lint` · `typecheck` 통과, `nx test devhub` 404개 통과, `pnpm devhub:check` 115개 통과. 실제 화면은 dev 서버 포트가 막혀 보지 못했다
-
-## 63. 구현 상태 — 평가를 과제별로 나누고 run 상세를 비교 먼저로
-
-variant가 둘 이상인 run 상세는 variant마다 모든 묶음을 세로로 쌓아 한 화면에 너무 많은 정보가 보였다. 평가 · 실험 추적 도구(Braintrust · LangSmith · promptfoo · W&B · MLflow · Langfuse · HELM)의 공개 문서를 조사해 공통된 방식을 URL 선택만으로 옮겼다.
-
-- **탐색기의 평가 섹션** — 시나리오 · 기록처럼 섹션 제목(`/evals`, 전체) 아래에 과제 셋(`/evals/tasks/<task>`). 과제는 고정 목록이라 결과 파일을 읽지 않고 그린다. 과제 화면은 개요와 같은 본문에 과제를 고정하고 과제 필터를 뺀다
-- **① variant 비교표** — 행 variant, 열 대표 지표(분류: category 정확도 · 허용 행동 · critical · 행동 완료 · high인데 틀림 · 실행 완료율). 열마다 좋은 방향을 적고, 기준 variant(`?base=`, 기본 첫 variant) 대비 차이를 ▲ · ▼와 "좋아짐 · 나빠짐" 글자로, 값이 서로 다를 때만 가장 좋은 값을 굵게 "최고". 끝 열은 한 줄 판정(개선 · 악화 · 엇갈림 · 차이 없음). 나머지 지표는 접힌 "모든 품질 지표" 표
-- **② case × variant** — 칸은 기호와 글자(통과 · 실패 · 실행 오류 · 미실행)와 예측. 필터(`?show=`) 전체 · variant끼리 갈림 · 모두 실패. 평균이 좋아져도 나빠진 case를 먼저 찾게 하려는 것
-- **③ variant 자세히** — `?variant=`로 하나만. 지표 묶음 · 틀린 곳 · case 표는 그 variant만이고, 실행 · 지연 · 사용량은 접었다. case 필터(`?cases=`)는 다른 선택을 지킨다
-- 비교는 Go 값의 차이 방향만 읽는다(`lib/evaluations/run-view.ts`). 다시 채점하지 않고 통계적 유의성을 주장하지 않는다
-- 확인: `lint` · `typecheck` 통과, `nx test devhub` 통과, `pnpm devhub:check` 통과. 실제 화면은 dev 서버 포트가 막혀 보지 못했다
-
-## 64. 구현 상태 — `/evals`를 안내 겸 목차로
-
-`/evals`는 모든 run을 늘어놓는 대신 평가 전체를 설명하는 화면이 됐다. run 목록 · 필터 · 추세는 과제 화면(`/evals/tasks/<task>`)에만 있다. 오른쪽 "읽는 법" 창이 설명하는 것(답 출처 · 기준선 · 지표의 뜻)은 되풀이하지 않고, 가운데에는 그 창에 없는 것(과제 요약 · run 수 · 설정과 예시 파일 · 명령)만 둔다
-
-평가 page는 셸(상단 막대 · 탐색기 · 오른쪽 창)까지 직접 그린다. 그래서 `app/evals/loading.tsx`도 같은 셸을 그리고 작업 영역에만 "평가 결과를 읽는 중…"을 둔다 — 셸 없이 글자만 두면 결과 파일을 읽는 동안 탐색기가 사라진다.
-
-- **과제** — 과제마다 한 줄 요약(무엇을 재는지 · 실제 호출 가능 여부)과 run 수 · 최근 run
-- **답 출처** — 실제 모델 호출 · 규칙 기준선 · 기록 재채점별 run 수. 실제 모델 run이 없으면 경고 한 줄
-- **비교할 수 있는 것** — 여러 모델 · OpenAI 호환 서비스 · 내 컴퓨터의 오픈소스 · 지시문 변경 · 비슷한 사례 예시 · 계단식 · 규칙 기준선 · 기록 재채점. 줄마다 설정 이름과 `tools/evals`의 예시 파일(spec이 실재 확인)
-- **정식 run을 만드는 명령** — 한 run으로(권장) · 짝 비교 · gate · 먼저 계획만. Go 명령 글자와 복사 버튼(`CopyButton`)뿐이다. 실험 명령을 골라 만들어 주던 "명령 만들기"와 공급자 모델 목록은 67에서 뺐다
-
-## 65. 구현 상태 — 새 비교 실행을 맨 위로, 참고는 접기 (67에서 실험 실행 UI는 제거)
-
-이 절의 "새 비교 실행"(체크박스로 variant · 모델을 골라 명령을 만드는 client 컴포넌트)과 "새로고침으로 최신 모델"(서버가 요청마다 Anthropic · OpenAI 모델 목록 API를 부름)은 67에서 뺐다. 남은 것은 배치 원칙이다.
-
-- **자주 보는 것은 열어 둠** — 과제 · 정식 run을 만드는 명령(명령마다 복사)
-- **일부만 보는 참고는 접음** — 비교할 수 있는 것 · 답 출처별 run · 저장된 짝 비교. 제목(`h2`)은 `summary` 안에 있고 개수를 담는다. 모두 닫힌 채 시작하고 여러 개를 함께 열 수 있으며, 접힘 안에 접힘을 두지 않는다
-- **dataset이 많아질 때** — 과제 화면의 dataset 필터는 그 과제의 run이 있는 dataset만 보이고, 6개보다 많으면 버튼 줄 대신 선택 목록 + "보기"(GET 폼, JavaScript 없이 동작, 과제 필터는 hidden으로 유지)
-
-## 66. 구현 상태 — 실패한 호출 다시 실행 안내
-
-run은 덮어쓰지 않는다(같은 run id는 Go가 거절). 일부 모델만 실패했을 때 성공한 모델을 다시 부르지 않고, 실패한 것까지 한 run에 모아 한 비교표로 보게 한다 — Go `pnpm eval retry`가 끝난 결과는 호출 없이 옮기고 실패 · 미실행만 다시 부른다.
-
-- **run 상세** — live run에서 모델 variant의 호출이 실패 · 시간 초과 · 미실행이면 "실패한 호출 N개 — 다시 실행 안내"(`run/retry-guide.tsx`). variant별 실패 수와 오류(class · kind · 문구), "성공한 결과 N개는 호출 없이 옮기고 실패한 M개만 다시 부름 → 새 run `<runId>-retry`", 그리고 `pnpm eval retry --run <runId> --allow-api --max-api-calls <실패 × 3>`. 명령은 `lib/evaluations/retry.ts`가 summary · case 결과에서 채우고 복사 버튼을 단다. 거절 이유는 결과에 저장하지 않으므로 원인 확인은 공급자 콘솔이나 터미널에서 한다(공급자를 부르는 확인 명령은 67에서 뺐다)
-- **이어서 실행한 run** — 실행 요약에 "이어서 실행 — `<원래 run>`(링크)에서 실패한 것만 다시 부름", variant 줄에 "N개 옮김"(metadata `retriedFrom` · execution `carried`)
-- **추세 · 이전 run** — 다시 실행한 run이 완료되면 원래 run은 품질 추세와 "이전 run" 짝에서 빠진다(`trendOverview`, 추세 설명에 제외 수). 옮긴 결과가 같은 값으로 두 번 찍히고, 원래 run의 호출 실패(0%)가 성능 향상처럼 보이는 것을 막는다. 원래 run은 목록 · 상세에 그대로
-- **`/evals` 비교하는 방법** — "일부 모델만 실패했으면 `pnpm eval retry --run <run id>` — 한 run에 모음, 명령은 그 run 상세에" 한 줄
+4. Part I 15절 미결 6 · 7 · 8
+
+# Part III — 구현
+
+## 28. 구현에서 바뀐 설계
+
+Part II와 다르게 구현한 것과 지금도 유효한 결정만 적는다. 단계별 구현 경과는 git 이력에, 이후의 설계 판단은 `docs/records/`에 있다.
+
+### 모델 · 데이터
+
+- **`SourceRef`에 `repository` 필드 없음** — 저장소가 하나이고 catalog가 그 저장소를 소유한다. 저장소가 둘이 되면 넣는다
+- **`Project` 대신 `ApplicationRef` · `LibraryRef`** — `kind`로 구분. `web-e2e`는 `role: 'test'`인 application
+- **신뢰도 등급(19.3) 미도입** — 검증 수준은 `TestRef.requires`(`database` · `port-binding` · `browser-binaries`)와 시나리오의 `EvidenceGap`으로 드러난다
+- **시나리오 track 셋** — `current` · `product-target`(상태는 documented-only · planned · not-found만, step에 source 금지) · `developer`(저장소 안에서 돌리는 흐름, runtime `go-cli`)
+- **`src/generated/` · collector 없음** — validator가 manifest · `swagger.json` · `nx graph --file`을 직접 읽는다
+- **카탈로그는 제품만 담는다** — `devhub` · `devhub-e2e`와 이 문서는 노드 · 문서 · 기록 · 테스트 어디에도 없다. 저장소 전체와 대조하는 검사는 이 범위를 `test-support/scope.ts`로 안다
+- **부재 검색어로 `action`을 쓰지 않는다** — `transaction`(OAuth transaction)에 걸려 아무것도 증명하지 못한다
+
+### 화면 (20 · 21 · 22절 대비)
+
+- **route는 탐색기 섹션과 1:1** — `/architecture`(그림) 외에 `/scenarios` · `/applications` · `/libraries` · `/documents` · `/records` · `/evals`, 파일 하나는 `/source?path=…`. 엔지니어링 섹션은 없앴다
+- **상세 정보는 parallel route 슬롯 `@inspector`** — page(`children`)가 본문 머리를 먼저 그려, 이동 뒤 Next의 스크롤 · 포커스가 본문으로 간다
+- **그림은 읽기 전용이지만 pan · zoom이 있다**(21절 "상호작용 없음"을 바꿈) — 노드는 단계 · 구성 요소 URL로 가는 진짜 링크, 그림/목록 전환, "크게 보기"는 브라우저 `<dialog>`. 배치는 렌더할 때 데이터에서 계산하고 좌표를 데이터에 두지 않는다
+- **목록은 요약, 근거는 상세 정보** — 시나리오 목록은 단계마다 한 줄, 소스 · API · 계약 · 테스트 파일은 상세 정보에만
+- **"이 페이지에서" 목차는 본문 안** — 본문 영역 폭(컨테이너 쿼리) 기준으로 옆 열 또는 접힌 목록
+- **건너뛰기 링크는 루트 layout `<body>` 맨 앞** — 다른 레이아웃으로 이동한 뒤 포커스가 `body`에 남으면 `NavigationFocus` 자리로 옮긴다
+- **로컬 에디터 링크는 개발 서버에서만**(22.2 제외 사유 해소) — `editorHref`는 `NODE_ENV=development`에서만 값을 내므로 빌드 산출물에 개인 경로가 없다. 에디터는 `DEVHUB_EDITOR`로 고른다
+- **일반 개발 도구 UI는 공용 `@berrypjh/devhub-ui`** — 이 앱은 무엇을 보여 줄지(카탈로그 · 평가 · 아키텍처)만 갖는다. 규칙은 `.claude/rules/devhub.md`
+- **평가 화면(`/evals`)은 관찰만** — 판정 · 채점은 Go 산출물 값을 그대로 쓴다. 규칙은 `.claude/rules/devhub.md`
+
+### 실행 · 캐시
+
+- **포트 3100 고정** — `dev` · `start` · `serve-static`. web(3000)과 함께 떠도 부딪히지 않는다
+- **`test` · `build` · `devhub-check`는 `cache: false`** — 저장소 전체와 git 스냅샷을 읽는데 Nx inputs로 표현되지 않아, 캐시가 낡은 통과를 재생했다
+- **`pnpm devhub:check`** — freshness spec만 도는 빠른 검사. 같은 spec이 `nx test devhub`에도 있어 `pnpm test`에서도 돈다
+
+### 검사 규칙
+
+| 묶음           | 규칙                                                                                                                                                           |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| schema · graph | 컬렉션별 id 유일, 관계 양 끝 · `next` · `via` · runtime · owner · API · 계약 · 테스트 · 문서 id 존재                                                           |
+| 파일           | catalog이 인용한 모든 경로가 정규 경로이고 디스크에 있다. `docs/**/*.md`는 빠짐없이 catalog에 있다                                                             |
+| 문서           | 인용한 heading이 글자 그대로 있다. 문서 · 기록의 링크 · 앵커 · 파일이 실제로 있다. 제품 한 문장은 인용한 heading 아래에 글자 그대로 있다                       |
+| Nx project     | Nx가 실제로 보는 project = catalog project. manifest 의존 = catalog의 Nx 의존 관계. 루트 script가 부르는 target이 있다                                         |
+| 시나리오 의미  | `implemented`는 source 필수, `partial`은 source + 공백, `documented-only` · `not-found`는 source 없음 + 부재 검색. 단계 source에 테스트 · 문서 · e2e 파일 금지 |
+| API · 계약     | 항상 노출되는 route = 생성된 Swagger, 경로 변수(`{jobId}`)는 호출 코드의 template placeholder와 맞춘다. 계약 literal이 정의 파일에 있다                        |
+| 링크 · 스냅샷  | 링크는 `RepositoryRef` 템플릿 + 스냅샷 + 인코딩된 경로에서만. 데이터에 URL · SHA · `#L` 없음. 스냅샷은 env → git → unavailable, 실패 시 가짜 SHA 없음          |
+| 소스 파일      | `apps/devhub*`에 날 제어 문자가 없다 — 있으면 git이 바이너리로 본다                                                                                            |
+
+### 알려진 한계
+
+- **symbol 검사는 글자 검사** — 주석 · 문자열에 같은 단어가 있으면 통과하고, 재export · 생성 코드의 선언은 실패한다
+- **검사가 한 방향** — 인용한 것이 사라지면 잡지만, catalog이 모르는 새 소스 · 테스트 · route는 잡지 못한다. Nx project · manifest 의존 · `docs/**/*.md` · Swagger route만 양방향
+- **`nx affected`가 DevHub를 모름** — 인용된 파일을 바꿨으면 `pnpm devhub:check`를 따로 돌린다
+- **`next build`는 검사를 돌리지 않는다** — `nx build devhub`만 돌리면 검사 없이 빌드된다
+- **`next dev`는 프로세스마다 스냅샷을 한 번 읽는다** — 커밋한 뒤에는 다시 띄워야 새 SHA가 보인다
+- **저장소가 private** — permalink는 권한 있는 로그인 세션에서만 열린다
 
 ## 다시 확인하는 명령
 
@@ -1731,35 +891,3 @@ pnpm --dir apps/web exec berry-react-ui summary
 pnpm --dir apps/web exec berry-react-ui find <query>
 pnpm --dir apps/web exec berry-react-ui api <Symbol>
 ```
-
-## 67. 구현 상태 — DevHub는 관찰만: 판정 · 연구 차트 제거, 정식 run 명령 만들기는 유지
-
-Python 연구 workspace(`tools/evals/lab`)가 탐색 · 지시문 · 모델 실험 · 임계값 조사를 맡으면서 `/evals`는 정식 결과를 보는 곳으로 좁혔다. Notebook = 탐색, DevHub = 정식 결과 관찰. 정식 live run(`pnpm eval run`)은 notebook이 대신하지 않으므로 그 명령을 조립해 주는 화면은 남긴다.
-
-- **뺀 것** — TS에 복사돼 있던 Go의 variant id 규칙, `detail/latency-histogram.tsx`와 `cases.jsonl`에서 만들던 지연 분포 · token 퍼짐, run 상세의 기준 variant 대비 차이(▲ · ▼) · 열별 "최고" · 개선/악화 판정 · "기준보다 나빠짐" 필터, case 표의 비슷한 사례 "맞음" 표시, 다시 실행 안내의 공급자 확인 curl
-- **남긴 것** — 산출물 reader · decoder(`repository.ts` · `decode.ts` · `contract.ts`), run 목록 · 과제 화면 · 추세, run 상세(Go 요약 값을 variant끼리 나란히, 모든 품질 지표, case별 결과는 갈림 · 모두 실패로만 묶음, variant 자세히, Go 요약의 지연 · 사용량 · 실패 분포, case 표), 짝 비교 화면과 gate 결과, 다시 실행 명령
-- **정식 run 명령 만들기**(`command-builder.tsx` · `lib/evaluations/variant-command.ts` · `variant-catalog.ts`) — 저장소의 dataset · split(case 수) · 규칙 기준선 · 실험 설정을 고르고, 모델은 서버가 새로고침마다 공급자 목록 API(`provider-models.ts`, key는 DevHub 프로세스 환경변수, 없으면 이유만)에서 불러온 것을 고르거나 `공급자:모델`로 직접 적는다(모델 이름은 어느 파일에도 없다). `pnpm eval plan` · `run` 명령과 호출 상한(case × variant별 호출 × 재시도 여유 3) · 필요한 key 환경변수 이름이 나온다. 명령 글자만 만들고 실행 · 검증(`plan`)은 사용자 터미널과 Go가 한다
-- **더한 것** — run 상세의 variant 표 아래에 짝 비교 명령(`pnpm eval compare --baseline <run>:<첫 variant> --candidate <run>:<variant>`)과 복사 버튼. 어느 쪽이 나은지는 그 명령이 쓰는 `comparison.json`이 정한다
-- **규칙** — TS는 통과 여부 · 정확도 · gate 결과 · 비교 가능 여부를 정하지 않는다. 표시용 묶음(상태 조각 합, 실패 수 정렬, Go confusion 행 합)과 명령 글자만 만든다. `.claude/rules/devhub.md`에 적었다
-- 확인: `lint` · `typecheck` · `nx test devhub` · `pnpm devhub:check` 통과. `nx build devhub`와 실제 화면은 포트가 막힌 세션에서 보지 못했다
-
-## 68. 구현 상태 — 공용 `@berrypjh/devhub-ui`로 이전
-
-이 앱에서 뽑아 낸 공용 패키지 `@berrypjh/devhub-ui` 1.2.0이 같은 일을 하게 되어, 일반 개발 도구 UI는 공용 공개 API를 쓰고 이 앱은 무엇을 보여 줄지(카탈로그 · 평가 · 아키텍처)만 갖도록 나눴다. 앞 절들에 적힌 로컬 파일 경로 일부는 이 절에서 바뀐다.
-
-- **연결** — `components/shell/devhub-root.tsx`가 Next 라우터(`next/link` · `usePathname` · `location.hash` · `push`)를 `DevHubProvider`로 넘기고 root layout이 감싼다. 스타일은 react-ui CSS 다음에 `@berrypjh/devhub-ui/styles.css`를 들이고 `@source`로 패키지 `dist`의 클래스를 생성한다
-- **공용으로 옮긴 것** — 셸 틀(`DevHubShell` · `WorkspaceFrame` · `WorkspaceSection` · `Inspector` · 탐색기 서랍), 그림(`CanvasViewport` · `CanvasEdges` · `ViewSwitch` · 뷰포트 계산), 문서(`parseMarkdown` · `DocContent` · `DocToc` · `DocumentLayout` · 앵커 표식), 검색 순위(`buildIndex` · `search` · `topResults`), 테마 helper, `Icon`, `Pager` · `RecordMeta` · 상세 정보 조각, `DataTable` · `FilterEmpty`, `CopyButton` · `SourceActions` · `FileLine`. 로컬 사본(소스 15개와 그 spec 4개)을 지웠다. 쓰이지 않던 `ui/narrow-disclosure.tsx`도 함께 지웠다
-- **남긴 것** — 카탈로그 · 평가 산출물 읽기 · 아키텍처와 흐름 화면, 링크 풀기(`lib/markdown/documents.ts`의 `documentView`가 서버에서 링크 · 그림 주소를 미리 풀어 client의 `renderLink`에 값으로 넘긴다), 검색 항목 만들기, 탐색기에 넘길 보기 · 섹션 · 묶음(시나리오는 트랙, 기록은 종류, 문서는 주제로 묶고 문서 묶음만 접힌 채 시작 — 공용 `Explorer`가 그린다. 구현 상태 칩은 탐색기에서 빠지고 섹션 목록 · 상세 정보에 남음. 평가 아이콘은 공용 `test`), 이동 뒤 포커스(`NavigationFocus`), 문서 칸 폭을 받는 `WorkspaceHeader`
-- **1.2.0 결함 때문에 임시로 둔 것** — `vitest.config.ts`의 `server.deps.inline`(확장자 없는 ESM import), 로컬 `ThemeSwitch`(서버 snapshot 없음)와 그것을 끼운 공용 `TopBar` 사본(제품명 · 요약 · 검색 · 테마, 보기 nav 없음 — 화면 사이 이동은 탐색기), 로컬 `GlobalSearch`와 `lib/search/search-view.ts`(단축키 hydration 불일치), 상단 바의 `min-w-0`(공용 셸 grid 열 크기 없음). 고친 릴리스로 올리면 지운다. 규칙은 `.claude/rules/devhub.md`
-- **화면이 달라진 것** — 간격이 공용 토큰 이름을 따른다. 표 스크롤 영역 이름에 "표"가 붙었다. 복사 결과는 스크린 리더에만 알린다. 파일 줄의 "최신 브랜치 기준" 표시는 경고 줄로 옮겼다
-- 확인: `lint` · `typecheck` · `nx test devhub` · `pnpm devhub:check` 통과, `nx build devhub`(Turbopack) 148페이지 생성, devhub-e2e 36개 통과(사용자 터미널. 1024px 상단 바 1개는 `min-w-0` 뒤 다시 돌려 통과)
-
-## 69. 구현 상태 — 엔지니어링 섹션과 명령 카탈로그 제거
-
-엔지니어링 화면(`/engineering` · `/engineering/<묶음>`)을 없앴다. 명령 카탈로그는 이 화면을 위해서만 있어서 함께 지웠다. 앞 절(46 · 47 · 48 등)의 엔지니어링 · 명령 설명은 이 절에서 끝난다.
-
-- **지운 것** — `components/engineering/command.tsx`, `data/commands.ts`(`RUNNER_COMMAND` 포함), `lib/catalog/command-definition.ts`, 그 spec들. 타입 `CommandRef` · `CommandSource` · `CommandGroup`, `catalog.commands`, `COMMAND_GROUP` · `COMMAND_GROUPS` · `commandHref` · `commandLine`
-- **따라 빠진 것** — 탐색기 · 섹션 route의 엔지니어링, 검색의 "명령" 종류, 상세 정보의 "이 테스트를 돌리는 명령" 묶음
-- **남긴 것** — 테스트의 실행 조건(`CommandConstraint` · `CONSTRAINT`)은 테스트 목록이 쓴다. 문서 주제 "엔지니어링"(`docs/engineering/`)은 문서 묶음이라 그대로
-- **검사** — "루트 script 전부가 catalog에 있다"와 "catalog 명령의 Nx target이 있다"는 대상이 없어져 지웠다. "루트 script가 부르는 Nx target이 있다"는 남겼다
-- 확인: `lint` · `typecheck` · `nx test devhub` · `pnpm devhub:check` 통과, devhub-e2e는 `lint` · `typecheck`만. E2E와 실제 화면은 이 세션에서 보지 못했다

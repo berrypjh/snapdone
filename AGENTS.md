@@ -27,12 +27,8 @@ Nx integrated monorepo. package manager는 **pnpm**(`package.json`의 `packageMa
 
 ## Working Principles
 
-- 수정 전 관련 코드를 **읽는다.** 추측해서 덮어쓰지 않는다
-- 기존 architecture와 convention을 먼저 재사용한다. 새 방식을 들여오기 전에 기존 것으로 왜 안 되는지 설명한다
-- **사용자의 미커밋 변경을 보존한다.** `reset` · `checkout --` · `stash`로 되돌리지 않는다
-- 관계없는 refactor를 하지 않는다. scope 밖 기능을 만들지 않는다
-- TODO만 남기고 완료를 선언하지 않는다
-- 작게 · 점진적으로 진행하고 각 단계를 검증한 뒤 넘어간다
+탐색 · 재사용 · 작은 변경 · 미커밋 변경 보존 · 의존성 검토 · 검증 정직성은 공통 rule(`.claude/rules/_generated/core.md`)을 따른다. 여기에는 더하는 것만 둔다.
+
 - 문제를 고칠 때는 **근본 원인을 먼저 증명한다.** 재현 → 증거 → 수정. 추측 workaround를 넣지 않는다
 - 과도한 방어적 프로그래밍을 하지 않는다. 모듈 · 함수는 짧게, 이름은 분명하게
 - 주석은 docstring 위주로 간결하게. 코드 · print · 로그에 이모지를 쓰지 않는다
@@ -42,7 +38,7 @@ Nx integrated monorepo. package manager는 **pnpm**(`package.json`의 `packageMa
 Web · React Native · Go는 각자의 정상 architecture를 유지한다. **Nx 때문에 플랫폼 관례를 깨지 않는다.**
 
 - **Web UI를 React Native에 그대로 복제하지 않는다.** 같은 것은 사용자가 얻는 결과이지 화면 구조가 아니다
-- **frontend 작업에서 `apps/api`를 고치지 않는다.** 두 세계의 계약 접점은 `{ status: string }` 하나뿐이다
+- **frontend 작업에서 `apps/api`를 고치지 않는다.** 두 세계는 HTTP 응답 계약으로만 만난다
 - 공유는 `libs/`로만 한다. DOM component · RN component · CSS · platform API는 공유하지 않는다
 - 새 Nx library는 **두 번째 사용처가 실제로 나타났을 때** 만든다. 미리 만들지 않는다
 - 공용 UI 컴포넌트 · 토큰은 **설치된 패키지의 공개 CLI로 조회한다**(`berry-react-ui`). shared-stack source를 읽거나 복사하지 않는다. 순서는 web · mobile rule에 있다
@@ -51,25 +47,16 @@ Web · React Native · Go는 각자의 정상 architecture를 유지한다. **Nx
 
 ### Dependency
 
-설치하기 **전에** 순서대로 확인하고 결과를 설명한 뒤에만 설치한다.
+설치 전 확인 순서는 공통 rule — 기존 dependency → 표준 라이브러리(Go stdlib · Node 내장 · Web API) → platform SDK(Next.js · Expo). **"편해서"는 사유가 아니다.** 설치는 실행 전에 사용자에게 요청한다.
 
-1. 기존 dependency로 되는가
-2. 표준 라이브러리로 되는가 (Go stdlib · Node 내장 · Web API)
-3. 현재 platform SDK로 되는가 (Next.js · Expo)
-4. 그래도 필요하면 왜 필요한지
-
-**"편해서"는 사유가 아니다.** 설치가 필요하면 실행하기 전에 사용자에게 요청한다.
-
-버전은 임의로 올리지 않는다. Nx plugin(`@nx/*`)은 개별 `pnpm add` 금지 — `nx add` 또는 `nx migrate`만 쓴다. **Expo는 SDK 56에 고정한다**(`@nx/expo`가 57 미지원, nrwl/nx#36443). 고정 버전 표는 [target-architecture.md](docs/architecture/target-architecture.md#버전-정책).
+Nx plugin(`@nx/*`)은 개별 `pnpm add` 금지 — `nx add` 또는 `nx migrate`만 쓴다. **Expo는 SDK 56에 고정한다**(`@nx/expo`가 57 미지원, nrwl/nx#36443). 고정 버전 표는 [target-architecture.md](docs/architecture/target-architecture.md#버전-정책).
 
 ## Validation
 
-- 완료를 선언하기 전에 **영향 범위를 검증한다.** 검증하지 않은 것을 검증했다고 말하지 않는다
-- 가장 작은 범위부터 올라간다. 한 프로젝트 변경에 전체 `pnpm verify`를 돌리지 않는다
-- lint · typecheck · test 오류를 무시하지 않는다. 기존 테스트를 깨뜨리지 않는다
+- 한 프로젝트 변경에 전체 `pnpm verify`를 돌리지 않는다
 - 무엇을 어디까지 돌릴지는 `/berry-dev:repo-verify`가 판단한다. UI를 바꿨으면 `/berry-dev:frontend-quality`로 제품 기준도 본다. 둘이 읽는 snapdone 사실은 `.claude/harness.profile.md`
 
-**AI 세션에서 실행할 수 없는 것**이 있다. dev 서버 · `pnpm e2e` · `nx build web` · `nx build devhub`는 포트 바인딩이 막혀 있다(Next.js 빌드는 Turbopack의 PostCSS 워커가 포트를 연다). 모두 사용자 터미널에서는 정상 동작하므로 실행을 요청한다. 목록의 정본은 `.claude/harness.profile.md`. `nx build mobile`은 EAS 클라우드 빌드이고, mobile 런타임 검증은 수단 자체가 없다. 실행하지 못했으면 그렇게 보고한다.
+**AI 세션에서 실행할 수 없는 것**이 있다. dev 서버 · `pnpm e2e` · `nx build web` · `nx build devhub`는 포트 바인딩이 막혀 사용자 터미널에서 실행을 요청한다. mobile 런타임 검증은 수단이 없다. 목록의 정본은 `.claude/harness.profile.md`.
 
 검증 명령은 [quality-gates.md](docs/engineering/quality-gates.md).
 

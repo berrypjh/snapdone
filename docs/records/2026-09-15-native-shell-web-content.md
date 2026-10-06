@@ -19,7 +19,7 @@ mobile이 주 제품. web은 브라우저 단독 서비스이면서 앱 안 WebV
 
 표의 담당은 **앱 안에서 누가 그리는가**를 말한다. 브라우저로 직접 들어오면 web이 핵심 흐름까지 맡는다 — 카메라 대신 파일 선택으로 사진을 받고, 온보딩 순서(목적 → 첫 사진 → 처리)는 앱과 동일. 진행 상태는 서버에 있어 어느 쪽에서 시작해도 이어진다([`apps/web`의 책임](../architecture/target-architecture.md#appsweb--nextjs)).
 
-![앱 안의 WebView와 브라우저가 같은 web 한 벌을 연다](../images/records/native-shell-web-content.svg)
+![앱 안의 WebView와 브라우저가 같은 web 한 벌을 연다](images/native-shell-web-content.svg)
 
 **무게중심이 Act에 있다는 제품 판단이 그대로 경계가 됐다.** 하려던 일을 끝내는 흐름은 네이티브, 끝난 뒤 읽는 화면은 web.
 

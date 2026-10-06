@@ -5,7 +5,7 @@ paths:
 
 # libs (`libs/`)
 
-이 규칙은 `libs/` 파일을 열 때 읽힌다. 지금 lib은 셋이고 web과 mobile이 모두 쓴다 — `webview-bridge`(앱 ↔ WebView 계약: User-Agent 토큰 · 메시지 타입), `auth-contracts`(인증 wire 타입: provider · 오류 코드 · `Session` · 온보딩 단계 · 로그인 응답 해석), `onboarding`(사용 목적 규칙 · 저장된 진행 · 사진 처리 작업 계약과 조회 흐름).
+지금 lib은 셋이고 web과 mobile이 모두 쓴다 — `webview-bridge`(앱 ↔ WebView 계약: User-Agent 토큰 · 메시지 타입), `auth-contracts`(인증 wire 타입: provider · 오류 코드 · `Session` · 온보딩 단계 · 로그인 응답 해석), `onboarding`(사용 목적 규칙 · 저장된 진행 · 사진 처리 작업 계약과 조회 흐름).
 
 ## 모양
 
@@ -18,11 +18,11 @@ paths:
 만들 시점과 경계는 생성 rule `_generated/cross-runtime-pure.md`(`libs/*/src/**`). snapdone에서 더하는 것만 적는다.
 
 - 들어갈 수 있는 것 — domain type · pure business logic · formatter(날짜 · 금액 · 전화번호 같은 ko-KR 규칙) · validation · constants · API contract TypeScript 코드
-- platform-specific modal / sheet도 들어오지 않는다. `react-native-web`이 설치돼 있어 universal UI가 기술적으로는 가능하지만 양쪽 플랫폼 모두에서 어색해진다
+- platform-specific modal / sheet도 들어오지 않는다. `react-native-web`으로 universal UI가 가능하지만 양쪽 모두에서 어색해진다
 
-## lib을 만들 때 함께 할 일
+## 경계 강제
 
-위 규칙은 **ESLint가 강제한다.** 루트 `eslint.config.mjs`가 공용 `@berrypjh/eslint-config/nx`의 허용 기본값을 덮어 쓴다.
+경계는 **ESLint가 강제한다.** 루트 `eslint.config.mjs`가 공용 `@berrypjh/eslint-config/nx`의 허용 기본값을 덮어 쓴다.
 
 | tag        | 의존할 수 있는 것 | 금지된 외부 import                                                                                          |
 | ---------- | ----------------- | ----------------------------------------------------------------------------------------------------------- |

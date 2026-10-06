@@ -13,14 +13,14 @@ Nx Workspace (repository root)
 
 ## 현재 상태
 
-| 영역          | 상태                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Nx workspace  | integrated, pnpm workspaces                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `apps/web`    | Next.js App Router. `(product)` 홈 · `/history`, `(auth)` 로그인 · 온보딩 · callback · 핸드오프, 브라우저 셸과 앱 WebView 모드                                                                                                                                                                                                                                                                                                                                                   |
-| `apps/mobile` | Expo. React Navigation native stack — 로그인 · 온보딩 소개 · 네이티브 홈 · WebView 콘텐츠 화면                                                                                                                                                                                                                                                                                                                                                                                   |
-| `apps/api`    | module `snapdone/api`, `GET /health`, `/v1/auth/*`(session · logout · Google OAuth · 핸드오프), `/v1/onboarding`(온보딩 진행 — 단계 · 사용 목적), `/v1/processing-jobs`(사진 분류. 모델은 `PROCESSING_*` 설정으로 Claude · OpenAI 호환(GPT · 로컬 Ollama) 중에서 고른다), Postgres 마이그레이션(`nx run api:migrate`) · 인증 저장소. 평가 harness `cmd/eval` · `internal/evaluation`은 서버와 분리된 개발자 CLI(`nx run api:eval`, [agent-evaluation.md](./agent-evaluation.md)) |
-| `libs/`       | `webview-bridge` — 앱 ↔ WebView 계약, `auth-contracts` — 인증 wire 타입 (둘 다 web · mobile이 사용)                                                                                                                                                                                                                                                                                                                                                                              |
-| `docs/`       | 제품 · 아키텍처 · 디자인 · 개발 · 품질                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| 영역          | 상태                                                                                                                                                               |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Nx workspace  | integrated, pnpm workspaces                                                                                                                                        |
+| `apps/web`    | Next.js App Router. `(product)` 홈 · `/history`, `(auth)` 로그인 · 온보딩 · callback · 핸드오프, 브라우저 셸과 앱 WebView 모드                                     |
+| `apps/mobile` | Expo. React Navigation native stack — 로그인 · 온보딩 소개 · 네이티브 홈 · WebView 콘텐츠 화면                                                                     |
+| `apps/api`    | module `snapdone/api`. `/health` · 인증 · 온보딩 진행 · 사진 분류, Postgres. 평가 harness는 서버와 분리된 개발자 CLI([agent-evaluation.md](./agent-evaluation.md)) |
+| `libs/`       | `webview-bridge` · `auth-contracts` · `onboarding` (모두 web · mobile이 사용)                                                                                      |
+| `docs/`       | 제품 · 아키텍처 · 디자인 · 개발 · 품질                                                                                                                             |
 
 버전은 아래 [버전 정책](#버전-정책)에 한 곳으로 모아 두었다.
 
@@ -30,7 +30,7 @@ Nx Workspace (repository root)
 
 ### 무엇이 있고 무엇이 없는가
 
-**지금 있는 것은 인프라와 부트스트랩뿐이다.** 제품 기능은 하나도 구현되지 않았다.
+**지금 있는 것은 인프라 · 인증 · 온보딩까지다.** 사진 처리는 온보딩 첫 사진 분류뿐이고 Act(실행)는 없다.
 
 구현된 것:
 
@@ -39,7 +39,7 @@ Nx Workspace (repository root)
 - 디자인 토큰과 App Shell, web 라이트/다크 테마
 - 네이티브 셸 + 웹 콘텐츠 골격 — mobile native stack, WebView 화면(로딩 · 오류 · 외부 링크), web in-app 모드, `libs/webview-bridge` 계약과 모듈 경계 lint
 - Go `GET /health`, Gin HTTP 경계와 swag로 생성한 Swagger 2.0 문서
-- Postgres 연결 · 마이그레이션(로컬 Docker)과 인증 — 사용자 · 로그인 수단 · 세션(root/child) · 일회용 grant · OAuth transaction, `/v1/auth/{capabilities,session,logout}` · `/v1/auth/oauth/{start,cancel,callback}` · `/v1/auth/exchange` · `/v1/auth/handoff/{start,exchange}`
+- Postgres 연결 · 마이그레이션(로컬 Docker)과 인증 저장소 · `/v1/auth/*`
 - Google 로그인 화면과 세션 — mobile 네이티브 흐름, web 로그인 · HttpOnly 세션 cookie, WebView 로그인 핸드오프. **실계정 · 실기기 인수는 남아 있다**
 - 온보딩 소개 → 사용 목적 → 첫 사진 → 처리 — mobile(네이티브)과 web(브라우저 단독, 파일 선택)이 같은 순서로 간다. 진행은 서버(`/v1/onboarding`)에 있어 어느 쪽에서든 이어 간다. 첫 결과 화면 · 온보딩 완료는 아직 없다
 - 검증 명령과 문서
@@ -62,7 +62,7 @@ Nx Workspace (repository root)
 
 ## 제품 구성 — 네이티브 셸 + 웹 콘텐츠
 
-**결정 (2026-09-15):** mobile이 주 제품이다. web은 브라우저 단독 서비스이면서 앱 안 WebView로도 열린다. 하이브리드 앱에서 가장 보편적인 분담을 따른다.
+**결정:** mobile이 주 제품이다. web은 브라우저 단독 서비스이면서 앱 안 WebView로도 열린다. 하이브리드 앱에서 가장 보편적인 분담을 따른다.
 
 | 영역                                                                     | 담당                              | 이유                                                     |
 | ------------------------------------------------------------------------ | --------------------------------- | -------------------------------------------------------- |
@@ -81,7 +81,7 @@ web과 mobile은 **코드로 서로 참조하지 않는다.** 앱은 web을 URL�
 4. **링크 · 뒤로 가기** — 같은 도메인은 WebView 안에서, 외부 도메인은 시스템 브라우저로(`onShouldStartLoadWithRequest` → `Linking.openURL`). 뒤로 가기 · 닫기는 네이티브가 담당한다
 5. **URL** — web 경로와 앱 딥링크(Universal Link / App Link) 경로를 같게 둔다. 공유 링크는 앱이 있으면 앱, 없으면 브라우저로 열린다
 
-**구현된 것 (MVP 골격):** `react-native-webview` 13.16.1 · React Navigation native stack, web `isInAppRequest()` · `InAppReady`, mobile `WebContentScreen` · `webViewNavigation`, `libs/webview-bridge`(User-Agent 토큰 · `ready` · `auth-required` · `handoff-ready` 메시지), 로그인 핸드오프(web `/auth/handoff*` · Go `/v1/auth/handoff/*`), in-app E2E.
+**구현된 것 (MVP 골격):** `react-native-webview` · React Navigation native stack, web `isInAppRequest()` · `InAppReady`, mobile `WebContentScreen` · `webViewNavigation`, `libs/webview-bridge`(User-Agent 토큰 · `ready` · `auth-required` · `handoff-ready` 메시지), 로그인 핸드오프(web `/auth/handoff*` · Go `/v1/auth/handoff/*`), in-app E2E.
 
 **아직 없는 것:** 앱 → web 메시지, 딥링크 설정, 촬영 · 공유 요청 메시지. 핵심 흐름을 WebView로 옮기지 않는다.
 
@@ -111,7 +111,7 @@ web과 mobile은 **코드로 서로 참조하지 않는다.** 앱은 web을 URL�
 
 담지 않는 것: web과 동일한 화면 구조를 억지로 맞추는 일. 결과는 같고 구현은 각자에 맞게 한다. web 콘텐츠 화면을 RN으로 다시 만드는 일.
 
-**네비게이션은 React Navigation native stack이다.** `src/app/App.tsx`가 인증 상태에 따라 등록할 화면을 고른다 — 복원(`Restoring` · `RestoreFailed`), 로그인(`Auth`), 온보딩(`Onboarding` — 안쪽 native stack `src/app/OnboardingFlow.tsx`: 소개 · 목적 선택 · 첫 사진 · 사진 확인 · 처리. 결과 화면은 아직 없다. 진행은 서버 `/v1/onboarding`에 저장해 web과 이어진다), 온보딩을 마친 뒤 `Home`(네이티브) · `WebContent`(WebView). bottom navigation은 실제 탭이 생길 때 넣는다. 가짜 탭을 미리 만들지 않는다 ([foundation.md](../design/foundation.md)의 Mobile Shell).
+**네비게이션은 React Navigation native stack이다.** `src/app/App.tsx`가 인증 · 온보딩 상태에 따라 등록할 화면을 고른다(복원 → 로그인 → 온보딩 → `Home` · `WebContent`). bottom navigation은 실제 탭이 생길 때 넣는다. 가짜 탭을 미리 만들지 않는다 ([foundation.md](../design/foundation.md)의 Mobile Shell).
 
 ### `apps/api` — Go
 
@@ -128,17 +128,15 @@ web과 mobile은 **코드로 서로 참조하지 않는다.** 앱은 web을 URL�
 
 **Go module path (결정 완료):** `snapdone/api`.
 
-git remote가 없고 조직명도 정해지지 않았으므로 `github.com/...` 주소를 임의로 확정하지 않았다. 도메인이 없는 module path는 외부에서 `go get`으로 가져갈 수 없는데, 지금 단계에서는 그게 맞는 상태다. 저장소 이름 `snapdone`, npm scope `@snapdone/`과 같은 이름을 쓴다.
+remote가 정해지지 않아 도메인 없는 경로를 쓴다. remote가 생기면 그 시점에 `go mod edit -module <새 경로>`로 한 번에 바꾼다(내부 import 경로가 함께 바뀐다).
 
-배포 대상이 정해지고 remote가 생기면 그때 `go mod edit -module <새 경로>`로 한 번에 바꾼다. 내부 import 경로가 함께 바뀌므로 미루지 말고 remote 확정 시점에 처리한다.
-
-**HTTP 경계 (결정 완료, 2026-09-18):** 수명주기(timeout · graceful shutdown)는 `net/http.Server`가 갖고, 그 `Handler`로 Gin engine을 쓴다. Gin은 `internal/httpserver` 안에서만 쓰며 `auth` · `database` · `google` · `config`는 Gin을 모른다. 요청 · 응답은 `internal/httpserver/dto.go`의 DTO로 주고받고, 도메인 오류는 경계에서 상태 코드와 `{"error": "<code>"}`로 바뀐다. DB 접근은 그대로 pgx이고 ORM · repository 계층은 두지 않는다. API 문서는 swag 주석에서 생성한 Swagger 2.0(`apps/api/docs/swagger/`)이고, route와 문서의 일치는 Go 테스트가 검사한다. 세부 규칙은 `.claude/rules/api.md`.
+**HTTP 경계 (결정 완료):** 수명주기는 `net/http.Server`가 갖고 Gin engine은 그 `Handler`일 뿐이다. Gin은 `internal/httpserver` 안에서만 쓴다. DB는 pgx 직접 접근이고 ORM · repository 계층은 두지 않는다. API 문서는 swag로 생성한 Swagger 2.0이다. 세부 규칙은 `.claude/rules/api.md`.
 
 **빌드 산출물:** `dist/apps/api/api`. 소스 디렉터리에 바이너리를 남기지 않으며 `dist/`는 git ignore 대상이다.
 
 ### `libs/` — 공유 코드
 
-**지금 lib은 `webview-bridge` · `auth-contracts` · `onboarding` 셋이다.** 앱 ↔ WebView 계약은 처음부터 web · mobile이 함께 썼고, 인증 wire 타입은 web 로그인이, 온보딩 규칙(사용 목적 · 저장된 진행 · 사진 처리 작업과 조회 흐름)은 web 온보딩이 두 번째 사용처가 되면서 mobile에서 옮겨 왔다. 모양과 경계 규칙은 `.claude/rules/libs.md`.
+**지금 lib은 `webview-bridge` · `auth-contracts` · `onboarding` 셋이다.** 모양과 경계 규칙은 `.claude/rules/libs.md`.
 
 라이브러리는 재사용이 실제로 발생한 뒤에 만든다. 두 번째 사용처가 나타나기 전에는 코드를 쓰는 앱 안에 둔다.
 
@@ -195,9 +193,7 @@ apps/mobile ─→ apps/web     (금지)
 
 `apps/api`(Go)와 TypeScript 앱들은 언어가 다르므로 타입을 직접 공유할 수 없다. 계약은 생성되거나 명시적으로 선언되어야 한다.
 
-현재 endpoint는 `GET /health`와 인증뿐이라 타입을 손으로 둔다 — `/health`는 각 앱에, 인증 wire 타입은 `libs/auth-contracts`에. endpoint가 늘어나 손으로 베껴 쓰는 파일이 여러 개 생기는 시점이 생성 전략을 도입할 때다.
-
-호출 경로와 CORS 판단, 그리고 앞으로의 adapter 규칙은 [data-access.md](./data-access.md)에 있다.
+지금은 타입을 손으로 두며, 호출 경로 · CORS 판단 · 생성 전략을 도입할 시점은 [data-access.md](./data-access.md)에 있다.
 
 ## Nx가 담당하는 것
 
@@ -232,8 +228,8 @@ Nx는 orchestration 계층이다. 각 플랫폼의 빌드 도구(Next.js, Expo, 
 
 `nx`와 모든 `@nx/*` 플러그인은 **정확히 같은 버전**이어야 한다. 플러그인 dependency가 exact pin이라 하나만 어긋나면 중복 설치와 그래프 오류가 난다.
 
-**React는 `19.2.3`으로 정확히 고정한다** (root · `apps/web` 모두, `^` 금지). react-native 0.85.3 렌더러가 React 19.2.3으로 빌드됐고 버전이 다르면 `Incompatible React versions`로 멈춘다. Expo SDK 56 `expo install --check`의 기대값도 같다. web은 한 monorepo에서 같은 React를 쓰도록 맞춘다 — `next` peer `^19.0.0`이라 문제없다. 네이티브 모듈 버전(`react-native-svg` 등)도 `expo/bundledNativeModules.json` 값을 따른다. **사본이 갈리면 안 되는 패키지는 `pnpm-workspace.yaml`의 `overrides`에 적어** 앱이 `"*"`로 적어도 워크스페이스 전체가 한 버전으로 해석되게 한다.
+**React는 `19.2.3`으로 정확히 고정한다** (root · `apps/web` 모두, `^` 금지). react-native 렌더러와 버전이 다르면 `Incompatible React versions`로 멈춘다. web도 같은 React를 쓴다. 네이티브 모듈 버전(`react-native-svg` 등)도 `expo/bundledNativeModules.json` 값을 따른다. **사본이 갈리면 안 되는 패키지는 `pnpm-workspace.yaml`의 `overrides`에 적어** 앱이 `"*"`로 적어도 워크스페이스 전체가 한 버전으로 해석되게 한다.
 
-**Expo는 SDK 56에 고정한다.** `@nx/expo`가 아직 SDK 57을 생성·마이그레이션하지 못한다 (nrwl/nx#36443 open).
+**Expo는 SDK 56에 고정한다.** `@nx/expo`가 아직 SDK 57을 생성·마이그레이션하지 못한다 (nrwl/nx#36443).
 
 버전 변경은 `nx migrate`로만 한다. 개별 `pnpm add`로 올리지 않는다.

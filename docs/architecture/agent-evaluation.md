@@ -14,20 +14,7 @@ provider · model · prompt가 바뀌어도 **같은 dataset과 같은 evaluator
 | Python 연구 workspace(`tools/evals/lab`) — 탐색 · 지시문 · 모델 실험 · 임계값 후보. 원시 예측 파일(`ReplayRecord`)만 Go로 넘기고 채점 · gate · 산출물은 Go          | **구현 · offline 검증됨**. notebook은 gate 파일 · production 설정을 쓰지 않음                                                 |
 | 실제 행동 실행(Act) 측정 · fine-tuning · CI paid eval · Unicode NFC · judge                                                                                         | **후속**(Phase 2). 코드 없음                                                                                                  |
 
-`local.example.json` · replay manifest의 모델 id는 placeholder이고 `"placeholder": true`라 live에서 거절됨. **모델 이름은 저장소 파일에 두지 않음** — 모델은 계속 바뀌므로 실행할 때 `--variant anthropic:<model>` · `openai:<model>`로 고르고, 실험은 모델 없는 설정(`tools/evals/experiments/`)에 얹어 `<설정>@<공급자>:<model>`로 부름. 실제 모델 호출은 `--allow-api`가 있어야 돎(이 저장소 작업에서 실행하지 않음). 두 공급자를 한 run에서 돌리도록 key 환경변수를 나눴음(`ANTHROPIC_API_KEY` · `OPENAI_API_KEY`). 문서의 hash 값(`5152dd42…` 등)은 이 커밋 기준이며 지시 · schema가 바뀌면 달라짐.
-
-## 기준 상태
-
-설계의 근거로 삼은 저장소 상태. 모두 실제 명령으로 읽은 값.
-
-| 항목            | 값                                                                                                                |
-| --------------- | ----------------------------------------------------------------------------------------------------------------- |
-| branch · HEAD   | `main` · `252381a6e0a5a1c37b9cceea9c41f3306cce0926` (외부 분석 기준 커밋과 같음). `git status --short` 비어 있음  |
-| 도구 버전       | Node 24.20.0 · pnpm 10.30.3 · Nx 23.1.1 · Go 1.26.6                                                               |
-| `api` target    | `dev` `migrate` `build` `test` `vet` `swagger` `swagger-check` `fmt` — `lint` · `typecheck` 없음                  |
-| `devhub` target | `lint` `typecheck` `test` `build` `devhub-check` (`vitest run src/data src/domain ...`)                           |
-| 중첩 agent 지침 | `rg --files -g AGENTS.md -g CLAUDE.md` 결과는 루트 두 파일뿐. 경로별 규칙은 `.claude/rules/`(api · docs · devhub) |
-| Go 직접 의존    | `anthropic-sdk-go` · `gin` · `pgx/v5` · `swaggo/*` — 평가용 의존성 추가 없음                                      |
+**모델 이름은 저장소 파일에 두지 않음** — 실행할 때 `--variant anthropic:<model>` · `openai:<model>`로 고르고, 실험은 모델 없는 설정(`tools/evals/experiments/`)에 얹어 `<설정>@<공급자>:<model>`로 부름. 예시 manifest의 모델 id는 `"placeholder": true`라 live에서 거절됨. 실제 모델 호출은 `--allow-api`가 있어야 돎. key 환경변수는 공급자별(`ANTHROPIC_API_KEY` · `OPENAI_API_KEY`).
 
 ## 현재 구현 상태
 
@@ -41,8 +28,6 @@ provider · model · prompt가 바뀌어도 **같은 dataset과 같은 evaluator
 | Act        | Not implemented       | 없음                                                                                                                                                                                              | swagger에 `/actions` · `execute` route 없음. migration은 `0001_auth` ~ `0004_onboarding_progress`뿐(행동 · 기록 테이블 없음). Google OAuth scope는 `openid` 하나(`internal/google/google.go`) — 캘린더 권한 없음 |
 | Learn      | Not implemented       | 없음                                                                                                                                                                                              | 자동화 · 반복 패턴 저장 코드 · 테이블 없음                                                                                                                                                                       |
 | OCR · 번역 | Planned               | `foreign_text` category와 `translate` action 값만                                                                                                                                                 | 텍스트 추출 · 번역 API 호출 코드 없음. production adapter를 이 harness가 흉내 내지 않음(아래 [이후 과제](#이후-과제))                                                                                            |
-
-DevHub `finish-task-from-image` 시나리오의 부재 검색(`ACTION_SURFACE` 등)과 같은 결론. 다만 그 시나리오와 [devhub.md](./devhub.md) Part I은 2026-09-19 기준 조사라 "image analysis Not found" 같은 문장은 **지금 사실이 아님** — 사진 분류는 그 뒤에 들어왔음. 이 문서는 현재 코드만 근거로 삼음.
 
 ## 평가 seam
 
@@ -58,11 +43,11 @@ type Classifier interface {
 - **구현체** — `NewClaudeClassifier(apiKey, model string, httpClient *http.Client)` · `NewOpenAIClassifier(baseURL, model, apiKey string, httpClient *http.Client)`. HTTP client는 `NewHTTPClient()`(2분 상한 · 1 MiB 응답 상한 · redirect 미추적)
 - **결과 계약** — `Result{Category, Facts, SuggestedAction, Confidence}`. 허용 값은 `parseResult`가 공급자와 무관하게 다시 검사
 - **지시 · schema** — `instructions` · `request` · `resultSchema()`는 package private 상수 · 함수. prompt는 코드에 있으므로 **prompt 변경 = 커밋 변경**이고, harness는 그 변경을 계약 hash로 구분함(아래)
-- **공급자 선택** — `newClassifier(config.Processing)`는 `cmd/server/main.go`의 `package main`에 있어 다른 command가 재사용할 수 없음. 평가는 `processingadapter.Factory`가 같은 provider 상수로 같은 생성자를 부름. `processing`으로 옮기면 production 변경이라 이번 범위 밖
+- **공급자 선택** — `newClassifier(config.Processing)`는 `cmd/server/main.go`의 `package main`에 있어 다른 command가 재사용할 수 없음. 평가는 `processingadapter.Factory`가 같은 provider 상수로 같은 생성자를 부름
 
 ### production에 더하는 것 — `DescribeContract` 하나
 
-read-only 함수 하나만 `internal/processing/contract.go`에 추가(구현됨). `Classify` · `Result` · `parseResult` · HTTP contract · DTO · swagger는 그대로.
+read-only 함수 하나만 `internal/processing/contract.go`에 둠. `Classify` · `Result` · `parseResult` · HTTP contract · DTO · swagger는 그대로.
 
 ```go
 // 분류기가 모델에 강제하는 계약의 읽기 전용 묘사. 평가가 enum · 지시 · schema를 베끼지 않고 여기서 읽는다.
@@ -119,7 +104,6 @@ task마다 달라지는 채점 · 요약 · 비교는 `taskScorings` 한 표가 
 - **`score`** — invocation 하나의 `Quality`와 case metric. runner가 `NewCaseResult`(result.go)로 이것을 불러 `CaseResult`를 만들고, `cases.jsonl`을 쓰는 `RunWriter`는 검증해 적기만 함
 - **`summarize`** — trial 하나의 `TrialQuality`(task 한 branch만 채움). `summary.json`과 비교가 같은 함수를 씀
 - **`compare`** — 짝지은 두 trial 요약의 품질 축 · gate 입력(pass rate · shape invalid) · case 변화. label · confidence 비교는 분류만
-- `ScoringPolicy`는 예전 이름 `ClassificationPolicy`. JSON(`policy.version` · `policy.requireSchemaValid`)은 그대로
 
 ### 새 task 추가
 
@@ -141,7 +125,7 @@ zero-touch가 아니라 정해진 목록을 고침. 빠뜨리면 컴파일 · `T
 
 ## adapter — production 분류기 호출과 관측
 
-`internal/evaluation/processingadapter`(구현됨). DB · `config.Load` · 서버 없이 production 생성자를 그대로 부름.
+`internal/evaluation/processingadapter`. DB · `config.Load` · 서버 없이 production 생성자를 그대로 부름.
 
 - **의존 방향** — `evalcli → processingadapter → evaluation`. 평가 core(`internal/evaluation`)는 `internal/processing`도 `processingadapter`도 import하지 않음. core는 `AdapterFactory`(생성자 타입)와 adapter 이름 → 지원 task 표만 갖고, `evalcli`가 `processingadapter.Factory(transport)`를 `Deps.NewAdapter`로 넣음. replay만 돌리면 factory가 없어도 됨
 - **계약 view** — core는 `ClassificationContract{Hash, Categories, Actions, Confidence}`만 봄. `processingadapter.Contract()`가 `processing.DescribeContract()`에서 옮기고, descriptor schema(shape 판정)는 adapter 안에서만 씀
@@ -177,7 +161,7 @@ zero-touch가 아니라 정해진 목록을 고침. 빠뜨리면 컴파일 · `T
 
 ### 분류 metric — `internal/evaluation/classification.go`
 
-`EvaluateClassification(cases, observations, contract, policy)`(구현됨). 순수 함수이고 provider를 부르지 않음. 한 split · 한 variant · 한 trial의 관측을 받아 `ClassificationSummary`와 case별 `CaseContribution`(판정 전부 · `Quality` · metric)을 돌려줌.
+`EvaluateClassification(cases, observations, contract, policy)`. 순수 함수이고 provider를 부르지 않음. 한 split · 한 variant · 한 trial의 관측을 받아 `ClassificationSummary`와 case별 `CaseContribution`(판정 전부 · `Quality` · metric)을 돌려줌.
 
 **분모 정책** — 고른 case 전부(`Selected`). 실패 · timeout · 미실행 · 계약 밖 결과는 정답 0으로 세고 `__invalid__` bucket(평가 내부 이름, enum 아님)으로 감. 성공한 응답만으로 나누지 않음. 관측이 없는 case가 있으면 `NotRun > 0` · `Complete: false`이고 official summary가 아님.
 
@@ -432,7 +416,7 @@ LLM judge · 사람 평가는 구현하지 않았고 pseudo 구현도 두지 않
 
 #### comparison — `results/comparisons/<comparisonId>/` (`schemaVersion` 1)
 
-`internal/evaluation/compare.go`(구현됨). `LoadRun`이 두 run의 raw를 읽어 요약을 다시 만들고(저장된 summary.json과 다르면 거절), `Compare`가 baseline · candidate(run · variant · trial)를 짝지어 비교함. 모델 API · adapter를 부르지 않음.
+`internal/evaluation/compare.go`. `LoadRun`이 두 run의 raw를 읽어 요약을 다시 만들고(저장된 summary.json과 다르면 거절), `Compare`가 baseline · candidate(run · variant · trial)를 짝지어 비교함. 모델 API · adapter를 부르지 않음.
 
 - **비교 가능 조건** — dataset 이름 · version · split · selection hash · 고른 case id · task · mode · policy · evaluator policy hash · label contract hash(category · action · confidence 목록) · evaluator source hash(`internal/evaluation`만)가 같고 두 run이 `completed`. 하나라도 다르면 `comparable: false`와 구체 이유, **delta 없음**
 - **실험 변수** — commit · 전체 source hash · variant의 contract hash(지시 변경) · 모델 · 공급자는 달라도 됨
@@ -447,7 +431,7 @@ LLM judge · 사람 평가는 구현하지 않았고 pseudo 구현도 두지 않
 
 ### 실행 산출물 — `tools/evals/results/<runId>/`
 
-`internal/evaluation/artifact.go` · `aggregate.go`(구현됨). `.gitignore`는 `/tools/evals/results/`만 무시하고 reviewed dataset · variant manifest · testdata는 추적함. generated 결과를 git benchmark로 착각하지 않음.
+`internal/evaluation/artifact.go` · `aggregate.go`. `.gitignore`는 `/tools/evals/results/`만 무시하고 reviewed dataset · variant manifest · testdata는 추적함. generated 결과를 git benchmark로 착각하지 않음.
 
 | 파일            | 역할                                                                                                      |
 | --------------- | --------------------------------------------------------------------------------------------------------- |
@@ -490,7 +474,7 @@ run · comparison 산출물은 DevHub와 이후 Go 리팩터링이 기대는 경
 
 ## runner — variant · 선택 · 예산 · 중단
 
-`internal/evaluation/variant.go` · `runner.go`(구현됨). CLI는 이 위에 flag만 얹음.
+`internal/evaluation/variant.go` · `runner.go`. CLI는 이 위에 flag만 얹음.
 
 ### variant manifest — `tools/evals/variants/<name>.json` (`schemaVersion` 1)
 
@@ -529,7 +513,7 @@ run · comparison 산출물은 DevHub와 이후 Go 리팩터링이 기대는 경
 ### run — `Run(ctx, RunRequest, Deps, Sink)`
 
 - **순서** — variant → case → trial. 자체 재시도 없음. 실패 case를 다시 불러 성공만 남기지 않음
-- **이어서 실행(`RunRequest.Carry`)** — `LoadCarry(dir)`가 이전 live run의 completed 결과를 읽고, runner는 그 invocation을 부르지 않고 기록된 관측(`observationOf`)을 지금 채점기로 다시 채점해 쓴다(`carriedFrom`). 나머지만 adapter를 부르고, 전부 옮기는 variant는 adapter를 만들지 않고 key preflight도 건너뜀. 같은 dataset selection · 고른 case · label contract · trials · variant 설정이 아니면 `Run`이 거절. metadata에 `retriedFrom`, 수에 `carried`. 옮긴 관측의 재채점이 원래 결과와 같은지는 실제 run 두 개(45건)로 확인
+- **이어서 실행(`RunRequest.Carry`)** — `LoadCarry(dir)`가 이전 live run의 completed 결과를 읽고, runner는 그 invocation을 부르지 않고 기록된 관측(`observationOf`)을 지금 채점기로 다시 채점해 쓴다(`carriedFrom`). 나머지만 adapter를 부르고, 전부 옮기는 variant는 adapter를 만들지 않고 key preflight도 건너뜀. 같은 dataset selection · 고른 case · label contract · trials · variant 설정이 아니면 `Run`이 거절. metadata에 `retriedFrom`, 수에 `carried`
 - **예산** — `FixedBudget(CallBudget)` 하나를 모든 variant의 observer가 공유. SDK 재시도까지 실제 HTTP 왕복마다 1씩 줄고, 바닥나면 그 호출은 나가지 않음(`budget-denied`)
 - **중단** — 예산 소진 · ctx 취소(Ctrl+C)는 그 시점부터 남은 invocation을 `not-run`으로 표시하고 `abort`에 이유를 남김. 이미 완료된 결과는 그대로. 요청 도중 취소된 invocation도 측정이 아니라 `not-run`
 - **timeout** — case마다 `context.WithTimeout`. timeout은 `timed-out` 결과이고 중단이 아님
@@ -554,7 +538,7 @@ run · comparison 산출물은 DevHub와 이후 Go 리팩터링이 기대는 경
 ### 비슷한 사례 검색 — `internal/evaluation/retrieval.go`
 
 - **예시를 고르는 곳** — dataset의 **dev split에서 채점 자격이 있는 사진 분류 case만**. validation · held-out은 어떤 경우에도 예시가 되지 않음. 질문 case 자신과 같은 원본 묶음(`sourceGroupId`)은 빼서 답이 새지 않게 함
-- **유사도** — 사진을 16×16 격자 밝기 평균으로 줄이고 평균을 뺀 뒤 길이 1로 맞춘 vector의 cosine. 표준 라이브러리(`image/png` · `image/jpeg`)만 씀. 배치가 닮은 사진이 가까워지는 방식이라 **글자 사진의 내용은 구분하지 못함** — 아래 수치가 그 한계를 보여 줌. 내용 기반 검색(글자 추출 뒤 검색 · embedding 모델)은 의존성이나 추가 호출이 필요해 하지 않음
+- **유사도** — 사진을 16×16 격자 밝기 평균으로 줄이고 평균을 뺀 뒤 길이 1로 맞춘 vector의 cosine. 표준 라이브러리(`image/png` · `image/jpeg`)만 씀. 배치가 닮은 사진이 가까워지는 방식이라 **글자 사진의 내용은 구분하지 못함**. 내용 기반 검색(글자 추출 뒤 검색 · embedding 모델)은 의존성이나 추가 호출이 필요해 하지 않음
 - **기록** — case 줄의 `retrieval.examples`(`caseId` · 예시의 정답 `category` · `similarity`). 요약의 `retrieval`은 이 기록에서 다시 계산: 첫 예시 적중(`top1Rate`) · k개 안 적중(`hitRate`) · MRR. 적중 = 예시의 정답 category가 질문 case와 같음
 - **모델 없이 재기** — `pnpm eval retrieve --dataset apps/api/internal/evaluation/testdata/datasets/pilot-v1 --k 3`이 split의 case마다 예시를 찾아 같은 수치를 냄
 
@@ -564,17 +548,6 @@ run · comparison 산출물은 DevHub와 이후 Go 리팩터링이 기대는 경
 - **행동 완료 가능** — 허용 행동을 골랐고, 그 행동이 `requiredFor`에 있는 facts를 모두 찾았음. facts가 있고 행동을 채점하는 case만 분모. 행동이 `none`이면 필요한 값이 없어 완료 가능
 - **자동 실행 점검** — 제품은 confidence `high`이고 행동이 `none`이 아니면 확인 없이 실행한다고 보고, 그 답이 **해도 되는 답**(category 맞음 · 허용 행동 · 금지 행동 아님 · facts가 있으면 완료 가능)인지 셈. `highWrongRate` = high 중 해선 안 되는 답, `autoPrecision` = 자동 실행 중 맞은 답, `autoCoverage` = 고른 case 중 자동 실행 몫
 - **pass에는 넣지 않음** — `classification-pass-v1`은 그대로. 추출값 · 자동 실행은 따로 보는 품질 지표이고 compare의 quality 축에 `facts-recall` · `action-ready-rate` · `high-but-wrong-rate` · `auto-run-precision` · `auto-run-coverage`로 들어감. 이 집계가 없는 옛 요약은 `unavailable`로 비교
-
-### pilot-v1(테스트 fixture)에서 모델 없이 잰 값
-
-2026-09-26, dev 21건. 모델을 부르지 않은 실제 실행이고, 모델 성능 수치가 아님.
-
-| variant                                        | category 정확도 | pass rate | critical 비율 | high인데 틀림 | 자동 실행 정확도 |
-| ---------------------------------------------- | --------------- | --------- | ------------- | ------------- | ---------------- |
-| `baseline-always-other`(늘 other / none)       | 14.3%           | 14.3%     | 0%            | high 없음     | 자동 실행 없음   |
-| `baseline-nearest-case`(가장 비슷한 사례 복사) | 14.3%           | 14.3%     | 33.3%         | 90.5%         | 0%               |
-
-`retrieve --k 3` — 첫 예시 적중 14.3%(3/21) · 3개 안 적중 33.3% · MRR 0.230. 무작위로 골랐을 때 첫 예시 적중 기대값은 약 10%(다른 20건 중 같은 category 2건). 사진 배치만으로는 글자 사진을 거의 구분하지 못하고, 그 예시를 그대로 따르면 금지 행동이 나온다는 것이 이 표의 결론. 모델 variant는 이 두 줄보다 나아야 의미가 있음.
 
 ## 실행과 검증
 
@@ -594,22 +567,21 @@ pnpm eval run --dataset <name|path> --variant baseline-always-other --variant ba
 ANTHROPIC_API_KEY=... pnpm eval run --dataset <name|path> --variant anthropic:<model> --allow-api --max-api-calls 30   # 유료. 이 저장소 작업에서 실행하지 않음
 ```
 
-- **전달** — 루트 script `eval`이 `nx run api:eval`을 감싸고, 그 target은 `nx:run-commands`(cwd `apps/api`, `cache: false`, `go run ./cmd/eval`). `pnpm eval list`처럼 인자가 그대로 붙는 것을 실제 실행으로 확인(`--`를 넣어도 같음)
+- **전달** — 루트 script `eval`이 `nx run api:eval`을 감싸고, 그 target은 `nx:run-commands`(cwd `apps/api`, `cache: false`, `go run ./cmd/eval`). 인자는 그대로 붙음(`--`를 넣어도 같음)
 - **root** — CLI가 cwd에서 위로 `nx.json`을 찾아 저장소 root를 정함. Nx(cwd apps/api)에서도 root에서도 같음. 상대 경로는 root 기준, `--root`로 바꿀 수 있음
 - **종료 코드** — 0 정상 · 2 usage · 3 불완전(partial · 검증 실패 · preflight · 비교 불가) · 4 gate 실패. `go run`은 자식 코드를 보존하지 않을 수 있어 gate는 빌드한 바이너리로(테스트가 확인)
 - **설정 파일 없는 variant** — `--variant anthropic:<model>` · `openai:<model>`은 production 지시 그대로인 manifest를 즉석에서 만듦(id는 모델 이름을 소문자 · 숫자 · `-`로). `<설정>@<공급자>:<model>[,<다시 물을 모델>]`은 그 위에 `experiments/<설정>.json`을 얹음. 다른 모양은 파일 이름. 모양 · id 규칙은 `evaluation.VariantRef`(`ref.go`)이고 CLI는 설정 이름을 경로로 풀기만 함. 참조는 `metadata.json`의 `variants[].ref`에 남고 `retry`는 그 참조로 같은 variant를 다시 만듦(파일 variant는 같은 id의 manifest 파일)
 - **guard** — 모델을 부르는 variant가 있는 `run`은 `--allow-api`와 `--max-api-calls N`이 없으면 usage 오류(2)로 거절. 기준선만이면 호출이 없어 둘 다 필요 없음. plan · preflight(`placeholder: true` · 빈 key · 예산) · lineage 수집을 마친 뒤에야 adapter를 만듦. `--dry-run`은 plan만. localhost endpoint도 같은 opt-in
 - **replay** — `predictions/*.jsonl`의 기록만 읽음. dataset의 정답에서 예측을 만들지 않음. 저장소의 `sample-*.jsonl`은 손으로 쓴 형식 예시
 - **`api:eval-check`** — offline Go 테스트(`cmd/eval` · `internal/evalcli` · `internal/evaluation/...`) + sample 3개(`sample-classification` · `sample-text-extraction` · `sample-translation`) `validate`. `cache: false`, 모델 호출 없음. draft 존재는 구조 실패가 아니고 benchmark-ready는 따로 출력
-- **`api:test` input** — CLI 테스트가 `tools/evals`의 sample dataset · variant · 실험 설정 · predictions를 읽으므로 `datasets/**` · `variants/**` · `experiments/**` · `predictions/**`를 input에 더하고 `results/**`는 뺌. 여러 case가 필요한 테스트는 `testdata/datasets/pilot-v1`을 읽음. `cmd/server`는 `internal/evaluation`을 import하지 않음(`go list -deps`로 확인)
+- **`api:test` input** — CLI 테스트가 `tools/evals`의 sample dataset · variant · 실험 설정 · predictions를 읽으므로 `datasets/**` · `variants/**` · `experiments/**` · `predictions/**`를 input에 더하고 `results/**`는 뺌. 여러 case가 필요한 테스트는 `testdata/datasets/pilot-v1`을 읽음. `cmd/server`는 `internal/evaluation`을 import하지 않음
 - **key** — variant manifest의 `apiKeyEnv`가 가리키는 환경변수. flag로 받지 않고 어디에도 출력하지 않음(테스트가 sentinel로 확인)
 
 ### DevHub 전수 검사
 
 `pnpm devhub:check`가 다음을 **빠짐없이** 대조하므로 harness를 넣을 때 카탈로그도 같이 고쳐야 함.
 
-- **루트 `package.json` script** — `eval` · `eval:check`(그리고 `migrate` · `swagger` · `swagger:check`)를 더했고 `commands.ts`가 script 항목으로 등록함. 루트 script는 전수 catalog 대상이라 더하거나 지우면 함께 고침
-- **`api` target** — `eval` · `eval-check`를 `commands.ts`에 등록함(`api-eval` · `api-eval-check`). DevHub에 실행 화면은 만들지 않음
+- **루트 `package.json` script · `api` target** — `eval` · `eval:check` script와 `eval` · `eval-check` target이 `commands.ts`에 등록돼 있음. 더하거나 지우면 함께 고침
 - **시나리오 · 기록** — 개발자 track 시나리오 `evaluate-model-variants`(runtime `go-cli`)와 기록 `agent-evaluation-harness`가 단계별 소스 · 테스트를 인용함. 테스트 함수 이름을 바꾸면 `tests.ts`도 같이 바꿔야 함
 - **`docs/` markdown** — 이 문서는 `documents.ts`에 `agent-evaluation`으로 등록됨. 문서 안 링크 · heading은 freshness 검사가 실재를 확인
 - **`.gitignore` · `tools/evals`** — 카탈로그 대상 아님. `.gitignore`는 `/tools/evals/results/`만 무시
@@ -622,41 +594,17 @@ ANTHROPIC_API_KEY=... pnpm eval run --dataset <name|path> --variant anthropic:<m
 - **산출물 테스트** — 쓴 파일에 key · base64 · 이미지 byte가 없음을 확인
 - **검증 범위** — `nx affected -t vet,fmt,test --files=apps/api/...`와 `pnpm devhub:check`. Go 코드 변경에 web · mobile 검사를 붙이지 않음
 
-## 구현 순서
+## 남은 위험
 
-한 단계마다 테스트를 먼저 또는 함께 넣고 `vet` · `fmt` · `test`를 통과한 뒤 다음으로.
-
-1. `processing.DescribeContract` + 테스트(허용 값 일치 · hash 안정) — **완료**
-2. `internal/evaluation` wire 계약(case · result · run · summary 타입, `Measure`, 엄격한 JSON 해석) + 테스트 — **완료**. dataset 파일 읽기는 3단계
-3. dataset loader — 디렉터리 읽기 · 검증 · 누출 검사 · readiness · selection hash + 테스트, `software-fixture` testdata, `pilot-v1` — **완료**. pilot-v1은 `tools/evals`에서 테스트 fixture(`testdata/datasets/pilot-v1`)로 옮겼고, `tools/evals/datasets`에는 과제마다 형식 예시 1건만 둠 — 평가 dataset은 사용자가 채움
-4. production adapter — 생성자 호출 · observer Transport · 관측 · 실패 분류 · 호출 예산 + 가짜 Transport 테스트 — **완료**
-5. variant manifest · adapter registry · lineage 수집 + 테스트 — **완료**
-6. runner — plan(선택 · preflight) · 예산 · timeout · 취소 · replay · 결과 stream + 테스트 — **완료**. `Observation` → `CaseResult` 변환은 9단계
-7. 분류 evaluator — accuracy · per-label · macro F1 · canonical/accepted action · joint · risk · raw tally · pass policy v1 + 손계산 테스트 — **완료**
-8. Reliability · Latency · Cost 집계 → `RunSummary` + 손계산 테스트 — **완료**
-9. 산출물 writer(`metadata.json` · `cases.jsonl` · `summary.json` · `summary.md`) · raw에서 재생성 · golden + 실패 · 충돌 · 부재 테스트 — **완료**
-10. compare — 비교 가능성 검사 · 짝 · 축별 delta · case 목록 · gate · 저장 + 테스트와 golden — **완료**
-11. `cmd/eval` — list · validate · plan · run · replay · report · retry · compare · retrieve, 종료 코드 계약, git lineage, secret 미출력 + 가짜 transport · 빌드 바이너리 테스트 — **완료**
-12. `api` `eval` · `eval-check` target · `commands.ts` 등록 · `test` input — **완료**. validation · held-out의 사람 검토 사진은 사용자 작업(`drafts/candidates.md`)
-13. 첫 실행 — 로컬 Ollama로 무비용 확인 후, 사용자 승인 아래 실제 provider 실행. 결과를 `docs/records/`에 남기고 이 문서의 "측정하지 않았음"을 갱신
-
-## 첫 PR 범위와 남은 위험
-
-**첫 PR** — foundation(`DescribeContract` · wire 계약 · loader · adapter · observer) + 분류 · action 추천 evaluator + pilot-v1 + runner · 산출물 · 비교 + CLI와 Nx target + text-extraction · translation의 계약 · offline evaluator(replay만) + 문서 · DevHub catalog 등록.
-
-**후속으로 분리** — production OCR · 번역 adapter, fine-tuning, 내용 기반 검색, CI paid eval, 실제 행동 실행 E2E, judge(Phase 2), Unicode NFC(text v2), 비용 환산 가격표.
-
-**남은 위험**
-
-- validation · held-out에 사람 검토 사진이 없어 benchmark 판단을 할 수 없음. dev 21건은 harness 동작 확인과 기준선 · 실험 설정 비교용
-- 비슷한 사례 검색은 사진 배치 기준이라 글자 사진에서 약함(위 표). 모델에 붙는 예시가 틀린 category일 때가 많으므로 예시 variant의 결과는 기준선 · 예시 없는 variant와 나란히 봐야 함
-- 실제 provider를 한 번도 부르지 않아 live 경로(SDK 재시도 · 429 · 응답 형식)는 가짜 응답으로만 검증됨. 첫 live 실행은 로컬 Ollama로 `--limit 1`부터
-- `pnpm eval <args>`의 인자 전달은 현재 pnpm 10.30 · Nx 23.1.1에서 확인한 것. 둘 중 하나를 올리면 `pnpm eval list`로 다시 확인
+- validation · held-out에 사람 검토 사진이 없어 benchmark 판단을 할 수 없음. dev 21건은 harness 동작 확인과 기준선 · 실험 설정 비교용. 사람 검토 사진은 사용자 작업(`drafts/candidates.md`)
+- 비슷한 사례 검색은 사진 배치 기준이라 글자 사진에서 약함. 예시 variant의 결과는 기준선 · 예시 없는 variant와 나란히 봐야 함
+- 실제 provider를 한 번도 부르지 않아 live 경로(SDK 재시도 · 429 · 응답 형식)는 가짜 응답으로만 검증됨. 첫 live 실행은 로컬 Ollama로 `--limit 1`부터, 결과는 `docs/records/`에 남김
+- pnpm · Nx를 올리면 `pnpm eval list`로 인자 전달을 다시 확인
 - golden 4파일과 comparison golden은 production 지시 hash를 담고 있어 prompt를 바꾸면 `EVAL_UPDATE_GOLDEN=1`로 다시 만들어야 함
 
 ## 이후 과제
 
-MVP 밖. 순서는 정하지 않음.
+MVP 밖. 순서는 정하지 않음. fine-tuning · CI paid eval · 실제 행동 실행 E2E도 후속.
 
 - **OCR · 번역 adapter** — text-extraction · translation 모두 계약 · offline evaluator · replay까지 있고 **production adapter는 unsupported**. 호출할 코드가 없으므로 harness가 흉내 내지 않고, 코드가 생기면 그때 `Classifier`처럼 인터페이스로 붙임
 - **번역 의미 평가** — BLEU · chrF · semantic similarity · judge는 없음. Phase 2 judge 계약은 위 절에 문서로만 있음
@@ -664,4 +612,3 @@ MVP 밖. 순서는 정하지 않음.
 - **비용 환산** — usage token은 관측되지만 모델별 가격표가 없음. 가격표를 두면 `cost.amount`를 채움
 - **내용 기반 검색** — 지금 검색은 사진 배치 기준. 글자를 먼저 읽어 검색하거나 embedding을 쓰려면 추가 호출 · 의존성이 필요하고 승인 대상
 - **비용 비교** — 계단식의 이득은 비용으로 봐야 하는데 가격표가 없어 token 합과 재질문 비율까지만 냄
-- **DevHub 표시** — 읽는 층은 있음: `apps/devhub/src/lib/evaluations/repository.ts`가 `tools/evals/results`의 run · comparison을 요청마다(`connection()`) 파일에서 바로 읽고 v1 decoder로 검증함. 채점은 Go 값을 그대로 쓰고 다시 판정하지 않음. API · DB 없음. 화면은 `/evals`(개요) · `/evals/runs/[runId]` · `/evals/compare/[comparisonId]`. 실행은 여전히 Go

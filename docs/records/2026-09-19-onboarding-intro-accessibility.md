@@ -22,7 +22,7 @@
 - 화면이 뜨면 제목에 `AccessibilityInfo.sendAccessibilityEvent(..., 'focus')`로 포커스 이동
 - 제목과 결과 문구에 `lineBreakStrategyIOS="hangul-word"` 적용 — iOS는 한국어를 글자 단위로 끊는데, 이 값이 어절 단위로 끊게 함(iOS 전용)
 
-![iOS 기본 줄바꿈은 어절 중간에서 끊기고, hangul-word는 어절 단위로 끊긴다](../images/records/onboarding-intro-linebreak.svg)
+![iOS 기본 줄바꿈은 어절 중간에서 끊기고, hangul-word는 어절 단위로 끊긴다](images/onboarding-intro-linebreak.svg)
 
 ## 검증
 

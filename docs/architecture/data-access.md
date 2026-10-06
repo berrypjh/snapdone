@@ -1,6 +1,6 @@
 # Data Access
 
-앱이 API와 이야기하는 방식의 규칙이다. 지금 endpoint는 `GET /health`, 인증(`/v1/auth/*`), 온보딩 진행(`/v1/onboarding`), 사진 처리(`/v1/processing-jobs`)뿐이므로, 이 문서는 **구현보다 규칙이 앞서 있는 상태**다.
+앱이 API와 이야기하는 방식의 규칙이다. endpoint가 아직 적어 **구현보다 규칙이 앞서 있는 상태**다.
 
 ## 지금 있는 것
 
@@ -15,7 +15,7 @@
 | `apps/mobile/src/onboarding/processingApi.ts` | mobile 사진 처리 호출 (multipart 업로드 · 작업 조회). credential은 `AuthController.authorized`로만 받는다 |
 | `tools/scripts/check-api-health.mjs`          | 개발자용 연결 확인 명령 (`pnpm health`)                                                                   |
 
-HTTP 클라이언트 라이브러리는 없다. Node 24와 React Native 0.85 모두 `fetch`를 기본 제공하므로 axios를 넣지 않는다.
+HTTP 클라이언트 라이브러리는 없다. Node와 React Native 모두 `fetch`를 기본 제공한다.
 
 `pnpm health`는 URL을 자기가 조립하지 않고 **web 앱의 `fetchHealth`를 그대로 호출한다.** 스크립트가 통과했다는 것은 앱이 쓰는 코드 경로가 통과했다는 뜻이다. 검증용 사본을 따로 두면 진짜 코드가 깨져도 스크립트는 초록불이 된다.
 
@@ -39,8 +39,6 @@ HTTP 클라이언트 라이브러리는 없다. Node 24와 React Native 0.85 모
 - **CORS 설정이 필요 없다.** 서버 대 서버 요청에는 origin 검사가 없다
 - 프록시 route(`app/api/*`)도 만들지 않았다. Server Component가 직접 부르면 되는 일에 중간 계층을 두지 않는다
 
-이 선택은 AGENTS.md의 "Server Component를 기본으로 생각하고, browser interaction이 필요한 부분만 Client Component로 내린다"를 그대로 따른 것이다.
-
 ### 언제 이 결정을 다시 볼 것인가
 
 브라우저가 Go API를 **직접** 불러야 하는 상황이 생기면 바뀐다. 가장 유력한 계기는 **이미지 업로드**다. 큰 파일을 Next 서버를 거쳐 보내면 같은 바이트를 두 번 전송하게 된다.
@@ -53,7 +51,7 @@ HTTP 클라이언트 라이브러리는 없다. Node 24와 React Native 0.85 모
 4. credential 정책을 명시 (쿠키를 보낼 것인가)
 5. **production에서 `*`를 쓰지 않는다**
 
-**온보딩 첫 사진(2026-09-19)은 이 전환 없이 Server Action으로 올린다.** 사진 한 장(최대 7,500,000 byte)을 한 번 받는 흐름이라 두 번 전송하는 비용보다 CORS · 브라우저 credential 정책을 새로 여는 비용이 크다. Server Action 본문 상한은 `next.config.js`의 `experimental.serverActions.bodySizeLimit`(`8mb`)이고, 브라우저는 상한을 넘는 파일을 보내기 전에 거절한다. 여러 장 · 반복 업로드가 생기면 위 절차로 다시 본다.
+**온보딩 첫 사진은 이 전환 없이 Server Action으로 올린다.** 사진 한 장(최대 7,500,000 byte)을 한 번 받는 흐름이라 두 번 전송하는 비용보다 CORS · 브라우저 credential 정책을 새로 여는 비용이 크다. Server Action 본문 상한은 `next.config.js`의 `experimental.serverActions.bodySizeLimit`(`8mb`)이고, 브라우저는 상한을 넘는 파일을 보내기 전에 거절한다. 여러 장 · 반복 업로드가 생기면 위 절차로 다시 본다.
 
 **지금 미리 만들지 않는다.** 쓰이지 않는 CORS middleware는 잘못된 설정을 숨긴 채 통과시키는 통로가 되기 쉽다.
 

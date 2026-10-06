@@ -47,13 +47,13 @@ lint · format · tsconfig는 직접 정의하지 않고 `@berrypjh/*` 공유 �
 
 `jsx-a11y`는 **web에만** 붙인다. `apps/web/eslint.config.mjs`가 `@berrypjh/eslint-config/react`를 쓰고 `apps/mobile`은 쓰지 않는다. React Native에는 DOM이 없어 `no-autofocus` 같은 규칙이 오탐이 된다.
 
-`flat/react-typescript`는 TS 규칙만 얹고 플러그인을 등록하지 않는다. 그래서 web에는 `react-hooks`와 `jsx-a11y`가 **원래 하나도 걸려 있지 않았다.** `/react`가 둘 다 채운다.
+`flat/react-typescript`는 플러그인을 등록하지 않으므로 `react-hooks` · `jsx-a11y`는 `/react`가 채운다.
 
 `lint-staged`의 `*.go` → `gofmt -w`도 이 저장소 고유다. `api`에 `lint` 타겟이 없어서다.
 
 ### `format`이 `nx format`이 아닌 이유
 
-`nx format:check`는 **base 대비 변경된 파일만** 검사한다. 한 번 포맷이 어긋난 채 들어온 파일은 이후 손대지 않는 한 영원히 검사되지 않는다. 실제로 `tools/mcp/commit/`의 5개 파일이 그 상태로 방치돼 있었다. `prettier --check .`는 저장소 전체를 본다.
+`nx format:check`는 **base 대비 변경된 파일만** 검사한다. 한 번 포맷이 어긋난 채 들어온 파일은 이후 손대지 않는 한 영원히 검사되지 않는다. `prettier --check .`는 저장소 전체를 본다.
 
 ### 커밋 시점 게이트
 
@@ -68,7 +68,7 @@ lint · format · tsconfig는 직접 정의하지 않고 `@berrypjh/*` 공유 �
 
 ### `verify`가 e2e를 빼는 이유
 
-`pnpm e2e`는 브라우저 바이너리(약 500MB)와 실행 중인 dev 서버를 요구한다. 로컬에서 매번 돌리기엔 무겁고, 없으면 실패하므로 기본 게이트에 넣지 않았다. CI에서는 별도 잡으로 돌린다.
+`pnpm e2e`는 브라우저 바이너리와 dev 서버를 요구해 매번 돌리기엔 무겁다. CI에서는 별도 잡으로 돌린다.
 
 브라우저를 아직 받지 않았다면 한 번 받아야 한다.
 
@@ -80,7 +80,7 @@ CI에서는 파일 단위로 병렬화된 `e2e-ci` target을 쓸 수 있다. `@n
 
 ### `build`가 mobile을 빼는 이유
 
-`mobile`의 `build` target은 로컬 빌드가 아니라 **EAS 클라우드 빌드**다. Expo 계정과 자격 증명이 필요하고 원격에서 돈다. 로컬 게이트에 섞이면 안 된다.
+`mobile`의 `build` target은 로컬 빌드가 아니라 **EAS 클라우드 빌드**다(Expo 계정 필요, 원격 실행).
 
 모바일 번들을 로컬에서 확인하려면:
 
@@ -90,21 +90,19 @@ pnpm exec nx export mobile
 
 ## 테스트 현황 — 솔직하게
 
-| 프로젝트   | 종류             | 명령        | 상태                                                                                                                                                                                                                                                                                     |
-| ---------- | ---------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| api        | 단위 · DB        | `pnpm test` | Go 테스트 함수 254개(하위 테스트 포함 500회 실행, `go test -v` 기준, 2026-09-22). 그중 54회는 `TEST_DATABASE_URL`이 없거나 env 게이트가 없어 **skip**한다. 평가 harness(`internal/evaluation` · `internal/evalcli` · `cmd/eval`) 테스트는 가짜 Transport만 쓰고 provider를 부르지 않는다 |
-| web        | 단위             | `pnpm test` | Vitest 114개 (9 파일)                                                                                                                                                                                                                                                                    |
-| mobile     | 단위             | `pnpm test` | Vitest 279개 (20 파일)                                                                                                                                                                                                                                                                   |
-| libs       | 단위             | `pnpm test` | `webview-bridge` 16개 · `auth-contracts` 9개                                                                                                                                                                                                                                             |
-| web-e2e    | E2E              | `pnpm e2e`  | 65개 × 3 브라우저 + 오류 주입 2개 × 3                                                                                                                                                                                                                                                    |
-| devhub     | 단위 · freshness | `pnpm test` | Vitest 301개 (35 파일). catalog ↔ 저장소 검사는 `pnpm devhub:check`로 따로 돈다                                                                                                                                                                                                          |
-| devhub-e2e | E2E              | `pnpm e2e`  | 36개 × Chromium. 이 저장소에서 아직 실행 결과가 없다                                                                                                                                                                                                                                     |
+| 프로젝트   | 종류             | 명령        | 상태                                                                                                       |
+| ---------- | ---------------- | ----------- | ---------------------------------------------------------------------------------------------------------- |
+| api        | 단위 · DB        | `pnpm test` | Go test. DB 테스트는 `TEST_DATABASE_URL`이 없으면 **skip**. 평가 harness 테스트는 provider를 부르지 않는다 |
+| web        | 단위             | `pnpm test` | Vitest                                                                                                     |
+| mobile     | 단위             | `pnpm test` | Vitest                                                                                                     |
+| libs       | 단위             | `pnpm test` | Vitest                                                                                                     |
+| web-e2e    | E2E              | `pnpm e2e`  | Playwright × 3 브라우저 + 오류 주입                                                                        |
+| devhub     | 단위 · freshness | `pnpm test` | Vitest. catalog ↔ 저장소 검사는 `pnpm devhub:check`로 따로 돈다                                            |
+| devhub-e2e | E2E              | `pnpm e2e`  | Playwright × Chromium                                                                                      |
 
 `nx test api` 통과가 DB 검증을 뜻하지 않는다. DB까지 보려면 Postgres를 띄우고 `TEST_DATABASE_URL`을 주고 돌린다(아래 Go 절).
 
 덮인 것은 web `src/lib/**` · mobile `src/lib/**` · `src/auth/**` · `src/onboarding/**`(api 호출 · 인증 · 온보딩 진행 · 사진 처리 순수 로직), `libs/*`, Go 인증 · 사진 처리 전체다. 사진 처리의 Claude 호출은 가짜 HTTP 응답으로만 검사하고 실제 API는 부르지 않는다. 화면 컴포넌트 · 디자인 토큰 · App Shell에는 단위 테스트가 없고, web의 셸 · 로그인 화면 동작은 E2E가 대신 잡는다. **mobile 화면은 런타임 검증 수단이 없어 코드 판독과 실기기 수동 인수까지가 한계다.**
-
-커밋 도구(`commit-mcp`)는 이 저장소에서 빠져 공용 plugin `berry-commit`으로 옮겨갔다. 그 테스트는 shared-stack이 소유한다.
 
 ### 단위 테스트 실행 방식
 
@@ -118,7 +116,7 @@ cd apps/web && pnpm exec vitest
 
 `vitest.config.ts`는 `environment: 'node'`다. `lib/api.ts`가 순수 TS라 DOM이 필요 없다. **React 컴포넌트를 단위 테스트하게 되면** `jsdom`, `@testing-library/react`, `@vitejs/plugin-react`를 그때 함께 추가한다. 지금 넣으면 쓰지 않는 의존성이 된다.
 
-spec 파일도 `pnpm typecheck`가 검사한다. 생성기가 넣어둔 `*.spec.ts` exclude를 두 앱의 tsconfig에서 제거했다. 그대로 두면 vitest가 타입을 벗겨내기만 해서 스펙이 전혀 타입 검사되지 않는다.
+spec 파일도 `pnpm typecheck`가 검사한다. tsconfig에 `*.spec.ts` exclude를 다시 넣지 않는다 — vitest는 타입을 검사하지 않는다.
 
 ### E2E 범위
 
@@ -134,7 +132,7 @@ spec 파일도 `pnpm typecheck`가 검사한다. 생성기가 넣어둔 `*.spec.
 
 역할 기반 선택자를 쓰므로 시맨틱 랜드마크까지 함께 검증된다. 자세한 계약은 [design/foundation.md](../design/foundation.md).
 
-로그인 흐름은 로그인 · 온보딩 화면의 반응형 · 접근성, 보호 경로 redirect와 복귀, 로그아웃, WebView 핸드오프를 본다. 인증 spec은 테스트 전용 가짜 인증 API(`src/support/fake-api.mts`, 별도 프로세스 · `127.0.0.1:4010`)를 Next의 `API_BASE_URL`로 연결해 돈다. 실제 Google에는 접속하지 않고, 운영 바이너리에는 가짜 provider로 바꾸는 스위치가 없다. Playwright가 그 API와 `next dev`를 직접 띄우므로 **실행 전에 `pnpm dev:web`을 끈다**(실제 Go API에 붙은 dev 서버를 재사용하지 않는다). 포트가 고정이라 spec 파일마다 프로세스를 나누는 `e2e-ci--*`는 동시에 돌릴 수 없다.
+로그인 흐름은 로그인 · 온보딩 화면의 반응형 · 접근성, 보호 경로 redirect와 복귀, 로그아웃, WebView 핸드오프를 본다. 인증 spec은 가짜 인증 API(`src/support/fake-api.mts`)로 돌고 실제 Google에는 접속하지 않는다. 운영 바이너리에는 가짜 provider로 바꾸는 스위치가 없다. 실행 방법과 함정은 `.claude/rules/e2e.md`.
 
 **mobile에는 E2E가 없다.** Detox는 시뮬레이터/에뮬레이터가 필요한데 이 환경에 없다(full Xcode·Android SDK 미설치). 실행 환경이 갖춰지면 그때 판단한다.
 
@@ -183,11 +181,11 @@ pnpm health
 
 **"편해서"는 사유가 아니다.**
 
-부트스트랩에서 실제로 적용된 예:
+적용 예:
 
-- `/health` 하나 때문에 axios를 넣지 않았다. Node 24와 RN 0.85 모두 `fetch`를 기본 제공한다
-- Go API는 부트스트랩 때 `http.ServeMux`로 시작했고, `/health`를 포함한 endpoint가 10개로 늘어 DTO · binding · route group · Swagger 문서가 필요해진 시점(2026-09-18)에 Gin · swaggo를 승인받아 넣었다. Gin은 HTTP 경계에만 쓰고 `http.Server` · pgx · 마이그레이션은 그대로다. request ID · 로그 · recovery는 표준 라이브러리로 짰다
-- `react-native-safe-area-context`는 넣었다. RN의 `SafeAreaView`가 deprecated이고 Android edge-to-edge를 처리하지 못해서다
+- axios를 넣지 않음 — Node와 RN 모두 `fetch`를 기본 제공한다
+- Gin · swaggo는 DTO · binding · route group · Swagger가 실제로 필요해진 뒤 넣었다. HTTP 경계에만 쓰고 request ID · 로그 · recovery는 표준 라이브러리다
+- `react-native-safe-area-context`는 넣음 — RN `SafeAreaView`가 deprecated이고 Android edge-to-edge를 처리하지 못한다
 
 ### mobile에 패키지를 추가할 때
 
@@ -197,7 +195,7 @@ pnpm health
 node -e "console.log(require('expo/bundledNativeModules.json')['패키지명'])"
 ```
 
-그리고 **루트 `package.json`에 실제 버전을, `apps/mobile/package.json`에는 `"*"`를** 적는다. 루트에 빠뜨리면 `"*"`가 레지스트리 최신 버전으로 해석되어 SDK와 어긋난 패키지가 들어온다. 실제로 부트스트랩 중 `jest-expo@57`이 이렇게 들어왔었다.
+그리고 **루트 `package.json`에 실제 버전을, `apps/mobile/package.json`에는 `"*"`를** 적는다. 루트에 빠뜨리면 `"*"`가 레지스트리 최신 버전으로 해석되어 SDK와 어긋난 패키지가 들어온다. 자세한 것은 [local-development.md](../development/local-development.md)의 Expo SDK 버전 고정.
 
 ### Nx 플러그인
 
