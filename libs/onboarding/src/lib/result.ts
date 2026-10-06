@@ -1,7 +1,7 @@
 import type { ProcessingResult } from './processing';
 
 /**
- * 첫 결과 화면(ON-06)이 보일 것. 사진에서 확인한 것까지이고, 실행한 일은 없다.
+ * 첫 결과 화면이 보일 것. 사진에서 확인한 것까지이고, 실행한 일은 없다.
  * 신뢰도 단계 · category · action 원래 값은 담지 않는다 — 화면에 내보내지 않는 값이다.
  */
 export type ResultPresentation = {
