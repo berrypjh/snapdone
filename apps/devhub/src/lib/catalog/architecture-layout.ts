@@ -14,7 +14,7 @@ import { INTERACTION, RELATION, ROLE } from './labels';
  *          bridge     선이 여기로 지난다)
  *   row 3  auth-     mobile                            image-model
  *          contracts
- *   row 4  onboarding (web의 선이 auth-contracts와 mobile 사이로 휜다)
+ *   row 4  onboarding (web의 선이 auth-contracts와 mobile 사이로 휜다)   processing
  */
 const GRID: Record<string, [column: number, row: number]> = {
   'web-e2e': [1, 0],
@@ -27,6 +27,7 @@ const GRID: Record<string, [column: number, row: number]> = {
   'auth-contracts': [0, 3],
   mobile: [1, 3],
   onboarding: [0, 4],
+  processing: [2, 4],
   'image-model': [3, 3],
 };
 

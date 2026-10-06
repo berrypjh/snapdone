@@ -74,7 +74,7 @@ export const onboardingIntro: Scenario = {
       status: 'implemented',
       source: [
         { path: 'apps/web/src/lib/auth/callback.ts', symbol: 'completeLogin' },
-        { path: 'apps/web/src/app/(product)/page.tsx', symbol: 'Index' },
+        { path: 'apps/web/src/app/(product)/page.tsx', symbol: 'HomePage' },
       ],
       tests: ['web-callback-onboarding', 'e2e-new-user-onboarding'],
       gaps: [

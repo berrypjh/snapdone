@@ -102,6 +102,14 @@ export const apis: ApiRef[] = [
     exposure: 'always',
   },
   {
+    id: 'get-processing-jobs',
+    method: 'GET',
+    path: '/v1/processing-jobs',
+    handler: { path: PROCESSING, symbol: 'handlers.processingJobs' },
+    alsoHead: true,
+    exposure: 'always',
+  },
+  {
     id: 'get-processing-job',
     method: 'GET',
     path: '/v1/processing-jobs/{jobId}',

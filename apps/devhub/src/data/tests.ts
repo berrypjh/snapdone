@@ -735,7 +735,11 @@ export const tests: TestRef[] = [
   ),
 
   // web-e2e — Playwright (가짜 인증 API + next dev)
-  playwright('e2e-home', 'home.spec.ts', 'renders the bootstrap page in Korean'),
+  playwright(
+    'e2e-home',
+    'home.spec.ts',
+    'shows the empty home to a user without photos since the onboarding',
+  ),
   playwright(
     'e2e-login-screen',
     'login.spec.ts',

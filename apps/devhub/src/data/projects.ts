@@ -76,6 +76,18 @@ export const libraries: LibraryRef[] = [
   },
   {
     kind: 'library',
+    id: 'processing',
+    root: 'libs/processing',
+    manifest: { path: 'libs/processing/package.json' },
+    packageName: '@snapdone/processing',
+    nxTags: ['type:lib'],
+    stack: 'TypeScript 소스 패키지',
+    summary:
+      '처리 방식 · 최근 처리 기록 계약 — 값 · parser · 이름표 · 기록 상태 · 한국 시각 formatter',
+    docs: [{ document: 'target-architecture', heading: '`libs/` — 공유 코드' }],
+  },
+  {
+    kind: 'library',
     id: 'webview-bridge',
     root: 'libs/webview-bridge',
     manifest: { path: 'libs/webview-bridge/package.json' },

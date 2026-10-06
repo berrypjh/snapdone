@@ -9,7 +9,7 @@ export const mobileHistoryWebView: Scenario = {
   title: '앱 → 기록 WebView',
   goal: '앱 홈에서 기록 화면을 열면 web 화면이 앱 안에서 셸 없이 열림',
   track: 'current',
-  status: 'implemented',
+  status: 'partial',
   docs: [
     { document: 'target-architecture', heading: '런타임 계약' },
     { document: 'foundation', heading: 'Mobile Shell' },
@@ -20,20 +20,29 @@ export const mobileHistoryWebView: Scenario = {
       kind: 'runtime-unverified',
       note: '앱 쪽은 단위 테스트까지. web 쪽은 E2E가 앱 User-Agent를 흉내 내 검증',
     },
+    {
+      kind: 'code-not-found',
+      note: '홈에 기록 진입점이 없음. 기록이 빈 placeholder라 홈에서 보내지 않음. /history는 WebView 허용 경로에 남아 있고, 홈의 "기본 처리 설정"이 같은 WebView 화면으로 /settings/processing을 엶',
+    },
   ],
   steps: [
     step({
       id: 'tap-history',
-      intent: '홈에서 "기록 보기" 누르기',
-      behavior: 'native stack에 WebContent 화면을 path /history, 제목 "기록"으로 올림',
+      intent: '홈에서 기록 열기',
+      behavior:
+        '(진입점 없음) WebContent route(path · title)는 있지만 홈에 기록으로 가는 버튼이 없음',
       runtime: 'mobile-app',
       owner: 'mobile',
-      status: 'implemented',
-      source: [
-        { path: 'apps/mobile/src/screens/HomeScreen.tsx', symbol: 'HomeScreen' },
-        { path: 'apps/mobile/src/app/navigation.ts', symbol: 'RootStackParamList' },
+      status: 'not-found',
+      absence: [
+        {
+          terms: ["'/history'"],
+          scope: ['apps/mobile/src/screens', 'apps/mobile/src/components', 'apps/mobile/src/app'],
+          meaning:
+            '앱 화면 · 컴포넌트에 기록(/history)을 여는 코드 없음. WebView 허용 경로(lib/web.ts)에만 남음',
+        },
       ],
-      gaps: [{ kind: 'no-test', note: '화면 컴포넌트 테스트 없음' }],
+      gaps: [{ kind: 'code-not-found', note: '홈의 "기록 보기" 버튼을 뺌' }],
       next: ['open-webview'],
     }),
     step({
