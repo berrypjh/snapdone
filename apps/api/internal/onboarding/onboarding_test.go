@@ -3,7 +3,9 @@ package onboarding_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
+	"sync"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -48,6 +50,7 @@ func TestCanMove(t *testing.T) {
 		{"intro", "intro"}, {"intro", "purpose"},
 		{"purpose", "purpose"}, {"purpose", "first-image"},
 		{"first-image", "first-image"},
+		{"first-image", "complete"}, {"complete", "complete"},
 	}
 	for _, move := range allowed {
 		if !onboarding.CanMove(move[0], move[1]) {
@@ -59,6 +62,7 @@ func TestCanMove(t *testing.T) {
 		{"intro", "first-image"},
 		{"purpose", "intro"}, {"first-image", "purpose"}, {"first-image", "intro"},
 		{"complete", "first-image"}, {"complete", "intro"},
+		{"intro", "complete"}, {"purpose", "complete"},
 	}
 	for _, move := range refused {
 		if onboarding.CanMove(move[0], move[1]) {
@@ -129,5 +133,93 @@ func TestStoreRejects(t *testing.T) {
 	}
 	if err := store.Save(ctx, userID, onboarding.Progress{Step: "purpose"}); !errors.Is(err, onboarding.ErrComplete) {
 		t.Errorf("after complete = %v", err)
+	}
+}
+
+// toFirstImage는 사용자를 목적을 고른 first-image 단계로 옮긴다.
+func toFirstImage(t *testing.T, store *onboarding.Store, userID string, purposes []string) {
+	t.Helper()
+	ctx := context.Background()
+	for _, p := range []onboarding.Progress{{Step: "purpose"}, {Step: "first-image", Purposes: purposes}} {
+		if err := store.Save(ctx, userID, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestStoreCompletes(t *testing.T) {
+	store, _, userID := setup(t)
+	ctx := context.Background()
+	toFirstImage(t, store, userID, []string{"food", "receipt"})
+
+	// 두 번째는 두 번 누름 · 다른 기기가 먼저 마친 경우다. 둘 다 같은 진행으로 성공한다.
+	for range 2 {
+		got, err := store.Complete(ctx, userID)
+		if err != nil || got.Step != "complete" || !slices.Equal(got.Purposes, []string{"food", "receipt"}) {
+			t.Fatalf("Complete = %+v, %v", got, err)
+		}
+	}
+	got, err := store.Find(ctx, userID)
+	if err != nil || got.Step != "complete" || !slices.Equal(got.Purposes, []string{"food", "receipt"}) {
+		t.Fatalf("after complete = %+v, %v", got, err)
+	}
+	if err := store.Save(ctx, userID, onboarding.Progress{Step: "first-image", Purposes: []string{}}); !errors.Is(err, onboarding.ErrComplete) {
+		t.Errorf("save after Complete = %v", err)
+	}
+}
+
+// 건너뛴 목적(빈 목록)도 완료 뒤에 null이 되지 않는다.
+func TestStoreCompleteKeepsSkippedPurposes(t *testing.T) {
+	store, _, userID := setup(t)
+	toFirstImage(t, store, userID, []string{})
+
+	got, err := store.Complete(context.Background(), userID)
+	if err != nil || got.Step != "complete" || got.Purposes == nil || len(got.Purposes) != 0 {
+		t.Fatalf("Complete = %+v, %v", got, err)
+	}
+}
+
+func TestStoreCompleteRejectsEarlySteps(t *testing.T) {
+	store, _, userID := setup(t)
+	ctx := context.Background()
+
+	for _, step := range []string{"intro", "purpose"} {
+		if step == "purpose" {
+			if err := store.Save(ctx, userID, onboarding.Progress{Step: "purpose"}); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if _, err := store.Complete(ctx, userID); !errors.Is(err, onboarding.ErrOutOfOrder) {
+			t.Errorf("Complete from %s = %v, want ErrOutOfOrder", step, err)
+		}
+		if got, _ := store.Find(ctx, userID); got.Step != step {
+			t.Errorf("refused Complete changed the step from %s to %q", step, got.Step)
+		}
+	}
+}
+
+// 동시에 온 완료 요청은 하나도 실패하지 않고 같은 진행으로 끝난다.
+func TestStoreCompleteConcurrently(t *testing.T) {
+	store, _, userID := setup(t)
+	toFirstImage(t, store, userID, []string{"travel"})
+
+	const requests = 8
+	results := make(chan error, requests)
+	var wg sync.WaitGroup
+	for range requests {
+		wg.Go(func() {
+			got, err := store.Complete(context.Background(), userID)
+			if err == nil && (got.Step != "complete" || !slices.Equal(got.Purposes, []string{"travel"})) {
+				err = fmt.Errorf("got %+v", got)
+			}
+			results <- err
+		})
+	}
+	wg.Wait()
+	close(results)
+	for err := range results {
+		if err != nil {
+			t.Error(err)
+		}
 	}
 }

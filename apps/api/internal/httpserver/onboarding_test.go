@@ -37,6 +37,19 @@ func (f *fakeOnboarding) Save(_ context.Context, userID string, p onboarding.Pro
 	return nil
 }
 
+// 실제 Store처럼 first-image에서 끝내고, 이미 마쳤으면 그대로 성공한다.
+func (f *fakeOnboarding) Complete(_ context.Context, userID string) (onboarding.Progress, error) {
+	if userID != "user-1" {
+		return onboarding.Progress{}, onboarding.ErrInvalid
+	}
+	if !f.complete && !onboarding.CanMove(f.progress.Step, "complete") {
+		return onboarding.Progress{}, onboarding.ErrOutOfOrder
+	}
+	f.complete = true
+	f.progress.Step = "complete"
+	return f.progress, nil
+}
+
 func onboardingRouter(store OnboardingStore) http.Handler {
 	return NewRouter(Deps{Sessions: &fakeSessions{}, Onboarding: store})
 }
@@ -115,9 +128,61 @@ func TestOnboardingRejects(t *testing.T) {
 	}
 }
 
+// 다시 누르거나 다른 곳에서 먼저 마쳐도 같은 응답이다. 마친 뒤의 진행 저장은 그대로 409다.
+func TestOnboardingComplete(t *testing.T) {
+	store := &fakeOnboarding{progress: onboarding.Progress{Step: "first-image", Purposes: []string{"food"}}}
+	handler := onboardingRouter(store)
+
+	for range 2 {
+		r := send(handler, http.MethodPost, "/v1/onboarding/complete", "", bearer...)
+		if r.Code != http.StatusOK || r.Body.String() != `{"step":"complete","purposes":["food"]}` {
+			t.Fatalf("status %d, body %s", r.Code, r.Body)
+		}
+		assertNoStore(t, r)
+	}
+
+	r := send(handler, http.MethodPut, "/v1/onboarding", `{"step":"first-image","purposes":[]}`,
+		append([]string{"Content-Type", "application/json"}, bearer...)...)
+	if r.Code != http.StatusConflict || errorCode(t, r) != "onboarding_complete" {
+		t.Errorf("save after complete: status %d", r.Code)
+	}
+}
+
+func TestOnboardingCompleteRejects(t *testing.T) {
+	cases := []struct {
+		name    string
+		step    string
+		headers []string
+		status  int
+		code    string
+	}{
+		{"no credential", "first-image", nil, http.StatusUnauthorized, "session_expired"},
+		{"from intro", "intro", bearer, http.StatusConflict, "onboarding_out_of_order"},
+		{"from purpose", "purpose", bearer, http.StatusConflict, "onboarding_out_of_order"},
+	}
+	for _, tc := range cases {
+		store := &fakeOnboarding{progress: onboarding.Progress{Step: tc.step}}
+		r := send(onboardingRouter(store), http.MethodPost, "/v1/onboarding/complete", "", tc.headers...)
+		if r.Code != tc.status || errorCode(t, r) != tc.code {
+			t.Errorf("%s: status %d", tc.name, r.Code)
+		}
+		assertNoStore(t, r)
+		if store.complete || store.progress.Step != tc.step {
+			t.Errorf("%s: refused completion changed the progress to %+v", tc.name, store.progress)
+		}
+	}
+}
+
 func TestOnboardingDisabledWithoutStore(t *testing.T) {
-	r := send(NewRouter(Deps{Sessions: &fakeSessions{}}), http.MethodGet, "/v1/onboarding", "", bearer...)
-	if r.Code != http.StatusServiceUnavailable || errorCode(t, r) != "provider_unavailable" {
-		t.Errorf("status %d", r.Code)
+	handler := NewRouter(Deps{Sessions: &fakeSessions{}})
+	for _, method := range []string{http.MethodGet, http.MethodPost} {
+		target := "/v1/onboarding"
+		if method == http.MethodPost {
+			target += "/complete"
+		}
+		r := send(handler, method, target, "", bearer...)
+		if r.Code != http.StatusServiceUnavailable || errorCode(t, r) != "provider_unavailable" {
+			t.Errorf("%s %s: status %d", method, target, r.Code)
+		}
 	}
 }

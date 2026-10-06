@@ -14,6 +14,7 @@ import (
 type OnboardingStore interface {
 	Find(ctx context.Context, userID string) (onboarding.Progress, error)
 	Save(ctx context.Context, userID string, p onboarding.Progress) error
+	Complete(ctx context.Context, userID string) (onboarding.Progress, error)
 }
 
 // @Summary     온보딩 진행
@@ -75,6 +76,34 @@ func (h *handlers) saveOnboarding(c *gin.Context) {
 		writeError(c, http.StatusConflict, errOnboardingOutOfOrder)
 	case err != nil:
 		h.internalError(c, "onboarding save failed", err)
+	default:
+		c.JSON(http.StatusOK, toOnboardingResponse(progress))
+	}
+}
+
+// @Summary     온보딩 완료
+// @Description 첫 사진 단계(first-image)에서 온보딩을 끝낸다. 본문은 없고 사용 목적은 바꾸지 않는다.
+// @Description 이미 마쳤으면 그대로 성공한다 — 두 번 누르거나 다른 기기 · 탭이 먼저 마쳐도 오류가 아니다.
+// @Tags        onboarding
+// @Produce     json
+// @Security    BearerAuth
+// @Success     200 {object} OnboardingResponse
+// @Failure     401 {object} ErrorResponse "credential 없음 · 만료 · 취소 (session_expired)"
+// @Failure     409 {object} ErrorResponse "첫 사진 단계 전 (onboarding_out_of_order)"
+// @Failure     500 {object} ErrorResponse "내부 오류 (provider_unavailable)"
+// @Failure     503 {object} ErrorResponse "인증 비활성 (provider_unavailable)"
+// @Router      /v1/onboarding/complete [post]
+func (h *handlers) completeOnboarding(c *gin.Context) {
+	session, ok := h.requireSession(c)
+	if !ok {
+		return
+	}
+	progress, err := h.onboardingStore.Complete(c.Request.Context(), session.User.ID)
+	switch {
+	case errors.Is(err, onboarding.ErrOutOfOrder):
+		writeError(c, http.StatusConflict, errOnboardingOutOfOrder)
+	case err != nil:
+		h.internalError(c, "onboarding complete failed", err)
 	default:
 		c.JSON(http.StatusOK, toOnboardingResponse(progress))
 	}

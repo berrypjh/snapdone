@@ -560,6 +560,55 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/onboarding/complete": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "첫 사진 단계(first-image)에서 온보딩을 끝낸다. 본문은 없고 사용 목적은 바꾸지 않는다.\n이미 마쳤으면 그대로 성공한다 — 두 번 누르거나 다른 기기 · 탭이 먼저 마쳐도 오류가 아니다.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboarding"
+                ],
+                "summary": "온보딩 완료",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.OnboardingResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "credential 없음 · 만료 · 취소 (session_expired)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "첫 사진 단계 전 (onboarding_out_of_order)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "내부 오류 (provider_unavailable)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "인증 비활성 (provider_unavailable)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/processing-jobs": {
             "post": {
                 "security": [

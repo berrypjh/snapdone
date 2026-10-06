@@ -7,6 +7,7 @@ import (
 	"errors"
 	"slices"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -21,10 +22,12 @@ var (
 
 // 저장할 단계마다 지금 있어도 되는 단계. 같은 단계를 다시 저장하거나 한 단계 앞으로만 간다.
 // 목적을 다시 고르는 것은 first-image를 다시 저장하는 것이라 되돌아갈 일이 없다.
+// complete는 Save가 아니라 Complete만 쓴다.
 var from = map[string][]string{
 	"intro":       {"intro"},
 	"purpose":     {"intro", "purpose"},
 	"first-image": {"purpose", "first-image"},
+	"complete":    {"first-image", "complete"},
 }
 
 // current 단계에서 next 단계를 저장할 수 있는가.
@@ -41,7 +44,7 @@ type Progress struct {
 	Purposes []string
 }
 
-// 클라이언트가 저장할 수 있는 진행인가. complete는 온보딩을 끝내는 단계가 만들며 여기서 받지 않는다.
+// 클라이언트가 저장할 수 있는 진행인가. complete는 Complete가 만들며 여기서 받지 않는다.
 func Validate(p Progress) error {
 	switch p.Step {
 	case "intro", "purpose":
@@ -106,4 +109,28 @@ func (s *Store) Save(ctx context.Context, userID string, p Progress) error {
 		return ErrComplete
 	}
 	return ErrOutOfOrder
+}
+
+// 온보딩을 끝내고 끝난 진행을 돌려준다. first-image에서만 끝낼 수 있고, 이미 마쳤으면 그대로 성공한다
+// (두 번 누름 · 다른 기기가 먼저 마침). 목적은 바꾸지 않는다. 그 밖의 단계면 ErrOutOfOrder다.
+// 단계 검사와 쓰기는 한 UPDATE 안에서 일어나 동시 요청도 모두 complete로 끝난다.
+func (s *Store) Complete(ctx context.Context, userID string) (Progress, error) {
+	var p Progress
+	err := s.pool.QueryRow(ctx,
+		`UPDATE profiles SET onboarding_step = 'complete',
+		        updated_at = CASE WHEN onboarding_step = 'complete' THEN updated_at ELSE now() END
+		 WHERE user_id = $1::uuid AND onboarding_step = ANY($2)
+		 RETURNING onboarding_step, onboarding_purposes`, userID, from["complete"]).
+		Scan(&p.Step, &p.Purposes)
+	if err == nil {
+		return p, nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return Progress{}, err
+	}
+	// 바뀐 행이 없다. 프로필이 없으면 그 오류를, 있으면 아직 첫 사진 단계 전이다.
+	if _, err := s.Find(ctx, userID); err != nil {
+		return Progress{}, err
+	}
+	return Progress{}, ErrOutOfOrder
 }

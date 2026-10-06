@@ -65,8 +65,8 @@ func TestEveryRouteIsDocumentedInSwagger(t *testing.T) {
 		t.Errorf("routes and Swagger differ; add annotations and run `nx run api:swagger`\nregistered: %v\ndocumented: %v",
 			registered, documented)
 	}
-	if len(registered) != 14 {
-		t.Errorf("registered %d API routes, want 14", len(registered))
+	if len(registered) != 15 {
+		t.Errorf("registered %d API routes, want 15", len(registered))
 	}
 }
 
@@ -100,7 +100,8 @@ func TestSwaggerSecurityMatchesBearerRoutes(t *testing.T) {
 	slices.Sort(secured)
 	want := []string{
 		"GET /v1/auth/session", "GET /v1/onboarding", "GET /v1/processing-jobs/{jobId}",
-		"POST /v1/auth/handoff/start", "POST /v1/auth/logout", "POST /v1/processing-jobs", "PUT /v1/onboarding",
+		"POST /v1/auth/handoff/start", "POST /v1/auth/logout", "POST /v1/onboarding/complete", "POST /v1/processing-jobs",
+		"PUT /v1/onboarding",
 	}
 	if !slices.Equal(secured, want) {
 		t.Errorf("secured operations = %v, want %v", secured, want)

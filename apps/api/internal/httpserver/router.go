@@ -99,6 +99,7 @@ func NewRouter(deps Deps) *gin.Engine {
 	onboardingGroup := v1.Group("/onboarding", noStore, limitBody(maxJSONBody), requireConfigured(deps.Sessions != nil && deps.Onboarding != nil))
 	get(onboardingGroup, "", h.onboarding)
 	onboardingGroup.PUT("", h.saveOnboarding)
+	onboardingGroup.POST("/complete", h.completeOnboarding)
 
 	if deps.Swagger {
 		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
