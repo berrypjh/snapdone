@@ -11,7 +11,7 @@ import {
 } from './support/fixture';
 
 /**
- * ON-01 browser login against the fake auth API (support/fake-api.mts). Google itself is never
+ * Browser login against the fake auth API (support/fake-api.mts). Google itself is never
  * contacted: the consent screen is answered with `page.route`.
  */
 
@@ -208,6 +208,19 @@ test.describe('WebView handoff', () => {
     expect(cookie?.value).not.toBe(previous);
     expect((await context.cookies()).some((c) => c.name.includes('handoff'))).toBe(false);
     expect(await page.content()).not.toContain(code);
+  });
+
+  test('lands on the default processing page with the app user', async ({ page, context }) => {
+    const app = await mintSession(context.request, 'complete', 'mobile');
+    const code = await handoffCode(page, app, '/settings/processing');
+
+    await page.goto(`/auth/handoff?code=${code}&next=%2Fsettings%2Fprocessing`);
+
+    await expect(page).toHaveURL(/\/settings\/processing$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('사진 종류별 기본 처리');
+    await expect(
+      page.getByRole('group', { name: '영수증' }).getByRole('radio', { name: /^지출 정보로 정리/ }),
+    ).toBeChecked();
   });
 
   test('refuses a handoff code the second time', async ({ page, context }) => {

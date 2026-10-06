@@ -50,6 +50,28 @@ test.describe('inside the app WebView', () => {
       .toContainEqual(JSON.stringify({ type: 'ready', title: '기록' }));
   });
 
+  test('opens the default processing page without the web shell and reads the saved preferences', async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await signIn(context, baseURL ?? '');
+    await recordAppMessages(page);
+    await page.goto('/settings/processing');
+
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('사진 종류별 기본 처리');
+    await expect(page.getByRole('banner')).toHaveCount(0);
+    await expect(page.getByRole('complementary')).toHaveCount(0);
+    await expect(
+      page
+        .getByRole('group', { name: '텍스트 / 외국어' })
+        .getByRole('radio', { name: /^추출 및 번역/ }),
+    ).toBeChecked();
+    await expect
+      .poll(() => appMessages(page))
+      .toContainEqual(JSON.stringify({ type: 'ready', title: '사진 종류별 기본 처리' }));
+  });
+
   /** WebView는 앱에서 세션을 받으므로(핸드오프) 두 번째 OAuth 로그인을 시작하지 않는다. */
   test('does not offer Google login inside the app and asks the app for a session', async ({
     page,

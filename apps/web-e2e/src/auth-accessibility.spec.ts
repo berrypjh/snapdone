@@ -10,7 +10,7 @@ import {
 } from './support/fixture';
 
 /**
- * ON-01 screens by width, color scheme, keyboard, and assistive-technology semantics.
+ * Login screens by width, color scheme, keyboard, and assistive-technology semantics.
  * Real screen readers are a manual check; this pins the roles, names, and live regions they read.
  */
 

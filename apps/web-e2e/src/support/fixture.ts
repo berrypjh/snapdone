@@ -32,15 +32,19 @@ type OnboardingStep = 'intro' | 'first-image' | 'complete';
 /** What the fake API returns for this user's photos. Chosen per user so parallel tests stay apart. */
 export type PhotoResult = 'receipt' | 'foreign_text';
 
+/** Per-user fake API behavior. `preferenceSaveFails` makes this user's preference saves answer 500. */
+export type UserFaults = { preferenceSaveFails?: boolean };
+
 /** Mints a session in the fake API and returns its credential. */
 export const mintSession = async (
   request: APIRequestContext,
   onboardingStep: OnboardingStep,
   kind: 'web' | 'mobile' = 'web',
   result: PhotoResult = 'receipt',
+  faults: UserFaults = {},
 ): Promise<string> => {
   const response = await request.post(`${FAKE_API_URL}/__fixture/sessions`, {
-    data: { onboardingStep, kind, result },
+    data: { onboardingStep, kind, result, ...faults },
   });
   return ((await response.json()) as { credential: string }).credential;
 };
@@ -51,8 +55,9 @@ export const signIn = async (
   baseURL: string,
   onboardingStep: OnboardingStep = 'complete',
   result: PhotoResult = 'receipt',
+  faults: UserFaults = {},
 ): Promise<string> => {
-  const credential = await mintSession(context.request, onboardingStep, 'web', result);
+  const credential = await mintSession(context.request, onboardingStep, 'web', result, faults);
   await context.addCookies([
     { name: SESSION_COOKIE, value: credential, url: baseURL, httpOnly: true, sameSite: 'Lax' },
   ]);

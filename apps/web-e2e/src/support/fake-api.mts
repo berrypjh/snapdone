@@ -1,5 +1,5 @@
 /**
- * Test-only stand-in for the Go auth · onboarding · processing API, run as its own process so the Next server can reach it
+ * Test-only stand-in for the Go auth · onboarding · processing · preference API, run as its own process so the Next server can reach it
  * through `API_BASE_URL`. It speaks the same wire contract as the Go API (its generated Swagger
  * document, apps/api/docs/swagger) with in-memory state. Nothing here ships: the product has no switch to a fake provider.
  *
@@ -35,6 +35,24 @@ const purposes = new Map<string, string[]>();
 const userResults = new Map<string, PhotoResult>();
 /** Processing jobs, owned by one user, finish on their first lookup. */
 const jobs = new Map<string, { userId: string; result: PhotoResult }>();
+/** Processing preferences per user. Absent means the server defaults. */
+const preferences = new Map<string, Preferences>();
+/** Users whose preference saves fail with 500. Chosen per user so parallel tests stay apart. */
+const failingPreferenceSaves = new Set<string>();
+
+/** Go `preference` values and the defaults its migration gives every profile. */
+const PREFERENCE_ACTIONS = {
+  text: ['extract_and_translate', 'extract_text', 'summarize', 'extract_and_summarize'],
+  receipt: ['record_expense', 'extract_text', 'summarize'],
+} as const;
+type Preferences = { text: string; receipt: string };
+const DEFAULT_PREFERENCES: Preferences = {
+  text: 'extract_and_translate',
+  receipt: 'record_expense',
+};
+
+/** Go `handoffNext`: the exact web paths a handoff may land on. */
+const HANDOFF_NEXT = new Set(['/', '/history', '/settings/processing']);
 
 const token = () => randomBytes(32).toString('base64url');
 const s256 = (verifier: string) => createHash('sha256').update(verifier).digest('base64url');
@@ -201,6 +219,7 @@ const routes: Record<string, Handler> = {
       return send(res, 401, { error: 'session_expired' });
     }
     const body = await readJson(req);
+    if (!HANDOFF_NEXT.has(String(body.next))) return invalid(res);
     const code = token();
     handoffGrants.set(code, { challenge: String(body.challenge), next: String(body.next), parent });
     send(res, 200, { code });
@@ -209,7 +228,12 @@ const routes: Record<string, Handler> = {
   'POST /v1/auth/handoff/exchange': async (req, res) => {
     const body = await readJson(req);
     const grant = handoffGrants.get(String(body.code));
-    if (!grant || grant.next !== body.next || grant.challenge !== s256(String(body.verifier))) {
+    if (
+      !grant ||
+      !HANDOFF_NEXT.has(String(body.next)) ||
+      grant.next !== body.next ||
+      grant.challenge !== s256(String(body.verifier))
+    ) {
       return invalid(res);
     }
     handoffGrants.delete(String(body.code));
@@ -274,11 +298,16 @@ const routes: Record<string, Handler> = {
     send(res, 202, { jobId, status: 'running' });
   },
 
+  'GET /v1/processing-preferences': (req, res) => {
+    const session = authorized(req, res);
+    if (session) send(res, 200, preferences.get(session.userId) ?? DEFAULT_PREFERENCES);
+  },
+
   'GET /__fixture/health': (_req, res) => send(res, 200, { status: 'ok' }),
 
   /**
-   * `{ onboardingStep, kind, result }` → `{ credential }`. A first-image user skipped the purposes.
-   * `result` is what this user's photos come back as.
+   * `{ onboardingStep, kind, result, preferenceSaveFails }` → `{ credential }`. A first-image user
+   * skipped the purposes. `result` is what this user's photos come back as.
    */
   'POST /__fixture/sessions': async (req, res) => {
     const body = await readJson(req);
@@ -289,6 +318,7 @@ const routes: Record<string, Handler> = {
     const { credential, session } = newSession(step, body.kind === 'mobile' ? 'mobile' : 'web');
     if (step === 'first-image') purposes.set(session.userId, []);
     if (body.result === 'foreign_text') userResults.set(session.userId, 'foreign_text');
+    if (body.preferenceSaveFails === true) failingPreferenceSaves.add(session.userId);
     send(res, 200, { credential });
   },
 
@@ -303,6 +333,27 @@ const routes: Record<string, Handler> = {
   },
 };
 
+/** Go `PUT /v1/processing-preferences/{imageType}`: one image type only, the whole result back. */
+const savePreference = async (req: IncomingMessage, res: ServerResponse, imageType: string) => {
+  const session = authorized(req, res);
+  if (!session) return;
+  const body = await readJson(req);
+  const allowed: readonly string[] | undefined =
+    PREFERENCE_ACTIONS[imageType as keyof typeof PREFERENCE_ACTIONS];
+  if (!allowed?.includes(String(body.action))) {
+    return send(res, 400, { error: 'invalid_preference' });
+  }
+  if (failingPreferenceSaves.has(session.userId)) {
+    return send(res, 500, { error: 'provider_unavailable' });
+  }
+  const saved = {
+    ...(preferences.get(session.userId) ?? DEFAULT_PREFERENCES),
+    [imageType]: String(body.action),
+  };
+  preferences.set(session.userId, saved);
+  send(res, 200, saved);
+};
+
 createServer((req, res) => {
   const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
   const jobLookup = /^\/v1\/processing-jobs\/([^/]+)$/.exec(url.pathname);
@@ -314,6 +365,10 @@ createServer((req, res) => {
     // Go answers another user's job the same as a missing one.
     if (job?.userId !== session.userId) return send(res, 404, { error: 'job_not_found' });
     return send(res, 200, { jobId, status: 'completed', result: RESULTS[job.result] });
+  }
+  const preferenceUpdate = /^\/v1\/processing-preferences\/([^/]+)$/.exec(url.pathname);
+  if (req.method === 'PUT' && preferenceUpdate) {
+    return void savePreference(req, res, decodeURIComponent(preferenceUpdate[1] ?? ''));
   }
   const handler = routes[`${req.method} ${url.pathname}`];
   if (!handler) return send(res, 404, { error: 'provider_unavailable' });
