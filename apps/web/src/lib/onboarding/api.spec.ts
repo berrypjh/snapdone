@@ -2,6 +2,7 @@ import { ProcessingApiError } from '@snapdone/onboarding';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  completeProgress,
   fetchProcessingJob,
   fetchProgress,
   ProgressConflictError,
@@ -73,6 +74,50 @@ describe('progress', () => {
     stubFetch(() => json({ step: 'first-image', purposes: null }));
 
     await expect(fetchProgress('c')).rejects.toThrow();
+  });
+});
+
+describe('completion', () => {
+  it('posts to the completion endpoint with the bearer credential and no body', async () => {
+    const fetchMock = stubFetch(() => json({ step: 'complete', purposes: ['receipt'] }));
+
+    await expect(completeProgress('c')).resolves.toEqual({
+      step: 'complete',
+      purposes: ['receipt'],
+    });
+    const [url, init] = fetchMock.mock.calls[0] ?? [];
+    expect(url).toBe(`${BASE_URL}/v1/onboarding/complete`);
+    expect(init?.method).toBe('POST');
+    expect(init?.headers).toEqual({ Authorization: 'Bearer c' });
+    expect(init?.body).toBeUndefined();
+  });
+
+  it('returns null when Go no longer accepts the session', async () => {
+    stubFetch(() => json({ error: 'session_expired' }, 401));
+
+    await expect(completeProgress('c')).resolves.toBeNull();
+  });
+
+  it('reports a conflict when the onboarding is not at the first photo yet', async () => {
+    stubFetch(() => json({ error: 'onboarding_out_of_order' }, 409));
+
+    await expect(completeProgress('c')).rejects.toBeInstanceOf(ProgressConflictError);
+  });
+
+  it.each([
+    { step: 'first-image', purposes: [] },
+    { step: 'complete' },
+    { error: 'provider_unavailable' },
+  ])('rejects a successful response that is not a finished onboarding: %j', async (body) => {
+    stubFetch(() => json(body));
+
+    await expect(completeProgress('c')).rejects.toThrow();
+  });
+
+  it('fails on a server error', async () => {
+    stubFetch(() => json({ error: 'provider_unavailable' }, 500));
+
+    await expect(completeProgress('c')).rejects.toThrow();
   });
 });
 

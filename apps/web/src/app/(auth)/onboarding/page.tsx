@@ -12,11 +12,10 @@ import { onboardingPath } from '@/lib/onboarding/paths';
 
 const TITLE = '서비스 소개';
 
-/** ON-02 원문 예시. 입력 → 끝난 일. */
+/** ON-02 예시. 입력 → 사진에서 확인하는 것. 지금 처리하는 영수증 · 외국어만 들고, 실행하지 않는 일은 약속하지 않는다. */
 const EXAMPLES = [
-  { source: '영수증', detail: '6,500원', result: '지출 기록 완료' },
-  { source: '공연 포스터', detail: '8월 25일', result: '캘린더 등록' },
-  { source: '맛집 캡처', detail: '성수 ○○카페', result: '서울 맛집 저장' },
+  { source: '영수증', detail: '12,000원', result: '금액 · 가게 확인' },
+  { source: '외국어 안내문', detail: 'Exit only', result: '번역할 문장 확인' },
 ] as const;
 
 export const metadata: Metadata = { title: TITLE };
@@ -35,7 +34,7 @@ export default async function OnboardingPage() {
       <h1 className="text-center typo-heading-h4">
         사진 한 장으로
         <br />
-        해야 할 일을 끝내세요.
+        필요한 정보를 찾아 드립니다.
       </h1>
 
       <ul className="flex flex-col gap-3">
