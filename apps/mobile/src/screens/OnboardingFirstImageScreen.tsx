@@ -10,7 +10,7 @@ import { type CaptureSource, createImageCapture, type SelectedImage } from '../o
 import { systemImageCapture } from '../onboarding/imagePicker';
 import { textStyle } from '../theme/text';
 
-const EXAMPLES = ['맛집 캡처', '영수증', '공연 포스터', '외국어 사진'] as const;
+const EXAMPLES = ['영수증', '외국어가 있는 사진'] as const;
 
 type OnboardingFirstImageScreenProps = { onSelected: (image: SelectedImage) => void };
 
@@ -45,8 +45,11 @@ export const OnboardingFirstImageScreen = ({ onSelected }: OnboardingFirstImageS
       <Stack gap="xl">
         <Stack gap="sm">
           <OnboardingTitle>첫 번째 사진을{'\n'}처리해볼까요?</OnboardingTitle>
-          <Text style={[textStyle(typography.paragraph.default), muted, styles.center]}>
-            아무 사진이나 올려 보세요.
+          <Text
+            lineBreakStrategyIOS="hangul-word"
+            style={[textStyle(typography.paragraph.default), muted, styles.center]}
+          >
+            영수증이나 외국어가 있는 사진을 올려 보세요.
           </Text>
         </Stack>
 

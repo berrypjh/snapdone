@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { type AuthApi, AuthApiError } from './api';
 import { type AuthControllerDeps, createAuthController, type SignInResult } from './controller';
+import { destinationFor } from './model';
 import type { AuthStorage, CredentialRead } from './storage';
 
 const session: Session = {
@@ -247,6 +248,126 @@ describe('revalidate (foreground)', () => {
     await controller.revalidate();
 
     expect(api.session).not.toHaveBeenCalled();
+  });
+});
+
+describe('refreshSession', () => {
+  const finished: Session = { ...session, onboardingStep: 'complete' };
+
+  /** 복원 때 session, 그다음부터 answers를 차례로 돌려주는 로그인 상태. */
+  const signedIn = (
+    answers: AuthApi['session'][],
+    storage = fakeStorage({ status: 'found', credential: 'c' }),
+  ) => {
+    const session$ = vi
+      .fn<AuthApi['session']>()
+      .mockResolvedValueOnce({ ...session, onboardingStep: 'first-image' });
+    answers.forEach((answer) => session$.mockImplementationOnce(answer));
+    return setup({ api: fakeApi({ session: session$ }), storage }).then((result) => ({
+      ...result,
+      storage,
+      session$,
+    }));
+  };
+
+  it('puts the session the server returns into the snapshot, which sends a finished user home', async () => {
+    const { controller } = await signedIn([async () => finished]);
+
+    await expect(controller.refreshSession()).resolves.toEqual(finished);
+
+    expect(controller.getSnapshot().auth).toEqual({
+      status: 'authenticated',
+      generation: 0,
+      session: finished,
+    });
+    expect(destinationFor(controller.getSnapshot().auth)).toBe('home');
+  });
+
+  it('throws on network without deleting the credential or leaving the session', async () => {
+    const { controller, storage } = await signedIn([
+      () => Promise.reject(new AuthApiError('network')),
+    ]);
+
+    await expect(controller.refreshSession()).rejects.toThrow();
+
+    expect(storage.deleteCredential).not.toHaveBeenCalled();
+    expect(controller.getSnapshot().auth).toMatchObject({
+      status: 'authenticated',
+      session: { onboardingStep: 'first-image' },
+    });
+  });
+
+  it('expires the session on 401 the same way as other requests', async () => {
+    const { controller, storage } = await signedIn([async () => null]);
+
+    await expect(controller.refreshSession()).resolves.toBeNull();
+
+    expect(storage.deleteCredential).toHaveBeenCalled();
+    expect(controller.getSnapshot().auth).toEqual({
+      status: 'recoverable-error',
+      generation: 1,
+      error: 'session_expired',
+    });
+  });
+
+  it('drops a late refresh that arrives after logout', async () => {
+    const pending = deferred<Session | null>();
+    const { controller } = await signedIn([() => pending.promise]);
+
+    const late = controller.refreshSession();
+    await controller.logout();
+    pending.resolve(finished);
+    await late;
+
+    expect(controller.getSnapshot().auth).toEqual({ status: 'anonymous', generation: 1 });
+  });
+
+  it('drops a late refresh that arrives after logout and a new sign-in', async () => {
+    const pending = deferred<Session | null>();
+    const session$ = vi
+      .fn<AuthApi['session']>()
+      .mockResolvedValueOnce(session)
+      .mockReturnValueOnce(pending.promise);
+    const { controller } = await setup({
+      api: fakeApi({ session: session$ }),
+      storage: fakeStorage({ status: 'found', credential: 'a' }),
+      signIn: { google: vi.fn(async () => authenticated('b')) },
+    });
+
+    const late = controller.refreshSession();
+    await vi.waitFor(() => expect(session$).toHaveBeenCalledTimes(2));
+    await controller.logout();
+    await controller.signIn('google');
+    pending.resolve(finished);
+    await late;
+
+    expect(controller.getSnapshot().auth).toEqual({
+      status: 'authenticated',
+      generation: 1,
+      session,
+    });
+  });
+
+  it('waits for a foreground check in flight so its older answer cannot overwrite the refresh', async () => {
+    const older = deferred<Session | null>();
+    const { controller, session$ } = await signedIn([() => older.promise, async () => finished]);
+
+    const foreground = controller.revalidate();
+    const refresh = controller.refreshSession();
+    await vi.waitFor(() => expect(session$).toHaveBeenCalledTimes(2));
+    older.resolve({ ...session, onboardingStep: 'first-image' });
+    await Promise.all([foreground, refresh]);
+
+    expect(session$).toHaveBeenCalledTimes(3);
+    expect(controller.getSnapshot().auth).toMatchObject({ session: finished });
+  });
+
+  it('still shares one foreground check between overlapping foreground events', async () => {
+    const { controller, session$ } = await signedIn([async () => finished]);
+
+    await Promise.all([controller.revalidate(), controller.revalidate()]);
+
+    expect(session$).toHaveBeenCalledTimes(2);
   });
 });
 

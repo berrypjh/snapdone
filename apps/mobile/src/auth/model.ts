@@ -40,6 +40,7 @@ export type AuthEvent =
   | { type: 'cancel' }
   | { type: 'dismiss' }
   | { type: 'session-expired'; generation: number }
+  | { type: 'session-refreshed'; generation: number; session: Session }
   | { type: 'logout' };
 
 export const initialAuthState: AuthState = { status: 'restoring', generation: 0 };
@@ -127,6 +128,11 @@ export const authReducer = (state: AuthState, event: AuthEvent): AuthState => {
         generation: state.generation + 1,
         error: 'session_expired',
       };
+
+    // 서버가 다시 준 세션(온보딩 단계 포함). 그사이 로그아웃 · 다른 로그인이 있었으면 버린다.
+    case 'session-refreshed':
+      if (state.status !== 'authenticated' || state.generation !== event.generation) return state;
+      return { status: 'authenticated', generation: state.generation, session: event.session };
 
     case 'logout':
       return { status: 'anonymous', generation: state.generation + 1 };

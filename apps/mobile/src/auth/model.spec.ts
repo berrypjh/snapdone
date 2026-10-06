@@ -176,3 +176,46 @@ describe('destinationFor', () => {
     expect(destinationFor(state)).toBe(destination);
   });
 });
+
+describe('session-refreshed', () => {
+  const firstImage: AuthState = {
+    status: 'authenticated',
+    generation: 1,
+    session: session('first-image'),
+  };
+
+  it('takes the server session for the same sign-in, which sends a finished user home', () => {
+    const state = authReducer(firstImage, {
+      type: 'session-refreshed',
+      generation: 1,
+      session: session('complete'),
+    });
+
+    expect(state).toEqual({ status: 'authenticated', generation: 1, session: session('complete') });
+    expect(destinationFor(firstImage)).toBe('onboarding');
+    expect(destinationFor(state)).toBe('home');
+  });
+
+  it('ignores a refresh from another sign-in', () => {
+    expect(
+      authReducer(firstImage, {
+        type: 'session-refreshed',
+        generation: 0,
+        session: session('complete'),
+      }),
+    ).toBe(firstImage);
+  });
+
+  it.each<AuthState>([anonymous, { status: 'recoverable-error', generation: 1, error: 'network' }])(
+    'does not sign anyone in from %j',
+    (state) => {
+      expect(
+        authReducer(state, {
+          type: 'session-refreshed',
+          generation: state.generation,
+          session: session('complete'),
+        }),
+      ).toBe(state);
+    },
+  );
+});

@@ -20,6 +20,6 @@ export type OnboardingStackParamList = {
   OnboardingPreview: { image: SelectedImage };
   /** 첫 처리. 사진을 서버에 보내고 끝날 때까지 기다린다. */
   OnboardingProcessing: { image: SelectedImage };
-  /** 첫 결과. 처리가 끝난 뒤에만 온다. */
-  OnboardingResult: { result: ProcessingResult };
+  /** 첫 결과. 처리가 끝난 뒤에만 오고, 처리한 사진을 함께 보인다. 사진은 여기서도 저장하지 않는다. */
+  OnboardingResult: { image: SelectedImage; result: ProcessingResult };
 };

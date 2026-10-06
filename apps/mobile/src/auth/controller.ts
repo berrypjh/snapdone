@@ -120,18 +120,40 @@ export const createAuthController = (deps: AuthControllerDeps) => {
     dispatch({ type: 'session-expired', generation });
   };
 
-  /** 서버가 세션을 거부하면 만료시킨다. 서버 · 기기 저장소에 닿지 못하면(오프라인) 로그인 상태를 유지한다. */
-  const checkSession = async () => {
-    await authorized((credential) => api.session(credential)).catch(() => undefined);
+  /** 서버에 세션을 다시 묻고, 받은 세션을 그 로그인이 아직 화면에 있을 때만 반영한다. */
+  const fetchSession = async (): Promise<Session | null> => {
+    if (snapshot.auth.status !== 'authenticated') return null;
+    const { generation } = snapshot.auth;
+    const session = await authorized((credential) => api.session(credential));
+    if (session) dispatch({ type: 'session-refreshed', generation, session });
+    return session;
+  };
+
+  let latest: Promise<unknown> = Promise.resolve();
+
+  /**
+   * 세션을 다시 받아 반영하고 돌려준다(예: 온보딩을 마친 뒤 홈으로 가려고). 확인은 하나씩 차례로 해서
+   * 먼저 보낸 확인의 늦은 응답이 나중 세션을 덮지 않는다. 서버가 거부하면 만료시키고 `null`이다.
+   * 서버 · 기기 저장소에 닿지 못하면 로그인을 유지한 채 오류를 던진다.
+   */
+  const refreshSession = (): Promise<Session | null> => {
+    const next = latest.catch(() => undefined).then(fetchSession);
+    latest = next;
+    return next;
   };
 
   let revalidating: Promise<void> | null = null;
 
-  /** 로그인 상태면 서버에 세션을 다시 확인한다. 진행 중인 확인이 있으면 그 결과를 함께 기다린다. */
+  /** 로그인 상태면 서버에 세션을 다시 확인한다. 진행 중인 확인이 있으면 그 결과를 함께 기다린다. 오프라인이면 그대로 둔다. */
   const revalidate = () => {
-    revalidating ??= checkSession().finally(() => {
-      revalidating = null;
-    });
+    revalidating ??= refreshSession()
+      .then(
+        () => undefined,
+        () => undefined,
+      )
+      .finally(() => {
+        revalidating = null;
+      });
     return revalidating;
   };
 
@@ -243,6 +265,7 @@ export const createAuthController = (deps: AuthControllerDeps) => {
     },
     retryRestore,
     revalidate,
+    refreshSession,
     startHandoff,
     authorized,
     availability,

@@ -6,6 +6,7 @@ import { POLL_INTERVAL_MS, type ProcessingPort, type ResumeStep } from '@snapdon
 import type { AuthController } from '../auth/controller';
 import { LogoutButton } from '../components/auth/LogoutButton';
 import type { SelectedImage } from '../onboarding/capture';
+import { completeOnboarding } from '../onboarding/completion';
 import { createOnboardingController, useOnboardingSnapshot } from '../onboarding/controller';
 import { selectedPurposes } from '../onboarding/model';
 import { processingApi } from '../onboarding/processingApi';
@@ -13,10 +14,10 @@ import { fromSaved, type ProgressStore, toUpdate } from '../onboarding/progress'
 import { progressApi } from '../onboarding/progressApi';
 import { OnboardingFirstImageScreen } from '../screens/OnboardingFirstImageScreen';
 import { OnboardingIntroScreen } from '../screens/OnboardingIntroScreen';
-import { OnboardingPendingScreen } from '../screens/OnboardingPendingScreen';
 import { OnboardingPreviewScreen } from '../screens/OnboardingPreviewScreen';
 import { OnboardingProcessingScreen } from '../screens/OnboardingProcessingScreen';
 import { OnboardingPurposeScreen } from '../screens/OnboardingPurposeScreen';
+import { OnboardingResultScreen } from '../screens/OnboardingResultScreen';
 
 import type { OnboardingStackParamList } from './navigation';
 
@@ -39,6 +40,16 @@ const createProgressStore = (controller: AuthController): ProgressStore => ({
     await controller.authorized((credential) => progressApi.save(credential, toUpdate(progress)));
   },
 });
+
+/**
+ * 온보딩을 끝내고 세션을 다시 받는다. 세션이 complete가 되면 App이 이 흐름 대신 홈을 그린다 —
+ * 홈으로 가는 조건은 서버 세션 하나뿐이라 여기서 홈으로 navigate하지 않는다.
+ */
+const finish = (controller: AuthController) =>
+  completeOnboarding({
+    complete: () => controller.authorized((credential) => progressApi.complete(credential)),
+    refreshSession: controller.refreshSession,
+  });
 
 const RESUME_ROUTE: Record<ResumeStep, keyof OnboardingStackParamList> = {
   intro: 'OnboardingIntro',
@@ -126,12 +137,22 @@ export const OnboardingFlow = ({ controller }: OnboardingFlowProps) => {
           <OnboardingProcessingScreen
             image={route.params.image}
             port={processingPort}
-            onCompleted={(result) => navigation.replace('OnboardingResult', { result })}
+            onCompleted={(result) =>
+              navigation.replace('OnboardingResult', { image: route.params.image, result })
+            }
             onChooseAnother={() => navigation.popTo('OnboardingFirstImage')}
           />
         )}
       </OnboardingStack.Screen>
-      <OnboardingStack.Screen name="OnboardingResult" component={OnboardingPendingScreen} />
+      <OnboardingStack.Screen name="OnboardingResult">
+        {({ route }) => (
+          <OnboardingResultScreen
+            image={route.params.image}
+            result={route.params.result}
+            onComplete={() => finish(controller)}
+          />
+        )}
+      </OnboardingStack.Screen>
     </OnboardingStack.Navigator>
   );
 };
