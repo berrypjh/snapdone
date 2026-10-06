@@ -110,7 +110,7 @@ pnpm verify      # format:check -> lint -> typecheck -> test -> test:hooks -> bu
 pnpm lint        # eslint(web, mobile, web-e2e, devhub, devhub-e2e, libs, tools/scripts, .claude/hooks) + go vet + gofmt 검사
 pnpm typecheck   # tsc (web, mobile, web-e2e, devhub, devhub-e2e, libs)
 pnpm test        # go test(api) + Vitest(web, mobile, devhub, libs) — 한 번 돌고 끝남
-pnpm test:hooks  # .claude/hooks/ 회귀 테스트 (Nx 프로젝트가 아니라 별도)
+pnpm test:hooks  # .claude/hooks/ · tools/scripts 회귀 테스트 (Nx 프로젝트가 아니라 별도)
 pnpm e2e         # Playwright (web-e2e, devhub-e2e) — verify에 포함되지 않음
 pnpm build       # next build(web, devhub) + go build
 pnpm devhub:check # DevHub catalog이 지금 저장소와 맞는지 (pnpm test에도 포함)

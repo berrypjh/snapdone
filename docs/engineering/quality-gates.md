@@ -10,20 +10,21 @@ pnpm verify
 
 `format:check → lint → typecheck → test → test:hooks → build` 순으로 돌고, 하나라도 실패하면 거기서 멈춘다. 하나씩 돌리려면 아래를 쓴다.
 
-| 명령                            | 실제로 도는 것                                 | 대상                                                                                                                 |
-| ------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `pnpm format:check`             | `prettier --check .`                           | 저장소 전체 (`.prettierignore` 제외)                                                                                 |
-| `pnpm lint`                     | `nx run-many -t lint,vet,fmt` 뒤 루트 `eslint` | web · mobile · web-e2e · libs는 eslint, api는 `go vet` + gofmt 검사, 루트 eslint는 `tools/scripts` · `.claude/hooks` |
-| `pnpm typecheck`                | `nx run-many -t typecheck`                     | web · mobile · web-e2e · libs                                                                                        |
-| `pnpm test`                     | `nx run-many -t test`                          | api는 `go test`, web · mobile · libs · devhub는 Vitest. devhub는 캐시하지 않는다                                     |
-| `pnpm test:hooks`               | `node --test tools/scripts/*.test.mjs`         | `.claude/hooks/` — Nx 프로젝트가 아니라 별도 명령이다                                                                |
-| `pnpm build`                    | `nx run-many -t build --exclude=mobile`        | web · api · devhub. devhub는 git 스냅샷을 페이지에 넣으므로 캐시하지 않는다                                          |
-| `pnpm e2e`                      | `nx run-many -t e2e`                           | web-e2e · devhub-e2e — **`verify`에 포함되지 않는다**                                                                |
-| `pnpm devhub:check`             | `nx run devhub:devhub-check`                   | DevHub catalog이 지금 저장소와 맞는지만 본다. 같은 검사가 `pnpm test`에도 들어 있다                                  |
-| `pnpm eval:check`               | `nx run api:eval-check`                        | 평가 harness offline 테스트 + sample dataset 검증. 모델 호출 없음. **`verify`에 포함되지 않는다**                    |
-| `pnpm eval`                     | `nx run api:eval`                              | 평가 CLI. `pnpm eval list`처럼 인자를 그대로 넘긴다. `run` · `retry`만 `--allow-api`가 있을 때 실제 provider 호출    |
-| `pnpm swagger:check`            | `nx run api:swagger-check`                     | `docs/swagger`가 swag 주석과 일치하는지. 파일을 고쳐 쓰지 않는다                                                     |
-| `pnpm swagger` · `pnpm migrate` | `nx run api:swagger` · `nx run api:migrate`    | Swagger 재생성 · DB 마이그레이션 적용(Postgres 필요)                                                                 |
+| 명령                            | 실제로 도는 것                                 | 대상                                                                                                                                   |
+| ------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm format:check`             | `prettier --check .`                           | 저장소 전체 (`.prettierignore` 제외)                                                                                                   |
+| `pnpm lint`                     | `nx run-many -t lint,vet,fmt` 뒤 루트 `eslint` | web · mobile · web-e2e · libs는 eslint, api는 `go vet` + gofmt 검사, 루트 eslint는 `tools/scripts` · `.claude/hooks`                   |
+| `pnpm typecheck`                | `nx run-many -t typecheck`                     | web · mobile · web-e2e · libs                                                                                                          |
+| `pnpm test`                     | `nx run-many -t test`                          | api는 `go test`, web · mobile · libs · devhub는 Vitest. devhub는 캐시하지 않는다                                                       |
+| `pnpm test:hooks`               | `node --test tools/scripts/*.test.mjs`         | `.claude/hooks/`의 포트 차단 · `tools/scripts`(harness launcher 등) — Nx 프로젝트가 아니라 별도 명령이다                               |
+| `pnpm harness:check`            | `node tools/scripts/harness.mjs check`         | `.claude/rules/_generated/`가 고정한 shared-stack checkout의 berry-dev standards와 같은지. 쓰지 않는다. **`verify`에 포함되지 않는다** |
+| `pnpm build`                    | `nx run-many -t build --exclude=mobile`        | web · api · devhub. devhub는 git 스냅샷을 페이지에 넣으므로 캐시하지 않는다                                                            |
+| `pnpm e2e`                      | `nx run-many -t e2e`                           | web-e2e · devhub-e2e — **`verify`에 포함되지 않는다**                                                                                  |
+| `pnpm devhub:check`             | `nx run devhub:devhub-check`                   | DevHub catalog이 지금 저장소와 맞는지만 본다. 같은 검사가 `pnpm test`에도 들어 있다                                                    |
+| `pnpm eval:check`               | `nx run api:eval-check`                        | 평가 harness offline 테스트 + sample dataset 검증. 모델 호출 없음. **`verify`에 포함되지 않는다**                                      |
+| `pnpm eval`                     | `nx run api:eval`                              | 평가 CLI. `pnpm eval list`처럼 인자를 그대로 넘긴다. `run` · `retry`만 `--allow-api`가 있을 때 실제 provider 호출                      |
+| `pnpm swagger:check`            | `nx run api:swagger-check`                     | `docs/swagger`가 swag 주석과 일치하는지. 파일을 고쳐 쓰지 않는다                                                                       |
+| `pnpm swagger` · `pnpm migrate` | `nx run api:swagger` · `nx run api:migrate`    | Swagger 재생성 · DB 마이그레이션 적용(Postgres 필요)                                                                                   |
 
 `test:hooks`는 Node 24 내장 러너를 쓴다. 의존성이 없다.
 

@@ -904,7 +904,6 @@ generator 기본값(`--e2eTestRunner=playwright`)은 `apps/devhub-e2e`를 만든
 | `src/data/contracts.ts`        | bridge UA 토큰 1 · 메시지 3 (`ready` · `auth-required` · `handoff-ready`) · auth wire 타입 3                     |
 | `src/data/relations.ts`        | workspace-dependency 5 · runtime 7                                                                               |
 | `src/data/documents.ts`        | `AGENTS.md` · `README.md` · `.claude/README.md` · `docs/**/*.md` 7개                                             |
-| `src/data/commands.ts`         | 루트 스크립트 16개 전부 + `api`의 `migrate` · `swagger` · `swagger-check`                                        |
 | `src/data/index.ts`            | `catalog` — 위를 한 객체로 묶는다                                                                                |
 
 ### 관계 두 종류
@@ -1310,7 +1309,7 @@ catalog 검증은 `apps/*` · `libs/*` · `docs/` · 루트 `package.json` · gi
 | 파일           | catalog이 인용한 **모든** 경로(manifest · 외부 근거 · handler · Swagger · 계약 · 관계 근거 · 문서 · 테스트 · 단계 source, 320건 · 고유 112개)가 정규 경로이고 디스크에 있다. `docs/**/*.md`는 빠짐없이 catalog에 있다                              | `freshness.spec` · `catalog.spec`                         |
 | 문서 heading   | 인용한 heading이 글자 그대로 있다. 제품 한 문장은 인용한 heading 아래에 글자 그대로 있다                                                                                                                                                           | `scenarios.spec` · `architecture.spec` · `freshness.spec` |
 | Nx project     | `nx graph --file`로 Nx가 실제로 보는 project 8개 = catalog project. manifest의 `workspace:*` · `implicitDependencies` = catalog의 Nx 의존 관계                                                                                                     | `freshness.spec` · `catalog.spec`                         |
-| 명령           | 루트 script 전부가 catalog에 있다. catalog의 Nx target과 루트 script가 부르는 target(`nx run-many -t` · `nx run p:t` · `nx <target> <project>`)이 Nx가 추론한 target까지 포함해 존재한다                                                           | `freshness.spec` · `catalog.spec`                         |
+| 명령           | 루트 script가 부르는 target(`nx run-many -t` · `nx run p:t` · `nx <target> <project>`)이 Nx가 추론한 target까지 포함해 존재한다                                                                                                                    | `freshness.spec` · `catalog.spec`                         |
 | 시나리오 의미  | `implemented`는 source 필수, `partial`은 source + 공백, `documented-only` · `not-found`는 source 없음 + 부재 검색, 제품 목표 트랙은 source 없음. 단계 source에 테스트 · 문서 · e2e 파일 금지. 흐름 그림은 코드를 주장하는 단계에만 source를 그린다 | `scenarios.spec` · `freshness.spec`                       |
 | API · 계약     | 항상 노출되는 route = 생성된 Swagger, 개발 전용 route는 Swagger에 없음, 계약 literal이 정의 파일에 있음                                                                                                                                            | `catalog.spec`                                            |
 | 링크           | 인용한 모든 경로의 permalink · 브랜치 링크가 `RepositoryRef` 템플릿 + 스냅샷 + 인코딩된 경로에서만 나온다. 데이터에 URL · SHA · `#L` 없음                                                                                                          | `freshness.spec` · `catalog.spec` · `links.spec`          |
@@ -1333,7 +1332,7 @@ catalog 검증은 `apps/*` · `libs/*` · `docs/` · 루트 `package.json` · gi
 ### 알려진 공백
 
 - `nx affected`는 DevHub가 저장소 전체를 읽는 것을 모른다. `apps/web`이나 `docs/`만 바꾸면 affected에 devhub가 없다. 인용된 파일을 바꿨으면 `pnpm devhub:check`를 따로 돌린다(`pnpm test`는 run-many라 항상 돈다). 실측 매핑과 이 안내를 repo-verify skill에 적었다
-- 방향이 한쪽이다. catalog이 인용한 것이 사라지면 잡지만, 새 소스 파일 · 새 테스트 · 새 route 파일을 catalog이 모르는 것은 잡지 못한다. 예외는 Nx project · manifest 의존 · 루트 script · `docs/**/*.md` · Swagger route로, 이쪽은 양방향이다
+- 방향이 한쪽이다. catalog이 인용한 것이 사라지면 잡지만, 새 소스 파일 · 새 테스트 · 새 route 파일을 catalog이 모르는 것은 잡지 못한다. 예외는 Nx project · manifest 의존 · `docs/**/*.md` · Swagger route로, 이쪽은 양방향이다
 - `next build`는 검사를 돌리지 않는다. `pnpm verify`는 test 뒤에 build를 돌리지만 `nx build devhub`만 돌리면 검사 없이 빌드된다
 - `next dev`는 프로세스마다 스냅샷을 한 번 읽는다. 개발 서버를 띄운 뒤 커밋하면 다시 띄워야 새 SHA가 보인다
 - Nx project 검사는 설치된 `node_modules/.bin/nx`를 부른다(daemon 끔, 약 0.3초). nx가 없으면 테스트가 실패한다 — 건너뛰지 않는다
@@ -1743,3 +1742,24 @@ Python 연구 workspace(`tools/evals/lab`)가 탐색 · 지시문 · 모델 실�
 - **더한 것** — run 상세의 variant 표 아래에 짝 비교 명령(`pnpm eval compare --baseline <run>:<첫 variant> --candidate <run>:<variant>`)과 복사 버튼. 어느 쪽이 나은지는 그 명령이 쓰는 `comparison.json`이 정한다
 - **규칙** — TS는 통과 여부 · 정확도 · gate 결과 · 비교 가능 여부를 정하지 않는다. 표시용 묶음(상태 조각 합, 실패 수 정렬, Go confusion 행 합)과 명령 글자만 만든다. `.claude/rules/devhub.md`에 적었다
 - 확인: `lint` · `typecheck` · `nx test devhub` · `pnpm devhub:check` 통과. `nx build devhub`와 실제 화면은 포트가 막힌 세션에서 보지 못했다
+
+## 68. 구현 상태 — 공용 `@berrypjh/devhub-ui`로 이전
+
+이 앱에서 뽑아 낸 공용 패키지 `@berrypjh/devhub-ui` 1.2.0이 같은 일을 하게 되어, 일반 개발 도구 UI는 공용 공개 API를 쓰고 이 앱은 무엇을 보여 줄지(카탈로그 · 평가 · 아키텍처)만 갖도록 나눴다. 앞 절들에 적힌 로컬 파일 경로 일부는 이 절에서 바뀐다.
+
+- **연결** — `components/shell/devhub-root.tsx`가 Next 라우터(`next/link` · `usePathname` · `location.hash` · `push`)를 `DevHubProvider`로 넘기고 root layout이 감싼다. 스타일은 react-ui CSS 다음에 `@berrypjh/devhub-ui/styles.css`를 들이고 `@source`로 패키지 `dist`의 클래스를 생성한다
+- **공용으로 옮긴 것** — 셸 틀(`DevHubShell` · `WorkspaceFrame` · `WorkspaceSection` · `Inspector` · 탐색기 서랍), 그림(`CanvasViewport` · `CanvasEdges` · `ViewSwitch` · 뷰포트 계산), 문서(`parseMarkdown` · `DocContent` · `DocToc` · `DocumentLayout` · 앵커 표식), 검색 순위(`buildIndex` · `search` · `topResults`), 테마 helper, `Icon`, `Pager` · `RecordMeta` · 상세 정보 조각, `DataTable` · `FilterEmpty`, `CopyButton` · `SourceActions` · `FileLine`. 로컬 사본(소스 15개와 그 spec 4개)을 지웠다. 쓰이지 않던 `ui/narrow-disclosure.tsx`도 함께 지웠다
+- **남긴 것** — 카탈로그 · 평가 산출물 읽기 · 아키텍처와 흐름 화면, 링크 풀기(`lib/markdown/documents.ts`의 `documentView`가 서버에서 링크 · 그림 주소를 미리 풀어 client의 `renderLink`에 값으로 넘긴다), 검색 항목 만들기, 탐색기에 넘길 보기 · 섹션 · 묶음(시나리오는 트랙, 기록은 종류, 문서는 주제로 묶고 문서 묶음만 접힌 채 시작 — 공용 `Explorer`가 그린다. 구현 상태 칩은 탐색기에서 빠지고 섹션 목록 · 상세 정보에 남음. 평가 아이콘은 공용 `test`), 이동 뒤 포커스(`NavigationFocus`), 문서 칸 폭을 받는 `WorkspaceHeader`
+- **1.2.0 결함 때문에 임시로 둔 것** — `vitest.config.ts`의 `server.deps.inline`(확장자 없는 ESM import), 로컬 `ThemeSwitch`(서버 snapshot 없음)와 그것을 끼운 공용 `TopBar` 사본(제품명 · 요약 · 검색 · 테마, 보기 nav 없음 — 화면 사이 이동은 탐색기), 로컬 `GlobalSearch`와 `lib/search/search-view.ts`(단축키 hydration 불일치), 상단 바의 `min-w-0`(공용 셸 grid 열 크기 없음). 고친 릴리스로 올리면 지운다. 규칙은 `.claude/rules/devhub.md`
+- **화면이 달라진 것** — 간격이 공용 토큰 이름을 따른다. 표 스크롤 영역 이름에 "표"가 붙었다. 복사 결과는 스크린 리더에만 알린다. 파일 줄의 "최신 브랜치 기준" 표시는 경고 줄로 옮겼다
+- 확인: `lint` · `typecheck` · `nx test devhub` · `pnpm devhub:check` 통과, `nx build devhub`(Turbopack) 148페이지 생성, devhub-e2e 36개 통과(사용자 터미널. 1024px 상단 바 1개는 `min-w-0` 뒤 다시 돌려 통과)
+
+## 69. 구현 상태 — 엔지니어링 섹션과 명령 카탈로그 제거
+
+엔지니어링 화면(`/engineering` · `/engineering/<묶음>`)을 없앴다. 명령 카탈로그는 이 화면을 위해서만 있어서 함께 지웠다. 앞 절(46 · 47 · 48 등)의 엔지니어링 · 명령 설명은 이 절에서 끝난다.
+
+- **지운 것** — `components/engineering/command.tsx`, `data/commands.ts`(`RUNNER_COMMAND` 포함), `lib/catalog/command-definition.ts`, 그 spec들. 타입 `CommandRef` · `CommandSource` · `CommandGroup`, `catalog.commands`, `COMMAND_GROUP` · `COMMAND_GROUPS` · `commandHref` · `commandLine`
+- **따라 빠진 것** — 탐색기 · 섹션 route의 엔지니어링, 검색의 "명령" 종류, 상세 정보의 "이 테스트를 돌리는 명령" 묶음
+- **남긴 것** — 테스트의 실행 조건(`CommandConstraint` · `CONSTRAINT`)은 테스트 목록이 쓴다. 문서 주제 "엔지니어링"(`docs/engineering/`)은 문서 묶음이라 그대로
+- **검사** — "루트 script 전부가 catalog에 있다"와 "catalog 명령의 Nx target이 있다"는 대상이 없어져 지웠다. "루트 script가 부르는 Nx target이 있다"는 남겼다
+- 확인: `lint` · `typecheck` · `nx test devhub` · `pnpm devhub:check` 통과, devhub-e2e는 `lint` · `typecheck`만. E2E와 실제 화면은 이 세션에서 보지 못했다

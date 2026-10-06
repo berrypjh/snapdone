@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "rules": {
+    "core": true,
+    "berry-consumer": {
+      "paths": ["apps/web/src/**", "apps/mobile/src/**", "apps/devhub/src/**"]
+    },
+    "cross-runtime-pure": {
+      "paths": ["libs/*/src/**"]
+    },
+    "ko-ui": {
+      "paths": [
+        "apps/web/src/**/*.tsx",
+        "apps/web/src/**/*-copy.ts",
+        "apps/mobile/src/**/*.tsx",
+        "apps/mobile/src/**/*Copy.ts"
+      ]
+    },
+    "docs-ko": {
+      "paths": ["docs/**/*.md"]
+    }
+  }
+}

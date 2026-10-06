@@ -50,7 +50,8 @@
   },
   "enabledPlugins": {
     "code-review@claude-plugins-official": true,
-    "berry-commit@berrypjh": true
+    "berry-commit@berrypjh": true,
+    "berry-dev@berrypjh": true
   },
   "hooks": {
     "PreToolUse": [

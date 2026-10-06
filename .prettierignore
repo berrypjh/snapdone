@@ -21,3 +21,6 @@ apps/api/internal/evaluation/testdata/comparisons
 tools/evals/lab/notebooks
 tools/evals/lab/uv.lock
 tools/evals/lab/.venv
+
+# berry-dev standards CLI output; harness:check compares it byte for byte
+.claude/rules/_generated

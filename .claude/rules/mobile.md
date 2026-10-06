@@ -53,19 +53,18 @@ mobile이 주 제품이다. 네비게이션 · 로그인 · 권한 · 푸시와 
 - border는 `StyleSheet.hairlineWidth`
 - `AppShell`의 Safe Area는 `edges={['left','right']}`다. top은 native stack header가 가진다. **bottom은 일부러 뺐다** — bottom navigation이 하단 inset을 직접 가져가야 이중 패딩이 안 생긴다. `android.edgeToEdgeEnabled: true`라 Safe Area 처리는 선택이 아니다
 - hover와 focus 링이 없다. 공용 `Button`이 pressed · disabled · `accessibilityRole`을 처리한다. 직접 만드는 누를 수 있는 것은 최소 44px과 `accessibilityRole` · `accessibilityState`를 지킨다
+- `<StatusBar />`는 `App.tsx`에 하나만 둔다. 화면마다 추가하지 않는다
+- `AppShell`이 이미 세로 `ScrollView`(`keyboardShouldPersistTaps="handled"`)다. 그 안에 세로 `ScrollView`를 중첩하지 않는다
 - 키보드를 가리는 입력이 생기면 회피 처리를 함께 넣는다
 - 권한은 필요한 순간에, 이유를 밝히고 요청한다
 - iOS와 Android를 모두 확인한다. 한쪽만 보고 완료로 보고하지 않는다
 
 ## 공용 UI API 조회
 
-`@berrypjh/react-native-ui` 1.1.2부터 peer가 `react-native ~0.85.3`이라 이 앱을 지원한다. web rule과 같은 순서로 **설치된 버전**에서 조회한다. 버전을 올릴 때는 peer가 현재 RN을 포함하는지 먼저 본다.
+조회 순서와 금지 사항은 생성 rule `_generated/berry-consumer.md`, 실행 명령은 `.claude/harness.profile.md`의 consumer 조회.
 
-1. `node_modules/@berrypjh/react-native-ui/dist/AGENTS.md`(export `@berrypjh/react-native-ui/agents`)
-2. `pnpm --dir apps/mobile exec berry-react-native-ui find <query>` → `api <Symbol>` → `token <path|prefix>`
-3. 그래도 부족할 때만 public d.ts
-
-설치된 bin을 쓰고 bare `npx`로 latest를 끌어오지 않는다. 결과가 비어 있어도 source를 복사하지 않는다. RN 토큰은 `Native` 숫자 값이며 web의 CSS 문자열 값을 쓰지 않는다.
+- 버전을 올릴 때는 peer `react-native`가 현재 RN(0.85.3)을 포함하는지 먼저 본다
+- RN 토큰은 `Native` 숫자 값이다. web의 CSS 문자열 값을 쓰지 않는다
 
 ## Test
 

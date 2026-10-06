@@ -1,0 +1,16 @@
+{
+  "configDigest": "sha256:44f1d5b9f7d7621f542d4ce0be6f35ea2aef45f3a83e122ff5329830456d69cc",
+  "files": {
+    "berry-consumer.md": "sha256:a33b2d1e74f6f29751844efac4666d4b4a024e9ed58ef8f5c11f16b41d71f7fb",
+    "core.md": "sha256:50d4ec78017162b804dae1f16e85815df5aa31261f80b62fae7b901e904884fb",
+    "cross-runtime-pure.md": "sha256:1b93148465fbc41e589bfbc9333a32a09b72230571975f7532840114d99f0d13",
+    "docs-ko.md": "sha256:a98b97fc5af9c74ce97e16fd1bac0a3c4cc2ae8b88d9d5f1b9c390d80375a215",
+    "ko-ui.md": "sha256:2a8feb3072ab426dd04ebff1e266dd279eeae6397ce5f46d3e81ddd802632683"
+  },
+  "format": 1,
+  "generator": "berry-dev/standards",
+  "plugin": "berry-dev",
+  "pluginVersion": "0.1.0",
+  "schemaVersion": 1,
+  "sourceDigest": "sha256:938994354f770288fc49e6cc2fe8c03295ead3a655e45e08cf83b0a65903eac3"
+}

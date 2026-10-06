@@ -12,10 +12,18 @@ paths:
 - 화면은 `src/data/`의 카탈로그에서만 만든다. 컴포넌트가 사실을 지어내지 않는다
 - **경로 · symbol · 테스트 제목은 저장소에 실재해야 한다.** `devhub:check`(freshness)가 전부 대조하고, 어긋나면 실패한다. 없는 것을 추정으로 채우지 않는다
 - 링크는 데이터에 저장하지 않는다. 저장소 레코드의 템플릿(`repository.browse`)에서 렌더할 때 만든다. 줄 번호는 사람이 적지 않는다
-- 카탈로그 불변식은 검사로 지켜진다 — Nx 프로젝트 · 루트 script · `docs/` 마크다운은 **빠짐없이** 덮어야 하고(devhub 자신은 제외), 모든 테스트는 시나리오나 기록이 인용해야 한다
+- 카탈로그 불변식은 검사로 지켜진다 — Nx 프로젝트 · `docs/` 마크다운은 **빠짐없이** 덮어야 하고(devhub 자신은 제외), 모든 테스트는 시나리오나 기록이 인용해야 한다
 - **예외: 평가 결과.** `tools/evals/results`는 카탈로그가 아니라 Go가 쓰는 산출물이다. `src/lib/evaluations`가 요청마다(`localEvaluations()` → `connection()`) 읽고 v1 decoder로 검증하며, 맞았는지는 Go 값을 그대로 쓰고 TS에서 다시 채점하지 않는다. id는 식별자 규칙을 지나야 경로에 들어가고 symlink는 따라가지 않는다
 - **DevHub는 관찰, notebook은 탐색.** `/evals`는 정식 run · 비교 · gate 결과와 case 증거를 보이고, 정식 run의 Go 명령 글자를 만들어 준다(`command-builder.tsx` — 저장소의 dataset · 기준선 · 실험 설정과 사용자가 적은 모델 이름으로 `pnpm eval plan/run`을 조립, 실행은 사용자 터미널). 공급자 API는 모델 목록 조회(`lib/evaluations/provider-models.ts`, 요청마다 Anthropic · OpenAI `/v1/models`)에만 쓴다 — key는 DevHub 프로세스의 `ANTHROPIC_API_KEY` · `OPENAI_API_KEY`에서만 읽고 요청 헤더에만 쓰며 화면 · 브라우저 · 파일 · 오류 문구에 싣지 않고, key가 없으면 이유만 보이고 모델은 직접 적는다. 모델을 부르는 실행은 하지 않는다. 어느 variant가 나은지 · 무엇이 나빠졌는지 · gate 통과 여부를 TS에서 정하지 않는다(그것은 `comparison.json`). 탐색 · 지시문 실험 · 임계값 조사는 `tools/evals/lab`의 notebook이 한다
 - `'use client'` 코드는 `node:` 모듈에 닿지 않는다(`lib/client-imports.spec.ts`가 확인). 파일을 읽는 코드와 브라우저가 쓰는 순수 코드는 파일을 나눈다
+
+## 공용 `@berrypjh/devhub-ui`
+
+- 셸 틀 · 그림(canvas) · 문서(markdown 파서 · `DocContent` · `DocumentLayout`) · 검색 순위 · 테마 helper · `Icon` · `Pager` · 상세 정보 조각 · `DataTable` · `FilterEmpty` · `CopyButton` · `SourceActions` · `FileLine`은 공용 패키지의 공개 API로 쓴다. 같은 일을 하는 로컬 컴포넌트를 다시 만들지 않는다. `src` · `dist` 내부 경로는 import하지 않는다
+- 라우터는 `components/shell/devhub-root.tsx`가 `DevHubProvider`로 넘긴다(layout이 감싼다). 공용 컴포넌트를 서버 렌더하는 테스트는 `test-support/devhub-provider.ts`의 `renderInDevHub`를 쓴다
+- 무엇을 보여 줄지는 이 앱이 갖는다 — 카탈로그 · 평가 산출물 · 링크 풀기(`lib/markdown/documents.ts`의 `documentView`, `source-links`) · 탐색기에 넘길 보기 · 섹션 · 묶음(`devhub-shell.tsx`가 카탈로그의 `VIEWS` · `SECTIONS` · `group`에서 만든다) · 이동 뒤 포커스(`NavigationFocus`). 화면 사이 이동은 공용 `Explorer`가 맡고 상단 바에는 보기 nav가 없다. 현재 항목은 라우터 경로로 정해진다
+- 아이콘은 공용 `Icon` · `IconName`을 바로 쓴다. 평가는 공용 `test` 모양이다
+- 1.2.0 결함 때문에 남긴 것: `vitest.config.ts`의 `server.deps.inline`(확장자 없는 ESM import), 로컬 `ThemeSwitch`(서버 snapshot 없음)와 그것을 끼운 공용 `TopBar` 사본(`summary` · `search` 같은 모양, 셸 grid 때문에 `min-w-0`), 로컬 `GlobalSearch`(단축키 hydration 불일치). 고친 릴리스로 올리면 지우고 공용 것으로 바꾼다
 
 ## 폴더
 
@@ -23,7 +31,7 @@ paths:
 src/domain/      타입과 순수 함수(model · links). React · URL · 커밋 없음
 src/data/        curated 카탈로그. 사람이 쓰고 리뷰한다
 src/lib/         catalog · search · repository · markdown · browser · evaluations(평가 산출물 읽기)
-src/components/  shell · entity · source · overview · ui + architecture · canvas · doc · engineering · flow
+src/components/  shell · entity · source · overview · ui + architecture · canvas · doc · flow
 src/app/         Next 라우트. 화면 조립만
 ```
 

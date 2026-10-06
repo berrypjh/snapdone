@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/berrypjh/shared-stack",
+  "commit": "55b22e0990cae94f30814eef6a61ef2ab10d8618",
+  "plugin": "berry-dev",
+  "version": "0.1.0"
+}

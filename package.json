@@ -20,6 +20,8 @@
     "typecheck": "nx run-many -t typecheck",
     "test": "nx run-many -t test",
     "test:hooks": "node --test tools/scripts/*.test.mjs",
+    "harness:sync": "node tools/scripts/harness.mjs sync",
+    "harness:check": "node tools/scripts/harness.mjs check",
     "devhub:check": "nx run devhub:devhub-check",
     "e2e": "nx run-many -t e2e",
     "build": "nx run-many -t build --exclude=mobile",
@@ -46,10 +48,10 @@
   "packageManager": "pnpm@10.30.3",
   "devDependencies": {
     "@babel/runtime": "~7.27.6",
-    "@berrypjh/commitlint-config": "^1.1.0",
-    "@berrypjh/eslint-config": "1.1.0",
-    "@berrypjh/prettier-config": "^1.1.0",
-    "@berrypjh/tsconfig": "^1.1.0",
+    "@berrypjh/commitlint-config": "^1.2.0",
+    "@berrypjh/eslint-config": "1.2.0",
+    "@berrypjh/prettier-config": "^1.2.0",
+    "@berrypjh/tsconfig": "^1.2.0",
     "@commitlint/cli": "^20.5.3",
     "@eslint/js": "^9.8.0",
     "@expo/cli": "~56.1.14",
@@ -91,8 +93,7 @@
     "vitest": "~4.1.0"
   },
   "dependencies": {
-    "@berrypjh/react-native-ui": "1.1.2",
-    "@berrypjh/react-ui": "^1.1.2",
+    "@berrypjh/react-native-ui": "1.2.0",
     "@expo/metro": "~56.0.0",
     "@expo/metro-runtime": "~56.0.14",
     "@react-navigation/native": "^7.4.1",

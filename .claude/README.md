@@ -22,7 +22,7 @@ AI가 이 저장소에서 **일반적인 Nx 조언이 아니라 이 저장소의
 | 메인 대화를 오염시키는 대량 탐색           | built-in subagent           | `Explore`, `Plan`                                     |
 | 모델 판단과 무관하게 **막아야** 하는 것    | permission (settings)       | `.env` 읽기, 스토어 제출                              |
 | permission 문법으로 표현되지 않는 판단     | `.claude/hooks/*.mjs`       | 명령 문자열 전체를 봐야 하는 것                       |
-| 여러 저장소가 같은 규칙으로 쓰는 개발 도구 | 공용 plugin                 | `berry-commit@berrypjh` (commit skill + MCP)          |
+| 여러 저장소가 같은 규칙으로 쓰는 개발 도구 | 공용 plugin                 | `berry-commit` (commit) · `berry-dev` (검증 · secret) |
 
 `AGENTS.md`와 rule은 **context이지 강제 장치가 아니다.** 반드시 막아야 하는 것은 permission으로 처리한다.
 
@@ -36,42 +36,47 @@ CLAUDE.md                     `@AGENTS.md` 한 줄. Claude Code 진입점
 │  ├─ web.md                  apps/web/**
 │  ├─ mobile.md               apps/mobile/**
 │  ├─ api.md                  apps/api/**
-│  ├─ ko-ui.md                apps/{web,mobile}/src/**/*.tsx
+│  ├─ product-ui.md           apps/{web,mobile}/src/**/*.tsx · 문구 모듈(*-copy.ts · *Copy.ts) — 제품 화면 판정 기준
 │  ├─ libs.md                 libs/**
 │  ├─ devhub.md               apps/devhub/**
 │  ├─ e2e.md                  apps/{web,devhub}-e2e/**
-│  └─ docs.md                 docs/**/*.md
-├─ skills/                    호출하거나 관련성이 판단될 때만 로드
-│  ├─ repo-verify/            변경 영향 범위 판정 + 검증 사다리
-│  └─ frontend-quality/       화면 제품 검수 (references/ 2개는 필요할 때만)
+│  ├─ docs.md                 docs/**/*.md — docs-ko에 더하는 것만
+│  └─ _generated/             berry-dev standards 생성본. 손으로 고치지 않는다(harness:sync)
 ├─ hooks/
-│  └─ guard-bash.mjs          PreToolUse(Bash). 컨텍스트를 쓰지 않는다
+│  └─ guard-bash.mjs          PreToolUse(Bash). 포트 바인딩 명령만 막는다
+├─ standards.json             어떤 berry-dev standard를 어느 경로에 쓸지
+├─ harness-source.json        고정한 shared-stack 커밋(40자) · berry-dev version
+├─ harness.profile.md         berry-dev skill · rule이 읽는 snapdone 사실
 ├─ settings.json              팀 공유. 커밋된다
 ├─ settings.local.json        개인용. gitignore된다
 └─ README.md                  이 문서. Claude가 로드하지 않는다
 docs/                         사람이 읽는 문서. rule과 skill이 링크로 참조한다
 ```
 
-`.claude/rules/`는 재귀 탐색되고, `paths` frontmatter가 있는 파일은 Claude가 매칭되는 파일을 읽을 때 로드된다. `paths`가 없으면 매 세션 로드되므로 **`paths` 없는 rule을 만들지 않는다.**
+`.claude/rules/`는 재귀 탐색되고, `paths` frontmatter가 있는 파일은 Claude가 매칭되는 파일을 읽을 때 로드된다. `paths`가 없으면 매 세션 로드되므로 **`paths` 없는 rule을 만들지 않는다.** 예외는 생성본 `_generated/core.md` 하나다 — 모든 작업에 적용되는 공통 원칙이라 berry-dev가 일부러 `paths` 없이 만든다.
+
+`_generated/`는 `pnpm harness:sync`가 고정한 shared-stack checkout(`SHARED_STACK_DIR`, 기본 `../shared-stack`)의 berry-dev CLI로 쓴다. `tools/scripts/harness.mjs`가 그 checkout의 HEAD · plugin 이름 · version이 `harness-source.json`과 같은지 먼저 확인하고, 다르면 CLI를 부르지 않는다. 생성본과 일치하는지는 `pnpm harness:check`(쓰지 않음)로 본다. 규칙을 바꾸려면 shared-stack의 원본을 고치고 고정 커밋을 올린다.
 
 ## Skill
 
-| skill                        | 출처                       | 언제                              | 누가 호출               |
-| ---------------------------- | -------------------------- | --------------------------------- | ----------------------- |
-| `/berry-commit:commit-scope` | 공용 plugin `berry-commit` | staged 변경을 scope별로 커밋할 때 | **사용자만**            |
-| `repo-verify`                | 이 저장소                  | 코드를 바꾸고 완료를 보고하기 전  | Claude 자동 또는 사용자 |
-| `frontend-quality`           | 이 저장소                  | web·mobile 화면을 바꾸고 나서     | Claude 자동 또는 사용자 |
+| skill                         | 출처                       | 언제                              | 누가 호출               |
+| ----------------------------- | -------------------------- | --------------------------------- | ----------------------- |
+| `/berry-commit:commit-scope`  | 공용 plugin `berry-commit` | staged 변경을 scope별로 커밋할 때 | **사용자만**            |
+| `/berry-dev:repo-verify`      | 공용 plugin `berry-dev`    | 코드를 바꾸고 완료를 보고하기 전  | Claude 자동 또는 사용자 |
+| `/berry-dev:frontend-quality` | 공용 plugin `berry-dev`    | web·mobile 화면을 바꾸고 나서     | Claude 자동 또는 사용자 |
 
 커밋은 사용자가 시작해야 하는 일이다. plugin의 `commit_scope` tool은 **명시적 승인 뒤에만** 호출하고, git commit은 permission `ask`가 한 번 더 지킨다.
 
-이 저장소의 두 skill은 자동 호출을 허용한다. "검증 없이 완료를 선언하지 않는다"와 "화면은 제품 기준으로 본다"가 Claude가 스스로 지켜야 하는 규칙이라, 사용자가 매번 타이핑해야 한다면 의미가 없기 때문이다.
+`repo-verify` · `frontend-quality`의 절차는 plugin이 갖고, snapdone 사실(영향 범위 · 실행 제약 · consumer 조회 명령 · 화면 폭 · 문구 정책)은 `harness.profile.md`가 갖는다. 예전 로컬 skill은 그 사실을 profile과 rule로 옮긴 뒤 지웠다. 절차를 로컬에 다시 적지 않는다.
+
+이 두 skill은 자동 호출을 허용한다. "검증 없이 완료를 선언하지 않는다"와 "화면은 제품 기준으로 본다"가 Claude가 스스로 지켜야 하는 규칙이라, 사용자가 매번 타이핑해야 한다면 의미가 없기 때문이다.
 
 **새 skill을 만드는 기준**
 
 - 같은 지시를 반복해서 붙여넣고 있을 때
 - `AGENTS.md`의 한 절이 사실이 아니라 절차로 자라났을 때
 
-Skill 본문은 한번 로드되면 이후 턴에도 컨텍스트에 남는다. `SKILL.md`는 짧게 유지하고 상세 절차는 `references/`로 분리한다. `frontend-quality`가 그 예다 — 본문은 검수 순서만 갖고, 항목별 확인 방법은 `references/product-ux.md`와 `references/platform-checks.md`에 있다.
+Skill 본문은 한번 로드되면 이후 턴에도 컨텍스트에 남는다. `SKILL.md`는 짧게 유지하고 상세 절차는 `references/`로 분리한다.
 
 **rule과 겹치지 않게 한다.** rule은 _무엇이 옳은가_(불변식), skill reference는 _어떻게 확인하는가_(절차)다. 같은 문장을 양쪽에 적지 않는다.
 
@@ -154,16 +159,19 @@ Skill 본문은 한번 로드되면 이후 턴에도 컨텍스트에 남는다. 
 
 ## Hook
 
-`.claude/hooks/guard-bash.mjs` 하나뿐이다. `PreToolUse` · matcher `Bash`.
+`PreToolUse` · matcher `Bash`에 hook이 둘 걸린다. 책임이 겹치지 않는다.
 
-**permission으로 표현할 수 없는 것만** 여기서 처리한다. permission 규칙은 패턴 매칭이고, 이 훅은 명령 문자열 전체를 본 뒤 **왜 막혔고 대신 무엇을 해야 하는지**를 문장으로 돌려준다. 그 차이가 존재 이유다.
+| hook                                                   | 출처                    | 막는 것                                                     |
+| ------------------------------------------------------ | ----------------------- | ----------------------------------------------------------- |
+| `.claude/hooks/guard-bash.mjs`                         | 이 저장소               | dev 서버 · `pnpm e2e` · `nx build web` (포트 바인딩)        |
+| `guard-secrets.mjs` (`${CLAUDE_PLUGIN_ROOT}/scripts/`) | 공용 plugin `berry-dev` | secret 경로 + 리다이렉트 / `node -e` / `grep` / `base64` 등 |
 
-| 막는 것                                                     | permission으로 안 되는 이유                                         |
-| ----------------------------------------------------------- | ------------------------------------------------------------------- |
-| dev 서버 · `pnpm e2e` · `nx build web`                      | 영구 금지가 아니라 **이 환경에서만** 불가. "사용자에게 요청"이 정답 |
-| secret 경로 + 리다이렉트 / `node -e` / `grep` / `base64` 등 | Read deny는 `cat`·`head`·`tail`·`sed`만 인식한다                    |
+**permission으로 표현할 수 없는 것만** hook으로 처리한다. permission 규칙은 패턴 매칭이고, hook은 명령 문자열 전체를 본 뒤 **왜 막혔고 대신 무엇을 해야 하는지**를 문장으로 돌려준다.
 
-두 번째 항목은 **두 조건이 함께 있을 때만** 막는다. `cat .env.example`이나 `echo x > /tmp/out`은 통과한다.
+- **포트 바인딩** — 영구 금지가 아니라 **이 환경에서만** 불가. "사용자에게 요청"이 정답이다. 저장소마다 다르므로 local에 둔다
+- **secret 우회 읽기** — Read deny는 내장 파일 도구와 `cat`·`head`·`tail`·`sed`만 인식한다. secret 경로와 우회 수단이 **함께 있을 때만** 막는다(`cat .env.example`은 통과). 여러 저장소가 같은 판정을 쓰므로 plugin이 갖는다. 예전 local 사본은 plugin 차단을 이 세션에서 존재하지 않는 경로로 확인한 뒤 지웠다
+
+plugin을 설치하지 않은 환경에서는 secret hook이 없다. 그때 남는 것은 permission의 `Read(.env)` · `Read(.env.local)` · `Read(.env.*.local)` · 서명 키 deny뿐이라 `.env.production` 같은 이름은 내장 Read로도 읽힌다. 팀원은 `claude plugin install berry-dev@berrypjh`를 한 번 실행한다.
 
 **의도적으로 넣지 않은 것**
 
@@ -173,7 +181,7 @@ Skill 본문은 한번 로드되면 이후 턴에도 컨텍스트에 남는다. 
 
 **실패하면 통과시킨다.** 훅이 깨져서 모든 Bash가 막히는 쪽이 더 나쁘다. 그래서 이것은 보조 장치이지 마지막 방어선이 아니다.
 
-명령을 바꾸거나 새로 막을 것이 생기면 `.claude/hooks/guard-bash.mjs`의 `PORT_BOUND` · `BYPASS` 배열만 고친다. 문서 세 곳에 흩어 적지 않는다.
+포트 명령을 바꾸거나 새로 막을 것이 생기면 `.claude/hooks/guard-bash.mjs`의 `PORT_BOUND` 배열만 고친다. secret 판정을 바꾸려면 shared-stack의 `secret-policy.mjs`를 고친다. 문서 세 곳에 흩어 적지 않는다.
 
 ### 테스트
 
@@ -181,14 +189,14 @@ Skill 본문은 한번 로드되면 이후 턴에도 컨텍스트에 남는다. 
 pnpm test:hooks    # node --test tools/scripts/*.test.mjs
 ```
 
-`tools/scripts/guard-bash.test.mjs`가 훅을 **실제로 실행해서** stdin/stdout 계약까지 확인한다(49 케이스). 정규식만 검사하면 JSON 형식이 깨져도 통과하는데, 그러면 훅이 조용히 무력해진다.
+`tools/scripts/guard-bash.test.mjs`가 local 훅을 **실제로 실행해서** stdin/stdout 계약까지 확인한다. 정규식만 검사하면 JSON 형식이 깨져도 통과하는데, 그러면 훅이 조용히 무력해진다. secret 명령은 local 훅이 **통과시키는지** 확인한다 — local이 다시 판정하면 plugin과 두 번 실행된다. secret 판정 자체의 테스트는 shared-stack(`tools/scripts/claude-harness/guard.test.ts`)이 갖는다.
 
 훅이 망가지는 방식은 두 가지이고 둘 다 눈에 띄지 않는다.
 
 - **과차단** — 정상 명령이 막혀 작업이 안 된다. 원인이 훅이라는 걸 알아채기 어렵다
-- **과통과** — secret 우회가 다시 열린다. 아무 증상이 없다
+- **과통과** — 막아야 할 명령이 그대로 돈다. 아무 증상이 없다
 
-그래서 `PORT_BOUND` · `BYPASS`를 고칠 때는 테스트를 함께 고친다. `.claude/`는 Nx 프로젝트가 아니라 `nx test`가 잡지 못하므로 `pnpm verify`가 `test:hooks`를 따로 부른다.
+그래서 `PORT_BOUND`를 고칠 때는 테스트를 함께 고친다. `tools/scripts/harness.test.mjs`는 고정 source 판정을 확인한다. `.claude/`는 Nx 프로젝트가 아니라 `nx test`가 잡지 못하므로 `pnpm verify`가 `test:hooks`를 따로 부른다.
 
 ## Git hook
 
@@ -215,6 +223,7 @@ harness가 커지면서 **아무도 실행을 지시하지 않아도 도는 코�
 | 언제                   | 무엇이                                                                            | 출처                                                   |
 | ---------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------ |
 | Claude의 Bash 호출마다 | `node .claude/hooks/guard-bash.mjs`                                               | 이 저장소                                              |
+| Claude의 Bash 호출마다 | `node ${CLAUDE_PLUGIN_ROOT}/scripts/guard-secrets.mjs` (`berry-dev` plugin)       | 공용 marketplace `berrypjh`                            |
 | `git commit`마다       | `npx lint-staged` · `npx commitlint --edit`                                       | 이 저장소 + npm                                        |
 | `pnpm install`마다     | `prepare: husky`                                                                  | npm                                                    |
 | Claude 세션 시작마다   | `node ${CLAUDE_PLUGIN_ROOT}/dist/index.js` (`berry-commit` plugin의 `commit-mcp`) | 공용 marketplace `berrypjh` (**plugin에 커밋된 번들**) |
@@ -294,8 +303,10 @@ MCP 서버와 plugin은 사용자 권한으로 임의 코드를 실행할 수 �
 
 ```json
 "extraKnownMarketplaces": { "berrypjh": { "source": { "source": "github", "repo": "berrypjh/shared-stack" } } },
-"enabledPlugins": { "berry-commit@berrypjh": true, "code-review@claude-plugins-official": true }
+"enabledPlugins": { "berry-commit@berrypjh": true, "berry-dev@berrypjh": true, "code-review@claude-plugins-official": true }
 ```
+
+`berry-dev@berrypjh`는 skill 둘(`repo-verify` · `frontend-quality`)과 secret hook을 더한다. standards rule은 plugin이 직접 로드하지 않고 `harness:sync`가 `_generated/`에 쓴다. 실행 의존성은 Node 내장 모듈뿐이고 네트워크 호출이 없다. marketplace 설치본은 version만 같고 SHA가 다를 수 있어, rule 생성과 검사는 설치본이 아니라 고정 checkout을 쓴다.
 
 `commit-mcp`의 보안 성격 — tool 3개 중 쓰기는 `commit_scope` 하나뿐이고, **네트워크 호출이 없고 credential을 읽지 않는다.** git 호출은 `spawnSync('git', args)` 배열 형태라 모델이 만든 커밋 문구가 셸로 해석되지 않는다. **plugin 설치에는 빌드 단계가 없고 `dist/index.js` 번들이 plugin 저장소에 커밋돼 있다** — 신뢰 표면이 shared-stack으로 옮겨갔다는 뜻이다.
 
@@ -305,7 +316,7 @@ Plugin은 사용자 스코프(`~/.claude/settings.json`)에서도 켤 수 있는
 
 ### 외부 없이도 돌아가야 한다
 
-`AGENTS.md` · rules · `repo-verify` · `frontend-quality` · permissions는 **MCP와 plugin이 하나도 없어도 그대로 동작한다.** 전부 파일과 로컬 `nx` · `git`만 쓴다. `/berry-commit:commit-scope`만 plugin MCP에 의존하는데, plugin이 없으면 손으로 커밋하면 되고 그 경로는 permission의 ask가 지킨다. 공용 UI 조회도 네트워크 없이 **설치된 패키지 bin**(`berry-react-ui`)만 쓴다.
+`AGENTS.md` · rules(커밋된 `_generated/` 포함) · `harness.profile.md` · permissions는 **MCP와 plugin이 하나도 없어도 그대로 동작한다.** 전부 파일과 로컬 `nx` · `git`만 쓴다. plugin에 의존하는 것은 셋이다 — `/berry-commit:commit-scope`(없으면 손으로 커밋, permission의 ask가 지킨다), `berry-dev`의 두 skill(없으면 profile을 직접 읽고 검증한다), secret hook(없으면 permission의 Read deny만 남는다). 공용 UI 조회도 네트워크 없이 **설치된 패키지 bin**(`berry-react-ui`)만 쓴다.
 
 저장소를 이해하고 검증하는 능력을 외부 서버에 의존시키지 않는다.
 

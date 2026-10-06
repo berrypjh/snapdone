@@ -10,7 +10,7 @@ Next.js App Router. 소스는 `src/`, alias는 `@/*` → `./src/*`.
 ## Component
 
 - **App Router만 쓴다.** `pages/`를 만들지 않는다
-- **Server Component가 기본이다.** `'use client'`는 브라우저 상호작용이 실제로 필요한 컴포넌트에만 붙인다. 루트 `layout.tsx`에는 붙이지 않는다
+- **Server Component가 기본이다.** `'use client'`는 브라우저 상호작용이 실제로 필요한 컴포넌트에만 붙인다. `layout.tsx` · `page.tsx`에는 붙이지 않고 필요한 leaf로 내린다
 - 파일 이름은 **kebab-case**(`app-shell.tsx`), export는 PascalCase
 - **로컬 primitive를 만들지 않는다.** 공용 `@berrypjh/react-ui` 컴포넌트(`Box` · `Stack` · `SkipLink` · `Switch` 등)를 가져와 조합한다. 앱이 소유하는 것은 제품 셸 `AppShell`과 기능별 제품 조합(`components/auth/` · `in-app-*` · `theme-switch`)뿐이다
 - `main` · `aside` · `header`를 `Box`로 바꾸지 않는다. `SkipLink`는 `<main id="main-content" tabIndex={-1}>`을 가리킨다
@@ -47,6 +47,7 @@ Tailwind v4 + `@berrypjh/react-ui`. 색 · 타입 스케일 · radius · shadow�
 - 글자 스타일은 `global.css`의 `typo-*` utility(`typo-heading-h4` · `typo-paragraph-default` · `typo-body-medium-strong` · `typo-caption-default`)로만 쓴다. shared CSS 변수를 조합한 것이다
 - **preset spacing 이름이 Tailwind 크기 이름을 가린다** — `max-w-3xl`은 48rem이 아니라 `--ds-spacing-3xl`(2.5rem)이 된다. 본문 폭은 `max-w-(--container-3xl)`로 쓴다
 - spacing은 `p-1 p-2 p-3 p-4 p-5 p-6 p-8`(4/8/12/16/20/24/32)만 쓴다
+- 브레이크포인트는 `md`(768px) 하나다. 고정 폭(`w-[380px]` 등)은 320px에서 넘친다
 - focus는 `global.css`의 전역 `:focus-visible` 하나로 처리한다
 - shared 컴포넌트는 `@berrypjh/react-ui`에서 바로 import한다. 1.1.1부터 hook을 쓰는 컴포넌트 모듈이 `'use client'`를 스스로 보존하므로 앱에 client 경계 파일을 두지 않는다
 - theme은 **`<html data-theme>` 하나가 소유한다** (light = 공용 `:root`, dark = 공용 `[data-theme="dark"]`). 저장된 선택이 없으면 시스템 설정을 따르고, `src/lib/theme.ts`의 head 스크립트가 첫 paint 전에 적용한다. 전환 UI는 헤더의 `ThemeSwitch`(공용 `Switch`) 하나다
@@ -54,18 +55,7 @@ Tailwind v4 + `@berrypjh/react-ui`. 색 · 타입 스케일 · radius · shadow�
 
 ## 공용 UI API 조회
 
-컴포넌트 · prop · 토큰을 기억이나 추측으로 쓰지 않는다. **설치된 버전**에서 아래 순서로 좁힌다. 위 단계에서 답이 나오면 내려가지 않는다.
-
-1. 플랫폼 확인 — web은 `@berrypjh/react-ui`
-2. 사용 규칙 · 함정 — `node_modules/@berrypjh/react-ui/dist/AGENTS.md`(export `@berrypjh/react-ui/agents`)
-3. 후보 심볼 — `pnpm --dir apps/web exec berry-react-ui find <query>`
-4. 정확한 prop — `pnpm --dir apps/web exec berry-react-ui api <Symbol>`
-5. 토큰 — `pnpm --dir apps/web exec berry-react-ui token <path|prefix>`
-6. 그래도 부족할 때만 public d.ts (`@berrypjh/react-ui` types)
-
-- 설치된 bin을 쓴다. **bare `npx @berrypjh/react-ui`는 쓰지 않는다** — 레지스트리 latest를 끌어와 설치 버전과 다른 답을 줄 수 있다
-- 조회 결과가 비어 있는 것은 **source를 읽거나 복사할 사유가 아니다.** 없는 API는 없는 것으로 보고, 필요하면 upstream에 요청한다
-- private `@berrypjh/ui-core` · `@berrypjh/design-tokens` · `/src` · 내부 `dist` 경로를 import하지 않는다
+조회 순서와 금지 사항은 생성 rule `_generated/berry-consumer.md`, 실행 명령은 `.claude/harness.profile.md`의 consumer 조회.
 
 ## Data
 
@@ -73,7 +63,7 @@ Tailwind v4 + `@berrypjh/react-ui`. 색 · 타입 스케일 · radius · shadow�
 - 서버에서 호출한다 — 읽기는 Server Component, mutation은 Server Action · Route Handler. 브라우저가 Go API를 직접 부르지 않으므로 CORS 설정이 없다. 인증 endpoint 호출은 `src/lib/auth/api.ts`에, 온보딩 진행 · 사진 처리 호출은 `src/lib/onboarding/api.ts`에 모은다
 - 온보딩 첫 사진은 Server Action으로 올린다(본문 상한 `next.config.js` `experimental.serverActions.bodySizeLimit`). 처리 Action은 오류를 던지지 않고 값(`JobResponse`)으로 돌려준다 — production에서 Action 오류 내용은 가려진다
 - `app/api/*` route를 만들지 않는다. 브라우저 직접 호출이 필요해지면 [data-access.md](../../docs/architecture/data-access.md)의 전환 절차를 먼저 읽는다
-- 환경변수는 `API_BASE_URL`이다. `NEXT_PUBLIC_` 접두사가 없는 것은 의도적이다
+- 환경변수는 `API_BASE_URL`이다. `NEXT_PUBLIC_` 접두사가 없는 것은 의도적이다 — 서버 전용 값이라 Client Component에서 읽으면 `undefined`
 - 응답은 좁은 타입 가드로 확인한다. `any`를 쓰지 않는다
 
 ## Test
