@@ -74,7 +74,7 @@ export async function skipPurpose(): Promise<void> {
 export type CompletionResponse = { type: 'error' };
 
 /**
- * ON-06에서 온보딩을 끝내고 홈으로. 이미 다른 곳에서 마쳤어도 홈으로 간다.
+ * 첫 결과 화면에서 온보딩을 끝내고 홈으로. 이미 다른 곳에서 마쳤어도 홈으로 간다.
  * 서버 진행이 아직 첫 사진 전이면 그 단계로 보낸다. 서버에 닿지 못하면 값으로 돌려줘 결과 화면에서 다시 시도한다.
  */
 export async function completeOnboarding(): Promise<CompletionResponse> {

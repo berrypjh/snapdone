@@ -41,7 +41,7 @@ function Actions({ canSubmit }: { canSubmit: boolean }) {
 }
 
 /**
- * ON-03 사용 목적 선택. 여러 개를 고를 수 있고 필수가 아니다.
+ * 사용 목적 선택. 여러 개를 고를 수 있고 필수가 아니다.
  * 선택 규칙("아직 모르겠어요"는 혼자만)은 mobile과 같은 `togglePurpose`다.
  */
 export function PurposeForm({ initialSelection }: { initialSelection: readonly Purpose[] }) {

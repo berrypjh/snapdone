@@ -10,7 +10,7 @@ import { onboardingPath } from '@/lib/onboarding/paths';
 
 export const metadata: Metadata = { title: '사용 목적' };
 
-/** ON-03. 소개를 지나야 열린다. 첫 사진 단계에서 돌아오면 저장된 목적을 미리 골라 둔다. */
+/** 사용 목적 선택. 소개를 지나야 열린다. 첫 사진 단계에서 돌아오면 저장된 목적을 미리 골라 둔다. */
 export default async function OnboardingPurposePage() {
   const session = await requireSignedIn('/onboarding');
   const { onboardingStep } = session;

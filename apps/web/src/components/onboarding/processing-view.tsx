@@ -22,9 +22,9 @@ type ProcessingViewProps = {
 };
 
 /**
- * ON-05 첫 처리. 사진을 보내고 작업이 끝날 때까지 기다린다.
+ * 첫 처리. 사진을 보내고 작업이 끝날 때까지 기다린다.
  * 서버가 알려주는 것은 처리 중 · 완료 · 실패뿐이라 중간 단계를 지어내지 않는다. 화면을 떠나면 조회를 멈춘다.
- * 완료되면 결과를 `onCompleted`로 넘기고, 결과 화면(ON-06)은 부모가 연다. mobile 처리 화면과 같은 경계다.
+ * 완료되면 결과를 `onCompleted`로 넘기고, 결과 화면은 부모가 연다. mobile 처리 화면과 같은 경계다.
  */
 export function ProcessingView({
   image,

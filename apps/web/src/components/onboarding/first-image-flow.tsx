@@ -32,7 +32,7 @@ const useObjectUrl = (file: File | null) => {
 };
 
 /**
- * ON-04 첫 사진 → 사진 확인 → ON-05 처리 → ON-06 결과. mobile의 첫 사진 · 확인 · 처리 · 결과 화면과 같은 순서다.
+ * 첫 사진 → 사진 확인 → 처리 → 결과. mobile의 첫 사진 · 확인 · 처리 · 결과 화면과 같은 순서다.
  * 사진은 브라우저에만 있고 저장하지 않는다 — 새로고침하면 첫 사진 단계로 돌아온다. 결과 화면도 같은 blob 주소를 쓴다.
  */
 export function FirstImageFlow() {

@@ -1,7 +1,7 @@
 import type { AuthErrorCode } from '@snapdone/auth-contracts';
 
 /** 로그인 후 돌아갈 수 있는 page. 그 외는 홈으로 간다. */
-const RETURN_PATHS = new Set(['/', '/history', '/onboarding']);
+const RETURN_PATHS = new Set(['/', '/history', '/onboarding', '/settings/processing']);
 
 export const DEFAULT_RETURN_PATH = '/';
 

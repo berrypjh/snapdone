@@ -26,7 +26,7 @@ const finish = async (): Promise<{ failed: boolean }> => {
 };
 
 /**
- * ON-06 첫 결과. 사진에서 확인한 것까지만 보이고, 추천 작업은 실행하지 않았다고 밝힌다.
+ * 첫 결과. 사진에서 확인한 것까지만 보이고, 추천 작업은 실행하지 않았다고 밝힌다.
  * 완료하면 서버가 온보딩을 끝내고 홈으로 보낸다. 실패해도 결과는 그대로 두고 다시 시도한다.
  */
 export function ResultView({ url, result }: ResultViewProps) {

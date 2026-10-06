@@ -31,6 +31,13 @@ export default function Index() {
       >
         기록 보기
       </Link>
+
+      <Link
+        href="/settings/processing"
+        className="self-start typo-body-medium-strong text-text-default underline"
+      >
+        기본 처리 설정
+      </Link>
     </Stack>
   );
 }
