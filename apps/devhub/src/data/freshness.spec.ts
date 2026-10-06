@@ -1,13 +1,14 @@
 import { statSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { parseMarkdown } from '@berrypjh/devhub-ui';
 import { describe, expect, it } from 'vitest';
 
 import { encodePath, isCanonicalPath } from '../domain/links';
 import type { ApplicationRef, LibraryRef, RepositorySnapshot } from '../domain/model';
 import { flowModel } from '../lib/catalog/flow';
 import { resolveDocLink } from '../lib/markdown/doc-links';
-import { type Block, type Inline, parseMarkdown } from '../lib/markdown/markdown';
+import { referencesIn } from '../lib/markdown/documents';
 import { linksFor } from '../lib/repository/source-links';
 import { citedRefs } from '../test-support/cited-refs';
 import { nxCallsIn, nxProjectTargets } from '../test-support/nx-workspace';
@@ -83,15 +84,6 @@ describe('Nx workspace', () => {
     expect(inCatalog.sort()).toEqual([...projectIds].sort());
   });
 
-  it('declares every Nx target a catalog command names', () => {
-    const missing = catalog.commands.flatMap(({ id, source }) =>
-      source.kind === 'nx-target' && !targets.get(source.project)?.has(source.target)
-        ? [`${id}: ${source.project}:${source.target}`]
-        : [],
-    );
-    expect(missing).toEqual([]);
-  });
-
   it('declares every Nx target a root script calls', () => {
     const scripts = readJson<{ scripts: Record<string, string> }>('package.json').scripts;
     const projects = new Set(targets.keys());
@@ -155,38 +147,17 @@ describe('product statement', () => {
 });
 
 describe('document links', () => {
-  const linksIn = (blocks: Block[]): string[] =>
-    blocks.flatMap((block) => {
-      const inline = (nodes: Inline[]): string[] =>
-        nodes.flatMap((node) =>
-          node.kind === 'link'
-            ? [node.href, ...inline(node.children)]
-            : node.kind === 'strong'
-              ? inline(node.children)
-              : [],
-        );
-      switch (block.kind) {
-        case 'image':
-          return [block.src];
-        case 'heading':
-        case 'paragraph':
-          return inline(block.inline);
-        case 'list':
-          return block.items.flatMap(linksIn);
-        case 'table':
-          return [...block.head, ...block.rows.flat()].flatMap(inline);
-        case 'quote':
-          return linksIn(block.blocks);
-        default:
-          return [];
-      }
-    });
+  /** 화면이 푸는 것과 같은 목록(`referencesIn`) — 링크 href와 그림 src. */
+  const linksIn = (source: string) => {
+    const { hrefs, images } = referencesIn(parseMarkdown(source));
+    return [...hrefs, ...images];
+  };
   const headingIds = (path: string) =>
     new Set(parseMarkdown(read(path)).flatMap((b) => (b.kind === 'heading' ? [b.id] : [])));
 
   it('point at documents, files, and headings that exist', () => {
     const broken = [...catalog.documents, ...catalog.records].flatMap((doc) =>
-      linksIn(parseMarkdown(read(doc.path))).flatMap((href) => {
+      linksIn(read(doc.path)).flatMap((href) => {
         const link = resolveDocLink(doc.path, href);
         const ok =
           link.kind === 'external' ||

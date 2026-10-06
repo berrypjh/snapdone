@@ -34,10 +34,7 @@ export default async function SourcePage({ searchParams }: { searchParams: Searc
   if (!usage) notFound();
 
   return (
-    <DevHubShell
-      selection={{ view: 'source' }}
-      inspector={<Inspector inspection={inspectSource(usage)} />}
-    >
+    <DevHubShell inspector={<Inspector inspection={inspectSource(usage)} />}>
       <Workspace eyebrow="소스 파일" icon={VIEW_ICON.source} title={usage.path}>
         {/* 파일의 모든 링크가 모인 유일한 곳. 상세 정보에는 파일당 링크 하나만 둔다. */}
         <SourceActions source={{ path: usage.path }} />

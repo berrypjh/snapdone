@@ -1,4 +1,4 @@
-import { Table, TableScroll } from '@berrypjh/react-ui';
+import { DataTable } from '@berrypjh/devhub-ui';
 
 import type { LabelDelta } from '@/lib/evaluations/contract';
 
@@ -8,39 +8,34 @@ import { DeltaCells } from './axis-table';
 export function LabelDeltas({ labels }: { labels: LabelDelta[] }) {
   const caption = 'category별 F1 — baseline · candidate';
   return (
-    <TableScroll label={caption} className="rounded-md border border-stroke-light">
-      <Table hiddenCaption>
-        <caption>{caption}</caption>
-        <thead>
-          <tr>
-            <th scope="col">category</th>
-            <th scope="col">F1 baseline</th>
-            <th scope="col">F1 candidate</th>
-            <th scope="col">F1 차이</th>
-            <th scope="col">판정</th>
-            <th scope="col">recall · precision 차이</th>
-          </tr>
-        </thead>
-        <tbody>
-          {labels.map((l) => (
-            <tr key={l.label}>
-              <th scope="row">
-                <span className="devhub-code">{l.label}</span>
-                <span className="block typo-caption-small text-text-light">정답 {l.support}</span>
-              </th>
-              <DeltaCells metric={l.f1} axis="quality" />
-              <td className="typo-caption-small tabular-nums">
-                {[l.recall, l.precision]
-                  .map(
-                    (m, i) =>
-                      `${i ? 'precision' : 'recall'} ${m.deltaPp.availability === 'measured' ? `${m.deltaPp.value > 0 ? '+' : ''}${m.deltaPp.value.toFixed(1)}pp` : '비교 불가'}`,
-                  )
-                  .join(' · ')}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
-    </TableScroll>
+    <DataTable
+      caption={caption}
+      headers={[
+        'category',
+        'F1 baseline',
+        'F1 candidate',
+        'F1 차이',
+        '판정',
+        'recall · precision 차이',
+      ]}
+    >
+      {labels.map((l) => (
+        <tr key={l.label}>
+          <th scope="row">
+            <span className="devhub-code">{l.label}</span>
+            <span className="block typo-caption-small text-text-light">정답 {l.support}</span>
+          </th>
+          <DeltaCells metric={l.f1} axis="quality" />
+          <td className="typo-caption-small tabular-nums">
+            {[l.recall, l.precision]
+              .map(
+                (m, i) =>
+                  `${i ? 'precision' : 'recall'} ${m.deltaPp.availability === 'measured' ? `${m.deltaPp.value > 0 ? '+' : ''}${m.deltaPp.value.toFixed(1)}pp` : '비교 불가'}`,
+              )
+              .join(' · ')}
+          </td>
+        </tr>
+      ))}
+    </DataTable>
   );
 }

@@ -1,5 +1,16 @@
-import { type ReactNode, Suspense } from 'react';
+import { Suspense } from 'react';
 import Link from 'next/link';
+
+import {
+  Empty,
+  Facts,
+  Icon,
+  Inspector as SharedInspector,
+  InspectorHeader,
+  InspectorSection,
+  type InspectorSectionMeta,
+  Pager,
+} from '@berrypjh/devhub-ui';
 
 import { swaggerDocument } from '@/data/apis';
 import type { ApiRef, TestRef } from '@/domain/model';
@@ -23,21 +34,25 @@ import {
 } from '@/lib/catalog/reference-groups';
 
 import { NodePager } from '../architecture/node-pager';
-import { detailsHref, INSPECTOR_ID } from '../shell/workspace';
-import { ByProject, FileRow, Symbols } from '../source/file-row';
-import { Icon, type IconName } from '../ui/icon';
+import { detailsHref } from '../shell/workspace';
+import { ByProject, FileRow } from '../source/file-row';
 
-import { Pager } from './pager';
 import { StatusChip } from './status-chip';
 
-type SectionMeta = { id: string; title: string; icon: IconName };
-
-const OVERVIEW: SectionMeta = { id: 'inspector-overview', title: '개요', icon: 'overview' };
-const SOURCE: SectionMeta = { id: 'inspector-source', title: '소스', icon: 'source' };
-const DOCS: SectionMeta = { id: 'inspector-docs', title: '문서', icon: 'document' };
-const TESTS: SectionMeta = { id: 'inspector-tests', title: '테스트', icon: 'test' };
-const API_SECTION: SectionMeta = { id: 'inspector-apis', title: 'API', icon: 'api' };
-const RELATED_SECTION: SectionMeta = { id: 'inspector-related', title: '연결', icon: 'related' };
+const OVERVIEW: InspectorSectionMeta = {
+  id: 'inspector-overview',
+  title: '개요',
+  icon: 'overview',
+};
+const SOURCE: InspectorSectionMeta = { id: 'inspector-source', title: '소스', icon: 'source' };
+const DOCS: InspectorSectionMeta = { id: 'inspector-docs', title: '문서', icon: 'document' };
+const TESTS: InspectorSectionMeta = { id: 'inspector-tests', title: '테스트', icon: 'test' };
+const API_SECTION: InspectorSectionMeta = { id: 'inspector-apis', title: 'API', icon: 'api' };
+const RELATED_SECTION: InspectorSectionMeta = {
+  id: 'inspector-related',
+  title: '연결',
+  icon: 'related',
+};
 
 /**
  * 이전 · 다음 아키텍처 구성 요소. 종류 필터는 클라이언트에서 URL로 읽으므로 static fallback은
@@ -46,7 +61,7 @@ const RELATED_SECTION: SectionMeta = { id: 'inspector-related', title: '연결',
 function NodePagerSlot({ order }: { order: NodeOrder }) {
   const all = pagerOf('구성 요소', order.nodes, order.current);
   return (
-    <Suspense fallback={all && <Pager pager={all} />}>
+    <Suspense fallback={all && <Pager {...all} />}>
       <NodePager order={order} />
     </Suspense>
   );
@@ -65,76 +80,11 @@ function Detail({ detail }: { detail: Fact['details'][number] }) {
   );
 }
 
-function InspectorSection({
-  meta,
-  count,
-  summary,
-  children,
-}: {
-  meta: SectionMeta;
-  count?: number;
-  /** 목록을 읽기 전에 무엇이 들었는지 알려 주는 한 줄. 예: `web 4 · api 2`. */
-  summary?: string;
-  children: ReactNode;
-}) {
-  return (
-    <section
-      aria-labelledby={`${meta.id}-heading`}
-      id={meta.id}
-      className="flex flex-col gap-2 py-4 last:pb-0"
-    >
-      <div className="flex flex-col gap-0.5">
-        <h3 id={`${meta.id}-heading`} className="flex items-center gap-2 typo-body-small-strong">
-          <Icon name={meta.icon} className="text-text-light" />
-          {meta.title}
-          {count !== undefined && (
-            <span className="typo-caption-small text-text-light">{count}</span>
-          )}
-        </h3>
-        {summary && <p className="pl-6 typo-caption-small text-text-light">{summary}</p>}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function Empty({ reason }: { reason: string }) {
-  return <p className="typo-caption-small text-text-light">없음 — {reason}</p>;
-}
-
-/** 내용이 있는 사실만 보인다. 빈 사실은 근거가 아니라 잡음이다. */
-function Facts({ facts }: { facts: Fact[] }) {
-  return (
-    <dl className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-3 gap-y-2">
-      {facts
-        .filter((fact) => fact.details.length > 0)
-        .map((fact) => (
-          <div key={fact.term} className="contents">
-            <dt className="typo-caption-small text-text-light">{fact.term}</dt>
-            <dd className="typo-body-small">
-              <ul className="flex flex-col gap-1">
-                {fact.details.map((detail, index) => (
-                  <li key={index}>
-                    <Detail detail={detail} />
-                  </li>
-                ))}
-              </ul>
-            </dd>
-          </div>
-        ))}
-    </dl>
-  );
-}
-
 function SourceList({ groups }: { groups: ProjectGroup<FileGroup>[] }) {
   return (
     <ByProject
       groups={groups}
-      row={(file) => (
-        <FileRow key={file.path} file={file}>
-          <Symbols symbols={file.symbols} />
-        </FileRow>
-      )}
+      row={(file) => <FileRow key={file.path} file={file} symbols={file.symbols} />}
     />
   );
 }
@@ -197,9 +147,11 @@ function ApiList({ apis }: { apis: ApiRef[] }) {
             {api.alsoHead && ' (+HEAD)'}
           </p>
           <ul className="flex flex-col gap-3 border-l border-stroke-light pl-3">
-            <FileRow file={fileOf(api.handler.path)} label="handler">
-              <Symbols symbols={api.handler.symbol ? [api.handler.symbol] : []} />
-            </FileRow>
+            <FileRow
+              file={fileOf(api.handler.path)}
+              label="handler"
+              symbols={api.handler.symbol ? [api.handler.symbol] : []}
+            />
             {api.exposure === 'always' ? (
               <FileRow file={fileOf(swaggerDocument.path)} label="Swagger" />
             ) : (
@@ -245,34 +197,6 @@ function RelatedGroups({ groups }: { groups: RelatedGroup[] }) {
   );
 }
 
-function Contents({ apis, related }: { apis: boolean; related: boolean }) {
-  const sections = [
-    OVERVIEW,
-    SOURCE,
-    DOCS,
-    TESTS,
-    ...(apis ? [API_SECTION] : []),
-    ...(related ? [RELATED_SECTION] : []),
-  ];
-  return (
-    <nav aria-label="상세 목차">
-      <ul className="flex flex-wrap gap-x-3 gap-y-1">
-        {sections.map((section) => (
-          <li key={section.id}>
-            <a
-              href={`#${section.id}`}
-              className="inline-flex items-center gap-1 typo-caption-small text-text-link underline-offset-2 hover:underline"
-            >
-              <Icon name={section.icon} />
-              {section.title}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  );
-}
-
 /**
  * 오른쪽 창. 선택한 항목의 근거를 언제나 같은 네 구획으로 보인다. 소스와 테스트는 프로젝트 ·
  * 파일로 묶어서 파일과 그 동작이 한 번만 나오게 한다.
@@ -280,31 +204,43 @@ function Contents({ apis, related }: { apis: boolean; related: boolean }) {
 export function Inspector({ inspection }: { inspection?: Inspection }) {
   const sources = groupSources(inspection?.source ?? []);
   return (
-    <aside
-      id={INSPECTOR_ID}
-      tabIndex={-1}
-      aria-label="상세 정보"
-      className="relative border-t border-stroke-light bg-background-surface lg:overflow-y-auto lg:border-t-0 lg:border-l"
-    >
-      {inspection ? (
-        <div className="flex flex-col divide-y divide-stroke-light p-4 pb-12">
-          <header className="flex flex-col gap-2 pb-4">
-            {/* 화살표는 첫 줄 끝에 둔다. 이웃으로 이동하면 도착하는 자리다. */}
-            <div className="flex items-center justify-between gap-2">
-              <p className="min-w-0 typo-caption-small text-text-light">{inspection.kind}</p>
-              {inspection.pager && <Pager pager={inspection.pager} />}
-              {inspection.nodeOrder && <NodePagerSlot order={inspection.nodeOrder} />}
-            </div>
-            <h2 className="typo-body-medium-strong">{inspection.title}</h2>
+    <SharedInspector>
+      {inspection && (
+        <div className="flex flex-col divide-y divide-stroke-light">
+          <InspectorHeader
+            kind={inspection.kind}
+            title={inspection.title}
+            pager={
+              inspection.pager ? (
+                <Pager {...inspection.pager} />
+              ) : (
+                inspection.nodeOrder && <NodePagerSlot order={inspection.nodeOrder} />
+              )
+            }
+            sections={[
+              OVERVIEW,
+              SOURCE,
+              DOCS,
+              TESTS,
+              ...(inspection.apis?.length ? [API_SECTION] : []),
+              ...(inspection.related ? [RELATED_SECTION] : []),
+            ]}
+          >
             {inspection.status && <StatusChip status={inspection.status} />}
-            <Contents apis={!!inspection.apis?.length} related={!!inspection.related} />
-          </header>
+          </InspectorHeader>
 
-          <InspectorSection meta={OVERVIEW}>
-            <Facts facts={inspection.facts} />
+          <InspectorSection {...OVERVIEW}>
+            <Facts
+              facts={inspection.facts.map((fact) => ({
+                term: fact.term,
+                details: fact.details.map((detail, index) => (
+                  <Detail key={index} detail={detail} />
+                )),
+              }))}
+            />
           </InspectorSection>
           <InspectorSection
-            meta={SOURCE}
+            {...SOURCE}
             count={inspection.source.length}
             summary={
               sources.length > 1
@@ -318,7 +254,7 @@ export function Inspector({ inspection }: { inspection?: Inspection }) {
               <Empty reason={inspection.sourceEmpty} />
             )}
           </InspectorSection>
-          <InspectorSection meta={DOCS} count={inspection.docs.length}>
+          <InspectorSection {...DOCS} count={inspection.docs.length}>
             {inspection.docs.length ? (
               <DocumentList docs={inspection.docs} />
             ) : (
@@ -326,7 +262,7 @@ export function Inspector({ inspection }: { inspection?: Inspection }) {
             )}
           </InspectorSection>
           <InspectorSection
-            meta={TESTS}
+            {...TESTS}
             count={inspection.tests.length}
             summary={countByRunner(inspection.tests)}
           >
@@ -337,21 +273,17 @@ export function Inspector({ inspection }: { inspection?: Inspection }) {
             )}
           </InspectorSection>
           {inspection.apis && inspection.apis.length > 0 && (
-            <InspectorSection meta={API_SECTION} count={inspection.apis.length}>
+            <InspectorSection {...API_SECTION} count={inspection.apis.length}>
               <ApiList apis={inspection.apis} />
             </InspectorSection>
           )}
           {inspection.related && (
-            <InspectorSection meta={RELATED_SECTION}>
+            <InspectorSection {...RELATED_SECTION}>
               <RelatedGroups groups={inspection.related} />
             </InspectorSection>
           )}
         </div>
-      ) : (
-        <p className="p-4 typo-body-small text-text-light">
-          탐색기에서 항목을 고르면 여기에 근거 표시
-        </p>
       )}
-    </aside>
+    </SharedInspector>
   );
 }

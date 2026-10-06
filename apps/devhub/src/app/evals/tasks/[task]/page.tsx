@@ -31,7 +31,7 @@ export default async function EvalTaskPage({
   const [{ task }, { dataset }] = await Promise.all([params, searchParams]);
   if (!isTask(task)) notFound();
   return (
-    <DevHubShell selection={{ view: 'evals', evalTask: task }} inspector={<EvalsGuide />}>
+    <DevHubShell inspector={<EvalsGuide />}>
       <Workspace eyebrow="평가" icon={VIEW_ICON.evals} title={TASK_LABELS[task]}>
         <EvalsOverviewContent task={task} query={{ task, dataset }} />
       </Workspace>

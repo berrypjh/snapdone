@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
-import { entityHref, entityStatus, type Section } from '@/lib/catalog/entities';
+import { WorkspaceSection } from '@berrypjh/devhub-ui';
 
-import { WorkspaceSection } from '../shell/workspace';
+import { entityHref, entityStatus, type Section } from '@/lib/catalog/entities';
 
 import { StatusChip } from './status-chip';
 

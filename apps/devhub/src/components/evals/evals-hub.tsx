@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { CopyButton, Icon, WorkspaceSection } from '@berrypjh/devhub-ui';
 import { VisuallyHidden } from '@berrypjh/react-ui';
 import type { ReactNode } from 'react';
 
@@ -14,10 +15,6 @@ import {
 } from '@/lib/evaluations/presentation';
 import type { ComparisonEntry } from '@/lib/evaluations/repository';
 import type { ProviderModelList, VariantCatalog } from '@/lib/evaluations/variant-command';
-
-import { WorkspaceSection } from '../shell/workspace';
-import { CopyButton } from '../source/copy-button';
-import { Icon } from '../ui/icon';
 
 import { AnswerSourceChip } from './answer-source-chip';
 import { CommandBuilder } from './command-builder';
@@ -181,7 +178,7 @@ function Methods() {
             <div className="relative">
               <Code>{m.command}</Code>
               <span className="absolute top-1.5 right-1.5">
-                <CopyButton text={m.command} label={`${m.name} 명령 복사`} variant="icon" />
+                <CopyButton text={m.command} label={`${m.name} 명령 복사: ${m.command}`} />
               </span>
             </div>
           </li>

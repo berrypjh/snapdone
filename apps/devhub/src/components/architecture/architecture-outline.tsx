@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useSelectedLayoutSegment } from 'next/navigation';
 
+import { Icon } from '@berrypjh/devhub-ui';
+
 import {
   type ArchEdge,
   type ArchitectureModel,
@@ -10,7 +12,6 @@ import {
   filterModel,
 } from '@/lib/catalog/architecture-layout';
 
-import { Icon } from '../ui/icon';
 import { Term } from '../ui/term';
 import { NODE_KIND_ICON } from '../ui/view-icons';
 

@@ -1,10 +1,9 @@
 'use client';
 
+import { ViewSwitch } from '@berrypjh/devhub-ui';
 import type { ReactNode } from 'react';
 
 import type { ArchitectureModel } from '@/lib/catalog/architecture-layout';
-
-import { ViewSwitch } from '../canvas/view-switch';
 
 import { ArchitectureMap } from './architecture-map';
 import { ArchitectureOutline } from './architecture-outline';

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { Table, TableScroll } from '@berrypjh/react-ui';
+import { DataTable } from '@berrypjh/devhub-ui';
 
 import { caseGroups } from '@/lib/evaluations/comparison';
 import type { Comparison } from '@/lib/evaluations/contract';
@@ -66,41 +66,28 @@ export function CaseChanges({
               className="flex flex-col gap-1"
             >
               <h3 className="typo-body-small-strong">{caption}</h3>
-              <TableScroll label={caption} className="rounded-md border border-stroke-light">
-                <Table hiddenCaption>
-                  <caption>{caption}</caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">case</th>
-                      <th scope="col">check</th>
-                      <th scope="col">baseline</th>
-                      <th scope="col">candidate</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {g.changes.map((ch) => (
-                      <tr key={`${ch.caseId}/${ch.check}`}>
-                        <th scope="row" className="devhub-code">
-                          {ch.caseId}
-                        </th>
-                        <td className="devhub-code">{ch.check}</td>
-                        <td>
-                          {ch.baseline}
-                          <span className="block typo-caption-small text-text-light">
-                            {ch.baselinePrediction}
-                          </span>
-                        </td>
-                        <td>
-                          {ch.candidate}
-                          <span className="block typo-caption-small text-text-light">
-                            {ch.candidatePrediction}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </TableScroll>
+              <DataTable caption={caption} headers={['case', 'check', 'baseline', 'candidate']}>
+                {g.changes.map((ch) => (
+                  <tr key={`${ch.caseId}/${ch.check}`}>
+                    <th scope="row" className="devhub-code">
+                      {ch.caseId}
+                    </th>
+                    <td className="devhub-code">{ch.check}</td>
+                    <td>
+                      {ch.baseline}
+                      <span className="block typo-caption-small text-text-light">
+                        {ch.baselinePrediction}
+                      </span>
+                    </td>
+                    <td>
+                      {ch.candidate}
+                      <span className="block typo-caption-small text-text-light">
+                        {ch.candidatePrediction}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </DataTable>
             </section>
           );
         })}

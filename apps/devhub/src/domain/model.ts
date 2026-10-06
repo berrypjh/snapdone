@@ -205,7 +205,7 @@ export type DocumentLink = {
 };
 
 /**
- * 명령 · 테스트가 돌려면 환경이 갖춰야 하는 것. 비어 있으면 샌드박스 AI 세션을 포함해
+ * 테스트가 돌려면 환경이 갖춰야 하는 것. 비어 있으면 샌드박스 AI 세션을 포함해
  * 어디서든 돈다.
  */
 export type CommandConstraint =
@@ -229,21 +229,6 @@ export type RuntimeRef = {
   summary: string;
   /** 거기서 도는 코드를 소유한 노드. 우리 코드일 때만 적는다. */
   node?: string;
-};
-
-export type CommandSource =
-  | { kind: 'package-script'; script: string }
-  | { kind: 'nx-target'; project: string; target: string };
-
-/** 명령의 용도. engineering view가 이 기준으로 명령을 묶는다. */
-export type CommandGroup = 'run' | 'check' | 'build' | 'api' | 'workspace';
-
-export type CommandRef = {
-  id: string;
-  source: CommandSource;
-  group: CommandGroup;
-  summary: string;
-  constraints: CommandConstraint[];
 };
 
 /**
@@ -328,7 +313,6 @@ export type DevHubCatalog = {
   contracts: ContractRef[];
   documents: DocumentRef[];
   records: RecordRef[];
-  commands: CommandRef[];
   tests: TestRef[];
   scenarios: Scenario[];
 };

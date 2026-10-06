@@ -1,4 +1,4 @@
-import { Table, TableScroll } from '@berrypjh/react-ui';
+import { DataTable } from '@berrypjh/devhub-ui';
 import type { CSSProperties } from 'react';
 
 import { AXIS_LABELS, CHANGE, type DeltaView, deltaView } from '@/lib/evaluations/comparison';
@@ -89,32 +89,18 @@ export function AxisTable({ axis }: { axis: Comparison['axes'][number] }) {
   }
   const caption = `${title} — baseline · candidate`;
   return (
-    <TableScroll label={caption} className="rounded-md border border-stroke-light">
-      <Table hiddenCaption>
-        <caption>{caption}</caption>
-        <thead>
-          <tr>
-            <th scope="col">지표</th>
-            <th scope="col">baseline</th>
-            <th scope="col">candidate</th>
-            <th scope="col">차이</th>
-            <th scope="col">판정</th>
-          </tr>
-        </thead>
-        <tbody>
-          {axis.metrics.map((m) => (
-            <tr key={m.name}>
-              <th scope="row">
-                <span className="devhub-code">{m.name}</span>
-                <span className="block typo-caption-small text-text-light">
-                  {deltaView(m, axis.axis).direction}
-                </span>
-              </th>
-              <DeltaCells metric={m} axis={axis.axis} />
-            </tr>
-          ))}
-        </tbody>
-      </Table>
-    </TableScroll>
+    <DataTable caption={caption} headers={['지표', 'baseline', 'candidate', '차이', '판정']}>
+      {axis.metrics.map((m) => (
+        <tr key={m.name}>
+          <th scope="row">
+            <span className="devhub-code">{m.name}</span>
+            <span className="block typo-caption-small text-text-light">
+              {deltaView(m, axis.axis).direction}
+            </span>
+          </th>
+          <DeltaCells metric={m} axis={axis.axis} />
+        </tr>
+      ))}
+    </DataTable>
   );
 }

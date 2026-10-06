@@ -1,5 +1,6 @@
 import { type ReactNode, Suspense } from 'react';
 
+import { WorkspaceFrame, WorkspaceSection } from '@berrypjh/devhub-ui';
 import type { Metadata } from 'next';
 
 import {
@@ -10,7 +11,6 @@ import {
 import { ArchitectureViews } from '@/components/architecture/architecture-views';
 import { FilteredArchitecture } from '@/components/architecture/filtered-architecture';
 import { DevHubShell } from '@/components/shell/devhub-shell';
-import { WorkspaceFrame, WorkspaceSection } from '@/components/shell/workspace';
 import { architectureModel } from '@/lib/catalog/architecture-layout';
 
 export const metadata: Metadata = { title: '아키텍처 · Snapdone DevHub' };
@@ -29,7 +29,7 @@ export default function ArchitectureLayout({
 }) {
   const model = architectureModel();
   return (
-    <DevHubShell selection={{ view: 'architecture' }} inspector={inspector}>
+    <DevHubShell inspector={inspector}>
       <WorkspaceFrame>
         {children}
         <p className="typo-body-small">

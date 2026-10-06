@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { Table, TableScroll } from '@berrypjh/react-ui';
+import { DataTable } from '@berrypjh/devhub-ui';
 
 import { formatStartedAt, type TrendSeries } from '@/lib/evaluations/overview';
 import { formatMeasure } from '@/lib/evaluations/presentation';
@@ -172,46 +172,36 @@ export function TrendChart({ series, id }: { series: TrendSeries; id: string }) 
 
       <details>
         <summary className="cursor-pointer typo-caption-small text-text-link">표로 보기</summary>
-        <TableScroll
-          label={`${series.metric.label} — run별 값`}
-          className="mt-2 rounded-md border border-stroke-light"
-        >
-          <Table hiddenCaption>
-            <caption>{`${series.metric.label} — run별 값`}</caption>
-            <thead>
-              <tr>
-                <th scope="col">run</th>
-                <th scope="col">시작</th>
-                <th scope="col">{series.metric.label}</th>
+        <div className="mt-2">
+          <DataTable
+            caption={`${series.metric.label} — run별 값`}
+            headers={['run', '시작', series.metric.label]}
+          >
+            {series.points.map((p) => (
+              <tr key={p.runId}>
+                <th scope="row">
+                  <Link
+                    href={p.href}
+                    className="devhub-code text-text-link underline-offset-2 hover:underline"
+                  >
+                    {p.runId}
+                  </Link>
+                </th>
+                <td>
+                  <time dateTime={p.startedAt}>{formatStartedAt(p.startedAt)}</time>
+                </td>
+                <td className="tabular-nums">
+                  {p.display.text}
+                  {p.display.missing && p.display.reason && (
+                    <span className="block typo-caption-small text-text-light">
+                      {p.display.reason}
+                    </span>
+                  )}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {series.points.map((p) => (
-                <tr key={p.runId}>
-                  <th scope="row">
-                    <Link
-                      href={p.href}
-                      className="devhub-code text-text-link underline-offset-2 hover:underline"
-                    >
-                      {p.runId}
-                    </Link>
-                  </th>
-                  <td>
-                    <time dateTime={p.startedAt}>{formatStartedAt(p.startedAt)}</time>
-                  </td>
-                  <td className="tabular-nums">
-                    {p.display.text}
-                    {p.display.missing && p.display.reason && (
-                      <span className="block typo-caption-small text-text-light">
-                        {p.display.reason}
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </TableScroll>
+            ))}
+          </DataTable>
+        </div>
       </details>
     </figure>
   );

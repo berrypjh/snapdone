@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
 import { DevHubShell } from '../components/shell/devhub-shell';
+import { renderInDevHub } from '../test-support/devhub-provider';
 
 import RootLayout from './layout';
 
@@ -23,9 +24,8 @@ describe('skip links', () => {
   });
 
   it('are not part of the route shell, so Next never focuses them after a navigation', () => {
-    const html = renderToStaticMarkup(
+    const html = renderInDevHub(
       createElement(DevHubShell, {
-        selection: {},
         inspector: null,
         children: createElement('main'),
       }),
@@ -35,9 +35,8 @@ describe('skip links', () => {
   });
 
   it('keeps every icon decorative and every view named by its words', () => {
-    const html = renderToStaticMarkup(
+    const html = renderInDevHub(
       createElement(DevHubShell, {
-        selection: {},
         inspector: null,
         children: createElement('main'),
       }),
@@ -48,10 +47,12 @@ describe('skip links', () => {
     );
     expect(svgs.length).toBeGreaterThan(0);
     expect(svgs.every((svg) => svg.includes('aria-hidden="true"'))).toBe(true);
-    const nav = html.match(/<nav aria-label="보기"[\s\S]*?<\/nav>/)?.[0] ?? '';
+    // 화면 사이 이동은 탐색기가 맡는다. 상단 바에는 보기 nav가 없다.
+    expect(html).not.toContain('aria-label="보기"');
+    const nav = html.match(/<nav aria-label="저장소 항목"[\s\S]*?<\/nav>/)?.[0] ?? '';
     const names = [...nav.matchAll(/<a [^>]*>([\s\S]*?)<\/a>/g)].map(([, inner]) =>
       inner.replace(/<[^>]+>/g, ''),
     );
-    expect(names).toEqual(['개요', '시나리오', '아키텍처', '문서', '기록', '엔지니어링', '평가']);
+    expect(names).toEqual(expect.arrayContaining(['개요', '아키텍처', '평가']));
   });
 });

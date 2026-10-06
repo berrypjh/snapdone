@@ -1,6 +1,6 @@
-import type { SectionId } from '@/lib/catalog/entities';
+import type { IconName } from '@berrypjh/devhub-ui';
 
-import type { IconName } from './icon';
+import type { SectionId } from '@/lib/catalog/entities';
 
 /**
  * 이동해 가는 곳마다 아이콘 하나. 그 곳을 부르는 자리(상단 바 · 탐색기 · 작업 영역 `eyebrow`)
@@ -12,7 +12,6 @@ export const SECTION_ICON: Record<SectionId, IconName> = {
   libraries: 'library',
   documents: 'document',
   records: 'record',
-  engineering: 'engineering',
 };
 
 /** 아키텍처 구성 요소 종류. 프로젝트는 섹션 아이콘, 저장소 밖 시스템은 지구본. */
@@ -26,5 +25,5 @@ export const VIEW_ICON = {
   overview: 'home',
   architecture: 'architecture',
   source: 'source',
-  evals: 'evaluation',
+  evals: 'test',
 } as const satisfies Record<string, IconName>;

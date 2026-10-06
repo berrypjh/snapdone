@@ -40,7 +40,7 @@ export default async function EvalRunPage({
     content = <RunProblem error={error} />;
   }
   return (
-    <DevHubShell selection={{ view: 'evals' }} inspector={<EvalsGuide />}>
+    <DevHubShell inspector={<EvalsGuide />}>
       <Workspace eyebrow="평가 run" icon={VIEW_ICON.evals} title={runId}>
         {content}
       </Workspace>

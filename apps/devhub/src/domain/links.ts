@@ -1,10 +1,4 @@
-import type { CommandRef, GeneratedRange, RepositoryRef, RepositorySnapshot } from './model';
-
-/** 사람이 터미널에 그대로 치는 명령 한 줄. */
-export const commandLine = ({ source }: CommandRef): string =>
-  source.kind === 'package-script'
-    ? `pnpm ${source.script}`
-    : `pnpm exec nx run ${source.project}:${source.target}`;
+import type { GeneratedRange, RepositoryRef, RepositorySnapshot } from './model';
 
 // 날 바이트가 아니라 이스케이프로 쓴다 - 제어 문자가 그대로 들어가면 git이 이 파일을 바이너리로 본다.
 // eslint-disable-next-line no-control-regex -- 이 정규식이 거르려는 대상이 제어 문자다

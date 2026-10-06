@@ -2,12 +2,11 @@ import { runInNewContext } from 'node:vm';
 
 import { createElement } from 'react';
 
+import { THEME_KEY, themeScript } from '@berrypjh/devhub-ui';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
-import { ThemeSwitch } from '../../components/shell/theme-switch';
-
-import { THEME_KEY, themeScript } from './theme';
+import { ThemeSwitch } from './theme-switch';
 
 /** head 스크립트를 가짜 브라우저에서 돌리고 설정된 `data-theme`를 돌려준다. */
 const run = ({
@@ -33,6 +32,7 @@ const run = ({
   return documentElement.dataset.theme;
 };
 
+// layout이 `<head>`에 넣는 공용 `themeScript`의 계약 — 저장 키 · OS 설정 · 저장소 차단. 이 앱의 첫 paint가 여기에 기대므로 남긴다.
 describe('theme script', () => {
   it('uses the stored choice over the OS preference', () => {
     expect(run({ stored: 'dark', osDark: false })).toBe('dark');

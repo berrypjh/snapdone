@@ -17,7 +17,7 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 export default async function EvalsPage({ searchParams }: { searchParams: SearchParams }) {
   const { task, dataset } = await searchParams;
   return (
-    <DevHubShell selection={{ view: 'evals' }} inspector={<EvalsGuide />}>
+    <DevHubShell inspector={<EvalsGuide />}>
       <Workspace eyebrow="평가" icon={VIEW_ICON.evals} title="평가">
         <EvalsOverviewContent query={{ task, dataset }} />
       </Workspace>

@@ -1,13 +1,13 @@
 import Link from 'next/link';
 
+import { Icon } from '@berrypjh/devhub-ui';
+
 import {
   formatStartedAt,
   runHref,
   type RunRow,
   type VariantCell,
 } from '@/lib/evaluations/overview';
-
-import { Icon } from '../ui/icon';
 
 import { AnswerSourceChip } from './answer-source-chip';
 import { RunStateChip } from './run-state-chip';

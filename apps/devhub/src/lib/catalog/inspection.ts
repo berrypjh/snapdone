@@ -1,10 +1,7 @@
 import { catalog } from '../../data';
-import { RUNNER_COMMAND } from '../../data/commands';
-import { commandLine } from '../../domain/links';
 import type {
   ApiRef,
   ArchitectureNode,
-  CommandRef,
   DocumentLink,
   DocumentRef,
   ImplementationStatus,
@@ -28,8 +25,8 @@ import {
   stepsTouching,
 } from './architecture';
 import { architectureModel } from './architecture-layout';
-import { commandHref, type Entity, stepHref } from './entities';
-import { CONSTRAINT, GAP, INTERACTION, RECORD_KIND, RELATION, ROLE, TRACK } from './labels';
+import { type Entity, stepHref } from './entities';
+import { GAP, INTERACTION, RECORD_KIND, RELATION, ROLE, TRACK } from './labels';
 
 export type RelatedLink = { label: string; href: string; detail?: string };
 
@@ -109,26 +106,6 @@ const apisById = new Map(catalog.apis.map((api) => [api.id, api]));
 const resolveApis = (ids: string[]): ApiRef[] =>
   [...new Set(ids)].flatMap((id) => apisById.get(id) ?? []);
 
-/** 이 테스트들을 돌리는 루트 명령. 예를 들어 Vitest와 go test → `pnpm test`. */
-const commandsFor = (tests: TestRef[]): RelatedGroup => ({
-  title: '이 테스트를 돌리는 명령',
-  links: [...new Set(tests.map((test) => RUNNER_COMMAND[test.runner]))].flatMap((id) => {
-    const command = catalog.commands.find((c) => c.id === id);
-    return command
-      ? [
-          {
-            label: commandLine(command),
-            href: commandHref(command),
-            detail: command.constraints.length
-              ? `실행 조건: ${command.constraints.map((c) => CONSTRAINT[c]).join(' · ')}`
-              : undefined,
-          },
-        ]
-      : [];
-  }),
-  empty: '인용된 테스트 없음',
-});
-
 const touchingSteps = (nodeId: string): RelatedGroup => ({
   title: '관련 시나리오 단계',
   links: stepsTouching(nodeId).map(({ scenario, step, href }) => ({
@@ -178,15 +155,7 @@ const inspectScenario = (entity: Extract<Entity, { section: 'scenarios' }>): Ins
     ]),
     testsEmpty: '이 시나리오를 검증하는 테스트 없음',
     apis: resolveApis(record.steps.flatMap((step) => step.apis)),
-    related: [
-      inArchitecture(scenarioNodeIds(record)),
-      commandsFor(
-        resolveTests([
-          ...record.steps.flatMap((step) => step.tests),
-          ...gaps.flatMap((gap) => gap.tests ?? []),
-        ]),
-      ),
-    ],
+    related: [inArchitecture(scenarioNodeIds(record))],
   };
 };
 
@@ -258,39 +227,6 @@ const inspectRecord = (entity: Extract<Entity, { section: 'records' }>): Inspect
   };
 };
 
-/** 명령이 어디에 선언돼 있는지. 루트 `package.json`이나 프로젝트의 Nx 매니페스트다. */
-const commandSource = ({ source }: CommandRef): SourceRef[] => {
-  if (source.kind === 'package-script') return [{ path: 'package.json' }];
-  const project = catalog.nodes.find((node) => node.id === source.project);
-  return project && project.kind !== 'external' ? [project.manifest] : [];
-};
-
-const inspectCommandGroup = (entity: Extract<Entity, { section: 'engineering' }>): Inspection => {
-  const { record } = entity;
-  const constraints = [...new Set(record.commands.flatMap((command) => command.constraints))];
-  const sources = record.commands.flatMap(commandSource);
-  return {
-    kind: '명령 묶음',
-    title: record.title,
-    facts: [
-      { term: '설명', details: [record.summary] },
-      { term: '명령', details: record.commands.map(commandLine) },
-      {
-        term: '실행 조건',
-        details: constraints.length
-          ? constraints.map((constraint) => CONSTRAINT[constraint])
-          : ['없음 — 어디서나 실행 가능'],
-      },
-    ],
-    source: sources.filter((ref, index) => sources.findIndex((r) => r.path === ref.path) === index),
-    sourceEmpty: '정의 위치를 찾지 못함',
-    docs: [],
-    docsEmpty: '연결된 문서 없음',
-    tests: [],
-    testsEmpty: '명령은 테스트를 인용하지 않음',
-  };
-};
-
 const apiLabel = new Map(catalog.apis.map((api) => [api.id, `${api.method} ${api.path}`]));
 const contractLabel = new Map(
   catalog.contracts.map((contract) => [contract.id, `${contract.name} (${contract.owner})`]),
@@ -349,7 +285,7 @@ export const inspectStep = (scenario: Scenario, step: ScenarioStep): Inspection 
     tests: resolveTests(step.tests),
     testsEmpty: '이 단계를 직접 검증하는 테스트 없음',
     apis: resolveApis(step.apis),
-    related: [inArchitecture(stepNodeIds(step)), commandsFor(resolveTests(step.tests))],
+    related: [inArchitecture(stepNodeIds(step))],
   };
 };
 
@@ -433,7 +369,6 @@ export const inspectSource = (usage: SourceUsage): Inspection => {
       inArchitecture([
         ...new Set([...(project ? [project] : []), ...usage.nodes.map((n) => n.id)]),
       ]),
-      commandsFor(usage.tests),
     ],
   };
 };
@@ -449,7 +384,5 @@ export const inspect = (entity: Entity): Inspection => {
       return inspectDocument(entity);
     case 'records':
       return inspectRecord(entity);
-    case 'engineering':
-      return inspectCommandGroup(entity);
   }
 };

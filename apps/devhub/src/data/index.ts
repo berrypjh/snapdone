@@ -2,7 +2,6 @@ import type { DevHubCatalog } from '../domain/model';
 
 import { apis } from './apis';
 import { boundaries } from './boundaries';
-import { commands } from './commands';
 import { contracts } from './contracts';
 import { documents } from './documents';
 import { externalSystems } from './external-systems';
@@ -27,7 +26,6 @@ export const catalog: DevHubCatalog = {
   contracts,
   documents,
   records,
-  commands,
   tests,
   scenarios,
 };

@@ -1,9 +1,9 @@
+import { INSPECTOR_ID, MAIN_CONTENT_ID, themeScript } from '@berrypjh/devhub-ui';
 import { SkipLink } from '@berrypjh/react-ui';
 import type { Metadata } from 'next';
 
+import { DevHubRoot } from '@/components/shell/devhub-root';
 import { NavigationFocus } from '@/components/shell/navigation-focus';
-import { INSPECTOR_ID, MAIN_CONTENT_ID } from '@/components/shell/workspace';
-import { themeScript } from '@/lib/browser/theme';
 
 import '@berrypjh/react-ui/styles.css';
 import './global.css';
@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <NavigationFocus />
         <SkipLink targetId={MAIN_CONTENT_ID}>본문으로 건너뛰기</SkipLink>
         <SkipLink targetId={INSPECTOR_ID}>상세 정보로 건너뛰기</SkipLink>
-        {children}
+        <DevHubRoot>{children}</DevHubRoot>
       </body>
     </html>
   );

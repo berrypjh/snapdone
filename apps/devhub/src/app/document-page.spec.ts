@@ -1,15 +1,16 @@
 import { createElement } from 'react';
 
-import { renderToStaticMarkup } from 'react-dom/server';
+import { INSPECTOR_ID, MAIN_CONTENT_ID } from '@berrypjh/devhub-ui';
 import { describe, expect, it, vi } from 'vitest';
 
 import { EntitySummary } from '../components/entity/entity-summary';
 import { Inspector } from '../components/entity/inspector';
 import { DevHubShell } from '../components/shell/devhub-shell';
-import { INSPECTOR_ID, MAIN_CONTENT_ID, Workspace } from '../components/shell/workspace';
+import { Workspace } from '../components/shell/workspace';
 import { catalog } from '../data';
-import { findEntity } from '../lib/catalog/entities';
+import { entityHref, findEntity } from '../lib/catalog/entities';
 import { inspect } from '../lib/catalog/inspection';
+import { renderInDevHub, testRouter } from '../test-support/devhub-provider';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
@@ -20,9 +21,8 @@ vi.mock('next/navigation', () => ({
 const page = (section: 'documents' | 'records', id: string) => {
   const entity = findEntity(section, id);
   if (entity?.section !== section) throw new Error(`no ${section} ${id}`);
-  return renderToStaticMarkup(
+  return renderInDevHub(
     createElement(DevHubShell, {
-      selection: { section, id },
       inspector: createElement(Inspector, { inspection: inspect(entity) }),
       children: createElement(Workspace, {
         eyebrow: section === 'documents' ? '문서' : '기록',
@@ -30,6 +30,7 @@ const page = (section: 'documents' | 'records', id: string) => {
         children: createElement(EntitySummary, { entity }),
       }),
     }),
+    testRouter(entityHref(entity)),
   );
 };
 

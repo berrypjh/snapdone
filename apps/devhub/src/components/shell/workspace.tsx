@@ -1,10 +1,5 @@
+import { Icon, type IconName, INSPECTOR_ID, WorkspaceFrame } from '@berrypjh/devhub-ui';
 import type { ReactNode } from 'react';
-
-import { Icon, type IconName } from '../ui/icon';
-
-/** 앱의 id에는 접두사를 붙인다. 문서 제목은 자유 글이라 맨 이름을 가져갈 수 있다. */
-export const MAIN_CONTENT_ID = 'devhub-main';
-export const INSPECTOR_ID = 'devhub-inspector';
 
 /**
  * 다른 항목의 상세를 여는 링크. hash로 인스펙터 id를 달아 이동 뒤 Next가 새 상세로 스크롤하고
@@ -21,16 +16,10 @@ type HeaderProps = {
   className?: string;
 };
 
-/** 가운데 창의 틀. 첫 자식은 `WorkspaceHeader`여야 한다. */
-export function WorkspaceFrame({ children }: { children: ReactNode }) {
-  return (
-    <main id={MAIN_CONTENT_ID} tabIndex={-1} className="relative min-w-0 lg:overflow-y-auto">
-      <div className="flex flex-col gap-5 px-4 pt-4 pb-12 sm:px-8 sm:pt-6 sm:pb-16">{children}</div>
-    </main>
-  );
-}
-
-/** 선택한 것의 이름이 놓이는 자리. */
+/**
+ * 선택한 것의 이름이 놓이는 자리. 공용 `WorkspaceHeader`와 같은 모양이지만 평가 아이콘(`evaluation`)과
+ * 문서 칸 폭(`className`)을 받아야 해서 아직 이 저장소에 둔다.
+ */
 export function WorkspaceHeader({ eyebrow, icon, title, className }: HeaderProps) {
   return (
     <header className={['flex flex-col gap-1', className].filter(Boolean).join(' ')}>
@@ -72,29 +61,5 @@ export function DiagramPlaceholder({ listId }: { listId: string }) {
         </a>
       </figcaption>
     </figure>
-  );
-}
-
-/** 작업 영역 안의 제목 붙은 블록. */
-export function WorkspaceSection({
-  id,
-  title,
-  children,
-}: {
-  id: string;
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <section
-      aria-labelledby={`${id}-heading`}
-      id={id}
-      className="flex flex-col gap-3 rounded-lg border border-stroke-light bg-background-surface p-4"
-    >
-      <h2 id={`${id}-heading`} className="typo-body-small-strong">
-        {title}
-      </h2>
-      {children}
-    </section>
   );
 }

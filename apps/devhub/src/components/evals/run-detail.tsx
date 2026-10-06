@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { Icon, WorkspaceSection } from '@berrypjh/devhub-ui';
 import type { ReactNode } from 'react';
 
 import type { CaseResult, VariantReport } from '@/lib/evaluations/contract';
@@ -13,9 +14,6 @@ import {
 } from '@/lib/evaluations/presentation';
 import type { EvaluationArtifactError, RunDetail } from '@/lib/evaluations/repository';
 import { parseMatrixFilter } from '@/lib/evaluations/run-view';
-
-import { WorkspaceSection } from '../shell/workspace';
-import { Icon } from '../ui/icon';
 
 import { CaseTable } from './detail/case-table';
 import { ExecutionHealth, Failures, Latency, Usage } from './detail/common-sections';

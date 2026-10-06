@@ -2,12 +2,10 @@
 
 import { useSelectedLayoutSegment } from 'next/navigation';
 
+import { CanvasEdges, CanvasViewport, type LegendItem } from '@berrypjh/devhub-ui';
+
 import type { Relation } from '@/domain/model';
 import { ARCH_NODE, type ArchitectureModel, filterModel } from '@/lib/catalog/architecture-layout';
-
-import { CanvasEdges } from '../canvas/canvas-edges';
-import type { LegendItem } from '../canvas/canvas-toolbar';
-import { CanvasViewport } from '../canvas/canvas-viewport';
 
 import { ArchitectureNode } from './architecture-node';
 

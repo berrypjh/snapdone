@@ -1,16 +1,17 @@
 import { createElement } from 'react';
 
-import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
 import { catalog } from '../../data';
 import { findNode } from '../../lib/catalog/architecture';
 import { architectureModel } from '../../lib/catalog/architecture-layout';
 import { inspectNode } from '../../lib/catalog/inspection';
+import { renderInDevHub } from '../../test-support/devhub-provider';
 
 import { NodePager } from './node-pager';
 
 const nav = vi.hoisted(() => ({ query: '' }));
+
 vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams(nav.query) }));
 
 const inspectionOf = (id: string) => {
@@ -24,7 +25,7 @@ const pagerHrefs = (id: string, query = '') => {
   nav.query = query;
   const order = inspectionOf(id).nodeOrder;
   if (!order) throw new Error(`no node order for ${id}`);
-  const html = renderToStaticMarkup(createElement(NodePager, { order }));
+  const html = renderInDevHub(createElement(NodePager, { order }));
   return [...html.matchAll(/href="([^"]+)"/g)].map(([, href]) => href);
 };
 

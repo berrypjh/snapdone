@@ -1,91 +1,43 @@
-import Link from 'next/link';
+'use client';
 
-import type { RepositoryRef } from '@/domain/model';
-import type { SectionId } from '@/lib/catalog/entities';
+import { ExplorerToggle, Icon, useDevHub } from '@berrypjh/devhub-ui';
+import type { ReactNode } from 'react';
 
-import { SnapshotSummary } from '../overview/snapshot-summary';
-import { Icon, type IconName } from '../ui/icon';
-import { SECTION_ICON, VIEW_ICON } from '../ui/view-icons';
-
-import { ExplorerToggle } from './explorer-drawer';
-import { GlobalSearch } from './global-search';
 import { ThemeSwitch } from './theme-switch';
 
-const PRODUCT_NAME = 'Snapdone DevHub';
-
-const VIEWS: { label: string; href: string; icon: IconName; sections: SectionId[] }[] = [
-  { label: '개요', href: '/', icon: VIEW_ICON.overview, sections: [] },
-  { label: '시나리오', href: '/scenarios', icon: SECTION_ICON.scenarios, sections: ['scenarios'] },
-  {
-    label: '아키텍처',
-    href: '/architecture',
-    icon: VIEW_ICON.architecture,
-    sections: ['applications', 'libraries'],
-  },
-  { label: '문서', href: '/documents', icon: SECTION_ICON.documents, sections: ['documents'] },
-  { label: '기록', href: '/records', icon: SECTION_ICON.records, sections: ['records'] },
-  {
-    label: '엔지니어링',
-    href: '/engineering',
-    icon: SECTION_ICON.engineering,
-    sections: ['engineering'],
-  },
-  { label: '평가', href: '/evals', icon: VIEW_ICON.evals, sections: [] },
-];
-
-type TopBarProps = {
-  repository: RepositoryRef;
-  activeSection?: SectionId;
-  activeView?: 'architecture' | 'source' | 'evals';
-};
-
-export function TopBar({ repository, activeSection, activeView }: TopBarProps) {
-  const isActive = (view: (typeof VIEWS)[number]) =>
-    activeView
-      ? view.href === `/${activeView}`
-      : activeSection
-        ? view.sections.includes(activeSection)
-        : view.href === '/';
-
+/**
+ * 공용 `TopBar`와 같은 줄이다 — 제품명, 요약(`xl` 부터), 검색, 테마. 화면 사이 이동은 탐색기가 맡는다.
+ * 공용 것은 안의 `ThemeSwitch`(1.2.0)가 Next SSR에서 던지므로, 고쳐진 릴리스가 나올 때까지 이 저장소의
+ * `ThemeSwitch`를 끼운 사본을 둔다.
+ */
+export const TopBar = ({
+  summary,
+  search,
+}: {
+  /** 저장소 · 스냅샷 같은 한 줄. `xl` 부터만 보인다. */
+  summary?: ReactNode;
+  /** `GlobalSearch`. */
+  search?: ReactNode;
+}) => {
+  const { productName } = useDevHub();
+  // `min-w-0`: 공용 셸의 바깥 grid는 열 크기를 정하지 않아(`auto`), 이 줄의 최소 폭이 화면보다 넓으면
+  // 페이지가 옆으로 밀린다. grid 항목의 최소 폭을 0으로 둬 화면 폭에 맞춘다.
   return (
-    <header className="flex min-h-14 flex-wrap items-center gap-x-2 gap-y-2 border-b border-stroke-light bg-background-surface px-4 py-2 max-lg:sticky max-lg:top-0 max-lg:z-20 lg:flex-nowrap lg:gap-x-4">
-      <div className="flex min-w-0 items-center gap-2">
+    <header className="flex min-h-14 min-w-0 items-center gap-sm border-b max-lg:flex-wrap border-stroke-light bg-background-surface px-lg py-sm max-lg:sticky max-lg:top-0 max-lg:z-20 lg:gap-lg">
+      <div className={`flex min-w-0 flex-1 items-center gap-sm ${summary ? 'xl:flex-none' : ''}`}>
         <ExplorerToggle />
-        <p className="flex min-w-0 items-center gap-2 typo-body-medium-strong">
+        <p className="flex min-w-0 items-center gap-sm typo-body-medium-strong">
           <Icon name="brand" className="text-text-link" />
-          <span className="truncate">{PRODUCT_NAME}</span>
+          <span className="truncate">{productName}</span>
         </p>
       </div>
-
-      {/* `xl`부터만 보인다. 같은 줄이 개요 페이지에도 있다. */}
-      <p className="hidden min-w-0 shrink-[4] truncate text-text-light xl:block">
-        <span className="devhub-code">
-          {repository.owner}/{repository.name}
-        </span>{' '}
-        <SnapshotSummary />
-      </p>
-
-      <GlobalSearch />
-
-      {/* `lg`부터만 보인다. 그 아래에서는 탐색기 서랍이 같은 보기를 담는다. */}
-      <nav aria-label="보기" className="ml-auto hidden shrink-0 lg:block">
-        <ul className="flex items-center gap-1">
-          {VIEWS.map((view) => (
-            <li key={view.href}>
-              <Link
-                href={view.href}
-                aria-current={isActive(view) ? 'page' : undefined}
-                className="flex min-h-9 items-center gap-1.5 rounded-md px-3 whitespace-nowrap typo-body-small text-text-light hover:bg-background-default aria-[current=page]:bg-(--ds-background-selected) aria-[current=page]:text-text-default aria-[current=page]:typo-body-small-strong"
-              >
-                <Icon name={view.icon} />
-                {view.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
+      {summary && (
+        <p className="hidden min-w-0 flex-1 truncate typo-caption-small text-text-light xl:block">
+          {summary}
+        </p>
+      )}
+      {search}
       <ThemeSwitch />
     </header>
   );
-}
+};

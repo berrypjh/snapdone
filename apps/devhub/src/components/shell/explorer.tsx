@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { ExplorerPane, Icon } from '@berrypjh/devhub-ui';
+
 import type { Scenario } from '@/domain/model';
 import {
   type Entity,
@@ -15,10 +17,7 @@ import { evalTaskHref } from '@/lib/evaluations/overview';
 import { TASK_LABELS } from '@/lib/evaluations/presentation';
 
 import { StatusChip } from '../entity/status-chip';
-import { Icon } from '../ui/icon';
 import { SECTION_ICON, VIEW_ICON } from '../ui/view-icons';
-
-import { ExplorerPane } from './explorer-drawer';
 
 type Selection = {
   section?: string;

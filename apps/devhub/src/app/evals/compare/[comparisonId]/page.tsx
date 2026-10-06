@@ -41,7 +41,7 @@ export default async function EvalComparePage({ params }: { params: Params }) {
     content = <RunProblem error={error} />;
   }
   return (
-    <DevHubShell selection={{ view: 'evals' }} inspector={<EvalsGuide />}>
+    <DevHubShell inspector={<EvalsGuide />}>
       <Workspace eyebrow="평가 비교" icon={VIEW_ICON.evals} title={comparisonId}>
         {content}
       </Workspace>

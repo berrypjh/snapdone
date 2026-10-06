@@ -1,16 +1,14 @@
+import { Icon, type IconName, INSPECTOR_ID } from '@berrypjh/devhub-ui';
 import type { ReactNode } from 'react';
 
 import type { AnswerSource } from '@/lib/evaluations/presentation';
-
-import { INSPECTOR_ID } from '../shell/workspace';
-import { Icon, type IconName } from '../ui/icon';
 
 import { AnswerSourceChip } from './answer-source-chip';
 
 type Section = { id: string; title: string; icon: IconName };
 
 const SOURCE: Section = { id: 'guide-source', title: '답 출처', icon: 'runtime' };
-const BASELINE: Section = { id: 'guide-baseline', title: '규칙 기준선', icon: 'evaluation' };
+const BASELINE: Section = { id: 'guide-baseline', title: '규칙 기준선', icon: 'test' };
 const METRICS: Section = { id: 'guide-metrics', title: '지표', icon: 'record' };
 const CAUTION: Section = { id: 'guide-caution', title: '읽을 때 주의', icon: 'help' };
 const SECTIONS = [SOURCE, BASELINE, METRICS, CAUTION];

@@ -1,4 +1,4 @@
-import { VisuallyHidden } from '@berrypjh/react-ui';
+import { CopyButton, FileLine, FileList } from '@berrypjh/devhub-ui';
 import type { ReactNode } from 'react';
 
 import { catalog } from '@/data';
@@ -7,93 +7,59 @@ import type { FileGroup, ProjectGroup } from '@/lib/catalog/reference-groups';
 import { currentSnapshot } from '@/lib/repository/snapshot';
 import { sourceLinks } from '@/lib/repository/source-links';
 
-import { Icon } from '../ui/icon';
-
-import { CopyButton } from './copy-button';
 import { EditorLink } from './editor-link';
 import { GAP } from './source-actions';
 
 /**
- * 파일 하나. 이름이 링크이고(스냅샷 커밋, 커밋을 모르면 브랜치라고 글로 밝힌다) 폴더는 흐리게,
- * 복사는 아이콘 버튼 하나다. 파일이 담은 것은 `children`으로 받아 파일과 동작이 한 번만 나온다.
+ * 파일 하나. 그리기는 공용 `FileLine`이고, 링크(스냅샷 커밋, 커밋을 모르면 브랜치라고 글로 밝힌다)와
+ * 링크를 만들지 못한 이유는 저장소 스냅샷을 읽는 여기서 정한다. 파일이 담은 것은 `children`으로 받는다.
+ * 브랜치 기준이라는 표시와 링크를 만들지 못한 이유는 공용 `FileLine`의 경고 줄 하나에 ` · `로 함께 보인다.
  */
 export function FileRow({
   file,
   label,
+  symbols,
   children,
 }: {
   file: FileGroup;
   /** 파일의 역할. 이름 앞에 보인다 (`handler`, `Swagger`). */
   label?: string;
+  /** 이 파일에서 인용한 symbol. 코드 칩으로 보인다. */
+  symbols?: string[];
   children?: ReactNode;
 }) {
   const links = sourceLinks({ path: file.path });
   const { commit, branch } = currentSnapshot();
-  const href = links.permalink ?? links.latest;
+  const href = links.permalink ?? links.latest ?? undefined;
   const target =
     links.permalink && commit
       ? `${hostOf(catalog.repository)} @ ${shortSha(commit)}`
       : `최신 ${branch}`;
+  const warning = [
+    href && !links.permalink ? `최신 ${branch} 기준` : null,
+    links.gap && links.gap !== 'unknown-commit' ? GAP[links.gap] : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
-    <li className="flex flex-col gap-1">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex min-w-0 flex-col">
-          <span className="flex flex-wrap items-center gap-x-1">
-            {label && <span className="typo-caption-small text-text-light">{label}</span>}
-            {href ? (
-              <a
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group inline-flex items-center gap-1 text-text-link"
-              >
-                <span className="typo-body-small-strong underline-offset-2 group-hover:underline">
-                  {file.name}
-                </span>
-                <Icon name="external" />
-                <VisuallyHidden>
-                  {' '}
-                  — {file.path}, {target}에서 보기, 새 창
-                </VisuallyHidden>
-              </a>
-            ) : (
-              <span className="typo-body-small-strong">{file.name}</span>
-            )}
-            {href && !links.permalink && (
-              <span className="typo-caption-small text-text-warning">최신 {branch} 기준</span>
-            )}
-          </span>
-          {file.folder && <span className="devhub-code text-text-light">{file.folder}</span>}
-        </div>
-        {/* 파일마다의 동작을 모아 둔다. 에디터로 열기(dev 전용) · 경로 복사. */}
-        <span className="flex shrink-0 items-center gap-1">
+    <FileLine
+      name={file.name}
+      folder={file.folder || undefined}
+      href={href}
+      linkDescription={`— ${file.path}, ${target}에서 보기, 새 창`}
+      label={label}
+      actions={
+        <>
           <EditorLink path={file.path} />
-          <CopyButton variant="icon" text={file.path} label="경로 복사" />
-        </span>
-      </div>
+          <CopyButton text={file.path} label={`경로 복사: ${file.path}`} />
+        </>
+      }
+      symbols={symbols}
+      warning={warning || undefined}
+    >
       {children}
-      {links.gap && links.gap !== 'unknown-commit' && (
-        <p className="flex items-center gap-1 typo-caption-small text-text-warning">
-          <Icon name="warning" />
-          {GAP[links.gap]}
-        </p>
-      )}
-    </li>
-  );
-}
-
-/** 소스 파일이 인용된 symbol들을 코드 칩으로. */
-export function Symbols({ symbols }: { symbols: string[] }) {
-  if (symbols.length === 0) return null;
-  return (
-    <ul aria-label="symbol" className="flex flex-wrap gap-1">
-      {symbols.map((symbol) => (
-        <li key={symbol} className="devhub-code rounded-sm bg-background-default px-1.5 py-0.5">
-          {symbol}
-        </li>
-      ))}
-    </ul>
+    </FileLine>
   );
 }
 
@@ -108,12 +74,9 @@ export function ByProject<T extends FileGroup>({
   return (
     <div className="flex flex-col gap-3">
       {groups.map(({ project, files }) => (
-        <div key={project} className="flex flex-col gap-2">
-          <h4 className="typo-caption-small text-text-light">{project}</h4>
-          <ul className="flex flex-col gap-3 border-l border-stroke-light pl-3">
-            {files.map(row)}
-          </ul>
-        </div>
+        <FileList key={project} title={project}>
+          {files.map(row)}
+        </FileList>
       ))}
     </div>
   );

@@ -7,18 +7,21 @@ import { catalog } from '../../data';
 import type { DocumentRef } from '../../domain/model';
 import { findEntity } from '../../lib/catalog/entities';
 import { inspect } from '../../lib/catalog/inspection';
-import { documentBlocks, documentOutline } from '../../lib/markdown/documents';
+import { documentView } from '../../lib/markdown/documents';
+import { renderInDevHub } from '../../test-support/devhub-provider';
 import { EntityHeader } from '../entity/entity-header';
 import { EntitySummary } from '../entity/entity-summary';
 import { Inspector } from '../entity/inspector';
 
-import { DocContent } from './doc-content';
+import { RepositoryDocContent } from './doc-content';
 import { DOCUMENT_COLUMN, DocumentLayout } from './document-layout';
 
-const render = (doc: DocumentRef) =>
-  renderToStaticMarkup(
-    createElement(DocContent, { blocks: documentBlocks(doc), from: doc.path, title: doc.title }),
+const render = (doc: DocumentRef) => {
+  const { blocks, links, images } = documentView(doc);
+  return renderInDevHub(
+    createElement(RepositoryDocContent, { blocks, title: doc.title, links, images }),
   );
+};
 /** 코드 밖에서 눈에 보이는 글. 태그는 지운다. */
 const visible = (html: string) =>
   html
@@ -41,13 +44,13 @@ describe.each(catalog.documents.map((doc) => [doc.id, doc] as const))('document 
 
   it('gives every section an id and a link to it, and the outline lists them', () => {
     const headings = [...html.matchAll(/<h2 id="([^"]+)"/g)].map(([, id]) => id);
-    expect(headings).toEqual(documentOutline(doc).map((item) => item.id));
+    expect(headings).toEqual(documentView(doc).outline.map((item) => item.id));
     for (const id of headings) expect(html).toContain(`href="#${id}"`);
   });
 
   it('names every table and gives every code block a copy button', () => {
     expect(count(html, /<caption>[^<]+<\/caption>/g)).toBe(count(html, /<table/g));
-    expect(count(html, /aria-label="코드 복사: /g)).toBe(count(html, /<pre/g));
+    expect(count(html, /aria-label="[^"]+ 블록 복사"/g)).toBe(count(html, /<pre/g));
   });
 });
 
@@ -63,15 +66,16 @@ describe('links between documents', () => {
 describe('"이 페이지에서"', () => {
   const entity = findEntity('documents', 'quality-gates');
   if (!entity || entity.section !== 'documents') throw new Error('no quality-gates');
-  const outline = documentOutline(entity.record);
+  const { outline } = documentView(entity.record);
 
   it('sits inside the workspace: folded above the text, and beside it when wide', () => {
-    const html = renderToStaticMarkup(createElement(DocumentLayout, { doc: entity.record }));
+    const html = renderInDevHub(createElement(DocumentLayout, { doc: entity.record }));
     const folded = html.match(/<details[^>]*>[\s\S]*?<\/details>/)?.[0] ?? '';
     expect(folded).not.toMatch(/<details[^>]* open/);
     expect(folded).toContain('aria-label="이 페이지에서"');
     expect(count(folded, /<li>/g)).toBe(outline.length);
-    const beside = html.match(/<nav aria-labelledby="doc-toc-heading"[\s\S]*?<\/nav>/)?.[0] ?? '';
+    const beside =
+      html.match(/<nav aria-label="이 페이지에서" class="sticky[\s\S]*?<\/nav>/)?.[0] ?? '';
     expect(beside).toContain('이 페이지에서');
     expect(count(beside, /<li>/g)).toBe(outline.length);
     expect(html.indexOf('<details')).toBeLessThan(html.indexOf('<article'));
@@ -90,9 +94,9 @@ describe('document page column', () => {
     const header = renderToStaticMarkup(
       createElement(EntityHeader, { section: 'documents', id: 'quality-gates' }),
     );
-    const body = renderToStaticMarkup(createElement(EntitySummary, { entity }));
-    for (const html of [header, body]) {
-      expect(html.slice(0, 200)).toContain(DOCUMENT_COLUMN);
-    }
+    const body = renderInDevHub(createElement(EntitySummary, { entity }));
+    // 헤더는 로컬 `DOCUMENT_COLUMN`, 본문은 공용 `DocumentColumn` — 같은 폭 · 가운데 정렬이어야 왼쪽 끝이 맞는다.
+    expect(header.slice(0, 200)).toContain(DOCUMENT_COLUMN);
+    for (const cls of DOCUMENT_COLUMN.split(' ')) expect(body.slice(0, 200)).toContain(cls);
   });
 });

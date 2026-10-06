@@ -1,8 +1,6 @@
 import { catalog } from '../../data';
 import type {
   ApplicationRef,
-  CommandGroup,
-  CommandRef,
   DocumentRef,
   ImplementationStatus,
   LibraryRef,
@@ -10,35 +8,24 @@ import type {
   Scenario,
 } from '../../domain/model';
 
-import { COMMAND_GROUP } from './labels';
+import { DOCUMENT_TOPIC, RECORD_KIND, TRACK } from './labels';
 
 /** 탐색기 섹션. 모든 항목은 카탈로그에서 만들어지고 손으로 적은 목록은 없다. */
-export type SectionId =
-  'scenarios' | 'applications' | 'libraries' | 'documents' | 'records' | 'engineering';
+export type SectionId = 'scenarios' | 'applications' | 'libraries' | 'documents' | 'records';
 
-export type Entity =
-  | { section: 'scenarios'; id: string; label: string; record: Scenario }
-  | { section: 'applications'; id: string; label: string; record: ApplicationRef }
-  | { section: 'libraries'; id: string; label: string; record: LibraryRef }
-  | { section: 'documents'; id: string; label: string; record: DocumentRef }
-  | { section: 'records'; id: string; label: string; record: RecordRef }
-  | { section: 'engineering'; id: string; label: string; record: CommandGroupEntry };
-
-/** 목적이 같은 명령 묶음. 엔지니어링은 묶음을 늘어놓고 그 안에 명령을 둔다. */
-export type CommandGroupEntry = {
-  id: CommandGroup;
-  title: string;
-  summary: string;
-  commands: CommandRef[];
+type EntityBase = {
+  id: string;
+  label: string;
+  /** 탐색기에서 접고 펴는 묶음의 제목. 없으면 섹션이 묶음 없이 한 목록이다. */
+  group?: string;
 };
 
-export const COMMAND_GROUPS: CommandGroupEntry[] = (
-  Object.keys(COMMAND_GROUP) as CommandGroup[]
-).map((id) => ({
-  id,
-  ...COMMAND_GROUP[id],
-  commands: catalog.commands.filter((c) => c.group === id),
-}));
+export type Entity =
+  | (EntityBase & { section: 'scenarios'; record: Scenario })
+  | (EntityBase & { section: 'applications'; record: ApplicationRef })
+  | (EntityBase & { section: 'libraries'; record: LibraryRef })
+  | (EntityBase & { section: 'documents'; record: DocumentRef })
+  | (EntityBase & { section: 'records'; record: RecordRef });
 
 export type Section = { id: SectionId; title: string; entities: Entity[] };
 
@@ -56,22 +43,30 @@ export const SECTIONS: Section[] = [
   {
     id: 'scenarios',
     title: '시나리오',
-    entities: catalog.scenarios.map((record) => ({
-      section: 'scenarios',
-      id: record.id,
-      label: record.title,
-      record,
-    })),
+    entities: (Object.keys(TRACK) as Scenario['track'][]).flatMap((track) =>
+      catalog.scenarios
+        .filter((record) => record.track === track)
+        .map((record) => ({
+          section: 'scenarios' as const,
+          id: record.id,
+          label: record.title,
+          group: TRACK[track],
+          record,
+        })),
+    ),
   },
   {
     id: 'records',
     title: '기록',
-    entities: RECORDS_NEWEST_FIRST.map((record) => ({
-      section: 'records',
-      id: record.id,
-      label: record.title,
-      record,
-    })),
+    entities: (Object.keys(RECORD_KIND) as RecordRef['kind'][]).flatMap((kind) =>
+      RECORDS_NEWEST_FIRST.filter((record) => record.kind === kind).map((record) => ({
+        section: 'records' as const,
+        id: record.id,
+        label: record.title,
+        group: RECORD_KIND[kind],
+        record,
+      })),
+    ),
   },
   {
     id: 'applications',
@@ -96,23 +91,28 @@ export const SECTIONS: Section[] = [
   {
     id: 'documents',
     title: '문서',
-    entities: catalog.documents.map((record) => ({
-      section: 'documents',
-      id: record.id,
-      label: record.path,
-      record,
-    })),
+    entities: (Object.keys(DOCUMENT_TOPIC) as DocumentRef['topic'][]).flatMap((topic) =>
+      catalog.documents
+        .filter((record) => record.topic === topic)
+        .map((record) => ({
+          section: 'documents' as const,
+          id: record.id,
+          label: record.path,
+          group: DOCUMENT_TOPIC[topic],
+          record,
+        })),
+    ),
   },
-  {
-    id: 'engineering',
-    title: '엔지니어링',
-    entities: COMMAND_GROUPS.map((record) => ({
-      section: 'engineering',
-      id: record.id,
-      label: record.title,
-      record,
-    })),
-  },
+];
+
+export type ViewId = 'overview' | 'architecture';
+
+export type View = { id: ViewId; label: string; path: string };
+
+/** 섹션이 없는 보기. 탐색기 맨 위에 이 순서로 선다. */
+export const VIEWS: View[] = [
+  { id: 'overview', label: '개요', path: '/' },
+  { id: 'architecture', label: '아키텍처', path: '/architecture' },
 ];
 
 export const findSection = (id: string): Section | undefined =>
@@ -137,10 +137,6 @@ export const sectionHref = (section: SectionId) => `/${section}`;
 
 export const entityHref = (entity: Pick<Entity, 'section' | 'id'>) =>
   `/${entity.section}/${entity.id}`;
-
-/** 명령은 자기 페이지가 없다. 묶음 페이지 위의 카드 한 장이다. */
-export const commandHref = (command: CommandRef) =>
-  `/engineering/${command.group}#command-${command.id}`;
 
 /** 구현 상태는 시나리오만 가진다. */
 export const entityStatus = (entity: Entity): ImplementationStatus | undefined =>

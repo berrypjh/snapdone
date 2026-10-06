@@ -1,11 +1,11 @@
 import { notFound } from 'next/navigation';
 
+import { WorkspaceFrame } from '@berrypjh/devhub-ui';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
 import { EntitySummary } from '@/components/entity/entity-summary';
 import { DevHubShell } from '@/components/shell/devhub-shell';
-import { WorkspaceFrame } from '@/components/shell/workspace';
 import { findEntity } from '@/lib/catalog/entities';
 
 type Params = Promise<{ section: string; id: string }>;
@@ -35,7 +35,7 @@ export default async function EntityLayout({
   if (!entity) notFound();
 
   return (
-    <DevHubShell selection={{ section: entity.section, id: entity.id }} inspector={inspector}>
+    <DevHubShell inspector={inspector}>
       <WorkspaceFrame>
         {children}
         <EntitySummary entity={entity} />

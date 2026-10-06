@@ -1,10 +1,8 @@
 import { createElement, Fragment } from 'react';
 
+import { CanvasEdges, CanvasViewport, openModal } from '@berrypjh/devhub-ui';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-
-import { CanvasEdges } from './canvas-edges';
-import { CanvasViewport, openModal } from './canvas-viewport';
 
 const canvas = () =>
   renderToStaticMarkup(

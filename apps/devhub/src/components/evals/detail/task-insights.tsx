@@ -1,4 +1,4 @@
-import { Table, TableScroll } from '@berrypjh/react-ui';
+import { DataTable } from '@berrypjh/devhub-ui';
 
 import type {
   CaseResult,
@@ -100,46 +100,31 @@ function ClassificationInsights({ q, variantId }: { q: ClassificationQuality; va
         <span className="devhub-code">{INVALID_LABEL}</span>로 간 case {q.categoryInvalid}.
       </p>
       <Heading>category별 precision · recall · F1</Heading>
-      <TableScroll
-        label={`${variantId} category별`}
-        className="rounded-md border border-stroke-light"
+      <DataTable
+        caption={`${variantId} category별`}
+        headers={['category', '정답 수', 'TP · FP · FN', 'precision', 'recall', 'F1']}
       >
-        <Table hiddenCaption>
-          <caption>{`${variantId} category별`}</caption>
-          <thead>
-            <tr>
-              <th scope="col">category</th>
-              <th scope="col">정답 수</th>
-              <th scope="col">TP · FP · FN</th>
-              <th scope="col">precision</th>
-              <th scope="col">recall</th>
-              <th scope="col">F1</th>
-            </tr>
-          </thead>
-          <tbody>
-            {labels.map((l) => (
-              <tr key={l.label}>
-                <th scope="row" className="devhub-code">
-                  {l.label}
-                </th>
-                <td className="tabular-nums">{l.support}</td>
-                <td className="tabular-nums">
-                  {l.tp} · {l.fp} · {l.fn}
-                </td>
-                <td>
-                  <ValueBar measure={l.precision} unit="rate" />
-                </td>
-                <td>
-                  <ValueBar measure={l.recall} unit="rate" />
-                </td>
-                <td>
-                  <ValueBar measure={l.f1} unit="rate" />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      </TableScroll>
+        {labels.map((l) => (
+          <tr key={l.label}>
+            <th scope="row" className="devhub-code">
+              {l.label}
+            </th>
+            <td className="tabular-nums">{l.support}</td>
+            <td className="tabular-nums">
+              {l.tp} · {l.fp} · {l.fn}
+            </td>
+            <td>
+              <ValueBar measure={l.precision} unit="rate" />
+            </td>
+            <td>
+              <ValueBar measure={l.recall} unit="rate" />
+            </td>
+            <td>
+              <ValueBar measure={l.f1} unit="rate" />
+            </td>
+          </tr>
+        ))}
+      </DataTable>
       {q.missingLabels.length > 0 && (
         <p className="typo-caption-small text-text-light">
           정답이 없는 category(macro F1에서 빠짐):{' '}
@@ -182,45 +167,32 @@ function TextInsights({
           없음 — field 계약이 있는 case가 없어 field 지표는 지원 안 함
         </p>
       ) : (
-        <TableScroll
-          label={`${variantId} field별`}
-          className="rounded-md border border-stroke-light"
+        <DataTable
+          caption={`${variantId} field별`}
+          headers={['field', 'case · 판정', '맞음 · 틀림 · 없음', '정확도']}
         >
-          <Table hiddenCaption>
-            <caption>{`${variantId} field별`}</caption>
-            <thead>
-              <tr>
-                <th scope="col">field</th>
-                <th scope="col">case · 판정</th>
-                <th scope="col">맞음 · 틀림 · 없음</th>
-                <th scope="col">정확도</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fields.map((f) => (
-                <tr key={f.id}>
-                  <th scope="row" className="devhub-code">
-                    {f.id}
-                    {f.important > 0 && (
-                      <span className="block typo-caption-small text-text-light">
-                        중요 {f.important}
-                      </span>
-                    )}
-                  </th>
-                  <td className="tabular-nums">
-                    {f.support} · {f.evaluated}
-                  </td>
-                  <td className="tabular-nums">
-                    {f.correct} · {f.wrong} · {f.missing}
-                  </td>
-                  <td>
-                    <ValueBar measure={f.accuracy} unit="rate" />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </TableScroll>
+          {fields.map((f) => (
+            <tr key={f.id}>
+              <th scope="row" className="devhub-code">
+                {f.id}
+                {f.important > 0 && (
+                  <span className="block typo-caption-small text-text-light">
+                    중요 {f.important}
+                  </span>
+                )}
+              </th>
+              <td className="tabular-nums">
+                {f.support} · {f.evaluated}
+              </td>
+              <td className="tabular-nums">
+                {f.correct} · {f.wrong} · {f.missing}
+              </td>
+              <td>
+                <ValueBar measure={f.accuracy} unit="rate" />
+              </td>
+            </tr>
+          ))}
+        </DataTable>
       )}
       <Heading>case별 CER — 높은(나쁜) 것부터</Heading>
       {cer.measured.length > 0 && (

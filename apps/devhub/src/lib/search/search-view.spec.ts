@@ -1,11 +1,12 @@
 import { createElement } from 'react';
 
+import { search } from '@berrypjh/devhub-ui';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
 import { GlobalSearch } from '../../components/shell/global-search';
 
-import { buildSearchIndex, KIND_LABEL, search } from './search-index';
+import { buildSearchIndex, KIND_LABEL } from './search-index';
 import { isSearchShortcut, resultStatus, toSuggestion } from './search-view';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));

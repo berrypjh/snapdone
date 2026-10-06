@@ -2,11 +2,11 @@
 
 import { useSearchParams } from 'next/navigation';
 
+import { Pager } from '@berrypjh/devhub-ui';
+
 import { pagerOf } from '@/lib/browser/pager';
 import { filterHref, parseArchitectureFilters } from '@/lib/catalog/filters';
 import type { NodeOrder } from '@/lib/catalog/inspection';
-
-import { Pager } from '../entity/pager';
 
 /**
  * URL의 종류 필터 안에서 이전 · 다음 구성 요소로 넘기고, 링크에 필터를 유지한다. 필터 밖
@@ -20,5 +20,5 @@ export function NodePager({ order }: { order: NodeOrder }) {
   const pager =
     pagerOf('구성 요소', filtered, order.current) ??
     pagerOf('구성 요소', order.nodes, order.current);
-  return pager ? <Pager pager={pager} /> : null;
+  return pager ? <Pager {...pager} /> : null;
 }

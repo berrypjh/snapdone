@@ -1,4 +1,5 @@
-import { Chip, Table, TableScroll } from '@berrypjh/react-ui';
+import { DataTable } from '@berrypjh/devhub-ui';
+import { Chip } from '@berrypjh/react-ui';
 
 import type { Comparison } from '@/lib/evaluations/contract';
 import { formatMeasure } from '@/lib/evaluations/presentation';
@@ -38,38 +39,25 @@ export function GatePanel({ gate }: { gate: Comparison['gate'] }) {
           {gate.passed ? '통과' : '실패'}
         </Chip>
       </p>
-      <TableScroll label={caption} className="rounded-md border border-stroke-light">
-        <Table hiddenCaption>
-          <caption>{caption}</caption>
-          <thead>
-            <tr>
-              <th scope="col">규칙</th>
-              <th scope="col">한도</th>
-              <th scope="col">관측</th>
-              <th scope="col">결과</th>
+      <DataTable caption={caption} headers={['규칙', '한도', '관측', '결과']}>
+        {gate.rules.map((rule) => {
+          const observed = formatMeasure(rule.observed, 'count');
+          return (
+            <tr key={rule.rule}>
+              <th scope="row" className="devhub-code">
+                {rule.rule}
+              </th>
+              <td className="tabular-nums">{rule.limit}</td>
+              <td className={observed.missing ? 'text-text-light' : 'tabular-nums'}>
+                {rule.observed.availability === 'measured'
+                  ? Number(rule.observed.value.toFixed(2)).toLocaleString('ko-KR')
+                  : observed.text}
+              </td>
+              <td>{rule.passed ? '● 통과' : '× 실패'}</td>
             </tr>
-          </thead>
-          <tbody>
-            {gate.rules.map((rule) => {
-              const observed = formatMeasure(rule.observed, 'count');
-              return (
-                <tr key={rule.rule}>
-                  <th scope="row" className="devhub-code">
-                    {rule.rule}
-                  </th>
-                  <td className="tabular-nums">{rule.limit}</td>
-                  <td className={observed.missing ? 'text-text-light' : 'tabular-nums'}>
-                    {rule.observed.availability === 'measured'
-                      ? Number(rule.observed.value.toFixed(2)).toLocaleString('ko-KR')
-                      : observed.text}
-                  </td>
-                  <td>{rule.passed ? '● 통과' : '× 실패'}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </Table>
-      </TableScroll>
+          );
+        })}
+      </DataTable>
     </div>
   );
 }

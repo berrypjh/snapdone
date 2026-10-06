@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
   browseUrl,
-  commandLine,
   encodePath,
   hostOf,
   isCanonicalPath,
@@ -10,7 +9,7 @@ import {
   latestUrl,
   permalink,
 } from './links';
-import type { CommandRef, RepositoryRef, RepositorySnapshot } from './model';
+import type { RepositoryRef, RepositorySnapshot } from './model';
 
 const SHA = 'c'.repeat(40);
 
@@ -114,27 +113,5 @@ describe('path encoding', () => {
       expect(() => browseUrl(repository, revision, { path: 'a.ts', directory: false })).toThrow();
     }
     expect(isSafeBranch('release/2026.09')).toBe(true);
-  });
-});
-
-describe('commandLine', () => {
-  const command = (source: CommandRef['source']): CommandRef => ({
-    id: 'x',
-    source,
-    group: 'check',
-    summary: '',
-    constraints: [],
-  });
-
-  it('runs package scripts through pnpm', () => {
-    expect(commandLine(command({ kind: 'package-script', script: 'format:check' }))).toBe(
-      'pnpm format:check',
-    );
-  });
-
-  it('runs Nx targets with nx run', () => {
-    expect(commandLine(command({ kind: 'nx-target', project: 'api', target: 'migrate' }))).toBe(
-      'pnpm exec nx run api:migrate',
-    );
   });
 });

@@ -1,11 +1,11 @@
 import { createElement } from 'react';
 
-import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { RepositorySnapshot } from '../../domain/model';
 import { findStep } from '../../lib/catalog/entities';
 import { inspectStep } from '../../lib/catalog/inspection';
+import { renderInDevHub } from '../../test-support/devhub-provider';
 
 import { Inspector } from './inspector';
 
@@ -28,7 +28,7 @@ vi.mock('../../lib/repository/snapshot', async (importOriginal) => ({
 const exchange = findStep('webview-auth-handoff', 'exchange');
 if (!exchange) throw new Error('fixture step missing');
 const inspection = inspectStep(exchange.scenario, exchange.step);
-const render = () => renderToStaticMarkup(createElement(Inspector, { inspection }));
+const render = () => renderInDevHub(createElement(Inspector, { inspection }));
 const count = (html: string, pattern: RegExp) => (html.match(pattern) ?? []).length;
 afterEach(() => vi.unstubAllEnvs());
 
@@ -105,16 +105,17 @@ describe('step pager', () => {
   const { scenario } = exchange;
   const pagerOf = (index: number) => inspectStep(scenario, scenario.steps[index]).pager;
 
-  it('links each step to its neighbours in the scenario order', () => {
-    const last = scenario.steps.length - 1;
-    expect(pagerOf(0)?.previous).toBeUndefined();
-    expect(pagerOf(0)?.next?.label).toBe(scenario.steps[1].intent);
-    expect(pagerOf(last)?.next).toBeUndefined();
-    expect(pagerOf(last)?.previous?.label).toBe(scenario.steps[last - 1].intent);
+  it('pages through the steps in the scenario order, named by their intent', () => {
+    const pager = pagerOf(1);
+    expect(pager?.unit).toBe('단계');
+    expect(pager?.current).toBe(scenario.steps[1].id);
+    expect(pager?.entities.map((step) => step.label)).toEqual(
+      scenario.steps.map((step) => step.intent),
+    );
   });
 
   it('is a pair of arrows named after their target, landing on its details', () => {
-    const html = renderToStaticMarkup(createElement(Inspector, { inspection }));
+    const html = renderInDevHub(createElement(Inspector, { inspection }));
     const pager = html.match(/<nav aria-label="단계 이동"[\s\S]*?<\/nav>/)?.[0] ?? '';
     const links = [...pager.matchAll(/<a [^>]*>/g)].map(([tag]) => ({
       href: tag.match(/href="([^"]+)"/)?.[1],
@@ -137,11 +138,21 @@ describe('step pager', () => {
   it('keeps the missing side as a disabled arrow', () => {
     const { scenario } = exchange;
     const first = inspectStep(scenario, scenario.steps[0]);
-    const html = renderToStaticMarkup(createElement(Inspector, { inspection: first }));
+    const html = renderInDevHub(createElement(Inspector, { inspection: first }));
     const pager = html.match(/<nav aria-label="단계 이동"[\s\S]*?<\/nav>/)?.[0] ?? '';
     expect(pager).toMatch(
       /<button[^>]*disabled[^>]*aria-label="이전 단계 없음"|<button[^>]*aria-label="이전 단계 없음"[^>]*disabled/,
     );
     expect(pager.match(/<a /g)).toHaveLength(1);
+
+    const last = inspectStep(scenario, scenario.steps[scenario.steps.length - 1]);
+    const lastPager =
+      renderInDevHub(createElement(Inspector, { inspection: last })).match(
+        /<nav aria-label="단계 이동"[\s\S]*?<\/nav>/,
+      )?.[0] ?? '';
+    expect(lastPager).toMatch(
+      /<button[^>]*disabled[^>]*aria-label="다음 단계 없음"|<button[^>]*aria-label="다음 단계 없음"[^>]*disabled/,
+    );
+    expect(lastPager.match(/<a /g)).toHaveLength(1);
   });
 });

@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 
+import { INSPECTOR_ID } from '@berrypjh/devhub-ui';
 import { SkipLink } from '@berrypjh/react-ui';
 
 import type { FlowNode as FlowNodeModel } from '@/lib/catalog/flow';
 import { NODE } from '@/lib/catalog/flow';
 
 import { StatusChip } from '../entity/status-chip';
-import { INSPECTOR_ID } from '../shell/workspace';
 
 type FlowNodeProps = {
   node: FlowNodeModel;

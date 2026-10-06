@@ -1,7 +1,7 @@
 import type {
   ApplicationRef,
   CommandConstraint,
-  CommandGroup,
+  DocumentRef,
   EvidenceGap,
   ImplementationStatus,
   RecordRef,
@@ -30,6 +30,17 @@ export const RECORD_KIND: Record<RecordRef['kind'], string> = {
   decision: '설계 결정',
   fix: '문제 해결',
   implementation: '구현',
+};
+
+/** 문서의 주제. 탐색기의 문서 묶음 제목이고, 이 순서로 선다. */
+export const DOCUMENT_TOPIC: Record<DocumentRef['topic'], string> = {
+  overview: '저장소',
+  agent: '에이전트 지침',
+  product: '제품',
+  architecture: '아키텍처',
+  design: '디자인',
+  development: '개발',
+  engineering: '엔지니어링',
 };
 
 export const ROLE: Record<ApplicationRef['role'], string> = {
@@ -69,13 +80,4 @@ export const INTERACTION: Record<RuntimeRelation['interaction'], string> = {
   'webview-host': 'WebView로 엶',
   'bridge-message': 'bridge 메시지',
   persistence: '저장',
-};
-
-/** 엔지니어링 화면 순서. 먼저 실행하는 것, 그다음 검사, 나머지 순이다. */
-export const COMMAND_GROUP: Record<CommandGroup, { title: string; summary: string }> = {
-  run: { title: '실행', summary: '개발 서버 실행. 모두 포트 필요' },
-  check: { title: '검사', summary: '코드를 바꾸지 않고 확인만 함' },
-  build: { title: '빌드 · 전체 검증', summary: '올리기 전에 전체 빌드 · 실행' },
-  api: { title: 'API 작업', summary: 'Go API의 DB · Swagger 문서 관리와 상태 확인' },
-  workspace: { title: '저장소 도구', summary: '파일 수정 · 도구 열기' },
 };

@@ -1,13 +1,12 @@
 import Link from 'next/link';
 
+import { WorkspaceSection } from '@berrypjh/devhub-ui';
 import type { ReactNode } from 'react';
 
 import { architectureHref } from '@/lib/catalog/architecture';
 import { stepHref } from '@/lib/catalog/entities';
 import { INTERACTION, RELATION } from '@/lib/catalog/labels';
 import type { SourceUsage } from '@/lib/repository/source-usage';
-
-import { WorkspaceSection } from '../shell/workspace';
 
 const LINK = 'typo-body-small text-text-link underline-offset-2 hover:underline';
 

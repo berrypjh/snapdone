@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { WorkspaceSection } from '@berrypjh/devhub-ui';
 import { VisuallyHidden } from '@berrypjh/react-ui';
 
 import { catalog } from '@/data';
@@ -8,7 +9,6 @@ import { entityHref, sectionHref, SECTIONS } from '@/lib/catalog/entities';
 import { STATUS, TRACK } from '@/lib/catalog/labels';
 
 import { StatusChip } from '../entity/status-chip';
-import { WorkspaceSection } from '../shell/workspace';
 
 import { SnapshotSummary } from './snapshot-summary';
 

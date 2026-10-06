@@ -3,12 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { Icon, search, topResults } from '@berrypjh/devhub-ui';
 import { IconButton, SearchField, VisuallyHidden } from '@berrypjh/react-ui';
 
-import { buildSearchIndex, search, topResults } from '@/lib/search/search-index';
+import { buildSearchIndex } from '@/lib/search/search-index';
 import { isSearchShortcut, resultStatus, toSuggestion } from '@/lib/search/search-view';
-
-import { Icon } from '../ui/icon';
 
 const FIELD_ID = 'global-search';
 
@@ -65,7 +64,7 @@ export function GlobalSearch() {
         aria-expanded={open}
         aria-controls={FIELD_ID}
         onClick={() => (open ? setOpen(false) : openAndFocus())}
-        className="ml-auto lg:hidden"
+        className="lg:hidden"
       >
         <Icon name="search" />
       </IconButton>

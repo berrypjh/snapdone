@@ -1,5 +1,9 @@
 import { KIND_LABEL, type SearchResult } from './search-index';
 
+/**
+ * 로컬 `GlobalSearch`의 단축키 · 결과 알림. 공용 `GlobalSearch`(1.2.0)는 단축키 표시가 hydration에서 어긋나
+ * 아직 로컬 컴포넌트를 쓰고, 이 helper도 그 컴포넌트와 함께 남는다. 고친 릴리스로 바꿀 때 함께 지운다.
+ */
 type ShortcutEvent = Pick<KeyboardEvent, 'key' | 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey'>;
 
 /** macOS는 ⌘K, 나머지는 Ctrl+K. 다른 보조키 조합은 브라우저에 맡긴다. */

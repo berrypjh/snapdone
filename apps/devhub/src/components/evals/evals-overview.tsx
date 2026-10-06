@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { FilterEmpty, Icon, WorkspaceSection } from '@berrypjh/devhub-ui';
 import { Button, VisuallyHidden } from '@berrypjh/react-ui';
 import type { ReactNode } from 'react';
 
@@ -24,8 +25,6 @@ import {
 import type { ComparisonEntry } from '@/lib/evaluations/repository';
 
 import { FilterBar } from '../entity/filter-bar';
-import { WorkspaceSection } from '../shell/workspace';
-import { Icon } from '../ui/icon';
 
 import { AnswerSourceChip } from './answer-source-chip';
 import { RunList } from './run-list';
@@ -302,12 +301,7 @@ export function EvalsOverview({
       <Summary rows={visible} />
       <WorkspaceSection id="evals-runs" title={`최근 run ${visible.length}개`}>
         {visible.length === 0 ? (
-          <p className="typo-caption-small text-text-light">
-            없음 — 이 필터에 맞는 run 없음.{' '}
-            <Link href={basePath} className={LINK}>
-              필터 모두 해제
-            </Link>
-          </p>
+          <FilterEmpty message="없음 — 이 필터에 맞는 run 없음" clearHref={basePath} />
         ) : (
           <RunList rows={visible} />
         )}

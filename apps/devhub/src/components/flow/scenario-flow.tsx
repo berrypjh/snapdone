@@ -2,12 +2,10 @@
 
 import { useSelectedLayoutSegments } from 'next/navigation';
 
+import { CanvasEdges, CanvasViewport, type LegendItem } from '@berrypjh/devhub-ui';
+
 import type { FlowModel } from '@/lib/catalog/flow';
 import { NODE } from '@/lib/catalog/flow';
-
-import { CanvasEdges } from '../canvas/canvas-edges';
-import type { LegendItem } from '../canvas/canvas-toolbar';
-import { CanvasViewport } from '../canvas/canvas-viewport';
 
 import { FlowLanes } from './flow-lanes';
 import { FlowNode } from './flow-node';

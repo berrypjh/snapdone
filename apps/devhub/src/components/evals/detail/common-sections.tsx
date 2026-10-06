@@ -1,4 +1,4 @@
-import { Table, TableScroll } from '@berrypjh/react-ui';
+import { DataTable } from '@berrypjh/devhub-ui';
 
 import type { Mode, VariantReport } from '@/lib/evaluations/contract';
 import { executionSegments, failureCounts } from '@/lib/evaluations/detail';
@@ -32,27 +32,16 @@ export function ExecutionHealth({ report }: { report: VariantReport }) {
 
 function CountTable({ title, counts }: { title: string; counts: [string, number][] }) {
   return (
-    <TableScroll label={title} className="rounded-md border border-stroke-light">
-      <Table hiddenCaption>
-        <caption>{title}</caption>
-        <thead>
-          <tr>
-            <th scope="col">{title}</th>
-            <th scope="col">수</th>
-          </tr>
-        </thead>
-        <tbody>
-          {counts.map(([key, n]) => (
-            <tr key={key}>
-              <th scope="row" className="devhub-code">
-                {key}
-              </th>
-              <td className="tabular-nums">{n}</td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
-    </TableScroll>
+    <DataTable caption={title} headers={[title, '수']}>
+      {counts.map(([key, n]) => (
+        <tr key={key}>
+          <th scope="row" className="devhub-code">
+            {key}
+          </th>
+          <td className="tabular-nums">{n}</td>
+        </tr>
+      ))}
+    </DataTable>
   );
 }
 
@@ -96,24 +85,10 @@ export function Latency({ report, mode }: { report: VariantReport; mode: Mode })
   );
   return (
     <div className="flex flex-col gap-3">
-      <TableScroll label="지연 요약" className="rounded-md border border-stroke-light">
-        <Table hiddenCaption>
-          <caption>지연 요약</caption>
-          <thead>
-            <tr>
-              <th scope="col">집합</th>
-              <th scope="col">n</th>
-              <th scope="col">중앙값</th>
-              <th scope="col">p95</th>
-              <th scope="col">평균</th>
-            </tr>
-          </thead>
-          <tbody>
-            {row('시도(실패 · 시간 초과 포함)', attempted)}
-            {row('완료', completed)}
-          </tbody>
-        </Table>
-      </TableScroll>
+      <DataTable caption="지연 요약" headers={['집합', 'n', '중앙값', 'p95', '평균']}>
+        {row('시도(실패 · 시간 초과 포함)', attempted)}
+        {row('완료', completed)}
+      </DataTable>
       {attempted.n < 10 && (
         <p className="typo-caption-small text-text-light">
           표본 {attempted.n}개 — 백분위가 안정적이지 않음

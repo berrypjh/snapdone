@@ -1,9 +1,7 @@
+import { CopyButton, Icon, WorkspaceSection } from '@berrypjh/devhub-ui';
+
 import type { RunDetail } from '@/lib/evaluations/repository';
 import { retryGuide } from '@/lib/evaluations/retry';
-
-import { WorkspaceSection } from '../../shell/workspace';
-import { CopyButton } from '../../source/copy-button';
-import { Icon } from '../../ui/icon';
 
 /**
  * 실제 모델 호출이 실패한 run에만 보이는 안내. `pnpm eval retry`로 실패한 것만 다시 부르면 성공한 결과와 한 run에
@@ -39,7 +37,7 @@ export function RetryGuide({ run }: { run: RunDetail }) {
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-2">
           <p className="typo-caption-small text-text-light">다시 실행</p>
-          <CopyButton text={guide.rerun} label="다시 실행 명령 복사" variant="icon" />
+          <CopyButton text={guide.rerun} label={`다시 실행 명령 복사: ${guide.rerun}`} />
         </div>
         <pre className="overflow-x-auto rounded-md bg-background-default p-3 devhub-code">
           {guide.rerun}

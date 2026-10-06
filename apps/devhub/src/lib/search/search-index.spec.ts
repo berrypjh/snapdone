@@ -1,32 +1,34 @@
+import { normalize, search, TIERS, tokensOf, topResults } from '@berrypjh/devhub-ui';
 import { describe, expect, it } from 'vitest';
 
 import { catalog } from '../../data';
 import { sourceUsage } from '../repository/source-usage';
 
-import { buildSearchIndex, normalize, search, tokensOf, topResults } from './search-index';
+import { buildSearchIndex } from './search-index';
 
 const index = buildSearchIndex();
+const entries = index.items.map((item) => item.entry);
+const tier = (name: (typeof TIERS)[number]) => TIERS.indexOf(name);
 const labels = (query: string) => search(index, query).map((r) => `${r.kind}:${r.label}`);
 const shown = (query: string) =>
   topResults(search(index, query)).map((r) => `${r.kind}:${r.label}`);
 
 describe('index', () => {
   it('derives one entry per catalog entity, with unique keys', () => {
-    const keys = index.map((entry) => entry.key);
+    const keys = entries.map((entry) => entry.key);
     expect(new Set(keys).size).toBe(keys.length);
-    const count = (kind: string) => index.filter((entry) => entry.kind === kind).length;
+    const count = (kind: string) => entries.filter((entry) => entry.kind === kind).length;
     expect(count('scenario')).toBe(catalog.scenarios.length);
     expect(count('step')).toBe(catalog.scenarios.flatMap((s) => s.steps).length);
     expect(count('api')).toBe(catalog.apis.length);
     expect(count('test')).toBe(catalog.tests.length);
     expect(count('document')).toBe(catalog.documents.length);
-    expect(count('command')).toBe(catalog.commands.length);
     expect(count('source')).toBe(sourceUsage().size);
     expect(count('node')).toBe(catalog.nodes.length);
   });
 
   it('points every result at an DevHub route', () => {
-    expect(index.filter((entry) => !entry.href.startsWith('/'))).toEqual([]);
+    expect(entries.filter((entry) => !entry.href.startsWith('/'))).toEqual([]);
   });
 });
 
@@ -50,13 +52,15 @@ describe('ranking', () => {
   it('orders tiers exact → prefix → word → substring → related', () => {
     const tiers = search(index, 'webview').map((r) => r.tier);
     expect([...tiers].sort((a, b) => a - b)).toEqual(tiers);
-    expect(new Set(tiers)).toEqual(new Set([0, 1, 2, 4]));
+    expect(new Set(tiers)).toEqual(
+      new Set([tier('exact'), tier('prefix'), tier('text-token'), tier('related')]),
+    );
   });
 
   it('falls back to substring when no word starts with the query', () => {
     const results = search(index, 'andoff');
     expect(results.length).toBeGreaterThan(0);
-    expect(results.every((r) => r.tier >= 3)).toBe(true);
+    expect(results.every((r) => r.tier >= tier('substring'))).toBe(true);
   });
 
   it('is deterministic and case-insensitive', () => {

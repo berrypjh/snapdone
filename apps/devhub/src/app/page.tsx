@@ -8,7 +8,7 @@ import { catalog } from '@/data';
 export default function OverviewPage() {
   const { owner, name } = catalog.repository;
   return (
-    <DevHubShell selection={{}} inspector={<Inspector />}>
+    <DevHubShell inspector={<Inspector />}>
       <Workspace eyebrow="개요" icon={VIEW_ICON.overview} title={`${owner}/${name}`}>
         <RepositoryOverview />
       </Workspace>

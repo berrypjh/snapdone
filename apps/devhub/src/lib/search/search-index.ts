@@ -1,7 +1,15 @@
+import {
+  basename,
+  buildIndex,
+  type SearchEntry as SharedSearchEntry,
+  type SearchIndex as SharedSearchIndex,
+  type SearchResult as SharedSearchResult,
+  stem,
+} from '@berrypjh/devhub-ui';
+
 import { catalog } from '../../data';
-import { commandLine } from '../../domain/links';
 import { architectureHref, nodeLabel } from '../catalog/architecture';
-import { commandHref, entityHref, stepHref } from '../catalog/entities';
+import { entityHref, stepHref } from '../catalog/entities';
 import { RECORD_KIND } from '../catalog/labels';
 import { sourceHref, sourceUsage } from '../repository/source-usage';
 
@@ -23,8 +31,7 @@ export type SearchKind =
   | 'contract'
   | 'source'
   | 'symbol'
-  | 'test'
-  | 'command';
+  | 'test';
 
 /** 화면에 보이는 종류 이름. 결과 종류는 색이 아니라 이 글자로 구분한다. */
 export const KIND_LABEL: Record<SearchKind, string> = {
@@ -41,42 +48,14 @@ export const KIND_LABEL: Record<SearchKind, string> = {
   source: '소스 파일',
   symbol: 'symbol',
   test: '테스트',
-  command: '명령',
 };
 
 const KIND_ORDER = Object.keys(KIND_LABEL) as SearchKind[];
 
-export type SearchEntry = {
-  key: string;
-  kind: SearchKind;
-  label: string;
-  detail: string;
-  href: string;
-  /** 정확히 또는 앞부분으로 맞춰 보는 값. id · 제목 · 경로다. */
-  names: string[];
-  /** 낱말이나 부분 문자열로 맞춰 보는 값. */
-  text: string[];
-  /** 마지막 수단으로만 맞춰 보는 값. 이 항목을 인용한 쪽의 낱말이다. */
-  related: string[];
-};
-
-export type SearchResult = SearchEntry & { tier: number };
-
-export const normalize = (value: string) => value.normalize('NFC').toLowerCase().trim();
-
-/** 값의 낱말들. camelCase와 경로 구분자에서도 자른다 (`webHandoff` → web, handoff). */
-export const tokensOf = (value: string) => {
-  const spaced = value.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
-  return [
-    ...new Set([
-      ...normalize(value).split(/[^\p{L}\p{N}]+/u),
-      ...normalize(spaced).split(/[^\p{L}\p{N}]+/u),
-    ]),
-  ].filter(Boolean);
-};
-
-const basename = (path: string) => path.split('/').pop() ?? path;
-const stem = (path: string) => basename(path).replace(/\.[^.]+$/, '');
+/** 이 저장소의 검색 항목. 순위 규칙은 공용 `buildIndex` · `search`가 갖는다. */
+export type SearchEntry = SharedSearchEntry & { kind: SearchKind };
+export type SearchResult = SharedSearchResult<SearchEntry>;
+export type SearchIndex = SharedSearchIndex<SearchEntry>;
 
 const runtimeName = new Map(catalog.runtimes.map((runtime) => [runtime.id, runtime.name]));
 
@@ -249,116 +228,8 @@ const entries = (): SearchEntry[] => {
     });
   }
 
-  for (const command of catalog.commands) {
-    add({
-      key: `command:${command.id}`,
-      kind: 'command',
-      label: commandLine(command),
-      detail: command.summary,
-      href: commandHref(command),
-      names: [
-        command.id,
-        commandLine(command),
-        command.source.kind === 'package-script' ? command.source.script : command.source.target,
-      ],
-      text: [command.summary],
-    });
-  }
   return list;
 };
 
-type Prepared = SearchEntry & {
-  n: string[];
-  segments: string[];
-  tokens: string[];
-  t: string[];
-  r: string[];
-  rTokens: string[];
-};
-
-const prepare = (entry: SearchEntry): Prepared => {
-  const n = entry.names.map(normalize);
-  return {
-    ...entry,
-    n,
-    segments: n.flatMap((name) => name.split(/[/.-]/)).filter(Boolean),
-    tokens: [...new Set([...entry.names, ...entry.text].flatMap(tokensOf))],
-    t: entry.text.map(normalize),
-    r: entry.related.map(normalize),
-    rTokens: [...new Set(entry.related.flatMap(tokensOf))],
-  };
-};
-
-/**
- * 0 이름이 정확히 일치 · 1 이름 · 경로 조각 · 낱말의 앞부분 · 2 질의의 모든 낱말이 여기 낱말 ·
- * 3 부분 문자열 · 4 인용한 쪽을 통해서만 · null 일치 없음.
- */
-export const tierOf = (entry: Prepared, query: string, words: string[]): number | null => {
-  if (entry.n.includes(query)) return 0;
-  if (
-    entry.n.some((name) => name.startsWith(query)) ||
-    entry.segments.some((segment) => segment.startsWith(query))
-  ) {
-    return 1;
-  }
-  const hasWord = (tokens: string[]) => (word: string) =>
-    tokens.some((token) => token === word || token.startsWith(word));
-  if (words.length > 0 && words.every(hasWord(entry.tokens))) return 2;
-  if ([...entry.n, ...entry.t].some((value) => value.includes(query))) return 3;
-  if (
-    entry.r.some((value) => value.includes(query)) ||
-    (words.length > 0 && words.every(hasWord(entry.rTokens)))
-  ) {
-    return 4;
-  }
-  return null;
-};
-
-export type SearchIndex = Prepared[];
-
-export const buildSearchIndex = (): SearchIndex => entries().map(prepare);
-
-/** 순위를 매긴 결과. 등급 · 종류 순서 · 짧은 이름 · 이름 순으로 정렬한다. */
-export const search = (index: SearchIndex, raw: string): SearchResult[] => {
-  const query = normalize(raw);
-  if (!query) return [];
-  const words = tokensOf(raw);
-  return index
-    .flatMap((entry) => {
-      const tier = tierOf(entry, query, words);
-      return tier === null ? [] : [{ entry, tier }];
-    })
-    .sort(
-      (a, b) =>
-        a.tier - b.tier ||
-        KIND_ORDER.indexOf(a.entry.kind) - KIND_ORDER.indexOf(b.entry.kind) ||
-        a.entry.label.length - b.entry.label.length ||
-        a.entry.label.localeCompare(b.entry.label),
-    )
-    .map(({ entry, tier }) => ({
-      key: entry.key,
-      kind: entry.kind,
-      label: entry.label,
-      detail: entry.detail,
-      href: entry.href,
-      names: entry.names,
-      text: entry.text,
-      related: entry.related,
-      tier,
-    }));
-};
-
-/**
- * 결과 목록에 보이는 것. 순위는 그대로 두고 종류마다 `perKind`개까지만 남겨서,
- * 한 번의 질의가 파일 서른 개 대신 시나리오 · 소스 · 문서 · 테스트에 두루 닿게 한다.
- */
-export const topResults = (results: SearchResult[], perKind = 5, limit = 30): SearchResult[] => {
-  const seen = new Map<SearchKind, number>();
-  return results
-    .filter((result) => {
-      const count = seen.get(result.kind) ?? 0;
-      seen.set(result.kind, count + 1);
-      return count < perKind;
-    })
-    .slice(0, limit);
-};
+/** 번들된 카탈로그의 색인. 종류 순서(`KIND_LABEL`)가 같은 등급 안의 정렬을 정한다. */
+export const buildSearchIndex = (): SearchIndex => buildIndex(entries(), KIND_ORDER);

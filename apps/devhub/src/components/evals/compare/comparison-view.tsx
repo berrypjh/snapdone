@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { Icon, WorkspaceSection } from '@berrypjh/devhub-ui';
 import type { ReactNode } from 'react';
 
 import { AXIS_LABELS } from '@/lib/evaluations/comparison';
@@ -7,8 +8,6 @@ import type { Comparison, Mode, RunRef, Variant } from '@/lib/evaluations/contra
 import { runHref } from '@/lib/evaluations/overview';
 import { answerSource, experimentLabel, TASK_LABELS } from '@/lib/evaluations/presentation';
 
-import { WorkspaceSection } from '../../shell/workspace';
-import { Icon } from '../../ui/icon';
 import { AnswerSourceChip } from '../answer-source-chip';
 
 import { AxisTable } from './axis-table';

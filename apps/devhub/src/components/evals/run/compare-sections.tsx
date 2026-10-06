@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { CopyButton } from '@berrypjh/devhub-ui';
 import { Table, TableScroll } from '@berrypjh/react-ui';
 
 import type { CaseResult, Mode, RunSummary, Task } from '@/lib/evaluations/contract';
@@ -14,7 +15,6 @@ import {
   summaryTable,
 } from '@/lib/evaluations/run-view';
 
-import { CopyButton } from '../../source/copy-button';
 import { AnswerSourceChip } from '../answer-source-chip';
 
 export type RunView = { variant: string; show: MatrixFilter; cases: CaseFilter };
@@ -116,7 +116,7 @@ export function SummaryTable({
                 {command}
               </pre>
               <span className="absolute top-1.5 right-1.5">
-                <CopyButton text={command} label="짝 비교 명령 복사" variant="icon" />
+                <CopyButton text={command} label={`짝 비교 명령 복사: ${command}`} />
               </span>
             </li>
           ))}

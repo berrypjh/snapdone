@@ -2,6 +2,7 @@
 
 import { type ReactNode, useState } from 'react';
 
+import { CopyButton, Icon } from '@berrypjh/devhub-ui';
 import { Checkbox, IconButton, TextField } from '@berrypjh/react-ui';
 
 import { TASKS } from '@/lib/evaluations/contract';
@@ -22,9 +23,6 @@ import {
   type VariantCatalog,
   type VariantOption,
 } from '@/lib/evaluations/variant-command';
-
-import { CopyButton } from '../source/copy-button';
-import { Icon } from '../ui/icon';
 
 /** run id 규칙(소문자 · 숫자 · -)에 맞춘다. 입력 중인 끝의 `-`는 남긴다. 비워 두면 CLI가 시각으로 정한다. */
 const cleanRunId = (value: string) =>
@@ -182,7 +180,7 @@ function Command({ title, text }: { title: string; text: string }) {
     <div className="flex flex-col gap-1">
       <div className="flex items-center justify-between gap-2">
         <p className="typo-caption-small text-text-light">{title}</p>
-        <CopyButton text={text} label={`${title} 복사`} variant="icon" />
+        <CopyButton text={text} label={`${title} 복사: ${text}`} />
       </div>
       <pre className="overflow-x-auto rounded-md bg-background-surface p-3 devhub-code">{text}</pre>
     </div>

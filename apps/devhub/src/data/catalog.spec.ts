@@ -16,7 +16,6 @@ import {
 import { DEVHUB_ITSELF, isDevHubProject } from '../test-support/scope';
 
 import { swaggerDocument } from './apis';
-import { RUNNER_COMMAND } from './commands';
 import { catalog } from '.';
 
 /** 정리해 둔 catalog를 그것이 설명하는 저장소 파일과 대조한다. */
@@ -48,11 +47,6 @@ const nxPackageManifests = () =>
     .map((path) => ({ path, manifest: readJson<PackageManifest>(path) }))
     .filter(({ manifest }) => manifest.nx);
 
-const nxConfigOf = (manifestPath: string): NxConfig =>
-  manifestPath.endsWith('project.json')
-    ? readJson<NxConfig>(manifestPath)
-    : (readJson<PackageManifest>(manifestPath).nx ?? {});
-
 const idsOf = (items: { id: string }[]) => items.map((item) => item.id);
 
 describe('repository', () => {
@@ -69,11 +63,6 @@ describe('repository', () => {
     }
     expect(browse.lineRange).toMatch(/^#.*\{start\}.*\{end\}/);
   });
-
-  it('maps every test runner to a command that exists', () => {
-    const ids = new Set(catalog.commands.map((command) => command.id));
-    expect(Object.values(RUNNER_COMMAND).filter((id) => !ids.has(id))).toEqual([]);
-  });
 });
 
 describe('ids', () => {
@@ -85,7 +74,6 @@ describe('ids', () => {
     ['contracts', idsOf(catalog.contracts)],
     ['documents', idsOf(catalog.documents)],
     ['records', idsOf(catalog.records)],
-    ['commands', idsOf(catalog.commands)],
     ['tests', idsOf(catalog.tests)],
     ['scenarios', idsOf(catalog.scenarios)],
   ])('are unique across %s', (_name, ids) => {
@@ -287,26 +275,6 @@ describe('records', () => {
       expect(new Date(record.date).toISOString().slice(0, 10)).toBe(record.date);
       expect(record.summary.length).toBeGreaterThan(0);
       expect(record.summary).not.toContain('\n');
-    }
-  });
-});
-
-describe('commands', () => {
-  const scripts = readJson<{ scripts: Record<string, string> }>('package.json').scripts;
-
-  it('cover every root package.json script', () => {
-    const curated = catalog.commands.flatMap((command) =>
-      command.source.kind === 'package-script' ? [command.source.script] : [],
-    );
-    expect(curated.sort()).toEqual(Object.keys(scripts).sort());
-  });
-
-  it('name Nx targets the project manifest declares explicitly', () => {
-    const manifestOf = new Map(projects.map((project) => [project.id, project.manifest.path]));
-    for (const { source } of catalog.commands) {
-      if (source.kind !== 'nx-target') continue;
-      const targets = nxConfigOf(String(manifestOf.get(source.project))).targets ?? {};
-      expect(Object.keys(targets)).toContain(source.target);
     }
   });
 });

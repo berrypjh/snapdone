@@ -1,6 +1,5 @@
+import { Icon, type IconName } from '@berrypjh/devhub-ui';
 import type { ReactNode } from 'react';
-
-import { Icon, type IconName } from './icon';
 
 /** 목록 항목 하나. 왼쪽에 아이콘과 이름, 오른쪽에 내용을 둔다. */
 export function Term({

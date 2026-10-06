@@ -2,12 +2,11 @@
 
 import Link from 'next/link';
 
+import { Icon, INSPECTOR_ID } from '@berrypjh/devhub-ui';
 import { SkipLink } from '@berrypjh/react-ui';
 
 import { ARCH_NODE, type ArchNode } from '@/lib/catalog/architecture-layout';
 
-import { INSPECTOR_ID } from '../shell/workspace';
-import { Icon } from '../ui/icon';
 import { NODE_KIND_ICON } from '../ui/view-icons';
 
 type ArchitectureNodeProps = {

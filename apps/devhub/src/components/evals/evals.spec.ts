@@ -1,15 +1,15 @@
 import { createElement } from 'react';
 
+import { ExplorerDrawerProvider } from '@berrypjh/devhub-ui';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { catalog } from '@/data';
 import { filterOptions, parseFilter, runRows, trendOverview } from '@/lib/evaluations/overview';
 import { EvaluationArtifactError } from '@/lib/evaluations/repository';
 
+import { renderInDevHub, testRouter } from '../../test-support/devhub-provider';
 import { removeResults, resultsRepository } from '../../test-support/evaluation-results';
-import { Explorer } from '../shell/explorer';
-import { ExplorerDrawerProvider } from '../shell/explorer-drawer';
+import { DevHubShell } from '../shell/devhub-shell';
 import { TopBar } from '../shell/top-bar';
 
 import { EvalsOverview } from './evals-overview';
@@ -188,39 +188,33 @@ describe('/evals run detail', () => {
   });
 });
 
-const topBar = (activeView?: 'evals') =>
-  renderToStaticMarkup(
-    createElement(
-      ExplorerDrawerProvider,
-      null,
-      createElement(TopBar, { repository: catalog.repository, activeView }),
-    ),
+const topBar = () =>
+  renderInDevHub(
+    createElement(ExplorerDrawerProvider, {
+      children: createElement(TopBar, { summary: 'berry/snapdone' }),
+    }),
   );
 
-describe('navigation', () => {
-  it('marks 평가 as the current view on /evals and not the overview', () => {
-    const html = topBar('evals');
-
-    expect(html).toMatch(/<a aria-current="page"[^>]*href="\/evals"/);
-    expect(html).not.toMatch(/<a aria-current="page"[^>]*href="\/"/);
-  });
-
-  it('still marks only the overview on the home page', () => {
+describe('top bar', () => {
+  it('shows the product and summary and leaves moving between views to the explorer', () => {
     const html = topBar();
 
-    expect(html.match(/aria-current="page"/g)).toHaveLength(1);
-    expect(html).toMatch(/<a aria-current="page"[^>]*href="\/"/);
+    expect(html).toContain('Snapdone DevHub');
+    expect(html).toContain('berry/snapdone');
+    expect(html).not.toContain('<nav');
+    expect(html).not.toContain('aria-current');
   });
 });
 
-const explorer = (selection: Parameters<typeof Explorer>[0]['selection']) =>
-  renderToStaticMarkup(
-    createElement(ExplorerDrawerProvider, null, createElement(Explorer, { selection })),
+const explorer = (pathname: string) =>
+  renderInDevHub(
+    createElement(DevHubShell, { inspector: null, children: createElement('main') }),
+    testRouter(pathname),
   );
 
 describe('evals in the explorer', () => {
-  it('lists every task under 평가 and marks the chosen one', () => {
-    const html = explorer({ view: 'evals', evalTask: 'image-classification' });
+  it('lists every task under 평가 and marks the current one', () => {
+    const html = explorer('/evals/tasks/image-classification');
 
     for (const href of [
       '/evals/tasks/image-classification',
@@ -229,12 +223,35 @@ describe('evals in the explorer', () => {
     ]) {
       expect(html).toContain(`href="${href}"`);
     }
-    expect(html).toMatch(/aria-current="page"[^>]*href="\/evals\/tasks\/image-classification"/);
-    expect(html).not.toMatch(/aria-current="page"[^>]*href="\/evals"/);
+    expect(html).toContain('<a href="/evals/tasks/image-classification" aria-current="page"');
+    expect(html).not.toContain('<a href="/evals" aria-current="page"');
   });
 
-  it('marks 평가 itself when no task is chosen', () => {
-    expect(explorer({ view: 'evals' })).toMatch(/aria-current="page"[^>]*href="\/evals"/);
+  it('marks 평가 itself on the evals overview', () => {
+    expect(explorer('/evals')).toContain('<a href="/evals" aria-current="page"');
+  });
+});
+
+describe('explorer groups', () => {
+  it('folds documents by topic and opens only the group of the current document', () => {
+    const html = explorer('/documents/agents');
+    const groups = [...html.matchAll(/<details( open="")?[^>]*>[\s\S]*?<\/details>/g)];
+    const documents = groups.filter(([group]) => group.includes('href="/documents/'));
+
+    expect(documents.length).toBeGreaterThan(1);
+    expect(documents.filter(([, open]) => open).map(([group]) => group)).toEqual([
+      expect.stringContaining('href="/documents/agents"'),
+    ]);
+  });
+
+  it('splits scenarios by track, open by default', () => {
+    const html = explorer('/');
+
+    for (const title of ['현재 동작', '개발 흐름']) expect(html).toContain(title);
+    const scenarios = [...html.matchAll(/<details( open="")?[^>]*>[\s\S]*?<\/details>/g)].filter(
+      ([group]) => group.includes('href="/scenarios/'),
+    );
+    expect(scenarios.every(([, open]) => open)).toBe(true);
   });
 });
 

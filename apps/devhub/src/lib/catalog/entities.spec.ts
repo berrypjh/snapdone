@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import { catalog } from '../../data';
 
-import { COMMAND_GROUPS, entityHref, findEntity, SECTIONS } from './entities';
+import { entityHref, findEntity, SECTIONS } from './entities';
 import { inspect } from './inspection';
 
 const entities = SECTIONS.flatMap((section) => section.entities);
 
 describe('explorer sections', () => {
-  it('hold every scenario, project, document, record, and command in the catalog', () => {
+  it('hold every scenario, project, document, and record in the catalog', () => {
     const count = (id: string) => SECTIONS.find((section) => section.id === id)?.entities.length;
     expect(count('scenarios')).toBe(catalog.scenarios.length);
     expect((count('applications') ?? 0) + (count('libraries') ?? 0)).toBe(
@@ -16,7 +16,6 @@ describe('explorer sections', () => {
     );
     expect(count('documents')).toBe(catalog.documents.length);
     expect(count('records')).toBe(catalog.records.length);
-    expect(count('engineering')).toBe(COMMAND_GROUPS.length);
   });
 
   it('give every entity a unique route that resolves back to it', () => {

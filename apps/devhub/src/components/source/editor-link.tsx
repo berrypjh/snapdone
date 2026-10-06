@@ -1,8 +1,7 @@
+import { Icon } from '@berrypjh/devhub-ui';
 import { IconButton } from '@berrypjh/react-ui';
 
 import { editorHref } from '@/lib/repository/editor-link';
-
-import { Icon } from '../ui/icon';
 
 /** 이 컴퓨터의 에디터로 파일을 여는 아이콘 버튼. 개발 서버에서만 그려진다. */
 export function EditorLink({ path }: { path: string }) {

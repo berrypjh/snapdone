@@ -1,9 +1,9 @@
+import { WorkspaceSection } from '@berrypjh/devhub-ui';
+
 import type { Task } from '@/lib/evaluations/contract';
 import { filterOptions, parseFilter, runRows, trendOverview } from '@/lib/evaluations/overview';
 import { fetchProviderModels } from '@/lib/evaluations/provider-models';
 import { EvaluationArtifactError, localEvaluations } from '@/lib/evaluations/repository';
-
-import { WorkspaceSection } from '../shell/workspace';
 
 import { EvalsHub } from './evals-hub';
 import { EvalsOverview } from './evals-overview';
