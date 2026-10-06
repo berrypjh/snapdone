@@ -19,7 +19,7 @@ Nx Workspace (repository root)
 | `apps/web`    | Next.js App Router. `(product)` 홈 · `/history` · `/settings/processing`, `(auth)` 로그인 · 온보딩 · callback · 핸드오프, 브라우저 셸과 앱 WebView 모드            |
 | `apps/mobile` | Expo. React Navigation native stack — 로그인 · 온보딩 소개 · 네이티브 홈 · WebView 콘텐츠 화면                                                                     |
 | `apps/api`    | module `snapdone/api`. `/health` · 인증 · 온보딩 진행 · 사진 분류, Postgres. 평가 harness는 서버와 분리된 개발자 CLI([agent-evaluation.md](./agent-evaluation.md)) |
-| `libs/`       | `webview-bridge` · `auth-contracts` · `onboarding` (모두 web · mobile이 사용)                                                                                      |
+| `libs/`       | `webview-bridge` · `auth-contracts` · `onboarding` · `processing` (모두 web · mobile이 사용)                                                                       |
 | `docs/`       | 제품 · 아키텍처 · 디자인 · 개발 · 품질                                                                                                                             |
 
 버전은 아래 [버전 정책](#버전-정책)에 한 곳으로 모아 두었다.
@@ -35,7 +35,7 @@ Nx Workspace (repository root)
 구현된 것:
 
 - Nx monorepo와 세 앱의 골격
-- 앱별 부트스트랩 화면 (서비스명 + 소개 문구 + 상태 문구)
+- 홈 — web(Server Component)과 mobile(네이티브)이 온보딩 뒤 처리한 사진(`GET /v1/processing-jobs`의 general 작업) 유무로 빈 홈 · 최근 처리 홈을 보이고, 서버에 저장된 처리 방식을 요약한다. 사진 추가는 아직 비활성이고 확인이 필요한 처리는 빈 상태만 있다
 - 디자인 토큰과 App Shell, web 라이트/다크 테마
 - 네이티브 셸 + 웹 콘텐츠 골격 — mobile native stack, WebView 화면(로딩 · 오류 · 외부 링크), web in-app 모드, `libs/webview-bridge` 계약과 모듈 경계 lint
 - Go `GET /health`, Gin HTTP 경계와 swag로 생성한 Swagger 2.0 문서
@@ -136,7 +136,7 @@ remote가 정해지지 않아 도메인 없는 경로를 쓴다. remote가 생�
 
 ### `libs/` — 공유 코드
 
-**지금 lib은 `webview-bridge` · `auth-contracts` · `onboarding` 셋이다.** 모양과 경계 규칙은 `.claude/rules/libs.md`.
+**지금 lib은 `webview-bridge` · `auth-contracts` · `onboarding` · `processing` 넷이다.** 모양과 경계 규칙은 `.claude/rules/libs.md`.
 
 라이브러리는 재사용이 실제로 발생한 뒤에 만든다. 두 번째 사용처가 나타나기 전에는 코드를 쓰는 앱 안에 둔다.
 

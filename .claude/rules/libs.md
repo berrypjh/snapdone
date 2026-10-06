@@ -5,7 +5,7 @@ paths:
 
 # libs (`libs/`)
 
-지금 lib은 셋이고 web과 mobile이 모두 쓴다 — `webview-bridge`(앱 ↔ WebView 계약: User-Agent 토큰 · 메시지 타입), `auth-contracts`(인증 wire 타입: provider · 오류 코드 · `Session` · 온보딩 단계 · 로그인 응답 해석), `onboarding`(사용 목적 규칙 · 저장된 진행 · 사진 처리 작업 계약과 조회 흐름).
+지금 lib은 넷이고 web과 mobile이 모두 쓴다 — `webview-bridge`(앱 ↔ WebView 계약: User-Agent 토큰 · 메시지 타입), `auth-contracts`(인증 wire 타입: provider · 오류 코드 · `Session` · 온보딩 단계 · 로그인 응답 해석), `onboarding`(사용 목적 규칙 · 저장된 진행 · 사진 처리 작업 계약과 조회 흐름), `processing`(처리 방식 · 최근 처리 기록 계약: 값 · parser · 이름표 · 기록 상태 · 한국 시각 formatter). 단건 처리 작업 계약(`parseJob`)은 `onboarding`에 있고 `processing`이 그것을 쓴다.
 
 ## 모양
 

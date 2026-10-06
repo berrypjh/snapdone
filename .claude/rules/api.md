@@ -33,6 +33,7 @@ internal/evaluation/processingadapter/  core ↔ production 분류기 다리. ev
 - **처리 방식은 유형 하나씩 바꾼다.** `PUT /v1/processing-preferences/{imageType}`은 그 유형의 컬럼만 UPDATE하고 바뀐 뒤의 전체를 돌려준다. 전체를 통째로 바꾸는 쓰기를 두지 않는다 — 오래된 화면이 다른 유형의 값을 덮어쓴다
 - **온보딩 진행은 서버가 가진다.** mobile과 web이 같은 진행을 읽고 써서 어느 쪽에서든 이어 간다. **단계 순서는 서버가 강제한다** — 같은 단계를 다시 저장하거나 한 단계 앞으로만 가고(`onboarding.CanMove`), 어기면 409 `onboarding_out_of_order`다. 검사와 쓰기는 한 UPDATE 안에서 일어난다
 - **사진은 저장하지 않는다.** 처리 요청은 작업만 만들고 202로 돌아가며, 분류는 백그라운드에서 끝나 결과만 `processing_jobs`에 남는다
+- **작업의 출처(`origin`)는 서버가 정한다.** 요청 세션의 온보딩 단계가 `complete`면 `general`, 그 전이면 `onboarding`이다. 클라이언트 입력 · User-Agent로 고르지 않는다. `GET /v1/processing-jobs`는 내 `general` 작업만 최근 순(`created_at DESC, id DESC`)으로 20개까지 돌려주고, 상태는 단건 조회와 같은 규칙(`jobColumns`의 stale running → failed)으로 읽는다
 - **모델은 설정으로 고른다.** `PROCESSING_PROVIDER`(`anthropic` · `openai` 호환)와 `PROCESSING_MODEL`. 모델을 바꾸려고 코드를 고치지 않는다. 모든 공급자가 같은 지시 · 결과 schema를 쓰고 `parseResult`가 결과를 다시 검사한다. 새 공급자는 `Classifier` 구현 하나를 더한다
 - 업로드는 파일 내용으로 판별한 JPEG · PNG · GIF · WebP만, 원본 7,500,000 byte까지(Claude API 이미지 상한 base64 10 MB 기준)
 - **provider 토큰을 앱 · web으로 보내지 않는다.** callback은 60초 result code만 복귀 URI(서버 설정)로 redirect한다. ID token 서명 생략은 token endpoint에서 TLS로 직접 받은 경우에만 허용하고, 클라이언트가 보낸 토큰에는 쓰지 않는다

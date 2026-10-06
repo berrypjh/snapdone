@@ -19,7 +19,7 @@ Nx integrated monorepo. package manager는 **pnpm**(`package.json`의 `packageMa
 | `devhub`     | `apps/devhub`     | Next.js + TypeScript | 내부 도구 — 저장소의 시나리오 · 구조 · 근거 탐색. 제품 앱을 import하지 않는다 |
 | `devhub-e2e` | `apps/devhub-e2e` | Playwright           | devhub E2E                                                                    |
 
-`libs/`에는 `webview-bridge`(앱 ↔ WebView 계약), `auth-contracts`(인증 wire 타입), `onboarding`(온보딩 규칙 · 진행 · 사진 처리 계약)이 있다. 경계는 tag(`type:app` · `type:lib` · `type:e2e`)와 루트 `eslint.config.mjs`가 강제한다. `docs/`는 제품 · 아키텍처 문서다.
+`libs/`에는 `webview-bridge`(앱 ↔ WebView 계약), `auth-contracts`(인증 wire 타입), `onboarding`(온보딩 규칙 · 진행 · 사진 처리 계약), `processing`(처리 방식 · 최근 처리 기록 계약)이 있다. 경계는 tag(`type:app` · `type:lib` · `type:e2e`)와 루트 `eslint.config.mjs`가 강제한다. `docs/`는 제품 · 아키텍처 문서다.
 
 **제품 구성은 네이티브 셸 + 웹 콘텐츠다.** Capture → Act 핵심 흐름과 네비게이션 · 로그인 · 권한은 mobile 네이티브, 결과 상세 · 기록 · 공지 · 설정 같은 콘텐츠 화면은 web 한 벌을 브라우저와 앱 WebView에서 함께 쓴다. 둘은 코드로 참조하지 않고 URL과 `libs/`의 메시지 계약으로만 이어진다 ([target-architecture.md](docs/architecture/target-architecture.md#제품-구성--네이티브-셸--웹-콘텐츠)).
 

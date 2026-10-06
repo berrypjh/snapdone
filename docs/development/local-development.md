@@ -79,14 +79,14 @@ curl -i http://127.0.0.1:8080/health
 
 ### 앱 안 WebView 화면 보기
 
-mobile 홈의 "기록 보기" · "기본 처리 설정"은 web의 `/history` · `/settings/processing`을 WebView로 연다. **web dev 서버가 떠 있어야 한다.**
+mobile 홈의 "설정 변경"은 web의 `/settings/processing`을 WebView로 연다. 홈 자체는 네이티브라 처리 기록 · 처리 방식을 Go API에서 직접 읽는다. **web dev 서버가 떠 있어야 한다.**
 
 홈은 로그인했고 온보딩을 마친 사용자에게만 열린다. 앱과 web 모두 첫 결과 화면에서 "완료"를 누르면 온보딩을 마치고 홈으로 간다. 온보딩을 거치지 않고 홈만 보려면 그 사용자의 `profiles.onboarding_step`을 직접 `complete`로 바꾼다.
 
 1. `apps/mobile/.env`에 `EXPO_PUBLIC_WEB_BASE_URL`을 넣는다 (`.env.example` 참고). iOS 시뮬레이터 `http://localhost:3000` · Android 에뮬레이터 `http://10.0.2.2:3000` · 실기기는 개발 PC LAN IP
 2. 터미널 A: `pnpm dev:web` — 실기기라면 LAN에서 받도록 `pnpm exec nx dev web --hostname 0.0.0.0`
 3. 터미널 B: `pnpm dev:mobile` → `i`(iOS) · `a`(Android). `.env`를 바꿨으면 `pnpm exec nx start mobile --clear`
-4. 홈 → "기록 보기": 네이티브 헤더 제목이 "기록"이고 web의 header · sidebar가 보이지 않아야 한다
+4. 홈 → "설정 변경": 네이티브 헤더 제목이 "사진 종류별 기본 처리"이고 web의 header · sidebar가 보이지 않아야 한다. 저장한 뒤 뒤로 가면 홈의 기본 처리 설정에 바뀐 값이 보여야 한다
 
 브라우저에서 앱 모드를 흉내 내려면 User-Agent 끝에 `SnapdoneApp/1`을 붙인다 (Chrome 개발자도구 → Network conditions).
 

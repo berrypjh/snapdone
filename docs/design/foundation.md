@@ -150,7 +150,7 @@ Mobile은 터치 기반이라 focus 링 대신 pressed 상태와 `accessibilityR
 - 사이드바는 `md`(48rem) 이상에서만 보인다. 그 아래에서는 사라지고 헤더가 제품명을 대신 표시한다
 - 본문 너비는 48rem. 한국어 본문이 한 줄에 너무 길어지지 않는 폭이다
 - 사이드바에 `nav aria-label="주요 메뉴"`로 **실제 route만** 둔다 — 홈 · 기록. 항목 높이는 `min-h-11`(44px). 없는 route로 가는 링크를 만들지 않는다
-- 767px 이하에는 사이드바가 없으므로, 페이지 안 링크로 같은 route에 닿게 한다 (홈의 "기록 보기")
+- 767px 이하에는 사이드바가 없으므로, 페이지 안 링크로 같은 route에 닿게 한다 (홈의 "설정 변경" → 처리 설정). 기록(`/history`)은 아직 빈 화면이라 홈에서 링크하지 않는다 — 폰 폭에서는 직접 주소로만 열린다
 - 헤더 오른쪽에는 "다크 모드" 스위치와, 로그인했을 때만 "로그아웃" 버튼이 있다
 - **폰 폭(320–767px)이 기본 사용 폭이다.** 같은 web이 앱 WebView로도 열리고 WebView는 항상 이 폭이다 ([target-architecture.md](../architecture/target-architecture.md#제품-구성--네이티브-셸--웹-콘텐츠))
 - **앱 WebView(in-app 모드)에서는 셸을 그리지 않는다.** 네이티브가 헤더 · 뒤로 가기를 가지므로 web 헤더 · 사이드바를 숨기고 `main` 본문만 렌더링한다. 판별은 서버에서 User-Agent로 하므로 첫 HTML부터 적용된다 (`AppShell inApp`). SkipLink도 없다 — 건너뛸 셸이 없다
@@ -215,14 +215,14 @@ Mobile은 터치 기반이라 focus 링 대신 pressed 상태와 `accessibilityR
 
 **Mobile도 로컬 primitive가 없다.** `@berrypjh/react-native-ui`에서 가져와 조합한다.
 
-| 쓰는 것 (mobile)                                                             | 어디서                                | 무엇에                   |
-| ---------------------------------------------------------------------------- | ------------------------------------- | ------------------------ |
-| `ThemeProvider mode`                                                         | `app/App.tsx`                         | 시스템 라이트/다크       |
-| `Stack gap="xl"`                                                             | `components/AppShell.tsx`             | 화면 본문 세로 배치      |
-| `Box p="xl" bg="background.surface" radius="lg"` + hairline `stroke.light`   | `screens/HomeScreen.tsx`              | 상태 문구 카드           |
-| `Button variant="outlined"`                                                  | `screens/HomeScreen.tsx`              | "기록 보기"              |
-| `Button variant="contained"`                                                 | `screens/WebContentScreen.tsx`        | WebView 오류 "다시 시도" |
-| `Checkbox` + hairline `stroke.light`(선택 시 `stroke.primary`) · `radius.lg` | `screens/OnboardingPurposeScreen.tsx` | 온보딩 목적 복수 선택    |
+| 쓰는 것 (mobile)                                                             | 어디서                                  | 무엇에                   |
+| ---------------------------------------------------------------------------- | --------------------------------------- | ------------------------ |
+| `ThemeProvider mode`                                                         | `app/App.tsx`                           | 시스템 라이트/다크       |
+| `Stack gap="xl"`                                                             | `components/AppShell.tsx`               | 화면 본문 세로 배치      |
+| `Box p="xl" bg="background.surface" radius="lg"` + hairline `stroke.light`   | `components/home/HomeSection.tsx`       | 홈 영역 카드             |
+| `Button variant="outlined"`                                                  | `components/home/PreferenceSummary.tsx` | "설정 변경"              |
+| `Button variant="contained"`                                                 | `screens/WebContentScreen.tsx`          | WebView 오류 "다시 시도" |
+| `Checkbox` + hairline `stroke.light`(선택 시 `stroke.primary`) · `radius.lg` | `screens/OnboardingPurposeScreen.tsx`   | 온보딩 목적 복수 선택    |
 
 **Modal · Dropdown · Tabs · Toast · Bottom Sheet · Form wrapper는 만들지 않았다.** 필요해지면 공용 라이브러리 컴포넌트를 바로 import해 쓴다.
 

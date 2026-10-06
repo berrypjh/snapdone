@@ -26,6 +26,9 @@
     },
     {
       "path": "./libs/onboarding"
+    },
+    {
+      "path": "./libs/processing"
     }
   ]
 }

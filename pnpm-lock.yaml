@@ -258,6 +258,9 @@ importers:
       '@snapdone/onboarding':
         specifier: workspace:*
         version: link:../../libs/onboarding
+      '@snapdone/processing':
+        specifier: workspace:*
+        version: link:../../libs/processing
       '@snapdone/webview-bridge':
         specifier: workspace:*
         version: link:../../libs/webview-bridge
@@ -321,6 +324,9 @@ importers:
       '@snapdone/onboarding':
         specifier: workspace:*
         version: link:../../libs/onboarding
+      '@snapdone/processing':
+        specifier: workspace:*
+        version: link:../../libs/processing
       '@snapdone/webview-bridge':
         specifier: workspace:*
         version: link:../../libs/webview-bridge
@@ -343,6 +349,12 @@ importers:
       '@snapdone/auth-contracts':
         specifier: workspace:*
         version: link:../auth-contracts
+
+  libs/processing:
+    dependencies:
+      '@snapdone/onboarding':
+        specifier: workspace:*
+        version: link:../onboarding
 
   libs/webview-bridge: {}
 
