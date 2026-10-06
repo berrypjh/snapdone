@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Linking, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, StyleSheet, Text } from 'react-native';
 
-import { Button, getColor, useTheme } from '@berrypjh/react-native-ui';
+import { Box, Button, getColor, Stack, useTheme } from '@berrypjh/react-native-ui';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { decodeWebToAppMessage, inAppUserAgentName } from '@snapdone/webview-bridge';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
@@ -41,9 +41,9 @@ const Loading = () => {
   const theme = useTheme();
 
   return (
-    <View style={[styles.center, { backgroundColor: getColor(theme, 'background.surface') }]}>
+    <Box bg="background.surface" style={styles.center}>
       <ActivityIndicator color={getColor(theme, 'text.primary')} accessibilityLabel="불러오는 중" />
-    </View>
+    </Box>
   );
 };
 
@@ -78,7 +78,7 @@ export const WebContentScreen = ({
     setContentState(next);
   };
 
-  const { spacing, typography } = theme.tokens;
+  const { typography } = theme.tokens;
   const background = { backgroundColor: getColor(theme, 'background.surface') };
 
   const handoff = async (challenge: string) => {
@@ -117,32 +117,34 @@ export const WebContentScreen = ({
   if (content.failure) {
     const copy = FAILURE_COPY[content.failure];
     return (
-      <View style={[styles.center, background, { gap: spacing.lg, padding: spacing.xl }]}>
-        <Text
-          accessibilityRole="header"
-          style={[
-            textStyle(typography.body.mediumStrong),
-            { color: getColor(theme, 'text.default') },
-          ]}
-        >
-          {copy.title}
-        </Text>
-        <Text
-          style={[
-            styles.centerText,
-            textStyle(typography.paragraph.default),
-            { color: getColor(theme, 'text.light') },
-          ]}
-        >
-          {copy.message}
-        </Text>
-        <Button
-          variant="contained"
-          onPress={() => setContent(retryAfterFailure(contentRef.current))}
-        >
-          다시 시도
-        </Button>
-      </View>
+      <Box bg="background.surface" p="xl" style={styles.fill}>
+        <Stack gap="lg" align="center" justify="center" style={styles.fill}>
+          <Text
+            accessibilityRole="header"
+            style={[
+              textStyle(typography.body.mediumStrong),
+              { color: getColor(theme, 'text.default') },
+            ]}
+          >
+            {copy.title}
+          </Text>
+          <Text
+            style={[
+              styles.centerText,
+              textStyle(typography.paragraph.default),
+              { color: getColor(theme, 'text.light') },
+            ]}
+          >
+            {copy.message}
+          </Text>
+          <Button
+            variant="contained"
+            onPress={() => setContent(retryAfterFailure(contentRef.current))}
+          >
+            다시 시도
+          </Button>
+        </Stack>
+      </Box>
     );
   }
 
@@ -168,6 +170,9 @@ export const WebContentScreen = ({
 };
 
 const styles = StyleSheet.create({
+  fill: {
+    flex: 1,
+  },
   center: {
     flex: 1,
     alignItems: 'center',
