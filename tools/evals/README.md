@@ -16,7 +16,7 @@ Python은 절대 채점하지 않고, DevHub는 절대 다시 채점하지 않�
 ## 5분 안에 — 골든 패스
 
 ```bash
-# 1. dataset은 어디 있나 — tools/evals/datasets/<name>/ (지금은 과제마다 형식 예시 1건, sample-*)
+# 1. dataset은 어디 있나 — tools/evals/datasets/<name>/ (채우는 법은 아래 dataset 채우기)
 pnpm eval list                                        # dataset · variant · 실험 설정 · predictions와 준비 상태
 pnpm eval validate --dataset sample-classification    # 구조 검증 + benchmark-ready 여부. 정식 검증은 이것뿐
 
@@ -51,23 +51,16 @@ pnpm dev:devhub                                       # http://localhost:3100/ev
 
 key 없이 끝까지 가 보려면 5번에 `--variant replay-example --predictions tools/evals/predictions/lab-example.jsonl`(notebook writer가 쓴 파일)을 넣는다. 같은 `--run-id`는 다시 쓸 수 없다(덮어쓰지 않음).
 
-## 질문과 답
+<details>
+<summary>VS Code에서 notebook을 열 때</summary>
 
-| 질문                         | 답                                                                                                                                                                                                               |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| dataset은 어디               | `datasets/<name>/`(`manifest.json` · `dev.jsonl` · `validation.jsonl` · `held-out.jsonl` · `fixtures/`). 채우는 법은 [dataset 채우기](#dataset-채우기)                                                           |
-| notebook은 어떻게            | `pnpm eval:lab:setup` 한 번, 그 뒤 `pnpm eval:lab`. 순서는 위 2번                                                                                                                                                |
-| 분류 데이터를 살피려면       | `01_eda.ipynb` — 분포 · 검토 상태 · 빠진 값 · 사진 미리보기 · 필터                                                                                                                                               |
-| 지시문 · 모델 실험은         | `02_prompt_model_lab.ipynb` 맨 위 변수(`PROVIDER` · `MODEL` · `PROMPT` · `CASE_LIMIT` · `RUN`). `RUN=False`면 호출 없이 끝까지 돈다. 정식 live run 명령은 DevHub `/evals`의 "정식 run 명령 만들기"가 조립해 준다 |
-| API key는 어디               | 환경변수 `ANTHROPIC_API_KEY` · `OPENAI_API_KEY`. production 서버는 `apps/api/.env.example`의 `PROCESSING_*`                                                                                                      |
-| 원시 예측은 어디에 쓰이나    | `lab/out/<experiment>.jsonl`(임시, git 무시) 또는 `predictions/<experiment>.jsonl`(보존). 형식의 주인은 Go `ReplayRecord`                                                                                        |
-| Go로 replay하려면            | `pnpm eval replay --dataset … --variant … --predictions … --run-id …`. variant는 notebook이 함께 쓴 `<experiment>.json`(placeholder manifest) 또는 `variants/`의 이름                                            |
-| candidate vs baseline은      | `pnpm eval compare --baseline <run>:<variant> --candidate <run>:<variant> [--gate gates/<name>.json]`                                                                                                            |
-| gate는 누가 정하나           | Go만. 규칙 파일은 `gates/`(`gates/README.md`), 판정은 `comparison.json`의 `gate`. notebook은 후보를 고를 뿐 파일을 쓰지 않는다                                                                                   |
-| DevHub 어디서 보나           | `pnpm dev:devhub` → `/evals` · `/evals/runs/<runId>` · `/evals/compare/<comparisonId>`                                                                                                                           |
-| production에 반영하려면      | [승격](#승격--탐색에서-production까지) — 사람이 결정하고 PR로 바꾼다. notebook이 설정을 고치지 않는다                                                                                                            |
-| validation · held-out은 언제 | [split 규율](#split-규율)                                                                                                                                                                                        |
-| 새 과제를 더하려면           | [과제 더하기](#과제-더하기)                                                                                                                                                                                      |
+커널을 한 번 등록하고 **Select Kernel → Select Another Kernel → Jupyter Kernel... → `snapdone eval lab`**을 고른다.
+
+```bash
+tools/evals/lab/.venv/bin/python -m ipykernel install --user --name snapdone-eval-lab --display-name "snapdone eval lab"
+```
+
+</details>
 
 ## split 규율
 
@@ -87,7 +80,9 @@ notebook에서 탐색(dev)  →  후보(지시문 · 모델 · 임계값)  →  
 ```
 
 - **후보를 Go의 기존 설정으로 적는다** — 지시문은 `experiments/<설정>.json` + `prompts/*.md`, 임계값은 `cascade.escalateOn`, 한계는 `gates/<name>.json`
-- **production 변경은 코드 · 환경변수다** — 모델은 `PROCESSING_PROVIDER` · `PROCESSING_MODEL`(`apps/api/.env.example`), 지시문은 `apps/api/internal/processing/result.go`. 둘 다 PR과 리뷰를 거친다
+- **production 변경은 코드 · 환경변수다** — 모델은 `PROCESSING_PROVIDER` · `PROCESSING_MODEL`(필요하면 `PROCESSING_BASE_URL`, 예시는 `apps/api/.env.example`), 지시문은 `apps/api/internal/processing/result.go`의 `instructions`. 둘 다 PR과 리뷰를 거친다
+- 지시문을 옮긴 뒤 `pnpm nx run api:test`, 그리고 기본 지시문(`anthropic:<모델>`)으로 같은 비교를 한 번 더 돌려 후보와 같은 결과인지 본다
+- 임계값(계단식)은 production 분류기에 아직 없다. 반영하려면 별도 코드 작업
 - notebook → production 설정 자동 반영은 없다. notebook은 `lab/out/`과 `predictions/`에만 쓴다
 
 ## 명령
@@ -144,10 +139,10 @@ results/comparisons/<comparisonId>/   비교 산출물
 | `synthetic-pilot`  | 합성 사진으로 harness를 돌려 보는 단계     | 모델 비교의 참고, benchmark 아님 |
 | `golden-benchmark` | 사람이 검토한 정답. 모든 split이 채점 가능 | 모델 비교의 근거                 |
 
-- **benchmark-ready** — tier `golden-benchmark` · 모든 case 채점 자격 · split마다 `targetPerCategory` 충족. `pnpm eval validate`가 모자란 것을 적는다. 지금 benchmark-ready인 dataset은 없다
+- **benchmark-ready** — tier `golden-benchmark` · 모든 case 채점 자격 · split마다 `targetPerCategory` 충족. `pnpm eval validate`가 모자란 것을 적는다
 - **채점 자격** — `annotation.review: reviewed` · `provenance.privacyReview: reviewed` · `ambiguity`가 `high`가 아님 · dev가 아닌 split은 `method: human`. 검토 사실은 값을 적은 사람의 책임이다
 - **selection hash** — 고른 split의 case를 id 순으로 `id · JSONL 원문 · 사진 byte`를 이은 sha256. 같은 hash끼리만 비교한다
-- 여러 case가 필요한 Go 테스트는 `apps/api/internal/evaluation/testdata/datasets/`의 fixture(21건 합성 `pilot-v1` 포함)를 쓴다
+- 여러 case가 필요한 Go 테스트는 `apps/api/internal/evaluation/testdata/datasets/`의 fixture(합성 `pilot-v1` 포함)를 쓴다
 
 ### dataset 채우기
 
@@ -192,7 +187,6 @@ pnpm eval compare --baseline models:<큰 모델 id> --candidate models:facts-pro
 - **secret** — key는 환경변수에서만 읽고 산출물 · 출력에 없다. 응답에 되풀이돼도 `[redacted]`
 - **held-out** — `--allow-held-out` 없이는 열리지 않는다
 - **retry** — `pnpm eval retry --run <run> --allow-api --max-api-calls N`. 끝난 결과는 호출 없이 옮기고(지금 채점기로 다시 채점) 실패 · 시간 초과 · 미실행만 다시 부른다. 원래 run은 그대로, 새 run은 `<run>-retry`. 조건이 달라졌으면 거절한다
-- 이 저장소 작업에서 실제 provider는 한 번도 부르지 않았다. live 경로는 가짜 HTTP 응답으로만 검증됐다
 
 ## replay 기록 형식
 
@@ -233,14 +227,14 @@ pnpm eval compare --baseline <runId>:<variantId>[:<trial>] --candidate <runId>:<
 
 ## DevHub
 
-`pnpm dev:devhub` → `http://localhost:3100`. 저장소 root의 `tools/evals/results`를 요청마다 읽으므로 새 run이 바로 보인다. DevHub 프로세스에 `ANTHROPIC_API_KEY` · `OPENAI_API_KEY`가 있으면 명령 만들기의 모델 목록을 공급자에서 불러오고, 없으면 모델을 직접 적는다. 모델을 부르는 실행은 하지 않는다.
+`pnpm dev:devhub` → `http://localhost:3100`. `tools/evals/results`를 요청마다 읽으므로 새 run이 바로 보인다. 모델을 부르는 실행은 하지 않는다.
 
-| 경로                            | 보이는 것                                                                                                                                                                                                                                |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/evals`                        | 과제별 요약 · 정식 run 명령 만들기(dataset · split · 기준선 · 실험 설정과 공급자 목록의 최신 모델을 고르거나 적으면 plan · run 명령과 호출 상한 · key 이름) · 명령 예시 · 비교할 수 있는 것과 예시 파일 · 답 출처별 run · 저장된 짝 비교 |
-| `/evals/tasks/<task>`           | run 목록 · 답 출처 · dataset 필터 · 저장된 비교 · 추세                                                                                                                                                                                   |
-| `/evals/runs/<runId>`           | variant 표(Go 값 나란히 · 짝 비교 명령) · case × variant(갈림 · 모두 실패) · variant 자세히(지표 묶음 · 틀린 곳 · 지연 · 사용량 · case)                                                                                                  |
-| `/evals/compare/<comparisonId>` | 무엇을 비교했나 · gate · 축별 차이 · category별 F1 · case 변화(새로 틀림 · 고쳐짐 · 실행 오류 · critical)                                                                                                                                |
+| 경로                            | 보이는 것                                                                                                                               |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `/evals`                        | 과제별 요약 · 정식 run 명령 만들기 · 답 출처별 run · 저장된 짝 비교                                                                     |
+| `/evals/tasks/<task>`           | run 목록 · 답 출처 · dataset 필터 · 저장된 비교 · 추세                                                                                  |
+| `/evals/runs/<runId>`           | variant 표(Go 값 나란히 · 짝 비교 명령) · case × variant(갈림 · 모두 실패) · variant 자세히(지표 묶음 · 틀린 곳 · 지연 · 사용량 · case) |
+| `/evals/compare/<comparisonId>` | 무엇을 비교했나 · gate · 축별 차이 · category별 F1 · case 변화(새로 틀림 · 고쳐짐 · 실행 오류 · critical)                               |
 
 ## 과제 더하기
 
