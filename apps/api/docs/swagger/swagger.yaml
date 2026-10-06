@@ -29,6 +29,7 @@ definitions:
         - invalid_onboarding
         - onboarding_complete
         - onboarding_out_of_order
+        - invalid_preference
         example: session_expired
         type: string
     type: object
@@ -57,6 +58,7 @@ definitions:
         enum:
         - /
         - /history
+        - /settings/processing
         example: /history
         type: string
       verifier:
@@ -76,6 +78,7 @@ definitions:
         enum:
         - /
         - /history
+        - /settings/processing
         example: /history
         type: string
     required:
@@ -210,6 +213,38 @@ definitions:
         - completed
         - failed
         example: running
+        type: string
+    type: object
+  httpserver.ProcessingPreferenceRequest:
+    properties:
+      action:
+        enum:
+        - extract_and_translate
+        - extract_text
+        - summarize
+        - extract_and_summarize
+        - record_expense
+        example: summarize
+        type: string
+    required:
+    - action
+    type: object
+  httpserver.ProcessingPreferencesResponse:
+    properties:
+      receipt:
+        enum:
+        - record_expense
+        - extract_text
+        - summarize
+        example: record_expense
+        type: string
+      text:
+        enum:
+        - extract_and_translate
+        - extract_text
+        - summarize
+        - extract_and_summarize
+        example: extract_and_translate
         type: string
     type: object
   httpserver.ProcessingResultResponse:
@@ -756,6 +791,85 @@ paths:
       summary: 사진 처리 작업
       tags:
       - processing
+  /v1/processing-preferences:
+    get:
+      description: '이미지 유형별 처리 방식. 고른 적이 없으면 서버 기본값(text: extract_and_translate, receipt:
+        record_expense)이다.'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpserver.ProcessingPreferencesResponse'
+        "401":
+          description: credential 없음 · 만료 · 취소 (session_expired)
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+        "500":
+          description: 내부 오류 (provider_unavailable)
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+        "503":
+          description: 인증 비활성 (provider_unavailable)
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 처리 방식
+      tags:
+      - preferences
+  /v1/processing-preferences/{imageType}:
+    put:
+      consumes:
+      - application/json
+      description: |-
+        이미지 유형 하나의 처리 방식만 바꾸고, 바뀐 뒤의 전체를 돌려준다. 다른 유형의 값은 그대로다.
+        text: extract_and_translate · extract_text · summarize · extract_and_summarize
+        receipt: record_expense · extract_text · summarize
+      parameters:
+      - description: 이미지 유형
+        enum:
+        - text
+        - receipt
+        in: path
+        name: imageType
+        required: true
+        type: string
+      - description: 고른 처리 방식
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/httpserver.ProcessingPreferenceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpserver.ProcessingPreferencesResponse'
+        "400":
+          description: 모르는 유형 · 그 유형에 없는 처리 방식 (invalid_preference)
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+        "401":
+          description: credential 없음 · 만료 · 취소 (session_expired)
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+        "500":
+          description: 내부 오류 (provider_unavailable)
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+        "503":
+          description: 인증 비활성 (provider_unavailable)
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 처리 방식 변경
+      tags:
+      - preferences
 securityDefinitions:
   BearerAuth:
     description: '"Bearer <opaque session credential>" 형식. 서버만 해석할 수 있는 세션 토큰.'

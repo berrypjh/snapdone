@@ -248,3 +248,25 @@ func TestHandoffParallelExchangeOnce(t *testing.T) {
 		t.Errorf("successes = %d, want 1", ok.Load())
 	}
 }
+
+// 허용된 next마다 start → exchange가 끝난다. 비슷하지만 다른 경로는 start에서 거절된다.
+func TestHandoffNextAllowlist(t *testing.T) {
+	f := newHandoffFixture(t)
+	for _, next := range []string{"/", "/history", "/settings/processing"} {
+		r := f.start(f.session(t, auth.KindMobile), webVerifier, next)
+		var body struct {
+			Code string `json:"code"`
+		}
+		if r.Code != http.StatusOK || json.NewDecoder(r.Body).Decode(&body) != nil {
+			t.Fatalf("start %s: status %d", next, r.Code)
+		}
+		if r := f.exchange(body.Code, webVerifier, next); r.Code != http.StatusOK {
+			t.Errorf("exchange %s: status %d", next, r.Code)
+		}
+	}
+	for _, next := range []string{"/settings", "/settings/processing/", "/settings/processing?x=1", "/settings/notifications", "//evil.example/settings/processing"} {
+		if r := f.start(f.session(t, auth.KindMobile), webVerifier, next); r.Code != http.StatusBadRequest {
+			t.Errorf("start %s: status %d, want 400", next, r.Code)
+		}
+	}
+}

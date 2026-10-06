@@ -732,6 +732,123 @@
                     }
                 }
             }
+        },
+        "/v1/processing-preferences": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "이미지 유형별 처리 방식. 고른 적이 없으면 서버 기본값(text: extract_and_translate, receipt: record_expense)이다.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "preferences"
+                ],
+                "summary": "처리 방식",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ProcessingPreferencesResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "credential 없음 · 만료 · 취소 (session_expired)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "내부 오류 (provider_unavailable)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "인증 비활성 (provider_unavailable)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/processing-preferences/{imageType}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "이미지 유형 하나의 처리 방식만 바꾸고, 바뀐 뒤의 전체를 돌려준다. 다른 유형의 값은 그대로다.\ntext: extract_and_translate · extract_text · summarize · extract_and_summarize\nreceipt: record_expense · extract_text · summarize",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "preferences"
+                ],
+                "summary": "처리 방식 변경",
+                "parameters": [
+                    {
+                        "enum": [
+                            "text",
+                            "receipt"
+                        ],
+                        "type": "string",
+                        "description": "이미지 유형",
+                        "name": "imageType",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "고른 처리 방식",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ProcessingPreferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ProcessingPreferencesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "모르는 유형 · 그 유형에 없는 처리 방식 (invalid_preference)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "credential 없음 · 만료 · 취소 (session_expired)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "내부 오류 (provider_unavailable)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "인증 비활성 (provider_unavailable)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -773,7 +890,8 @@
                         "job_not_found",
                         "invalid_onboarding",
                         "onboarding_complete",
-                        "onboarding_out_of_order"
+                        "onboarding_out_of_order",
+                        "invalid_preference"
                     ],
                     "example": "session_expired"
                 }
@@ -817,7 +935,8 @@
                     "type": "string",
                     "enum": [
                         "/",
-                        "/history"
+                        "/history",
+                        "/settings/processing"
                     ],
                     "example": "/history"
                 },
@@ -842,7 +961,8 @@
                     "type": "string",
                     "enum": [
                         "/",
-                        "/history"
+                        "/history",
+                        "/settings/processing"
                     ],
                     "example": "/history"
                 }
@@ -1024,6 +1144,49 @@
                         "failed"
                     ],
                     "example": "running"
+                }
+            }
+        },
+        "httpserver.ProcessingPreferenceRequest": {
+            "type": "object",
+            "required": [
+                "action"
+            ],
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": [
+                        "extract_and_translate",
+                        "extract_text",
+                        "summarize",
+                        "extract_and_summarize",
+                        "record_expense"
+                    ],
+                    "example": "summarize"
+                }
+            }
+        },
+        "httpserver.ProcessingPreferencesResponse": {
+            "type": "object",
+            "properties": {
+                "receipt": {
+                    "type": "string",
+                    "enum": [
+                        "record_expense",
+                        "extract_text",
+                        "summarize"
+                    ],
+                    "example": "record_expense"
+                },
+                "text": {
+                    "type": "string",
+                    "enum": [
+                        "extract_and_translate",
+                        "extract_text",
+                        "summarize",
+                        "extract_and_summarize"
+                    ],
+                    "example": "extract_and_translate"
                 }
             }
         },

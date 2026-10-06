@@ -24,16 +24,18 @@ const (
 	errInvalidOnboarding    = "invalid_onboarding"
 	errOnboardingComplete   = "onboarding_complete"
 	errOnboardingOutOfOrder = "onboarding_out_of_order"
+	errInvalidPreference    = "invalid_preference"
 )
 
-// Router가 쓰는 의존성. Sessions · OAuth · Handoff · Processing · Onboarding이 nil이면 해당 endpoint는 503이다.
+// Router가 쓰는 의존성. Sessions · OAuth · Handoff · Processing · Onboarding · Preferences가 nil이면 해당 endpoint는 503이다.
 type Deps struct {
-	Logger     *slog.Logger
-	Sessions   SessionStore
-	OAuth      *auth.OAuth
-	Handoff    *auth.Handoff
-	Processing ProcessingService
-	Onboarding OnboardingStore
+	Logger      *slog.Logger
+	Sessions    SessionStore
+	OAuth       *auth.OAuth
+	Handoff     *auth.Handoff
+	Processing  ProcessingService
+	Onboarding  OnboardingStore
+	Preferences PreferenceStore
 	// Swagger UI(/swagger/*)를 연다. production에서는 끈다.
 	Swagger bool
 }
@@ -46,6 +48,7 @@ type handlers struct {
 	handoff         *auth.Handoff
 	processing      ProcessingService
 	onboardingStore OnboardingStore
+	preferenceStore PreferenceStore
 }
 
 // Gin의 debug 출력(route 목록 · 경고)을 끈다. 구조화 로그와 섞이지 않게 main이 시작할 때 한 번 부른다.
@@ -61,7 +64,7 @@ func NewRouter(deps Deps) *gin.Engine {
 	}
 	h := &handlers{
 		log: deps.Logger, sessions: deps.Sessions, oauth: deps.OAuth, handoff: deps.Handoff,
-		processing: deps.Processing, onboardingStore: deps.Onboarding,
+		processing: deps.Processing, onboardingStore: deps.Onboarding, preferenceStore: deps.Preferences,
 	}
 
 	router := gin.New()
@@ -100,6 +103,10 @@ func NewRouter(deps Deps) *gin.Engine {
 	get(onboardingGroup, "", h.onboarding)
 	onboardingGroup.PUT("", h.saveOnboarding)
 	onboardingGroup.POST("/complete", h.completeOnboarding)
+
+	preferences := v1.Group("/processing-preferences", noStore, limitBody(maxJSONBody), requireConfigured(deps.Sessions != nil && deps.Preferences != nil))
+	get(preferences, "", h.processingPreferences)
+	preferences.PUT("/:imageType", h.setProcessingPreference)
 
 	if deps.Swagger {
 		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

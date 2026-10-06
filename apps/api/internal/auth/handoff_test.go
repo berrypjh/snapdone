@@ -16,6 +16,10 @@ func TestHandoffRejectsBadInputWithoutStore(t *testing.T) {
 	for _, tc := range []struct{ challenge, next string }{
 		{"short", "/history"},
 		{challenge, "/settings"},
+		{challenge, "/settings/processing/"},
+		{challenge, "/settings/processing?x=1"},
+		{challenge, "/settings/Processing"},
+		{challenge, "/settings/notifications"},
 		{challenge, "//evil.example"},
 		{challenge, "https://evil.example/"},
 		{challenge, ""},
@@ -28,6 +32,7 @@ func TestHandoffRejectsBadInputWithoutStore(t *testing.T) {
 		{"", "verifier-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "/history"},
 		{"code", "short", "/history"},
 		{"code", "verifier-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "/settings"},
+		{"code", "verifier-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "/settings/processing/"},
 	} {
 		if _, _, err := handoff.Exchange(ctx, tc.code, tc.verifier, tc.next); !errors.Is(err, auth.ErrInvalidCallback) {
 			t.Errorf("exchange %+v: err = %v, want ErrInvalidCallback", tc, err)

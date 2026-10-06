@@ -5,6 +5,7 @@ import (
 
 	"snapdone/api/internal/auth"
 	"snapdone/api/internal/onboarding"
+	"snapdone/api/internal/preference"
 	"snapdone/api/internal/processing"
 )
 
@@ -16,7 +17,7 @@ type HealthResponse struct {
 
 // 모든 오류 응답의 모양. 값은 클라이언트가 아는 오류 코드뿐이다.
 type ErrorResponse struct {
-	Error string `json:"error" example:"session_expired" enums:"session_expired,provider_unavailable,invalid_callback,invalid_image,image_too_large,unsupported_image,job_not_found,invalid_onboarding,onboarding_complete,onboarding_out_of_order"`
+	Error string `json:"error" example:"session_expired" enums:"session_expired,provider_unavailable,invalid_callback,invalid_image,image_too_large,unsupported_image,job_not_found,invalid_onboarding,onboarding_complete,onboarding_out_of_order,invalid_preference"`
 }
 
 type CapabilitiesResponse struct {
@@ -62,7 +63,7 @@ type ExchangeRequest struct {
 
 type HandoffStartRequest struct {
 	Challenge string `json:"challenge" binding:"required" example:"base64url-S256-challenge-of-the-web-verifier"`
-	Next      string `json:"next" binding:"required" enums:"/,/history" example:"/history"`
+	Next      string `json:"next" binding:"required" enums:"/,/history,/settings/processing" example:"/history"`
 }
 
 type HandoffStartResponse struct {
@@ -72,7 +73,7 @@ type HandoffStartResponse struct {
 type HandoffExchangeRequest struct {
 	Code     string `json:"code" binding:"required" example:"one-time-handoff-code"`
 	Verifier string `json:"verifier" binding:"required" example:"base64url-web-verifier-43-to-128-chars"`
-	Next     string `json:"next" binding:"required" enums:"/,/history" example:"/history"`
+	Next     string `json:"next" binding:"required" enums:"/,/history,/settings/processing" example:"/history"`
 }
 
 func toSessionResponse(session auth.Session) SessionResponse {
@@ -137,4 +138,19 @@ type OnboardingResponse struct {
 
 func toOnboardingResponse(p onboarding.Progress) OnboardingResponse {
 	return OnboardingResponse{Step: p.Step, Purposes: p.Purposes}
+}
+
+// 이미지 유형 하나의 처리 방식. 고를 수 있는 값은 유형마다 다르다(경로의 imageType).
+type ProcessingPreferenceRequest struct {
+	Action string `json:"action" binding:"required" enums:"extract_and_translate,extract_text,summarize,extract_and_summarize,record_expense" example:"summarize"`
+}
+
+// 이미지 유형별 처리 방식 전체.
+type ProcessingPreferencesResponse struct {
+	Text    string `json:"text" enums:"extract_and_translate,extract_text,summarize,extract_and_summarize" example:"extract_and_translate"`
+	Receipt string `json:"receipt" enums:"record_expense,extract_text,summarize" example:"record_expense"`
+}
+
+func toPreferencesResponse(p preference.Preferences) ProcessingPreferencesResponse {
+	return ProcessingPreferencesResponse{Text: string(p.Text), Receipt: string(p.Receipt)}
 }

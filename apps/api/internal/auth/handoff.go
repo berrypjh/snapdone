@@ -12,7 +12,7 @@ import (
 const handoffTTL = 30 * time.Second
 
 // 핸드오프 뒤 WebView가 갈 수 있는 web 경로. web `src/lib/auth/redirect.ts` allowlist의 부분집합이다.
-var handoffNext = map[string]bool{"/": true, "/history": true}
+var handoffNext = map[string]bool{"/": true, "/history": true, "/settings/processing": true}
 
 // 앱 세션을 WebView의 web 세션으로 옮긴다.
 // 앱은 web 서버가 가진 verifier의 challenge로 코드를 받고, web 서버만 verifier로 코드를 바꿀 수 있다.

@@ -28,6 +28,7 @@ import (
 	"snapdone/api/internal/google"
 	"snapdone/api/internal/httpserver"
 	"snapdone/api/internal/onboarding"
+	"snapdone/api/internal/preference"
 	"snapdone/api/internal/processing"
 )
 
@@ -120,6 +121,7 @@ func newDeps(logger *slog.Logger, cfg config.Config, pool *pgxpool.Pool) (httpse
 	}, auth.Consent{TermsVersion: cfg.Auth.TermsVersion, PrivacyVersion: cfg.Auth.PrivacyVersion})
 	deps.Handoff = auth.NewHandoff(store)
 	deps.Onboarding = onboarding.NewStore(pool)
+	deps.Preferences = preference.NewStore(pool)
 	if cfg.Processing == nil {
 		logger.Info("api processing is disabled: PROCESSING_* is not set")
 		return deps, nil

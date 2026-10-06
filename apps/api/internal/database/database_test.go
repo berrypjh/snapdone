@@ -31,6 +31,10 @@ func TestMigrateCreatesAuthTables(t *testing.T) {
 func TestMigrateIsIdempotent(t *testing.T) {
 	pool := databasetest.Pool(t)
 	ctx := context.Background()
+	files, err := database.Pending(ctx, pool)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	for range 2 {
 		if err := database.Migrate(ctx, pool); err != nil {
@@ -42,8 +46,8 @@ func TestMigrateIsIdempotent(t *testing.T) {
 	if err := pool.QueryRow(ctx, "SELECT count(*) FROM schema_migrations").Scan(&count); err != nil {
 		t.Fatal(err)
 	}
-	if count != 2 {
-		t.Errorf("schema_migrations rows = %d, want 2", count)
+	if count != len(files) {
+		t.Errorf("schema_migrations rows = %d, want %d", count, len(files))
 	}
 }
 
