@@ -1,0 +1,26 @@
+import { describe, expect, it } from 'vitest';
+
+import { formatKoreanDateTime } from './datetime';
+
+describe('formatKoreanDateTime', () => {
+  it.each([
+    ['2026-10-06T09:00:00Z', '2026. 10. 6. 오후 6:00'],
+    ['2026-08-15T23:30:00Z', '2026. 8. 16. 오전 8:30'],
+    ['2026-12-31T15:05:00Z', '2027. 1. 1. 오전 12:05'],
+    ['2026-10-06T03:00:00Z', '2026. 10. 6. 오후 12:00'],
+    ['2026-10-06T18:00:00+09:00', '2026. 10. 6. 오후 6:00'],
+  ])('writes %s in Korea as %s', (iso, korean) => {
+    expect(formatKoreanDateTime(iso)).toBe(korean);
+  });
+
+  it('matches what Intl writes for ko-KR in Seoul', () => {
+    const intl = new Intl.DateTimeFormat('ko-KR', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: 'Asia/Seoul',
+    });
+    for (const iso of ['2026-10-06T09:00:00Z', '2026-01-01T00:00:00Z', '2026-06-30T14:59:00Z']) {
+      expect(formatKoreanDateTime(iso)).toBe(intl.format(new Date(iso)));
+    }
+  });
+});
