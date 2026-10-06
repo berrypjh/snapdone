@@ -11,6 +11,8 @@ export {
   runProcessing,
 } from './lib/processing';
 export {
+  type CompletedProgress,
+  parseCompletedProgress,
   parseSavedProgress,
   type ProgressUpdate,
   type ResumeStep,
@@ -24,3 +26,4 @@ export {
   PURPOSES,
   togglePurpose,
 } from './lib/purposes';
+export { presentResult, type ResultPresentation } from './lib/result';

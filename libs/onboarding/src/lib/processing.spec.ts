@@ -148,6 +148,10 @@ describe('parseJob', () => {
       { ...completedBody, result: { ...completedBody.result, category: 'x' } },
     ],
     [
+      'an unknown action',
+      { ...completedBody, result: { ...completedBody.result, suggestedAction: 'save_expense' } },
+    ],
+    [
       'a numeric confidence',
       { ...completedBody, result: { ...completedBody.result, confidence: 0.9 } },
     ],

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseSavedProgress } from './progress';
+import { parseCompletedProgress, parseSavedProgress } from './progress';
 
 describe('parseSavedProgress', () => {
   it.each([
@@ -37,5 +37,27 @@ describe('parseSavedProgress', () => {
     { step: 'first-image', purposes: ['food', 'unsure'] },
   ])('rejects %j', (value) => {
     expect(parseSavedProgress(value)).toBeNull();
+  });
+});
+
+describe('parseCompletedProgress', () => {
+  it.each([
+    { step: 'complete', purposes: ['food', 'receipt'] },
+    { step: 'complete', purposes: [] },
+    { step: 'complete', purposes: null },
+  ])('reads %j', (value) => {
+    expect(parseCompletedProgress(value)).toEqual(value);
+  });
+
+  it.each([
+    null,
+    'complete',
+    { step: 'first-image', purposes: [] },
+    { step: 'intro', purposes: null },
+    { step: 'complete' },
+    { step: 'complete', purposes: ['cooking'] },
+    { error: 'onboarding_out_of_order' },
+  ])('rejects %j', (value) => {
+    expect(parseCompletedProgress(value)).toBeNull();
   });
 });

@@ -12,6 +12,9 @@ export type ResumeStep = Exclude<OnboardingStep, 'complete'>;
  */
 export type SavedProgress = { step: OnboardingStep; purposes: readonly Purpose[] | null };
 
+/** 온보딩 완료(`POST /v1/onboarding/complete`) 뒤의 진행. 목적은 first-image의 값 그대로다. */
+export type CompletedProgress = SavedProgress & { step: 'complete' };
+
 /** 저장 요청 본문. */
 export type ProgressUpdate = { step: ResumeStep; purposes: readonly Purpose[] | null };
 
@@ -32,4 +35,10 @@ export const parseSavedProgress = (value: unknown): SavedProgress | null => {
   if ((step === 'intro' || step === 'purpose') && purposes !== null) return null;
   if (step === 'first-image' && purposes === null) return null;
   return { step, purposes };
+};
+
+/** 완료 응답 본문에서 진행만 꺼낸다. 진행 응답과 같은 모양이고, `complete`가 아니면 `null`이다. */
+export const parseCompletedProgress = (value: unknown): CompletedProgress | null => {
+  const progress = parseSavedProgress(value);
+  return progress?.step === 'complete' ? { ...progress, step: 'complete' } : null;
 };
