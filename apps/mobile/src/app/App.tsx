@@ -82,12 +82,13 @@ const AppNavigator = () => {
           <>
             <Stack.Screen
               name="Home"
-              component={HomeScreen}
               options={{
                 title: '이미지 액션 라우터',
                 headerRight: () => <LogoutButton controller={controller} />,
               }}
-            />
+            >
+              {(props) => <HomeScreen {...props} controller={controller} />}
+            </Stack.Screen>
             <Stack.Screen
               name="WebContent"
               options={({ route }) => ({ title: route.params.title })}

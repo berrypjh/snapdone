@@ -24,6 +24,7 @@
     "@react-navigation/native-stack": "*",
     "@snapdone/auth-contracts": "workspace:*",
     "@snapdone/onboarding": "workspace:*",
+    "@snapdone/processing": "workspace:*",
     "@snapdone/webview-bridge": "workspace:*",
     "expo": "*",
     "expo-crypto": "*",
