@@ -17,6 +17,7 @@ export const webUrl = (path: string) =>
 const WEB_VIEW_PATHS = new Set([
   '/',
   '/history',
+  '/settings/processing',
   '/login',
   '/onboarding',
   '/auth/handoff',

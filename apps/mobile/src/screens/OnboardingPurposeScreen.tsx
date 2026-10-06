@@ -27,7 +27,7 @@ type OnboardingPurposeScreenProps = {
 };
 
 /**
- * ON-03 사용 목적 선택. 여러 개를 고를 수 있고 필수가 아니다.
+ * 사용 목적 선택. 여러 개를 고를 수 있고 필수가 아니다.
  * 다음은 고른 목적을, 건너뛰기는 건너뛴 사실을 온보딩 진행에 남기고 첫 사진으로 간다.
  */
 export const OnboardingPurposeScreen = ({

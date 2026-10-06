@@ -78,6 +78,7 @@ describe('with a web base URL', () => {
     it.each([
       BASE_URL,
       `${BASE_URL}/history?tab=all#top`,
+      `${BASE_URL}/settings/processing`,
       `${BASE_URL}/login?next=%2Fhistory`,
       `${BASE_URL}/auth/handoff?code=c&next=%2Fhistory`,
       'about:blank',
@@ -95,6 +96,9 @@ describe('with a web base URL', () => {
     it.each([
       `${BASE_URL}/auth/callback?code=c&state=s`,
       `${BASE_URL}/settings`,
+      `${BASE_URL}/settings/processing/`,
+      `${BASE_URL}/settings/Processing`,
+      `${BASE_URL}/settings/notifications`,
       `${BASE_URL}/history/`,
       'http://192.168.0.10:30001/history',
       'http://192.168.0.10:3000.evil.example/history',

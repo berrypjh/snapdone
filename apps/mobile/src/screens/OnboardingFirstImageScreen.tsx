@@ -15,7 +15,7 @@ const EXAMPLES = ['영수증', '외국어가 있는 사진'] as const;
 type OnboardingFirstImageScreenProps = { onSelected: (image: SelectedImage) => void };
 
 /**
- * ON-04 첫 이미지 추가. 사진에서 선택 · 카메라로 촬영 중 하나로 한 장을 받는다.
+ * 첫 이미지 추가. 사진에서 선택 · 카메라로 촬영 중 하나로 한 장을 받는다.
  * 권한은 카메라를 누른 순간에만 묻고, 취소는 아무 안내 없이 이 화면에 머문다.
  */
 export const OnboardingFirstImageScreen = ({ onSelected }: OnboardingFirstImageScreenProps) => {

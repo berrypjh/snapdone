@@ -38,6 +38,18 @@ export const HomeScreen = ({ navigation }: HomeScreenProps) => {
       >
         기록 보기
       </Button>
+
+      <Button
+        variant="outlined"
+        onPress={() =>
+          navigation.navigate('WebContent', {
+            path: '/settings/processing',
+            title: '사진 종류별 기본 처리',
+          })
+        }
+      >
+        기본 처리 설정
+      </Button>
     </AppShell>
   );
 };
