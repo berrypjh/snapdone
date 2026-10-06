@@ -90,6 +90,13 @@ export const contracts: ContractRef[] = [
     owner: 'onboarding',
   },
   {
+    id: 'onboarding-completed-progress',
+    kind: 'wire-type',
+    name: 'CompletedProgress',
+    definedIn: { path: PROGRESS, symbol: 'CompletedProgress' },
+    owner: 'onboarding',
+  },
+  {
     id: 'processing-job',
     kind: 'wire-type',
     name: 'ProcessingJob',

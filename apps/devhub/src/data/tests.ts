@@ -198,6 +198,24 @@ export const tests: TestRef[] = [
     'saves with PUT and a JSON body',
   ),
   vitest(
+    'onboarding-present-result',
+    `${LIB_ONBOARDING}/result.spec.ts`,
+    'presentResult',
+    'names a receipt and suggests organizing the expense without claiming it was done',
+  ),
+  vitest(
+    'web-onboarding-complete',
+    `${WEB_ONBOARDING}/actions.spec.ts`,
+    'completeOnboarding',
+    'finishes onboarding and goes home',
+  ),
+  vitest(
+    'web-onboarding-complete-reconcile',
+    `${WEB_ONBOARDING}/actions.spec.ts`,
+    'completeOnboarding',
+    'follows the saved step when the onboarding is not at the first photo',
+  ),
+  vitest(
     'web-onboarding-save-conflict',
     `${WEB_ONBOARDING}/api.spec.ts`,
     'progress',
@@ -446,6 +464,18 @@ export const tests: TestRef[] = [
   ),
 
   vitest(
+    'mobile-onboarding-complete',
+    `${MOBILE_ONBOARDING}/completion.spec.ts`,
+    'completeOnboarding',
+    'completes on the server, then takes the refreshed session',
+  ),
+  vitest(
+    'mobile-session-refresh-home',
+    `${MOBILE}/controller.spec.ts`,
+    'refreshSession',
+    'puts the session the server returns into the snapshot, which sends a finished user home',
+  ),
+  vitest(
     'mobile-onboarding-resume-web',
     `${MOBILE_ONBOARDING}/controller.spec.ts`,
     'load',
@@ -638,6 +668,20 @@ export const tests: TestRef[] = [
   goTest('go-onboarding-validate', ONBOARDING, 'TestValidate', []),
   goTest('go-onboarding-can-move', ONBOARDING, 'TestCanMove', []),
   goTest('go-onboarding-rejects', `${HTTP}/onboarding_test.go`, 'TestOnboardingRejects', []),
+  goTest('go-onboarding-complete', `${HTTP}/onboarding_test.go`, 'TestOnboardingComplete', []),
+  goTest(
+    'go-onboarding-complete-rejects',
+    `${HTTP}/onboarding_test.go`,
+    'TestOnboardingCompleteRejects',
+    [],
+  ),
+  goTest('go-onboarding-store-complete', ONBOARDING, 'TestStoreCompletes', DB),
+  goTest(
+    'go-onboarding-store-complete-concurrently',
+    ONBOARDING,
+    'TestStoreCompleteConcurrently',
+    DB,
+  ),
   goTest('go-processing-create', `${HTTP}/processing_test.go`, 'TestCreateProcessingJob', []),
   goTest(
     'go-processing-create-rejects',
@@ -836,7 +880,17 @@ export const tests: TestRef[] = [
   playwright(
     'e2e-web-onboarding-flow',
     'onboarding.spec.ts',
-    'a browser user goes from the intro through purposes to the first photo',
+    'a browser user goes from the intro through the first result to the home page',
+  ),
+  playwright(
+    'e2e-web-onboarding-foreign-text',
+    'onboarding.spec.ts',
+    'a foreign-language photo shows what was read and suggests a translation it has not done',
+  ),
+  playwright(
+    'e2e-web-first-result-keyboard',
+    'auth-accessibility.spec.ts',
+    'the first result at 320px takes focus on its heading and completes with the keyboard',
   ),
   playwright(
     'e2e-web-onboarding-unsure-skip',

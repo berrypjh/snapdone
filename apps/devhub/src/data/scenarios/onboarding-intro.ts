@@ -9,13 +9,9 @@ export const onboardingIntro: Scenario = {
   title: '온보딩 소개',
   goal: '처음 온 사용자가 서비스 소개를 보고 온보딩을 마친 뒤 홈 도착',
   track: 'current',
-  status: 'partial',
+  status: 'implemented',
   docs: [{ document: 'local-development', heading: '앱 안 WebView 화면 보기' }],
   gaps: [
-    {
-      kind: 'code-not-found',
-      note: '온보딩을 끝내는 API 없음. 앱과 web 모두 소개 → 목적 선택 → 첫 사진 → 처리까지 진행하지만 첫 결과 화면이 없어 그 뒤로 못 감. 실제 사용자는 홈 도달 불가, 로컬에서는 profiles.onboarding_step 직접 변경 필요',
-    },
     {
       kind: 'runtime-unverified',
       note: '신규 사용자가 로그인 직후 /onboarding에 닿는 E2E는 이 환경에서 실행 못 함',
@@ -111,7 +107,7 @@ export const onboardingIntro: Scenario = {
         },
         {
           kind: 'code-not-found',
-          note: '예시(영수증 · 공연 포스터 · 맛집 캡처)는 EXAMPLES 고정 문구. 지출 기록 · 캘린더 등록 · 맛집 저장 코드 없음 — finish-task-from-image 참고',
+          note: '예시(영수증 · 외국어 안내문)는 EXAMPLES 고정 문구. 사진에서 값을 확인하는 데까지이고 지출 저장 · 번역 실행 코드는 없음 — finish-task-from-image 참고',
         },
       ],
       next: ['finish'],
@@ -154,16 +150,46 @@ export const onboardingIntro: Scenario = {
       id: 'finish',
       intent: '온보딩을 끝내고 홈으로 이동',
       behavior:
-        '앱과 web 모두 첫 사진 처리 뒤 "다음 단계는 준비 중입니다."에서 멈춤. 진행 저장(PUT /v1/onboarding)은 intro · purpose · first-image만 받음. onboarding_step을 complete로 바꾸는 코드 · endpoint 없음',
+        'POST /v1/onboarding/complete가 first-image에서 complete로 확정(이미 마쳤으면 그대로 성공, 목적 유지, 그 전 단계는 409). web은 결과 화면의 완료 버튼이 Server Action으로 부르고 홈(/)으로 보냄. 앱은 완료 뒤 세션을 다시 받아 onboardingStep이 complete가 되면 root stack이 홈으로 바뀜',
       runtime: 'go-api',
       owner: 'api',
-      status: 'not-found',
-      docs: [{ document: 'local-development', heading: '앱 안 WebView 화면 보기' }],
-      absence: [
+      status: 'implemented',
+      source: [
+        { path: 'apps/api/internal/onboarding/onboarding.go', symbol: 'Store.Complete' },
         {
-          terms: ["onboarding_step = 'complete'"],
-          scope: ['apps/api/internal'],
-          meaning: 'API 코드 어디에도 onboarding_step을 complete로 바꾸는 SQL 없음',
+          path: 'apps/api/internal/httpserver/onboarding.go',
+          symbol: 'handlers.completeOnboarding',
+        },
+        { path: 'apps/web/src/lib/onboarding/actions.ts', symbol: 'completeOnboarding' },
+        { path: 'apps/mobile/src/onboarding/completion.ts', symbol: 'completeOnboarding' },
+        { path: 'apps/mobile/src/auth/controller.ts', symbol: 'createAuthController' },
+        { path: 'apps/mobile/src/auth/model.ts', symbol: 'destinationFor' },
+        { path: 'apps/mobile/src/app/App.tsx', symbol: 'AppNavigator' },
+      ],
+      apis: ['post-onboarding-complete'],
+      tests: [
+        'go-onboarding-complete',
+        'go-onboarding-complete-rejects',
+        'go-onboarding-store-complete',
+        'go-onboarding-store-complete-concurrently',
+        'web-onboarding-complete',
+        'web-onboarding-complete-reconcile',
+        'mobile-onboarding-complete',
+        'mobile-session-refresh-home',
+        'e2e-web-onboarding-flow',
+        'e2e-web-first-result-keyboard',
+      ],
+      docs: [{ document: 'local-development', heading: '앱 안 WebView 화면 보기' }],
+      gaps: [
+        {
+          kind: 'runtime-unverified',
+          note: 'web이 홈까지 가는 E2E는 이 환경에서 실행 못 함. 앱은 런타임 검증 수단이 없어 실기기 확인이 남음',
+          tests: ['e2e-web-onboarding-flow', 'e2e-web-first-result-keyboard'],
+        },
+        {
+          kind: 'config-required',
+          note: '저장소 테스트는 TEST_DATABASE_URL이 있어야 돌아감',
+          tests: ['go-onboarding-store-complete', 'go-onboarding-store-complete-concurrently'],
         },
       ],
     }),

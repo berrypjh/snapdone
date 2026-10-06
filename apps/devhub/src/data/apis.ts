@@ -125,6 +125,14 @@ export const apis: ApiRef[] = [
     exposure: 'always',
   },
   {
+    id: 'post-onboarding-complete',
+    method: 'POST',
+    path: '/v1/onboarding/complete',
+    handler: { path: ONBOARDING, symbol: 'handlers.completeOnboarding' },
+    alsoHead: false,
+    exposure: 'always',
+  },
+  {
     id: 'get-swagger-ui',
     method: 'GET',
     path: '/swagger/*any',

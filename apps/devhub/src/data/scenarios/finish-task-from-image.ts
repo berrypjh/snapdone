@@ -28,7 +28,7 @@ export const finishTaskFromImage: Scenario = {
   gaps: [
     {
       kind: 'code-not-found',
-      note: 'Capture · Understand는 온보딩 첫 사진 한 장에만 있음 — 앱이나 web이 사진을 올리면 api가 설정된 모델로 분류해 결과 반환(/v1/processing-jobs). Route → Act → Learn은 코드 · API · 스키마에 없음. 온보딩 소개의 예시(영수증 · 공연 포스터 · 맛집 캡처)는 고정 문구',
+      note: 'Capture · Understand는 온보딩 첫 사진 한 장에만 있음 — 앱이나 web이 사진을 올리면 api가 설정된 모델로 분류해 결과 반환(/v1/processing-jobs). Route → Act → Learn은 코드 · API · 스키마에 없음. 온보딩 소개의 예시(영수증 · 외국어 안내문)는 고정 문구',
     },
   ],
   steps: [

@@ -13,7 +13,7 @@ export const onboardingFirstPhoto: Scenario = {
   title: '온보딩 첫 사진 처리',
   goal: '온보딩에서 사용 목적을 고르고 첫 사진 한 장을 올려 처리 결과 수신. 앱과 web 어느 쪽에서든 이어서 진행',
   track: 'current',
-  status: 'partial',
+  status: 'implemented',
   docs: [
     { document: 'local-development', heading: '온보딩 처음부터 보기' },
     { document: 'data-access', heading: 'Web은 서버에서 호출한다' },
@@ -244,7 +244,7 @@ export const onboardingFirstPhoto: Scenario = {
         'go-job-stale',
         'go-job-owner',
       ],
-      next: ['show-result'],
+      next: ['show-result-app'],
     }),
     step({
       id: 'wait-web',
@@ -266,26 +266,61 @@ export const onboardingFirstPhoto: Scenario = {
       apis: ['get-processing-job'],
       contracts: ['processing-job'],
       tests: ['onboarding-run-polls', 'web-processing-signed-out', 'go-processing-find'],
-      next: ['show-result'],
+      next: ['show-result-web'],
     }),
     step({
-      id: 'show-result',
-      intent: '사진에서 찾은 것과 할 일 보기',
+      id: 'show-result-web',
+      intent: '브라우저에서 사진에서 찾은 것과 추천 작업 보기',
       behavior:
-        '앱과 web 모두 결과를 받지만 "다음 단계는 준비 중입니다."만 표시. 분류 · 찾은 값 · 제안 행동을 그리는 화면 없음',
+        '처리가 끝나면 같은 사진과 함께 "사진을 확인했습니다", 사진 종류(영수증 · 텍스트 / 외국어만), 서버가 읽은 값, 추천 작업과 "아직 이 작업을 실행하지 않았습니다." 표시. 완료를 누르면 온보딩을 끝내고 홈으로',
+      runtime: 'browser',
+      owner: 'web',
+      status: 'implemented',
+      source: [
+        {
+          path: 'apps/web/src/components/onboarding/result-view.tsx',
+          symbol: 'ResultView',
+        },
+        { path: 'libs/onboarding/src/lib/result.ts', symbol: 'presentResult' },
+      ],
+      tests: [
+        'onboarding-present-result',
+        'e2e-web-onboarding-flow',
+        'e2e-web-onboarding-foreign-text',
+        'e2e-web-first-result-keyboard',
+      ],
+      gaps: [
+        {
+          kind: 'runtime-unverified',
+          note: '렌더링 · 320px · 키보드 완료를 고정한 E2E는 이 환경에서 실행 못 함',
+          tests: [
+            'e2e-web-onboarding-flow',
+            'e2e-web-onboarding-foreign-text',
+            'e2e-web-first-result-keyboard',
+          ],
+        },
+      ],
+    }),
+    step({
+      id: 'show-result-app',
+      intent: '앱에서 사진에서 찾은 것과 추천 작업 보기',
+      behavior:
+        'web과 같은 내용 — 처리한 사진, "사진을 확인했습니다", 사진 종류(영수증 · 텍스트 / 외국어만), 서버가 읽은 값, 추천 작업과 "아직 이 작업을 실행하지 않았습니다." 완료를 누르면 서버에서 온보딩을 끝내고 세션을 다시 받아 홈으로',
       runtime: 'mobile-app',
       owner: 'mobile',
-      status: 'not-found',
-      absence: [
+      status: 'implemented',
+      source: [
         {
-          terms: ['suggestedAction', 'facts', 'confidence'],
-          scope: [
-            'apps/mobile/src/screens',
-            'apps/mobile/src/components',
-            'apps/web/src/components',
-            'apps/web/src/app',
-          ],
-          meaning: '앱 · web 화면 어디에도 처리 결과의 필드를 그리는 코드 없음',
+          path: 'apps/mobile/src/screens/OnboardingResultScreen.tsx',
+          symbol: 'OnboardingResultScreen',
+        },
+        { path: 'libs/onboarding/src/lib/result.ts', symbol: 'presentResult' },
+      ],
+      tests: ['onboarding-present-result'],
+      gaps: [
+        {
+          kind: 'runtime-unverified',
+          note: '화면 컴포넌트 테스트 · 실기기 확인 없음(mobile 런타임 검증 수단 없음)',
         },
       ],
     }),

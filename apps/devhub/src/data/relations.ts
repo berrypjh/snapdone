@@ -126,6 +126,7 @@ export const relations: Relation[] = [
       'post-auth-handoff-exchange',
       'get-onboarding',
       'put-onboarding',
+      'post-onboarding-complete',
       'post-processing-jobs',
       'get-processing-job',
     ],
@@ -136,6 +137,7 @@ export const relations: Relation[] = [
       'auth-login-response',
       'onboarding-progress',
       'onboarding-progress-update',
+      'onboarding-completed-progress',
       'processing-job',
     ],
     evidence: [
@@ -161,6 +163,7 @@ export const relations: Relation[] = [
       'post-auth-handoff-start',
       'get-onboarding',
       'put-onboarding',
+      'post-onboarding-complete',
       'post-processing-jobs',
       'get-processing-job',
     ],
@@ -171,6 +174,7 @@ export const relations: Relation[] = [
       'auth-login-response',
       'onboarding-progress',
       'onboarding-progress-update',
+      'onboarding-completed-progress',
       'processing-job',
     ],
     evidence: [
