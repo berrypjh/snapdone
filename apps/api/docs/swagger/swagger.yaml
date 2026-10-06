@@ -200,6 +200,13 @@ definitions:
         example: 8월 20일 19시
         type: string
     type: object
+  httpserver.ProcessingJobListResponse:
+    properties:
+      jobs:
+        items:
+          $ref: '#/definitions/httpserver.ProcessingJobSummaryResponse'
+        type: array
+    type: object
   httpserver.ProcessingJobResponse:
     properties:
       jobId:
@@ -213,6 +220,29 @@ definitions:
         - completed
         - failed
         example: running
+        type: string
+    type: object
+  httpserver.ProcessingJobSummaryResponse:
+    properties:
+      createdAt:
+        example: "2026-10-06T09:00:00Z"
+        format: date-time
+        type: string
+      finishedAt:
+        example: "2026-10-06T09:00:07Z"
+        format: date-time
+        type: string
+      jobId:
+        example: 4f1c2a9e-0000-4000-8000-000000000000
+        type: string
+      result:
+        $ref: '#/definitions/httpserver.ProcessingResultResponse'
+      status:
+        enum:
+        - running
+        - completed
+        - failed
+        example: completed
         type: string
     type: object
   httpserver.ProcessingPreferenceRequest:
@@ -706,12 +736,41 @@ paths:
       tags:
       - onboarding
   /v1/processing-jobs:
+    get:
+      description: |-
+        온보딩을 마친 뒤 올린 내 처리 작업을 최근에 만든 것부터 20개까지. 온보딩 첫 사진은 넣지 않는다.
+        상태는 작업 조회와 같은 규칙이다. 끝나지 못해 실패로 보는 작업에는 finishedAt이 없다.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpserver.ProcessingJobListResponse'
+        "401":
+          description: credential 없음 · 만료 · 취소 (session_expired)
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+        "500":
+          description: 내부 오류 (provider_unavailable)
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+        "503":
+          description: 처리 비활성 (provider_unavailable)
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 최근 사진 처리 작업
+      tags:
+      - processing
     post:
       consumes:
       - multipart/form-data
       description: |-
         사진 한 장(multipart 필드 image)으로 처리 작업을 만들고 바로 돌아온다. 결과는 작업 조회로 받는다.
         JPEG · PNG · GIF · WebP만 받고 7,500,000 byte까지다. 사진은 저장하지 않는다.
+        온보딩을 마치기 전의 작업은 온보딩 첫 사진으로 남아 작업 목록에 나오지 않는다.
       parameters:
       - description: 사진 한 장
         in: formData

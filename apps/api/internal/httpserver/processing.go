@@ -27,13 +27,24 @@ var imageTypes = map[string]bool{"image/jpeg": true, "image/png": true, "image/g
 
 // 사진 처리 작업. 운영에서는 *processing.Processor다.
 type ProcessingService interface {
-	Start(ctx context.Context, userID string, image []byte, mediaType string) (processing.Job, error)
+	Start(ctx context.Context, userID string, origin processing.Origin, image []byte, mediaType string) (processing.Job, error)
 	Find(ctx context.Context, userID, id string) (processing.Job, error)
+	Recent(ctx context.Context, userID string) ([]processing.Job, error)
+}
+
+// 작업의 출처는 요청 세션의 온보딩 단계로 서버가 정한다. 온보딩을 마친 뒤에만 general이다.
+// 온보딩 첫 사진은 결과를 본 뒤에 온보딩을 마치므로 onboarding으로 남는다.
+func jobOrigin(onboardingStep string) processing.Origin {
+	if onboardingStep == "complete" {
+		return processing.OriginGeneral
+	}
+	return processing.OriginOnboarding
 }
 
 // @Summary     사진 처리 시작
 // @Description 사진 한 장(multipart 필드 image)으로 처리 작업을 만들고 바로 돌아온다. 결과는 작업 조회로 받는다.
 // @Description JPEG · PNG · GIF · WebP만 받고 7,500,000 byte까지다. 사진은 저장하지 않는다.
+// @Description 온보딩을 마치기 전의 작업은 온보딩 첫 사진으로 남아 작업 목록에 나오지 않는다.
 // @Tags        processing
 // @Accept      multipart/form-data
 // @Produce     json
@@ -62,7 +73,8 @@ func (h *handlers) createProcessingJob(c *gin.Context) {
 		writeError(c, http.StatusUnsupportedMediaType, errUnsupportedImage)
 		return
 	}
-	job, err := h.processing.Start(c.Request.Context(), session.User.ID, image, mediaType)
+	origin := jobOrigin(session.User.OnboardingStep)
+	job, err := h.processing.Start(c.Request.Context(), session.User.ID, origin, image, mediaType)
 	if err != nil {
 		h.internalError(c, "processing start failed", err)
 		return
@@ -97,6 +109,30 @@ func (h *handlers) processingJob(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, toProcessingJobResponse(job))
+}
+
+// @Summary     최근 사진 처리 작업
+// @Description 온보딩을 마친 뒤 올린 내 처리 작업을 최근에 만든 것부터 20개까지. 온보딩 첫 사진은 넣지 않는다.
+// @Description 상태는 작업 조회와 같은 규칙이다. 끝나지 못해 실패로 보는 작업에는 finishedAt이 없다.
+// @Tags        processing
+// @Produce     json
+// @Security    BearerAuth
+// @Success     200 {object} ProcessingJobListResponse
+// @Failure     401 {object} ErrorResponse "credential 없음 · 만료 · 취소 (session_expired)"
+// @Failure     500 {object} ErrorResponse "내부 오류 (provider_unavailable)"
+// @Failure     503 {object} ErrorResponse "처리 비활성 (provider_unavailable)"
+// @Router      /v1/processing-jobs [get]
+func (h *handlers) processingJobs(c *gin.Context) {
+	session, ok := h.requireSession(c)
+	if !ok {
+		return
+	}
+	jobs, err := h.processing.Recent(c.Request.Context(), session.User.ID)
+	if err != nil {
+		h.internalError(c, "processing list failed", err)
+		return
+	}
+	c.JSON(http.StatusOK, toProcessingJobListResponse(jobs))
 }
 
 // multipart 필드 image의 내용. 실패하면 상태 코드와 오류 코드를 돌려준다.

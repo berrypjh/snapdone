@@ -8,13 +8,22 @@ import (
 	"time"
 )
 
-// fakeJobs는 작업이 끝나면 finished로 알린다.
+// fakeJobs는 작업이 끝나면 finished로 알리고, 만든 작업의 출처와 목록 요청을 기록한다.
 type fakeJobs struct {
 	finished chan Job
+	origin   Origin
+	limit    int
+	stale    time.Duration
 }
 
-func (f *fakeJobs) Create(context.Context, string) (Job, error) {
+func (f *fakeJobs) Create(_ context.Context, _ string, origin Origin) (Job, error) {
+	f.origin = origin
 	return Job{ID: "job-1", Status: StatusRunning}, nil
+}
+
+func (f *fakeJobs) RecentGeneral(_ context.Context, _ string, limit int, staleAfter time.Duration) ([]Job, error) {
+	f.limit, f.stale = limit, staleAfter
+	return []Job{}, nil
 }
 
 func (f *fakeJobs) Complete(_ context.Context, id string, result Result) error {
@@ -45,7 +54,7 @@ func startAndWait(t *testing.T, classifier Classifier) (Job, Job) {
 	jobs := &fakeJobs{finished: make(chan Job, 1)}
 	processor := NewProcessor(jobs, classifier, slog.New(slog.DiscardHandler))
 
-	started, err := processor.Start(context.Background(), "user-1", []byte("x"), "image/png")
+	started, err := processor.Start(context.Background(), "user-1", OriginOnboarding, []byte("x"), "image/png")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,5 +84,32 @@ func TestStartFailsWhenClassifyFails(t *testing.T) {
 
 	if finished.Status != StatusFailed || finished.Result != nil {
 		t.Fatalf("finished = %+v, want failed without a result", finished)
+	}
+}
+
+// 받은 출처를 그대로 저장소에 넘긴다.
+func TestStartPassesOrigin(t *testing.T) {
+	for _, origin := range []Origin{OriginOnboarding, OriginGeneral} {
+		jobs := &fakeJobs{finished: make(chan Job, 1)}
+		processor := NewProcessor(jobs, fakeClassifier{}, slog.New(slog.DiscardHandler))
+		if _, err := processor.Start(context.Background(), "user-1", origin, []byte("x"), "image/png"); err != nil {
+			t.Fatal(err)
+		}
+		<-jobs.finished
+		if jobs.origin != origin {
+			t.Errorf("stored origin %q, want %q", jobs.origin, origin)
+		}
+	}
+}
+
+// 목록은 단건 조회와 같은 staleAfter와 정한 상한으로 읽는다.
+func TestRecentUsesSameStaleRule(t *testing.T) {
+	jobs := &fakeJobs{}
+	processor := NewProcessor(jobs, fakeClassifier{}, slog.New(slog.DiscardHandler))
+	if _, err := processor.Recent(context.Background(), "user-1"); err != nil {
+		t.Fatal(err)
+	}
+	if jobs.limit != recentLimit || jobs.stale != staleAfter {
+		t.Errorf("limit %d, staleAfter %v", jobs.limit, jobs.stale)
 	}
 }

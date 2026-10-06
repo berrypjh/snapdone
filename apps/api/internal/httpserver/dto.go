@@ -108,21 +108,54 @@ type ProcessingFactResponse struct {
 	Value string `json:"value" example:"8월 20일 19시"`
 }
 
+// 최근 처리 작업. 없으면 빈 목록이다.
+type ProcessingJobListResponse struct {
+	Jobs []ProcessingJobSummaryResponse `json:"jobs"`
+}
+
+// 목록의 작업 하나. result는 status가 completed일 때만, finishedAt은 끝난 시각을 아는 작업에만 있다.
+type ProcessingJobSummaryResponse struct {
+	JobID      string                    `json:"jobId" example:"4f1c2a9e-0000-4000-8000-000000000000"`
+	Status     string                    `json:"status" enums:"running,completed,failed" example:"completed"`
+	CreatedAt  time.Time                 `json:"createdAt" format:"date-time" example:"2026-10-06T09:00:00Z"`
+	FinishedAt *time.Time                `json:"finishedAt,omitempty" format:"date-time" example:"2026-10-06T09:00:07Z"`
+	Result     *ProcessingResultResponse `json:"result,omitempty"`
+}
+
 func toProcessingJobResponse(job processing.Job) ProcessingJobResponse {
-	response := ProcessingJobResponse{JobID: job.ID, Status: string(job.Status)}
-	if job.Result != nil {
-		facts := make([]ProcessingFactResponse, len(job.Result.Facts))
-		for i, fact := range job.Result.Facts {
-			facts[i] = ProcessingFactResponse{Label: fact.Label, Value: fact.Value}
+	return ProcessingJobResponse{JobID: job.ID, Status: string(job.Status), Result: toProcessingResultResponse(job.Result)}
+}
+
+func toProcessingJobListResponse(jobs []processing.Job) ProcessingJobListResponse {
+	response := ProcessingJobListResponse{Jobs: make([]ProcessingJobSummaryResponse, len(jobs))}
+	for i, job := range jobs {
+		summary := ProcessingJobSummaryResponse{
+			JobID: job.ID, Status: string(job.Status), CreatedAt: job.CreatedAt.UTC(),
+			Result: toProcessingResultResponse(job.Result),
 		}
-		response.Result = &ProcessingResultResponse{
-			Category:        job.Result.Category,
-			Facts:           facts,
-			SuggestedAction: job.Result.SuggestedAction,
-			Confidence:      job.Result.Confidence,
+		if job.FinishedAt != nil {
+			finished := job.FinishedAt.UTC()
+			summary.FinishedAt = &finished
 		}
+		response.Jobs[i] = summary
 	}
 	return response
+}
+
+func toProcessingResultResponse(result *processing.Result) *ProcessingResultResponse {
+	if result == nil {
+		return nil
+	}
+	facts := make([]ProcessingFactResponse, len(result.Facts))
+	for i, fact := range result.Facts {
+		facts[i] = ProcessingFactResponse{Label: fact.Label, Value: fact.Value}
+	}
+	return &ProcessingResultResponse{
+		Category:        result.Category,
+		Facts:           facts,
+		SuggestedAction: result.SuggestedAction,
+		Confidence:      result.Confidence,
+	}
 }
 
 // 온보딩 진행. purposes는 first-image부터 있다 — null은 아직 답하지 않음, 빈 목록은 건너뜀이다.

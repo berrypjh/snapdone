@@ -4,6 +4,7 @@ package httpserver
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -21,9 +22,11 @@ const validToken = "abc_DEF-123"
 var bearer = []string{"Authorization", "Bearer " + validToken}
 
 // fakeSessions는 validToken만 유효한 세션으로 알고, err가 있으면 모든 호출에서 돌려준다.
+// step은 세션 사용자의 온보딩 단계다. 비어 있으면 intro다.
 type fakeSessions struct {
 	err     error
 	revoked [][]byte
+	step    string
 }
 
 func (f *fakeSessions) FindSession(_ context.Context, hash []byte) (auth.Session, error) {
@@ -35,7 +38,7 @@ func (f *fakeSessions) FindSession(_ context.Context, hash []byte) (auth.Session
 	}
 	return auth.Session{
 		ID:        "internal-session-id",
-		User:      auth.User{ID: "user-1", OnboardingStep: "intro"},
+		User:      auth.User{ID: "user-1", OnboardingStep: cmp.Or(f.step, "intro")},
 		ExpiresAt: time.Date(2026, 10, 1, 9, 0, 0, 0, time.FixedZone("KST", 9*3600)),
 	}, nil
 }

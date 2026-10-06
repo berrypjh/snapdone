@@ -97,6 +97,7 @@ func NewRouter(deps Deps) *gin.Engine {
 	// 처리는 로그인 세션이 필요하다. 사진 본문은 인증 요청보다 큰 상한을 쓴다.
 	jobs := v1.Group("/processing-jobs", noStore, requireConfigured(deps.Sessions != nil && deps.Processing != nil))
 	jobs.POST("", extendDeadline(uploadTimeout), limitBody(maxUploadBody), h.createProcessingJob)
+	get(jobs, "", h.processingJobs)
 	get(jobs, "/:jobId", h.processingJob)
 
 	onboardingGroup := v1.Group("/onboarding", noStore, limitBody(maxJSONBody), requireConfigured(deps.Sessions != nil && deps.Onboarding != nil))
