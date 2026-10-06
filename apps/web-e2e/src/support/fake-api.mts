@@ -33,8 +33,18 @@ const faults = { startStatus: 0, startDelayMs: 0, startCalls: 0 };
 const purposes = new Map<string, string[]>();
 /** The result every photo of a user gets. Absent means a receipt. */
 const userResults = new Map<string, PhotoResult>();
-/** Processing jobs, owned by one user, finish on their first lookup. */
-const jobs = new Map<string, { userId: string; result: PhotoResult }>();
+/**
+ * Processing jobs, owned by one user, finish on their first lookup. Like Go, the origin comes from
+ * the session's onboarding step: a photo before the onboarding is complete never shows on the home.
+ */
+const jobs = new Map<
+  string,
+  { userId: string; result: Result; origin: 'onboarding' | 'general'; createdAt: string }
+>();
+/** Users whose recent job list fails with 500. Chosen per user so parallel tests stay apart. */
+const failingRecentJobs = new Set<string>();
+/** Users whose preference reads fail with 500. Chosen per user so parallel tests stay apart. */
+const failingPreferenceReads = new Set<string>();
 /** Processing preferences per user. Absent means the server defaults. */
 const preferences = new Map<string, Preferences>();
 /** Users whose preference saves fail with 500. Chosen per user so parallel tests stay apart. */
@@ -155,6 +165,13 @@ const RESULTS = {
   },
 } as const;
 type PhotoResult = keyof typeof RESULTS;
+/** Go `processing.Result`: what the classifier read from one photo. */
+type Result = {
+  category: string;
+  facts: readonly { label: string; value: string }[];
+  suggestedAction: string;
+  confidence: string;
+};
 
 const routes: Record<string, Handler> = {
   'GET /v1/auth/capabilities': (_req, res) => send(res, 200, { providers: ['google'] }),
@@ -293,21 +310,55 @@ const routes: Record<string, Handler> = {
     const session = authorized(req, res);
     if (!session) return;
     const jobId = `job-${token().slice(0, 8)}`;
-    const result = userResults.get(session.userId) ?? 'receipt';
-    jobs.set(jobId, { userId: session.userId, result });
+    const result = RESULTS[userResults.get(session.userId) ?? 'receipt'];
+    const origin = session.step === 'complete' ? 'general' : 'onboarding';
+    jobs.set(jobId, {
+      userId: session.userId,
+      result,
+      origin,
+      createdAt: new Date().toISOString(),
+    });
     send(res, 202, { jobId, status: 'running' });
+  },
+
+  /** Go `GET /v1/processing-jobs`: this user's general jobs, newest first (`created_at`, then id), at most 20. */
+  'GET /v1/processing-jobs': (req, res) => {
+    const session = authorized(req, res);
+    if (!session) return;
+    if (failingRecentJobs.has(session.userId)) {
+      return send(res, 500, { error: 'provider_unavailable' });
+    }
+    const recent = [...jobs]
+      .filter(([, job]) => job.userId === session.userId && job.origin === 'general')
+      .sort(
+        ([idA, a], [idB, b]) => b.createdAt.localeCompare(a.createdAt) || idB.localeCompare(idA),
+      )
+      .slice(0, 20)
+      .map(([jobId, job]) => ({
+        jobId,
+        status: 'completed',
+        createdAt: job.createdAt,
+        finishedAt: job.createdAt,
+        result: job.result,
+      }));
+    send(res, 200, { jobs: recent });
   },
 
   'GET /v1/processing-preferences': (req, res) => {
     const session = authorized(req, res);
-    if (session) send(res, 200, preferences.get(session.userId) ?? DEFAULT_PREFERENCES);
+    if (!session) return;
+    if (failingPreferenceReads.has(session.userId)) {
+      return send(res, 500, { error: 'provider_unavailable' });
+    }
+    send(res, 200, preferences.get(session.userId) ?? DEFAULT_PREFERENCES);
   },
 
   'GET /__fixture/health': (_req, res) => send(res, 200, { status: 'ok' }),
 
   /**
-   * `{ onboardingStep, kind, result, preferenceSaveFails }` → `{ credential }`. A first-image user
-   * skipped the purposes. `result` is what this user's photos come back as.
+   * `{ onboardingStep, kind, result, ...UserOptions }` → `{ credential }` (`fixture.ts`). A first-image
+   * user skipped the purposes. `result` is what this user's photos come back as, `generalJobs`
+   * the results of photos they already processed after the onboarding.
    */
   'POST /__fixture/sessions': async (req, res) => {
     const body = await readJson(req);
@@ -319,6 +370,19 @@ const routes: Record<string, Handler> = {
     if (step === 'first-image') purposes.set(session.userId, []);
     if (body.result === 'foreign_text') userResults.set(session.userId, 'foreign_text');
     if (body.preferenceSaveFails === true) failingPreferenceSaves.add(session.userId);
+    if (body.recentJobsFail === true) failingRecentJobs.add(session.userId);
+    if (body.preferencesReadFail === true) failingPreferenceReads.add(session.userId);
+    // General jobs this user processed after the onboarding, oldest first — rows Go would hold.
+    const seeded = Array.isArray(body.generalJobs) ? (body.generalJobs as Result[]) : [];
+    seeded.forEach((result, index) => {
+      const createdAt = new Date(Date.UTC(2026, 9, 6, 9, index)).toISOString();
+      jobs.set(`job-${token().slice(0, 8)}`, {
+        userId: session.userId,
+        result,
+        origin: 'general',
+        createdAt,
+      });
+    });
     send(res, 200, { credential });
   },
 
@@ -364,7 +428,7 @@ createServer((req, res) => {
     const job = jobs.get(jobId);
     // Go answers another user's job the same as a missing one.
     if (job?.userId !== session.userId) return send(res, 404, { error: 'job_not_found' });
-    return send(res, 200, { jobId, status: 'completed', result: RESULTS[job.result] });
+    return send(res, 200, { jobId, status: 'completed', result: job.result });
   }
   const preferenceUpdate = /^\/v1\/processing-preferences\/([^/]+)$/.exec(url.pathname);
   if (req.method === 'PUT' && preferenceUpdate) {

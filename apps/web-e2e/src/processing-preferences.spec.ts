@@ -1,6 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
 
 import { linkTabKey, overflowsSideways, signIn } from './support/fixture';
+import { enterMain } from './support/keyboard';
 
 /**
  * The per-image-type default processing page against the fake API, which keeps the preferences
@@ -128,9 +129,7 @@ test('chooses and saves with the keyboard alone', async ({
   const tab = linkTabKey(browserName);
   const text = area(page, '텍스트 / 외국어');
 
-  await page.keyboard.press(tab);
-  await expect(page.getByRole('link', { name: '본문으로 건너뛰기' })).toBeFocused();
-  await page.keyboard.press('Enter');
+  await enterMain(page, browserName);
   await page.keyboard.press(tab);
   await expect(text.option('추출 및 번역')).toBeFocused();
 

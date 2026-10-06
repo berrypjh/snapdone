@@ -7,7 +7,12 @@ type AppMessages = { __appMessages: string[] };
 test.describe('inside the app WebView', () => {
   test.use({ userAgent: IN_APP_USER_AGENT, viewport: { width: 390, height: 844 } });
 
-  test('renders only the page content, without the web shell', async ({ page }) => {
+  test('renders only the page content, without the web shell', async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await signIn(context, baseURL ?? '');
     await page.goto('/');
 
     await expect(page.getByRole('main')).toBeVisible();
@@ -142,16 +147,3 @@ const recordAppMessages = (page: Page) =>
 
 const appMessages = (page: Page) =>
   page.evaluate(() => (window as unknown as AppMessages).__appMessages);
-
-test('signed-out browser visitors reach login from the history link', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/');
-
-  await page
-    .getByRole('navigation', { name: '주요 메뉴' })
-    .getByRole('link', { name: '기록' })
-    .click();
-
-  await expect(page).toHaveURL(/\/login\?next=%2Fhistory$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('사진에서 행동까지.');
-});

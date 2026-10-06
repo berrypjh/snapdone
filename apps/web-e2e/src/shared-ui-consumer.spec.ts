@@ -1,6 +1,11 @@
 import { expect, type Page, test } from '@playwright/test';
 
-import { linkTabKey, overflowsSideways } from './support/fixture';
+import { linkTabKey, overflowsSideways, signIn } from './support/fixture';
+
+/** The home is a protected product page, so it is checked signed in. */
+test.beforeEach(async ({ context, baseURL }) => {
+  await signIn(context, baseURL ?? '');
+});
 
 /**
  * How the app consumes @berrypjh/react-ui as it ships: the first server HTML, a clean
@@ -46,9 +51,9 @@ const readSurface = (page: Page) =>
   });
 
 test('serves the shell, skip link, and pre-paint theme script in the first HTML', async ({
-  request,
+  context,
 }) => {
-  const response = await request.get('/');
+  const response = await context.request.get('/');
   expect(response.ok()).toBe(true);
 
   const html = await response.text();

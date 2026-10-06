@@ -45,6 +45,12 @@ test('a browser user goes from the intro through the first result to the home pa
   await page.getByRole('button', { name: '완료' }).click();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('이미지 액션 라우터');
+  // The onboarding photo was processed, but it is not a general job: the home is the empty one,
+  // with no recent item and no review section. The home goes by general jobs, not by any job.
+  const recent = page.getByRole('region', { name: '최근 처리' });
+  await expect(recent).toContainText('새로 추가한 사진의 처리 기록이 아직 없습니다.');
+  await expect(recent.getByText('12,000원')).toHaveCount(0);
+  await expect(page.getByRole('region', { name: '확인이 필요한 처리' })).toHaveCount(0);
 
   // The server now has the onboarding finished, so it does not open again.
   await page.goto('/onboarding');

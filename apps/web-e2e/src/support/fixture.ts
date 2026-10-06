@@ -32,8 +32,33 @@ type OnboardingStep = 'intro' | 'first-image' | 'complete';
 /** What the fake API returns for this user's photos. Chosen per user so parallel tests stay apart. */
 export type PhotoResult = 'receipt' | 'foreign_text';
 
-/** Per-user fake API behavior. `preferenceSaveFails` makes this user's preference saves answer 500. */
-export type UserFaults = { preferenceSaveFails?: boolean };
+/** What the classifier read from one photo (Go `processing.Result`). */
+export type JobResult = {
+  category: 'receipt' | 'foreign_text' | 'place' | 'event' | 'shopping' | 'work' | 'other';
+  facts: { label: string; value: string }[];
+  suggestedAction: 'save_place' | 'add_to_calendar' | 'record_expense' | 'translate' | 'none';
+  confidence: 'high' | 'medium' | 'low';
+};
+
+/**
+ * Per-user fake API state, chosen per user so parallel tests stay apart.
+ * `generalJobs` are photos this user already processed after the onboarding, oldest first.
+ * The `*Fails` switches make that one request answer 500 for this user.
+ */
+export type UserOptions = {
+  generalJobs?: JobResult[];
+  preferenceSaveFails?: boolean;
+  preferencesReadFail?: boolean;
+  recentJobsFail?: boolean;
+};
+
+/** A completed receipt job with these facts. */
+export const receiptJob = (...facts: [label: string, value: string][]): JobResult => ({
+  category: 'receipt',
+  facts: facts.map(([label, value]) => ({ label, value })),
+  suggestedAction: 'record_expense',
+  confidence: 'high',
+});
 
 /** Mints a session in the fake API and returns its credential. */
 export const mintSession = async (
@@ -41,10 +66,10 @@ export const mintSession = async (
   onboardingStep: OnboardingStep,
   kind: 'web' | 'mobile' = 'web',
   result: PhotoResult = 'receipt',
-  faults: UserFaults = {},
+  options: UserOptions = {},
 ): Promise<string> => {
   const response = await request.post(`${FAKE_API_URL}/__fixture/sessions`, {
-    data: { onboardingStep, kind, result, ...faults },
+    data: { onboardingStep, kind, result, ...options },
   });
   return ((await response.json()) as { credential: string }).credential;
 };
@@ -55,9 +80,9 @@ export const signIn = async (
   baseURL: string,
   onboardingStep: OnboardingStep = 'complete',
   result: PhotoResult = 'receipt',
-  faults: UserFaults = {},
+  options: UserOptions = {},
 ): Promise<string> => {
-  const credential = await mintSession(context.request, onboardingStep, 'web', result, faults);
+  const credential = await mintSession(context.request, onboardingStep, 'web', result, options);
   await context.addCookies([
     { name: SESSION_COOKIE, value: credential, url: baseURL, httpOnly: true, sameSite: 'Lax' },
   ]);
@@ -72,6 +97,27 @@ const PHOTO = {
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
     'base64',
   ),
+};
+
+/** Saves one image type's preference the way the settings page would (Go `PUT /v1/processing-preferences/{imageType}`). */
+export const savePreference = async (
+  request: APIRequestContext,
+  credential: string,
+  imageType: 'text' | 'receipt',
+  action: string,
+) => {
+  await request.put(`${FAKE_API_URL}/v1/processing-preferences/${imageType}`, {
+    headers: { Authorization: `Bearer ${credential}` },
+    data: { action },
+  });
+};
+
+/** Starts a processing job the way an app would. After the onboarding it is a general job. */
+export const startJob = async (request: APIRequestContext, credential: string) => {
+  await request.post(`${FAKE_API_URL}/v1/processing-jobs`, {
+    headers: { Authorization: `Bearer ${credential}` },
+    multipart: { image: PHOTO },
+  });
 };
 
 /**

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { linkTabKey, overflowsSideways } from './support/fixture';
+import { linkTabKey, overflowsSideways, signIn } from './support/fixture';
 
 /**
  * The shell swaps at the md breakpoint: the sidebar is desktop-only, and below
@@ -8,6 +8,11 @@ import { linkTabKey, overflowsSideways } from './support/fixture';
  * docs/design/foundation.md, and it is easy to break by editing a utility class.
  */
 const MD_BREAKPOINT = 768;
+
+/** The home is a protected product page, so the shell is checked signed in. */
+test.beforeEach(async ({ context, baseURL }) => {
+  await signIn(context, baseURL ?? '');
+});
 
 test('keeps the sidebar on desktop widths', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
