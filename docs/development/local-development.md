@@ -81,7 +81,7 @@ curl -i http://127.0.0.1:8080/health
 
 mobile 홈의 "기록 보기"는 web의 `/history`를 WebView로 연다. **web dev 서버가 떠 있어야 한다.**
 
-홈은 로그인했고 온보딩을 마친 사용자에게만 열린다. 온보딩을 끝내는 단계(결과 화면 · 완료 API)는 아직 없으므로 로컬에서는 그 사용자의 `profiles.onboarding_step`을 직접 `complete`로 바꿔야 홈에 닿는다.
+홈은 로그인했고 온보딩을 마친 사용자에게만 열린다. 앱과 web 모두 첫 결과 화면에서 "완료"를 누르면 온보딩을 마치고 홈으로 간다. 온보딩을 거치지 않고 홈만 보려면 그 사용자의 `profiles.onboarding_step`을 직접 `complete`로 바꾼다.
 
 1. `apps/mobile/.env`에 `EXPO_PUBLIC_WEB_BASE_URL`을 넣는다 (`.env.example` 참고). iOS 시뮬레이터 `http://localhost:3000` · Android 에뮬레이터 `http://10.0.2.2:3000` · 실기기는 개발 PC LAN IP
 2. 터미널 A: `pnpm dev:web` — 실기기라면 LAN에서 받도록 `pnpm exec nx dev web --hostname 0.0.0.0`

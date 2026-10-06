@@ -327,8 +327,8 @@ DevHub 후보 컴포넌트의 prop (`api <Symbol>`, 스타일 · ref · aria 계
 
 ### 제품 (docs 대비 source)
 
-- **핵심 루프 대부분이 없다.** Capture · Understand는 온보딩 첫 사진 한 장에만 있다 — 앱 · web이 사진을 올리면 api가 설정된 모델로 분류한다(`/v1/processing-jobs`). Route · Act · Learn은 source · DB 스키마 · endpoint · 의존성에 흔적이 없다. 현재 제품 가치 흐름은 "로그인 → 온보딩(첫 사진 처리 뒤 막힘) → 부트스트랩 홈 → 빈 기록"이다
-- 앱 · web 온보딩은 첫 사진 처리 뒤 "다음 단계는 준비 중입니다."에서 끝난다. 결과 화면과 완료 endpoint가 없어 실제 사용자는 홈에 닿지 못한다
+- **핵심 루프 대부분이 없다.** Capture · Understand는 온보딩 첫 사진 한 장에만 있다 — 앱 · web이 사진을 올리면 api가 설정된 모델로 분류한다(`/v1/processing-jobs`). Route · Act · Learn은 source · DB 스키마 · endpoint · 의존성에 흔적이 없다. 현재 제품 가치 흐름은 "로그인 → 온보딩(첫 사진 처리 뒤 막힘) → 부트스트랩 홈 → 빈 기록"이다 — 이후 온보딩 부분 해결(아래 항목). Route는 추천을 보이는 데까지, Act · Learn은 여전히 없다
+- 앱 · web 온보딩은 첫 사진 처리 뒤 "다음 단계는 준비 중입니다."에서 끝난다. 결과 화면과 완료 endpoint가 없어 실제 사용자는 홈에 닿지 못한다 — 해결. 두 앱에 첫 결과 화면(찾은 값 · 추천 작업, 실행하지 않음)과 `POST /v1/onboarding/complete`가 생겨 홈까지 간다. 지금 상태는 DevHub의 `onboarding-intro` · `onboarding-first-photo` 시나리오
 - 권한 · 설정 · 결과 · no-action 상태는 규칙만 있고 첫 구현이 없다. 공용 loading · empty · error 컴포넌트도 없다(`ko-ui.md`)
 - 화면 흐름 원문(화면 기획서)이 저장소 · 로컬 어디에도 없다. 코드 주석은 기획서 화면 ID를 참조하지만 원문을 확인할 수 없다
 

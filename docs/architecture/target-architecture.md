@@ -41,7 +41,7 @@ Nx Workspace (repository root)
 - Go `GET /health`, Gin HTTP 경계와 swag로 생성한 Swagger 2.0 문서
 - Postgres 연결 · 마이그레이션(로컬 Docker)과 인증 저장소 · `/v1/auth/*`
 - Google 로그인 화면과 세션 — mobile 네이티브 흐름, web 로그인 · HttpOnly 세션 cookie, WebView 로그인 핸드오프. **실계정 · 실기기 인수는 남아 있다**
-- 온보딩 소개 → 사용 목적 → 첫 사진 → 처리 — mobile(네이티브)과 web(브라우저 단독, 파일 선택)이 같은 순서로 간다. 진행은 서버(`/v1/onboarding`)에 있어 어느 쪽에서든 이어 간다. 첫 결과 화면 · 온보딩 완료는 아직 없다
+- 온보딩 소개 → 사용 목적 → 첫 사진 → 처리 — mobile(네이티브)과 web(브라우저 단독, 파일 선택)이 같은 순서로 간다. 진행은 서버(`/v1/onboarding`)에 있어 어느 쪽에서든 이어 간다. 두 앱 모두 첫 결과 화면(사진에서 찾은 값 · 추천 작업, 실행은 하지 않음)에서 온보딩을 마치고 홈으로 간다(`POST /v1/onboarding/complete`). mobile은 완료 뒤 세션을 다시 받아 root stack이 홈으로 바뀐다
 - 검증 명령과 문서
 
 아직 구현하지 않은 것:

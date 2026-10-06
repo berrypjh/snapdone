@@ -132,7 +132,7 @@ spec 파일도 `pnpm typecheck`가 검사한다. tsconfig에 `*.spec.ts` exclude
 
 역할 기반 선택자를 쓰므로 시맨틱 랜드마크까지 함께 검증된다. 자세한 계약은 [design/foundation.md](../design/foundation.md).
 
-로그인 흐름은 로그인 · 온보딩 화면의 반응형 · 접근성, 보호 경로 redirect와 복귀, 로그아웃, WebView 핸드오프를 본다. 인증 spec은 가짜 인증 API(`src/support/fake-api.mts`)로 돌고 실제 Google에는 접속하지 않는다. 운영 바이너리에는 가짜 provider로 바꾸는 스위치가 없다. 실행 방법과 함정은 `.claude/rules/e2e.md`.
+로그인 흐름은 로그인 · 온보딩 화면의 반응형 · 접근성, 보호 경로 redirect와 복귀, 로그아웃, WebView 핸드오프를 본다. 온보딩은 첫 사진 → 첫 결과(영수증 · 외국어, 서버가 준 값만) → 완료 → 홈까지와 결과 화면의 320px · 포커스 · 키보드 완료를 본다. 처리 결과는 가짜 API가 사용자별로 정해 병렬 실행끼리 섞이지 않는다. 인증 spec은 가짜 인증 API(`src/support/fake-api.mts`)로 돌고 실제 Google에는 접속하지 않는다. 운영 바이너리에는 가짜 provider로 바꾸는 스위치가 없다. 실행 방법과 함정은 `.claude/rules/e2e.md`.
 
 **mobile에는 E2E가 없다.** Detox는 시뮬레이터/에뮬레이터가 필요한데 이 환경에 없다(full Xcode·Android SDK 미설치). 실행 환경이 갖춰지면 그때 판단한다.
 
