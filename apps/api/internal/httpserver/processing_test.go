@@ -23,6 +23,9 @@ type fakeProcessing struct {
 	job       processing.Job
 	recent    []processing.Job
 	err       error
+	startErr  error
+	reprocess *processing.Reprocess
+	resolved  []string
 	userID    string
 	origin    processing.Origin
 	mediaType string
@@ -31,7 +34,26 @@ type fakeProcessing struct {
 
 func (f *fakeProcessing) Start(_ context.Context, userID string, origin processing.Origin, image []byte, mediaType string) (processing.Job, error) {
 	f.userID, f.origin, f.image, f.mediaType = userID, origin, image, mediaType
+	if f.startErr != nil {
+		return processing.Job{}, f.startErr
+	}
 	return processing.Job{ID: "job-1", Status: processing.StatusRunning}, nil
+}
+
+func (f *fakeProcessing) Reprocess(_ context.Context, userID string, origin processing.Origin, image []byte, mediaType string, r processing.Reprocess) (processing.Job, error) {
+	f.userID, f.origin, f.image, f.mediaType, f.reprocess = userID, origin, image, mediaType, &r
+	if f.startErr != nil {
+		return processing.Job{}, f.startErr
+	}
+	return processing.Job{ID: "job-2", Status: processing.StatusRunning, SourceJobID: &r.SourceJobID}, nil
+}
+
+func (f *fakeProcessing) ResolveReceiptField(_ context.Context, userID, id, field, value string) (processing.Job, error) {
+	f.userID, f.resolved = userID, []string{id, field, value}
+	if f.err != nil {
+		return processing.Job{}, f.err
+	}
+	return f.job, nil
 }
 
 func (f *fakeProcessing) Recent(_ context.Context, userID string) ([]processing.Job, error) {
@@ -59,6 +81,20 @@ func upload(handler http.Handler, field string, data []byte, headers ...string) 
 	form := multipart.NewWriter(&body)
 	part, _ := form.CreateFormFile(field, "photo")
 	_, _ = part.Write(data)
+	_ = form.Close()
+	return send(handler, http.MethodPost, "/v1/processing-jobs", body.String(),
+		append([]string{"Content-Type", form.FormDataContentType()}, headers...)...)
+}
+
+// uploadWith는 image와 함께 재처리 필드를 담은 multipart 요청을 보낸다.
+func uploadWith(handler http.Handler, fields map[string]string, headers ...string) *httptest.ResponseRecorder {
+	var body bytes.Buffer
+	form := multipart.NewWriter(&body)
+	part, _ := form.CreateFormFile("image", "photo")
+	_, _ = part.Write(pngImage)
+	for name, value := range fields {
+		_ = form.WriteField(name, value)
+	}
 	_ = form.Close()
 	return send(handler, http.MethodPost, "/v1/processing-jobs", body.String(),
 		append([]string{"Content-Type", form.FormDataContentType()}, headers...)...)
@@ -215,6 +251,196 @@ func TestProcessingJobs(t *testing.T) {
 		t.Errorf("listed jobs of %q, want the session's user", service.userID)
 	}
 	assertNoStore(t, r)
+}
+
+// 제품 결과와 재처리 관계는 이 모양으로 나간다. libs/processing의 parser가 같은 본문을 읽는다.
+// 확인하지 못한 영수증 필드는 value가 null이고, 이 migration 전의 작업에는 outcome이 없다.
+func TestProcessingJobsOutcome(t *testing.T) {
+	created := time.Date(2026, 10, 7, 9, 0, 0, 0, time.UTC)
+	value := func(v string) *string { return &v }
+	source := "job-1"
+	service := &fakeProcessing{recent: []processing.Job{
+		{ID: "job-3", Status: processing.StatusCompleted, CreatedAt: created, FinishedAt: &created, SourceJobID: &source,
+			Selection: &processing.Selection{ImageType: processing.ImageText, Action: "extract_and_translate"},
+			Result:    &processing.Result{Category: "foreign_text", Facts: []processing.Fact{}, SuggestedAction: "translate", Confidence: "high"},
+			Outcome: &processing.Outcome{Kind: processing.OutcomeProcessed, ImageType: processing.ImageText, AppliedAction: "extract_and_translate",
+				Output: &processing.Output{Original: value("Open daily"), Translation: &processing.Translation{Needed: true, Text: value("매일 영업")}}}},
+		{ID: "job-2", Status: processing.StatusCompleted, CreatedAt: created, FinishedAt: &created,
+			Result:  &processing.Result{Category: "other", Facts: []processing.Fact{}, SuggestedAction: "none", Confidence: "low"},
+			Outcome: &processing.Outcome{Kind: processing.OutcomeAmbiguous, Candidates: []processing.ImageType{processing.ImageText, processing.ImageReceipt}}},
+		{ID: "job-1", Status: processing.StatusCompleted, CreatedAt: created, FinishedAt: &created,
+			Selection: &processing.Selection{ImageType: processing.ImageReceipt, Action: "record_expense"},
+			Result:    &processing.Result{Category: "receipt", Facts: []processing.Fact{}, SuggestedAction: "record_expense", Confidence: "medium"},
+			Outcome: &processing.Outcome{Kind: processing.OutcomeProcessed, ImageType: processing.ImageReceipt, AppliedAction: "record_expense",
+				Output: &processing.Output{Expense: &processing.Expense{
+					Merchant:      processing.ReceiptField{Value: value("카페 봄"), Candidates: []string{}, Resolved: true},
+					Date:          processing.ReceiptField{Candidates: []string{}},
+					Total:         processing.ReceiptField{Value: value("12000"), Candidates: []string{"12000", "13000"}},
+					Currency:      processing.ReceiptField{Value: value("KRW"), Candidates: []string{}, Resolved: true},
+					PaymentMethod: processing.ReceiptField{Candidates: []string{}},
+				}}}},
+	}}
+	r := send(processingRouter(service), http.MethodGet, "/v1/processing-jobs", "", bearer...)
+
+	const at = `"createdAt":"2026-10-07T09:00:00Z","finishedAt":"2026-10-07T09:00:00Z"`
+	want := `{"jobs":[` +
+		`{"jobId":"job-3","status":"completed",` + at + `,` +
+		`"result":{"category":"foreign_text","facts":[],"suggestedAction":"translate","confidence":"high"},` +
+		`"selection":{"imageType":"text","appliedAction":"extract_and_translate"},` +
+		`"outcome":{"kind":"processed","imageType":"text","appliedAction":"extract_and_translate","output":{"original":"Open daily","translation":{"needed":true,"text":"매일 영업"}}},` +
+		`"sourceJobId":"job-1"},` +
+		`{"jobId":"job-2","status":"completed",` + at + `,` +
+		`"result":{"category":"other","facts":[],"suggestedAction":"none","confidence":"low"},` +
+		`"outcome":{"kind":"ambiguous","candidates":["text","receipt"]}},` +
+		`{"jobId":"job-1","status":"completed",` + at + `,` +
+		`"result":{"category":"receipt","facts":[],"suggestedAction":"record_expense","confidence":"medium"},` +
+		`"selection":{"imageType":"receipt","appliedAction":"record_expense"},` +
+		`"outcome":{"kind":"processed","imageType":"receipt","appliedAction":"record_expense","output":{"expense":{` +
+		`"merchant":{"value":"카페 봄","candidates":[],"resolved":true},` +
+		`"date":{"value":null,"candidates":[],"resolved":false},` +
+		`"total":{"value":"12000","candidates":["12000","13000"],"resolved":false},` +
+		`"currency":{"value":"KRW","candidates":[],"resolved":true},` +
+		`"paymentMethod":{"value":null,"candidates":[],"resolved":false}}}}}]}`
+	if r.Code != http.StatusOK || r.Body.String() != want {
+		t.Fatalf("status %d, body %s", r.Code, r.Body)
+	}
+
+	service.job = service.recent[0]
+	single := send(processingRouter(service), http.MethodGet, "/v1/processing-jobs/job-1", "", bearer...)
+	if !strings.Contains(single.Body.String(), `"outcome":{"kind":"processed","imageType":"text"`) ||
+		!strings.Contains(single.Body.String(), `"sourceJobId":"job-1"`) {
+		t.Errorf("single job body %s, want the outcome and source", single.Body)
+	}
+}
+
+// 처리 방식을 읽지 못하는 등 작업을 시작하지 못하면 원인을 숨긴 500이고, 작업은 돌려주지 않는다.
+func TestCreateProcessingJobStartFailure(t *testing.T) {
+	service := &fakeProcessing{startErr: errors.New("processing: preferences: db: connection reset")}
+	r := upload(processingRouter(service), "image", pngImage, bearer...)
+	if r.Code != http.StatusInternalServerError || errorCode(t, r) != "provider_unavailable" {
+		t.Fatalf("status %d, body %s", r.Code, r.Body)
+	}
+	if strings.Contains(r.Body.String(), "jobId") || strings.Contains(r.Body.String(), "preferences") {
+		t.Errorf("body %s, want only the error code", r.Body)
+	}
+}
+
+// 처리 방식만 고르고 결과가 아직 없는 작업은 selection만 나간다.
+func TestProcessingJobWithSelectionOnly(t *testing.T) {
+	service := &fakeProcessing{job: processing.Job{
+		ID: "job-1", Status: processing.StatusCompleted,
+		Result:    &processing.Result{Category: "work", Facts: []processing.Fact{}, SuggestedAction: "none", Confidence: "high"},
+		Selection: &processing.Selection{ImageType: processing.ImageText, Action: "summarize"},
+	}}
+	r := send(processingRouter(service), http.MethodGet, "/v1/processing-jobs/job-1", "", bearer...)
+	want := `{"jobId":"job-1","status":"completed",` +
+		`"result":{"category":"work","facts":[],"suggestedAction":"none","confidence":"high"},` +
+		`"selection":{"imageType":"text","appliedAction":"summarize"}}`
+	if r.Code != http.StatusOK || r.Body.String() != want {
+		t.Fatalf("status %d, body %s", r.Code, r.Body)
+	}
+}
+
+// 재처리는 같은 POST에 sourceJobId · imageType · action을 더해 보낸다. 응답에 원래 작업이 실린다.
+func TestReprocessProcessingJob(t *testing.T) {
+	service := &fakeProcessing{}
+	r := uploadWith(processingRouter(service), map[string]string{"sourceJobId": "job-1", "imageType": "text", "action": "summarize"}, bearer...)
+	if r.Code != http.StatusAccepted || r.Body.String() != `{"jobId":"job-2","status":"running","sourceJobId":"job-1"}` {
+		t.Fatalf("status %d, body %s", r.Code, r.Body)
+	}
+	want := processing.Reprocess{SourceJobID: "job-1", ImageType: processing.ImageText, Action: "summarize"}
+	if service.reprocess == nil || *service.reprocess != want || service.userID != "user-1" || !bytes.Equal(service.image, pngImage) {
+		t.Errorf("reprocess %+v by %q, want %+v", service.reprocess, service.userID, want)
+	}
+}
+
+// 재처리 오류는 코드로만 나간다. 원래 작업이 없는 것과 다른 사용자의 것은 같은 404다.
+func TestReprocessProcessingJobErrors(t *testing.T) {
+	for _, tc := range []struct {
+		err    error
+		status int
+		code   string
+	}{
+		{processing.ErrInvalidReprocess, http.StatusBadRequest, "invalid_reprocess"},
+		{processing.ErrSourceNotFound, http.StatusNotFound, "job_not_found"},
+		{processing.ErrImageMismatch, http.StatusConflict, "image_mismatch"},
+		{processing.ErrSourceRunning, http.StatusConflict, "source_running"},
+		{processing.ErrNotReprocessable, http.StatusConflict, "source_not_reprocessable"},
+		{errors.New("processing: preferences: db: connection reset"), http.StatusInternalServerError, "provider_unavailable"},
+	} {
+		service := &fakeProcessing{startErr: tc.err}
+		r := uploadWith(processingRouter(service), map[string]string{"sourceJobId": "job-1", "action": "summarize"}, bearer...)
+		if r.Code != tc.status || errorCode(t, r) != tc.code {
+			t.Errorf("%v: status %d, body %s, want %d %s", tc.err, r.Code, r.Body, tc.status, tc.code)
+		}
+	}
+}
+
+// 원래 작업 없이 유형 · 처리 방식만 보내면 새 처리로 넘어가지 않고 거절한다.
+func TestCreateProcessingJobRejectsChoiceWithoutSource(t *testing.T) {
+	for _, fields := range []map[string]string{{"imageType": "text"}, {"action": "summarize"}} {
+		service := &fakeProcessing{}
+		r := uploadWith(processingRouter(service), fields, bearer...)
+		if r.Code != http.StatusBadRequest || errorCode(t, r) != "invalid_reprocess" || service.userID != "" {
+			t.Errorf("%v: status %d, body %s, want 400 without starting", fields, r.Code, r.Body)
+		}
+	}
+}
+
+func receiptPatch(handler http.Handler, path, body string, headers ...string) *httptest.ResponseRecorder {
+	return send(handler, http.MethodPatch, path, body, append([]string{"Content-Type", "application/json"}, headers...)...)
+}
+
+// 영수증 필드 하나를 확정하고 바뀐 뒤의 작업을 돌려준다.
+func TestResolveReceiptField(t *testing.T) {
+	service := &fakeProcessing{job: processing.Job{ID: "job-1", Status: processing.StatusCompleted,
+		Result: &processing.Result{Category: "receipt", Facts: []processing.Fact{}, SuggestedAction: "record_expense", Confidence: "medium"}}}
+	r := receiptPatch(processingRouter(service), "/v1/processing-jobs/job-1/receipt-fields/total", `{"value":"13000"}`, bearer...)
+	if r.Code != http.StatusOK || !strings.Contains(r.Body.String(), `"jobId":"job-1"`) {
+		t.Fatalf("status %d, body %s", r.Code, r.Body)
+	}
+	if service.userID != "user-1" || strings.Join(service.resolved, " ") != "job-1 total 13000" {
+		t.Errorf("resolved %v by %q", service.resolved, service.userID)
+	}
+	assertNoStore(t, r)
+}
+
+func TestResolveReceiptFieldErrors(t *testing.T) {
+	for _, tc := range []struct {
+		err    error
+		status int
+		code   string
+	}{
+		{processing.ErrInvalidReceiptField, http.StatusBadRequest, "invalid_receipt_field"},
+		{processing.ErrNotFound, http.StatusNotFound, "job_not_found"},
+		{processing.ErrNotResolvable, http.StatusConflict, "job_not_resolvable"},
+		{processing.ErrFieldResolved, http.StatusConflict, "receipt_field_resolved"},
+		{errors.New("db: connection reset"), http.StatusInternalServerError, "provider_unavailable"},
+	} {
+		r := receiptPatch(processingRouter(&fakeProcessing{err: tc.err}), "/v1/processing-jobs/job-1/receipt-fields/total", `{"value":"13000"}`, bearer...)
+		if r.Code != tc.status || errorCode(t, r) != tc.code {
+			t.Errorf("%v: status %d, body %s, want %d %s", tc.err, r.Code, r.Body, tc.status, tc.code)
+		}
+	}
+
+	handler := processingRouter(&fakeProcessing{})
+	for name, tc := range map[string]struct {
+		body   string
+		status int
+		code   string
+	}{
+		"no value":  {`{}`, http.StatusBadRequest, "invalid_receipt_field"},
+		"not json":  {`total=13000`, http.StatusBadRequest, "invalid_receipt_field"},
+		"too large": {`{"value":"` + strings.Repeat("1", maxJSONBody) + `"}`, http.StatusBadRequest, "invalid_receipt_field"},
+	} {
+		r := receiptPatch(handler, "/v1/processing-jobs/job-1/receipt-fields/total", tc.body, bearer...)
+		if r.Code != tc.status || errorCode(t, r) != tc.code {
+			t.Errorf("%s: status %d, body %s", name, r.Code, r.Body)
+		}
+	}
+	if r := receiptPatch(handler, "/v1/processing-jobs/job-1/receipt-fields/total", `{"value":"1"}`); r.Code != http.StatusUnauthorized {
+		t.Errorf("no credential: status %d", r.Code)
+	}
 }
 
 func TestProcessingJobsEmpty(t *testing.T) {

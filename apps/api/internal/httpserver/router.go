@@ -14,17 +14,24 @@ import (
 
 // 클라이언트에 나가는 오류 코드. 서버 · 제공자 원문은 이 값으로만 바뀌어 나간다.
 const (
-	errSessionExpired       = "session_expired"
-	errProviderUnavailable  = "provider_unavailable"
-	errInvalidCallback      = "invalid_callback"
-	errInvalidImage         = "invalid_image"
-	errImageTooLarge        = "image_too_large"
-	errUnsupportedImage     = "unsupported_image"
-	errJobNotFound          = "job_not_found"
-	errInvalidOnboarding    = "invalid_onboarding"
-	errOnboardingComplete   = "onboarding_complete"
-	errOnboardingOutOfOrder = "onboarding_out_of_order"
-	errInvalidPreference    = "invalid_preference"
+	errSessionExpired         = "session_expired"
+	errProviderUnavailable    = "provider_unavailable"
+	errInvalidCallback        = "invalid_callback"
+	errInvalidImage           = "invalid_image"
+	errImageTooLarge          = "image_too_large"
+	errUnsupportedImage       = "unsupported_image"
+	errJobNotFound            = "job_not_found"
+	errInvalidOnboarding      = "invalid_onboarding"
+	errOnboardingComplete     = "onboarding_complete"
+	errOnboardingOutOfOrder   = "onboarding_out_of_order"
+	errInvalidPreference      = "invalid_preference"
+	errInvalidReprocess       = "invalid_reprocess"
+	errImageMismatch          = "image_mismatch"
+	errSourceRunning          = "source_running"
+	errSourceNotReprocessable = "source_not_reprocessable"
+	errInvalidReceiptField    = "invalid_receipt_field"
+	errJobNotResolvable       = "job_not_resolvable"
+	errReceiptFieldResolved   = "receipt_field_resolved"
 )
 
 // Router가 쓰는 의존성. Sessions · OAuth · Handoff · Processing · Onboarding · Preferences가 nil이면 해당 endpoint는 503이다.
@@ -99,6 +106,7 @@ func NewRouter(deps Deps) *gin.Engine {
 	jobs.POST("", extendDeadline(uploadTimeout), limitBody(maxUploadBody), h.createProcessingJob)
 	get(jobs, "", h.processingJobs)
 	get(jobs, "/:jobId", h.processingJob)
+	jobs.PATCH("/:jobId/receipt-fields/:field", limitBody(maxJSONBody), h.resolveReceiptField)
 
 	onboardingGroup := v1.Group("/onboarding", noStore, limitBody(maxJSONBody), requireConfigured(deps.Sessions != nil && deps.Onboarding != nil))
 	get(onboardingGroup, "", h.onboarding)

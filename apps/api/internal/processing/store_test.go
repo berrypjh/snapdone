@@ -57,7 +57,7 @@ func create(t *testing.T, store *processing.Store, userID string) processing.Job
 
 func createFrom(t *testing.T, store *processing.Store, userID string, origin processing.Origin) processing.Job {
 	t.Helper()
-	job, err := store.Create(context.Background(), userID, origin)
+	job, err := store.Create(context.Background(), userID, processing.NewJob{Origin: origin})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,7 +89,7 @@ func TestCompleteStoresResult(t *testing.T) {
 	store, userID := setup(t)
 	job := create(t, store, userID)
 
-	if err := store.Complete(context.Background(), job.ID, result); err != nil {
+	if err := store.Complete(context.Background(), job.ID, processing.Completion{Result: result}); err != nil {
 		t.Fatal(err)
 	}
 	got := find(t, store, userID, job.ID)
@@ -109,10 +109,10 @@ func TestFinishedJobDoesNotChange(t *testing.T) {
 	if err := store.Fail(ctx, failed.ID); err != nil {
 		t.Fatal(err)
 	}
-	if err := store.Complete(ctx, failed.ID, result); err != nil {
+	if err := store.Complete(ctx, failed.ID, processing.Completion{Result: result}); err != nil {
 		t.Fatal(err)
 	}
-	if err := store.Complete(ctx, completed.ID, result); err != nil {
+	if err := store.Complete(ctx, completed.ID, processing.Completion{Result: result}); err != nil {
 		t.Fatal(err)
 	}
 	if err := store.Fail(ctx, completed.ID); err != nil {
@@ -181,7 +181,7 @@ func TestOriginRejectedOutsideContract(t *testing.T) {
 	store, pool, userID := setupPool(t)
 	ctx := context.Background()
 
-	_, err := store.Create(ctx, userID, "other")
+	_, err := store.Create(ctx, userID, processing.NewJob{Origin: "other"})
 	if pgErr := (*pgconn.PgError)(nil); !errors.As(err, &pgErr) || pgErr.Code != "23514" {
 		t.Errorf("origin other: err = %v, want check_violation", err)
 	}
@@ -267,7 +267,7 @@ func TestRecentGeneralMatchesFind(t *testing.T) {
 	completed := createFrom(t, store, userID, processing.OriginGeneral)
 	failed := createFrom(t, store, userID, processing.OriginGeneral)
 	running := createFrom(t, store, userID, processing.OriginGeneral)
-	if err := store.Complete(ctx, completed.ID, result); err != nil {
+	if err := store.Complete(ctx, completed.ID, processing.Completion{Result: result}); err != nil {
 		t.Fatal(err)
 	}
 	if err := store.Fail(ctx, failed.ID); err != nil {

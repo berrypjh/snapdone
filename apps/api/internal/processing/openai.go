@@ -50,30 +50,61 @@ type chatResponse struct {
 }
 
 func (c *OpenAIClassifier) Classify(ctx context.Context, image []byte, mediaType string) (Result, error) {
+	text, err := c.ask(ctx, image, mediaType, c.instructions, request, "image_result", resultSchema())
+	if err != nil {
+		return Result{}, err
+	}
+	return parseResult(text)
+}
+
+// 제품 유형 판단. 분류와 같은 endpoint · 모델을 쓰고 지시 · schema만 다르다.
+func (c *OpenAIClassifier) TypeImage(ctx context.Context, image []byte, mediaType string) (Typing, error) {
+	text, err := c.ask(ctx, image, mediaType, typingInstructions, typingRequest, "image_type", typingSchema())
+	if err != nil {
+		return "", err
+	}
+	return parseTyping(text)
+}
+
+// 고른 처리 방식을 실행한다. 처리 방식마다 지시 · schema · 해석이 다르다(actionSpec).
+func (c *OpenAIClassifier) Act(ctx context.Context, image []byte, mediaType string, s Selection) (Output, error) {
+	spec, err := specFor(s)
+	if err != nil {
+		return Output{}, err
+	}
+	text, err := c.ask(ctx, image, mediaType, spec.instructions, actionRequest, spec.name, spec.schema())
+	if err != nil {
+		return Output{}, err
+	}
+	return spec.parse(text)
+}
+
+// 사진 한 장과 지시 · 요청 · 결과 schema로 묻고 JSON 본문을 돌려준다. 결과가 온전하지 않으면 오류다.
+func (c *OpenAIClassifier) ask(ctx context.Context, image []byte, mediaType, system, prompt, name string, schema map[string]any) (string, error) {
 	body, err := json.Marshal(map[string]any{
 		"model": c.model,
 		"messages": []map[string]any{
-			{"role": "system", "content": c.instructions},
+			{"role": "system", "content": system},
 			{"role": "user", "content": []map[string]any{
 				{"type": "image_url", "image_url": map[string]string{
 					"url": "data:" + mediaType + ";base64," + base64.StdEncoding.EncodeToString(image),
 				}},
-				{"type": "text", "text": request},
+				{"type": "text", "text": prompt},
 			}},
 		},
 		"response_format": map[string]any{
 			"type": "json_schema",
 			"json_schema": map[string]any{
-				"name": "image_result", "strict": true, "schema": resultSchema(),
+				"name": name, "strict": true, "schema": schema,
 			},
 		},
 	})
 	if err != nil {
-		return Result{}, err
+		return "", err
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint, bytes.NewReader(body))
 	if err != nil {
-		return Result{}, err
+		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	if c.apiKey != "" {
@@ -82,24 +113,24 @@ func (c *OpenAIClassifier) Classify(ctx context.Context, image []byte, mediaType
 
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return Result{}, err
+		return "", err
 	}
 	defer resp.Body.Close()
 	// 오류 본문은 읽지 않는다. 상태 코드만으로 실패를 알린다.
 	if resp.StatusCode != http.StatusOK {
-		return Result{}, fmt.Errorf("processing: model API status %d", resp.StatusCode)
+		return "", fmt.Errorf("processing: model API status %d", resp.StatusCode)
 	}
 	var chat chatResponse
 	if err := json.NewDecoder(resp.Body).Decode(&chat); err != nil {
-		return Result{}, err
+		return "", err
 	}
 	if len(chat.Choices) == 0 {
-		return Result{}, errors.New("processing: no choice")
+		return "", errors.New("processing: no choice")
 	}
 	choice := chat.Choices[0]
 	// 거절 · 길이 초과 등은 결과가 온전하지 않다.
 	if choice.Message.Refusal != "" || choice.FinishReason != "stop" {
-		return Result{}, fmt.Errorf("processing: finish reason %s", choice.FinishReason)
+		return "", fmt.Errorf("processing: finish reason %s", choice.FinishReason)
 	}
-	return parseResult(choice.Message.Content)
+	return choice.Message.Content, nil
 }

@@ -657,7 +657,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "사진 한 장(multipart 필드 image)으로 처리 작업을 만들고 바로 돌아온다. 결과는 작업 조회로 받는다.\nJPEG · PNG · GIF · WebP만 받고 7,500,000 byte까지다. 사진은 저장하지 않는다.\n온보딩을 마치기 전의 작업은 온보딩 첫 사진으로 남아 작업 목록에 나오지 않는다.",
+                "description": "사진 한 장(multipart 필드 image)으로 처리 작업을 만들고 바로 돌아온다. 결과는 작업 조회로 받는다.\nJPEG · PNG · GIF · WebP만 받고 7,500,000 byte까지다. 사진은 저장하지 않는다.\n온보딩을 마치기 전의 작업은 온보딩 첫 사진으로 남아 작업 목록에 나오지 않는다.\n모든 작업은 사진 유형(text · receipt)을 판단하고, 요청 시점에 저장된 처리 방식을 selection으로 남긴 뒤 실행해 outcome(processed)에 결과를 남긴다.\n지원하지 않는 사진 · 유형을 고를 수 없는 사진 · 읽을 글자가 없는 사진은 처리 방식을 실행하지 않고 outcome(unsupported · ambiguous)으로 끝난다.\n모델 호출이 실패하거나 응답이 계약 밖이면 작업은 failed다.\n처리 방식을 읽지 못하면 기본값으로 대신하지 않고 작업을 만들지 않는다(500).\n재처리: sourceJobId와 같은 사진을 다시 보낸다. 서버는 사진을 저장하지 않고 digest로 같은 사진인지만 본다.\n분류 · 유형 판단은 다시 하지 않고 원래 작업의 분류 결과를 쓴다. 저장된 처리 방식은 바꾸지 않는다.\n처리한 작업이면 action(같은 유형의 처리 방식)이 필수이고 imageType은 비우거나 원래 유형이다.\nambiguous 작업이면 imageType(후보 중 하나)이 필수이고, action을 비우면 그 유형에 저장된 처리 방식을 쓴다.\nunsupported · 실패 작업은 재처리할 수 없다. sourceJobId 없이 imageType · action을 보내면 400이다.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -675,6 +675,35 @@ const docTemplate = `{
                         "name": "image",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "재처리할 원래 작업",
+                        "name": "sourceJobId",
+                        "in": "formData"
+                    },
+                    {
+                        "enum": [
+                            "text",
+                            "receipt"
+                        ],
+                        "type": "string",
+                        "description": "재처리 유형",
+                        "name": "imageType",
+                        "in": "formData"
+                    },
+                    {
+                        "enum": [
+                            "extract_and_translate",
+                            "extract_text",
+                            "summarize",
+                            "extract_and_summarize",
+                            "record_expense"
+                        ],
+                        "type": "string",
+                        "description": "재처리 처리 방식",
+                        "name": "action",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -685,13 +714,25 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "multipart가 아니거나 image 필드 없음 (invalid_image)",
+                        "description": "multipart가 아니거나 image 필드 없음 (invalid_image) · 원래 작업에 맞지 않는 유형 · 처리 방식 (invalid_reprocess)",
                         "schema": {
                             "$ref": "#/definitions/httpserver.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "credential 없음 · 만료 · 취소 (session_expired)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "없는 · 다른 사용자의 원래 작업 (job_not_found)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "다른 사진 (image_mismatch) · 원래 작업이 처리 중 (source_running) · 재처리할 수 없는 원래 작업 (source_not_reprocessable)",
                         "schema": {
                             "$ref": "#/definitions/httpserver.ErrorResponse"
                         }
@@ -709,7 +750,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "내부 오류 (provider_unavailable)",
+                        "description": "내부 오류 · 처리 방식 조회 실패 (provider_unavailable)",
                         "schema": {
                             "$ref": "#/definitions/httpserver.ErrorResponse"
                         }
@@ -762,6 +803,102 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "없는 작업 (job_not_found)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "내부 오류 (provider_unavailable)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "처리 비활성 (provider_unavailable)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/processing-jobs/{jobId}/receipt-fields/{field}": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "지출 정보 결과에서 필드 하나만 value로 확정하고 바뀐 뒤의 작업을 돌려준다. 다른 필드는 그대로다. 모델을 다시 부르지 않는다.\nvalue는 후보(candidates) 중 하나이거나 그 필드 형식의 직접 입력이다 — date: YYYY-MM-DD, total: 소수점 문자열(예: 12000, 12.50), currency: ISO 4217 코드, merchant · paymentMethod: 빈 문자열이 아닌 값.\n이미 같은 값으로 확정한 필드는 바꾸지 않고 200이다. 다른 값으로 확정한 필드는 409다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "processing"
+                ],
+                "summary": "영수증 필드 확정",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "처리 작업",
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "merchant",
+                            "date",
+                            "total",
+                            "currency",
+                            "paymentMethod"
+                        ],
+                        "type": "string",
+                        "description": "영수증 필드",
+                        "name": "field",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "확정할 값",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ReceiptFieldRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ProcessingJobResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "없는 필드 · 형식이 틀린 값 · 본문 없음 (invalid_receipt_field)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "credential 없음 · 만료 · 취소 (session_expired)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "없는 · 다른 사용자의 작업 (job_not_found)",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "지출 정보 결과가 없는 작업 (job_not_resolvable) · 다른 값으로 확정한 필드 (receipt_field_resolved)",
                         "schema": {
                             "$ref": "#/definitions/httpserver.ErrorResponse"
                         }
@@ -939,7 +1076,14 @@ const docTemplate = `{
                         "invalid_onboarding",
                         "onboarding_complete",
                         "onboarding_out_of_order",
-                        "invalid_preference"
+                        "invalid_preference",
+                        "invalid_reprocess",
+                        "image_mismatch",
+                        "source_running",
+                        "source_not_reprocessable",
+                        "invalid_receipt_field",
+                        "job_not_resolvable",
+                        "receipt_field_resolved"
                     ],
                     "example": "session_expired"
                 }
@@ -981,12 +1125,7 @@ const docTemplate = `{
                 },
                 "next": {
                     "type": "string",
-                    "enum": [
-                        "/",
-                        "/history",
-                        "/settings/processing"
-                    ],
-                    "example": "/history"
+                    "example": "/history/4f1c2a9e-0000-4000-8000-000000000000"
                 },
                 "verifier": {
                     "type": "string",
@@ -1007,12 +1146,7 @@ const docTemplate = `{
                 },
                 "next": {
                     "type": "string",
-                    "enum": [
-                        "/",
-                        "/history",
-                        "/settings/processing"
-                    ],
-                    "example": "/history"
+                    "example": "/history/4f1c2a9e-0000-4000-8000-000000000000"
                 }
             }
         },
@@ -1192,8 +1326,18 @@ const docTemplate = `{
                     "type": "string",
                     "example": "4f1c2a9e-0000-4000-8000-000000000000"
                 },
+                "outcome": {
+                    "$ref": "#/definitions/httpserver.ProcessingOutcomeResponse"
+                },
                 "result": {
                     "$ref": "#/definitions/httpserver.ProcessingResultResponse"
+                },
+                "selection": {
+                    "$ref": "#/definitions/httpserver.ProcessingSelectionResponse"
+                },
+                "sourceJobId": {
+                    "type": "string",
+                    "example": "4f1c2a9e-0000-4000-8000-000000000001"
                 },
                 "status": {
                     "type": "string",
@@ -1223,8 +1367,18 @@ const docTemplate = `{
                     "type": "string",
                     "example": "4f1c2a9e-0000-4000-8000-000000000000"
                 },
+                "outcome": {
+                    "$ref": "#/definitions/httpserver.ProcessingOutcomeResponse"
+                },
                 "result": {
                     "$ref": "#/definitions/httpserver.ProcessingResultResponse"
+                },
+                "selection": {
+                    "$ref": "#/definitions/httpserver.ProcessingSelectionResponse"
+                },
+                "sourceJobId": {
+                    "type": "string",
+                    "example": "4f1c2a9e-0000-4000-8000-000000000001"
                 },
                 "status": {
                     "type": "string",
@@ -1234,6 +1388,75 @@ const docTemplate = `{
                         "failed"
                     ],
                     "example": "completed"
+                }
+            }
+        },
+        "httpserver.ProcessingOutcomeResponse": {
+            "type": "object",
+            "properties": {
+                "appliedAction": {
+                    "type": "string",
+                    "enum": [
+                        "extract_and_translate",
+                        "extract_text",
+                        "summarize",
+                        "extract_and_summarize",
+                        "record_expense"
+                    ],
+                    "example": "extract_text"
+                },
+                "candidates": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "text",
+                            "receipt"
+                        ]
+                    },
+                    "example": [
+                        "text",
+                        "receipt"
+                    ]
+                },
+                "imageType": {
+                    "type": "string",
+                    "enum": [
+                        "text",
+                        "receipt"
+                    ],
+                    "example": "text"
+                },
+                "kind": {
+                    "type": "string",
+                    "enum": [
+                        "processed",
+                        "unsupported",
+                        "ambiguous"
+                    ],
+                    "example": "processed"
+                },
+                "output": {
+                    "$ref": "#/definitions/httpserver.ProcessingOutputResponse"
+                }
+            }
+        },
+        "httpserver.ProcessingOutputResponse": {
+            "type": "object",
+            "properties": {
+                "expense": {
+                    "$ref": "#/definitions/httpserver.ReceiptExpenseResponse"
+                },
+                "original": {
+                    "type": "string",
+                    "example": "Open daily 9am-6pm"
+                },
+                "summary": {
+                    "type": "string",
+                    "example": "영업시간 안내"
+                },
+                "translation": {
+                    "$ref": "#/definitions/httpserver.TranslationResponse"
                 }
             }
         },
@@ -1324,6 +1547,85 @@ const docTemplate = `{
                 }
             }
         },
+        "httpserver.ProcessingSelectionResponse": {
+            "type": "object",
+            "properties": {
+                "appliedAction": {
+                    "type": "string",
+                    "enum": [
+                        "extract_and_translate",
+                        "extract_text",
+                        "summarize",
+                        "extract_and_summarize",
+                        "record_expense"
+                    ],
+                    "example": "extract_and_translate"
+                },
+                "imageType": {
+                    "type": "string",
+                    "enum": [
+                        "text",
+                        "receipt"
+                    ],
+                    "example": "text"
+                }
+            }
+        },
+        "httpserver.ReceiptExpenseResponse": {
+            "type": "object",
+            "properties": {
+                "currency": {
+                    "$ref": "#/definitions/httpserver.ReceiptFieldResponse"
+                },
+                "date": {
+                    "$ref": "#/definitions/httpserver.ReceiptFieldResponse"
+                },
+                "merchant": {
+                    "$ref": "#/definitions/httpserver.ReceiptFieldResponse"
+                },
+                "paymentMethod": {
+                    "$ref": "#/definitions/httpserver.ReceiptFieldResponse"
+                },
+                "total": {
+                    "$ref": "#/definitions/httpserver.ReceiptFieldResponse"
+                }
+            }
+        },
+        "httpserver.ReceiptFieldRequest": {
+            "type": "object",
+            "required": [
+                "value"
+            ],
+            "properties": {
+                "value": {
+                    "type": "string",
+                    "example": "12000"
+                }
+            }
+        },
+        "httpserver.ReceiptFieldResponse": {
+            "type": "object",
+            "properties": {
+                "candidates": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "12000",
+                        "13000"
+                    ]
+                },
+                "resolved": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "value": {
+                    "type": "string",
+                    "example": "12000"
+                }
+            }
+        },
         "httpserver.SessionResponse": {
             "type": "object",
             "properties": {
@@ -1344,6 +1646,19 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/httpserver.UserResponse"
+                }
+            }
+        },
+        "httpserver.TranslationResponse": {
+            "type": "object",
+            "properties": {
+                "needed": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "text": {
+                    "type": "string",
+                    "example": "매일 오전 9시-오후 6시 영업"
                 }
             }
         },

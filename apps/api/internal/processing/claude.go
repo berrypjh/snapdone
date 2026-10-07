@@ -67,19 +67,50 @@ func NewHTTPClient() *http.Client {
 }
 
 func (c *ClaudeClassifier) Classify(ctx context.Context, image []byte, mediaType string) (Result, error) {
+	text, err := c.ask(ctx, image, mediaType, c.instructions, request, resultSchema())
+	if err != nil {
+		return Result{}, err
+	}
+	return parseResult(text)
+}
+
+// 제품 유형 판단. 분류와 같은 client · 모델을 쓰고 지시 · schema만 다르다.
+func (c *ClaudeClassifier) TypeImage(ctx context.Context, image []byte, mediaType string) (Typing, error) {
+	text, err := c.ask(ctx, image, mediaType, typingInstructions, typingRequest, typingSchema())
+	if err != nil {
+		return "", err
+	}
+	return parseTyping(text)
+}
+
+// 고른 처리 방식을 실행한다. 처리 방식마다 지시 · schema · 해석이 다르다(actionSpec).
+func (c *ClaudeClassifier) Act(ctx context.Context, image []byte, mediaType string, s Selection) (Output, error) {
+	spec, err := specFor(s)
+	if err != nil {
+		return Output{}, err
+	}
+	text, err := c.ask(ctx, image, mediaType, spec.instructions, actionRequest, spec.schema())
+	if err != nil {
+		return Output{}, err
+	}
+	return spec.parse(text)
+}
+
+// 사진 한 장과 지시 · 요청 · 결과 schema로 묻고 JSON 본문을 돌려준다. 결과가 온전하지 않으면 오류다.
+func (c *ClaudeClassifier) ask(ctx context.Context, image []byte, mediaType, system, prompt string, schema map[string]any) (string, error) {
 	params := anthropic.BetaMessageNewParams{
 		Model:     anthropic.Model(c.model),
 		MaxTokens: 16000,
-		System:    []anthropic.BetaTextBlockParam{{Text: c.instructions}},
+		System:    []anthropic.BetaTextBlockParam{{Text: system}},
 		OutputConfig: anthropic.BetaOutputConfigParam{
-			Format: anthropic.BetaJSONOutputFormatParam{Schema: resultSchema()},
+			Format: anthropic.BetaJSONOutputFormatParam{Schema: schema},
 		},
 		Messages: []anthropic.BetaMessageParam{anthropic.NewBetaUserMessage(
 			anthropic.NewBetaImageBlock(anthropic.BetaBase64ImageSourceParam{
 				Data:      base64.StdEncoding.EncodeToString(image),
 				MediaType: anthropic.BetaBase64ImageSourceMediaType(mediaType),
 			}),
-			anthropic.NewBetaTextBlock(request),
+			anthropic.NewBetaTextBlock(prompt),
 		)},
 	}
 	if refusalFallbackModels[c.model] {
@@ -88,18 +119,18 @@ func (c *ClaudeClassifier) Classify(ctx context.Context, image []byte, mediaType
 	}
 	message, err := c.client.Beta.Messages.New(ctx, params)
 	if err != nil {
-		return Result{}, err
+		return "", err
 	}
 	// refusal · max_tokens 등은 결과가 온전하지 않다.
 	if message.StopReason != anthropic.BetaStopReasonEndTurn {
-		return Result{}, fmt.Errorf("processing: stop reason %s", message.StopReason)
+		return "", fmt.Errorf("processing: stop reason %s", message.StopReason)
 	}
 	for _, block := range message.Content {
 		if block.Type == "text" {
-			return parseResult(block.Text)
+			return block.Text, nil
 		}
 	}
-	return Result{}, errors.New("processing: no text block")
+	return "", errors.New("processing: no text block")
 }
 
 // 응답 본문을 maxResponseBody까지만 읽게 한다.

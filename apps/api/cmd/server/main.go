@@ -121,18 +121,19 @@ func newDeps(logger *slog.Logger, cfg config.Config, pool *pgxpool.Pool) (httpse
 	}, auth.Consent{TermsVersion: cfg.Auth.TermsVersion, PrivacyVersion: cfg.Auth.PrivacyVersion})
 	deps.Handoff = auth.NewHandoff(store)
 	deps.Onboarding = onboarding.NewStore(pool)
-	deps.Preferences = preference.NewStore(pool)
+	preferences := preference.NewStore(pool)
+	deps.Preferences = preferences
 	if cfg.Processing == nil {
 		logger.Info("api processing is disabled: PROCESSING_* is not set")
 		return deps, nil
 	}
-	deps.Processing = processing.NewProcessor(processing.NewStore(pool), newClassifier(*cfg.Processing), logger)
+	deps.Processing = processing.NewProcessor(processing.NewStore(pool), newModel(*cfg.Processing), preferences, logger)
 	logger.Info("api processing model", "provider", cfg.Processing.Provider, "model", cfg.Processing.Model)
 	return deps, nil
 }
 
-// 설정이 고른 공급자의 분류기. 모델을 바꿀 때 코드를 고치지 않고 PROCESSING_*만 바꾼다.
-func newClassifier(p config.Processing) processing.Classifier {
+// 설정이 고른 공급자의 모델. 분류와 유형 판단을 같은 모델이 한다. 모델을 바꿀 때 코드를 고치지 않고 PROCESSING_*만 바꾼다.
+func newModel(p config.Processing) processing.Model {
 	httpClient := processing.NewHTTPClient()
 	if p.Provider == config.ProviderAnthropic {
 		return processing.NewClaudeClassifier(p.APIKey, p.Model, httpClient)
