@@ -7,10 +7,10 @@ import {
   isPurposeSelection,
   orderPurposes,
   ProcessingApiError,
-  type ProcessingJob,
   type ProgressUpdate,
   type SavedProgress,
 } from '@snapdone/onboarding';
+import type { JobDetail } from '@snapdone/processing';
 
 import { loginPage } from '../auth/redirect';
 import { fromAllowedOrigin, readCredential } from '../auth/session';
@@ -91,9 +91,9 @@ export async function completeOnboarding(): Promise<CompletionResponse> {
 
 /** 처리 Action의 결과. 오류는 던지지 않고 값으로 돌려준다 — production에서 Action 오류 내용은 가려진다. */
 export type JobResponse =
-  { type: 'job'; job: ProcessingJob } | { type: 'signed-out' } | { type: 'error'; code: string };
+  { type: 'job'; job: JobDetail } | { type: 'signed-out' } | { type: 'error'; code: string };
 
-const respond = async (call: (credential: string) => Promise<ProcessingJob | null>) => {
+const respond = async (call: (credential: string) => Promise<JobDetail | null>) => {
   const credential = await credentialFromAllowedOrigin();
   if (!credential) return { type: 'signed-out' } as const;
   try {

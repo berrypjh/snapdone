@@ -3,11 +3,10 @@ import {
   parseCompletedProgress,
   parseSavedProgress,
   ProcessingApiError,
-  type ProcessingJob,
   type ProgressUpdate,
-  readJobResponse,
   type SavedProgress,
 } from '@snapdone/onboarding';
+import { type JobDetail, readJobDetail } from '@snapdone/processing';
 
 import { apiFetch, bearer } from '../api';
 
@@ -58,14 +57,15 @@ export const completeProgress = (credential: string): Promise<CompletedProgress 
     method: 'POST',
   });
 
-const jobRequest = async (path: string, init: RequestInit): Promise<ProcessingJob | null> => {
+/** 처리 작업 응답. 온보딩 첫 사진도 일반 사진과 같은 처리 결과(`JobDetail`)를 받는다. */
+const jobRequest = async (path: string, init: RequestInit): Promise<JobDetail | null> => {
   let response: Response;
   try {
     response = await apiFetch(path, init);
   } catch {
     throw new ProcessingApiError('network');
   }
-  return readJobResponse(response, await response.json().catch(() => null));
+  return readJobDetail(response, await response.json().catch(() => null));
 };
 
 /** 사진 처리를 시작한다. 형식 · 크기는 Go가 내용으로 판별한다. */

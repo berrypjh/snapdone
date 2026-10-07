@@ -21,12 +21,16 @@ beforeEach(() => vi.resetAllMocks());
 
 describe('createProcessingPort', () => {
   it('sends the photo as the image field and returns the job', async () => {
-    start.mockResolvedValue({ type: 'job', job: { jobId: 'job-1', status: 'running' } });
-
-    await expect(createProcessingPort(vi.fn()).start(photo)).resolves.toEqual({
+    const running = {
       jobId: 'job-1',
       status: 'running',
-    });
+      selection: null,
+      outcome: null,
+      sourceJobId: null,
+    } as const;
+    start.mockResolvedValue({ type: 'job', job: running });
+
+    await expect(createProcessingPort(vi.fn()).start(photo)).resolves.toEqual(running);
     expect(start.mock.calls[0]?.[0].get('image')).toBe(photo);
   });
 

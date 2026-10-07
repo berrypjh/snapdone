@@ -49,7 +49,10 @@ describe('loadHome', () => {
     await vi.waitFor(() => expect(started).toBe(2));
     release();
     await expect(loading).resolves.toEqual({
-      recent: { ok: true, value: [{ ...job, finishedAt: null }] },
+      recent: {
+        ok: true,
+        value: [{ ...job, finishedAt: null, selection: null, outcome: null, sourceJobId: null }],
+      },
       preferences: { ok: true, value: preferences },
     });
   });

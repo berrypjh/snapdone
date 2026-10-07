@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@berrypjh/react-ui';
 import {
+  type CompletedJob,
+  type ProcessingJob,
   type ProcessingPort,
-  type ProcessingResult,
   type ProcessingState,
   runProcessing,
 } from '@snapdone/onboarding';
@@ -13,27 +14,28 @@ import {
 import { FAILED_TITLE, FAILURE_COPY, PROCESSING_MESSAGE } from './processing-copy';
 import { SelectedImage } from './selected-image';
 
-type ProcessingViewProps = {
+type ProcessingViewProps<Job extends ProcessingJob> = {
   image: File;
   url: string;
-  port: ProcessingPort<File>;
-  onCompleted: (result: ProcessingResult) => void;
+  port: ProcessingPort<File, Job>;
+  onCompleted: (job: CompletedJob<Job>) => void;
   onChooseAnother: () => void;
 };
 
 /**
- * 첫 처리. 사진을 보내고 작업이 끝날 때까지 기다린다.
+ * 사진 처리. 사진을 보내고 작업이 끝날 때까지 기다린다. 온보딩 첫 사진과 일반 사진이 같이 쓴다.
  * 서버가 알려주는 것은 처리 중 · 완료 · 실패뿐이라 중간 단계를 지어내지 않는다. 화면을 떠나면 조회를 멈춘다.
- * 완료되면 결과를 `onCompleted`로 넘기고, 결과 화면은 부모가 연다. mobile 처리 화면과 같은 경계다.
+ * 완료되면 끝난 작업을 `onCompleted`로 넘기고, 결과 화면은 부모가 연다. mobile 처리 화면과 같은 경계다.
+ * 시도(처음 · 다시 시도)마다 처리 요청은 한 번이다. 이전 시도의 응답은 화면을 바꾸지 않는다.
  */
-export function ProcessingView({
+export function ProcessingView<Job extends ProcessingJob>({
   image,
   url,
   port,
   onCompleted,
   onChooseAnother,
-}: ProcessingViewProps) {
-  const [state, setState] = useState<ProcessingState>({ status: 'starting' });
+}: ProcessingViewProps<Job>) {
+  const [state, setState] = useState<ProcessingState<Job>>({ status: 'starting' });
   const [attempt, setAttempt] = useState(0);
   const title = useRef<HTMLHeadingElement>(null);
   const completed = useRef(onCompleted);
@@ -49,15 +51,24 @@ export function ProcessingView({
     title.current?.focus();
   }, [attempt]);
 
+  // 지금 시도. 개발 모드의 effect 재실행(마운트 → 정리 → 마운트)에서 요청을 두 번 보내지 않도록
+  // 같은 시도는 다시 시작하지 않고, 화면에 붙어 있는 동안(mounted)만 알린다.
+  const run = useRef<{ port: unknown; image: File; attempt: number } | null>(null);
+  const mounted = useRef(false);
   useEffect(() => {
-    let stopped = false;
-    const onChange = (next: ProcessingState) => {
-      if (next.status === 'completed') completed.current(next.result);
-      else setState(next);
-    };
-    void runProcessing(port, image, onChange, () => stopped);
+    mounted.current = true;
+    const current = run.current;
+    if (current?.port !== port || current.image !== image || current.attempt !== attempt) {
+      const mine = { port, image, attempt };
+      run.current = mine;
+      const onChange = (next: ProcessingState<Job>) => {
+        if (next.status === 'completed') completed.current(next.job);
+        else setState(next);
+      };
+      void runProcessing(port, image, onChange, () => !mounted.current || run.current !== mine);
+    }
     return () => {
-      stopped = true;
+      mounted.current = false;
     };
   }, [port, image, attempt]);
 

@@ -2,9 +2,9 @@ import {
   MAX_IMAGE_BYTES,
   POLL_INTERVAL_MS,
   ProcessingApiError,
-  type ProcessingJob,
   type ProcessingPort,
 } from '@snapdone/onboarding';
+import type { JobDetail } from '@snapdone/processing';
 
 import { findFirstImageJob, type JobResponse, startFirstImage } from './actions';
 
@@ -18,8 +18,8 @@ const call = (action: () => Promise<JobResponse>) =>
  * 브라우저에서 첫 사진을 처리하는 port. Go 호출은 Server Action이 서버에서 한다.
  * 세션이 끝났으면 `onSignedOut`을 부르고 `null`로 처리를 멈춘다.
  */
-export const createProcessingPort = (onSignedOut: () => void): ProcessingPort<File> => {
-  const toJob = (response: JobResponse): ProcessingJob | null => {
+export const createProcessingPort = (onSignedOut: () => void): ProcessingPort<File, JobDetail> => {
+  const toJob = (response: JobResponse): JobDetail | null => {
     if (response.type === 'error') throw new ProcessingApiError(response.code);
     if (response.type === 'signed-out') {
       onSignedOut();

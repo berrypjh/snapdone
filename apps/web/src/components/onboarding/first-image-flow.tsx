@@ -4,43 +4,31 @@ import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@berrypjh/react-ui';
-import type { ProcessingResult } from '@snapdone/onboarding';
+import type { JobDetail } from '@snapdone/processing';
 
 import { loginPage } from '@/lib/auth/redirect';
 import { createProcessingPort } from '@/lib/onboarding/processing-port';
+import { PHOTO_ACCEPT, useObjectUrl } from '@/lib/photo';
 
 import { ProcessingView } from './processing-view';
 import { ResultView } from './result-view';
 import { SelectedImage } from './selected-image';
 
-/** Go가 내용으로 판별해 받는 형식. 파일 선택 창에서 먼저 거른다. */
-const ACCEPT = 'image/jpeg,image/png,image/gif,image/webp';
 const EXAMPLES = ['영수증', '외국어가 있는 사진'] as const;
 
 type Step = 'choose' | 'preview' | 'processing' | 'result';
 
-/** 고른 파일의 blob 주소. 파일이 바뀌거나 화면을 떠나면 해제한다. */
-const useObjectUrl = (file: File | null) => {
-  const [url, setUrl] = useState<string | null>(null);
-  useEffect(() => {
-    if (!file) return;
-    const next = URL.createObjectURL(file);
-    setUrl(next);
-    return () => URL.revokeObjectURL(next);
-  }, [file]);
-  return file ? url : null;
-};
-
 /**
  * 첫 사진 → 사진 확인 → 처리 → 결과. mobile의 첫 사진 · 확인 · 처리 · 결과 화면과 같은 순서다.
- * 사진은 브라우저에만 있고 저장하지 않는다 — 새로고침하면 첫 사진 단계로 돌아온다. 결과 화면도 같은 blob 주소를 쓴다.
+ * 사진은 브라우저에만 있고 저장하지 않는다 — 새로고침하면 첫 사진 단계로 돌아온다. 결과 화면도 같은 원본(`File` · blob 주소)을 써서,
+ * 다른 방식으로 다시 처리하거나 유형을 고를 때 사진을 다시 고르지 않는다. 처리 결과는 일반 사진과 같은 계약(`JobDetail`)이다.
  */
 export function FirstImageFlow() {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [image, setImage] = useState<File | null>(null);
   const [step, setStep] = useState<Step>('choose');
-  const [result, setResult] = useState<ProcessingResult | null>(null);
+  const [job, setJob] = useState<JobDetail | null>(null);
   const url = useObjectUrl(image);
   const [port] = useState(() =>
     createProcessingPort(() => router.replace(loginPage('/onboarding'))),
@@ -64,14 +52,18 @@ export function FirstImageFlow() {
     setStep('preview');
   };
 
-  const picker = <input ref={input} type="file" accept={ACCEPT} hidden onChange={onSelected} />;
+  const picker = (
+    <input ref={input} type="file" accept={PHOTO_ACCEPT} hidden onChange={onSelected} />
+  );
 
-  const onCompleted = (completed: ProcessingResult) => {
-    setResult(completed);
+  const onCompleted = (completed: JobDetail) => {
+    setJob(completed);
     setStep('result');
   };
 
-  if (step === 'result' && result && url) return <ResultView url={url} result={result} />;
+  if (step === 'result' && job && image && url) {
+    return <ResultView image={{ url, file: image }} job={job} onReprocessed={setJob} />;
+  }
 
   if (step === 'processing' && image && url) {
     return (

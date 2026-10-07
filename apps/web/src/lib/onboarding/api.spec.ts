@@ -128,6 +128,9 @@ describe('processing', () => {
     await expect(startProcessingJob('c', new Blob(['png']))).resolves.toEqual({
       jobId: 'job-1',
       status: 'running',
+      selection: null,
+      outcome: null,
+      sourceJobId: null,
     });
     const [url, init] = fetchMock.mock.calls[0] ?? [];
     expect(url).toBe(`${BASE_URL}/v1/processing-jobs`);
