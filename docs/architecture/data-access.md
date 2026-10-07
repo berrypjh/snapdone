@@ -54,7 +54,7 @@ HTTP 클라이언트 라이브러리는 없다. Node와 React Native 모두 `fet
 4. credential 정책을 명시 (쿠키를 보낼 것인가)
 5. **production에서 `*`를 쓰지 않는다**
 
-**온보딩 첫 사진은 이 전환 없이 Server Action으로 올린다.** 사진 한 장(최대 7,500,000 byte)을 한 번 받는 흐름이라 두 번 전송하는 비용보다 CORS · 브라우저 credential 정책을 새로 여는 비용이 크다. Server Action 본문 상한은 `next.config.js`의 `experimental.serverActions.bodySizeLimit`(`8mb`)이고, 브라우저는 상한을 넘는 파일을 보내기 전에 거절한다. 여러 장 · 반복 업로드가 생기면 위 절차로 다시 본다.
+**사진은 이 전환 없이 Server Action으로 올린다** — 온보딩 첫 사진, 사진 처리 화면(`/process`), 같은 사진의 다시 처리 모두다. 사진 한 장(최대 7,500,000 byte)을 한 번 받는 흐름이라 두 번 전송하는 비용보다 CORS · 브라우저 credential 정책을 새로 여는 비용이 크다. Server Action 본문 상한은 `next.config.js`의 `experimental.serverActions.bodySizeLimit`(`8mb`)이고, 브라우저는 상한을 넘는 파일을 보내기 전에 거절한다. 여러 장 · 반복 업로드가 생기면 위 절차로 다시 본다.
 
 **지금 미리 만들지 않는다.** 쓰이지 않는 CORS middleware는 잘못된 설정을 숨긴 채 통과시키는 통로가 되기 쉽다.
 
@@ -83,7 +83,7 @@ web 화면이 앱 WebView 안에서 열려도 **데이터 경로는 바뀌지 �
 4. web 서버가 코드와 cookie의 verifier를 Go API로 교환하고 child 세션 **httpOnly 쿠키**를 심은 뒤 `next`로 redirect한다
 
 - access token을 URL · JS 전역 · `injectJavaScript`로 넘기지 않는다. 코드는 1회용이고 만료가 짧다
-- `next`는 같은 도메인 경로만 허용한다 (open redirect 방지)
+- `next`는 같은 도메인 경로만 허용한다 (open redirect 방지). 정해진 경로(`/` · `/history` · `/settings/processing`)와 정확히 같거나, 처리 결과 하나인 `/history/{jobId}`(jobId는 소문자 uuid)뿐이다. 하위 경로 · query · 대문자는 받지 않는다. 같은 규칙을 Go `auth.allowedNext`, web `safeReturnPath`, mobile `webViewNavigation`(TS 쪽은 `@snapdone/webview-bridge`의 `isJobDetailPath`)이 각자 검사한다
 - 브라우저 단독 접속은 web 자체 로그인 흐름을 쓰고, 세션 쿠키 형식은 핸드오프와 같다
 - verifier가 없는 브라우저로 코드를 열면 교환하지 않는다(login-CSRF 방지). 세션 토큰 · verifier는 bridge · JS로 나가지 않는다
 - 구현됐다. web `src/lib/auth/handoff.ts`, Go `internal/auth/handoff.go`, E2E `auth.spec.ts`의 WebView handoff

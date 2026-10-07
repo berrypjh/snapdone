@@ -27,6 +27,7 @@ Expo managed + React Native. 진입점은 `index.js` → `src/app/App.tsx`.
 - **로컬 primitive를 만들지 않는다.** 공용 `@berrypjh/react-native-ui`(`Box` · `Stack` · `Button` · `ThemeProvider` 등)를 조합한다. 앱이 소유하는 것은 `AppShell`, 화면(`src/screens/`), 기능별 제품 조합(`src/components/auth/` 등)뿐이다
 - **인증은 `src/auth/`다.** 화면은 `controller`만 부르고, API는 `api.ts`, 기기 저장 · 암호 · 시스템 인증 브라우저는 `device.ts`(expo-secure-store · expo-crypto · expo-web-browser)만 안다. provider 동의 화면은 `openAuthSessionAsync`로만 열고 제품 WebView에서 열지 않는다. 복귀 URL은 `callback.ts` 하나로 검사한다. credential을 AsyncStorage · route params · 로그 · WebView에 넣지 않는다. native header가 없는 인증 화면은 `AuthShell`이 상하좌우 inset을 가진다
 - **온보딩은 `src/onboarding/`이다.** 흐름은 `app/OnboardingFlow.tsx`(안쪽 native stack)가 가진다. 진행(단계 · 목적)은 서버 `/v1/onboarding`(`progressApi.ts`)에 저장해 web과 이어지고, **사진 · 파일 주소 · 처리 상태는 저장하지 않는다** — 다시 열면 첫 사진 단계로 돌아간다. 목적 규칙 · 처리 계약과 조회 흐름(`runProcessing`)은 web과 함께 쓰는 `@snapdone/onboarding`에 있다. expo-image-picker는 `imagePicker.ts`만 알고, 카메라 권한은 누른 순간에만 묻는다. 처리 API는 `processingApi.ts`이고 credential은 `AuthController.authorized`로만 받는다. 처리 화면은 서버가 준 상태(처리 중 · 완료 · 실패)만 보이고 단계를 지어내지 않는다
+- **사진 처리는 네이티브다(`src/processing/` · `app/photoRoutes.tsx`).** 홈의 사진 추가 → `PhotoCapture`(온보딩과 같은 `CaptureChoices`) → `PhotoPreview` → `PhotoProcessing` → `PhotoResult`. 처리 API는 `processing/jobApi.ts`, port는 `processing/port.ts`이고 credential은 `AuthController.authorized`로만 받는다. 원본은 route params의 파일 주소뿐이라 저장하지 않는다 — 처리 화면은 끝나면 결과로 `replace`해 뒤로 가면 같은 사진의 확인 화면이다. 결과 내용은 `components/processing/ResultBody.tsx` 하나를 홈 사진과 온보딩 첫 사진(`OnboardingResultScreen`)이 함께 쓴다. 필드 확정 · 다시 처리 · 기본값 저장은 `processing/resultActions.ts`가 묶고, 다시 처리와 기본값 저장은 다른 요청이다
 - **홈은 네이티브다(`screens/HomeScreen.tsx` · `src/home/`).** `App.tsx`가 render function으로 `controller`를 넘기고, `useHomeData`가 화면이 보일 때마다(`useFocusEffect`) 최근 처리 기록과 처리 방식을 `authorized`로 함께 다시 읽는다 — 처리 설정 WebView에서 돌아오면 바뀐 값이 보인다. 값 · parser · 이름표 · 기록 상태(`recentState`)는 web과 같은 `@snapdone/processing`이다. 기록을 읽지 못하면 비었다고 하지 않고, 처리 방식을 읽지 못하면 기본값을 만들지 않는다
 
 ## 네이티브 셸 · WebView 호스트
@@ -37,7 +38,7 @@ mobile이 주 제품이다. 네비게이션 · 로그인 · 권한 · 푸시와 
 - `apps/web`을 import하지 않는다. WebView는 URL로만 연다
 - WebView User-Agent 뒤에 `SnapdoneApp/<bridge 계약 버전>`을 붙인다(`applicationNameForUserAgent={inAppUserAgentName()}`)
 - 로그인은 일회용 코드 핸드오프다 ([data-access.md](../../docs/architecture/data-access.md#webview-로그인-핸드오프)). 토큰을 `injectJavaScript` · URL로 넘기지 않는다
-- `webViewNavigation`이 web origin의 허용 경로만 WebView 안에서 열고, 외부 https는 `Linking.openURL`, 그 외 scheme · 모르는 경로는 막는다. 경로를 추가하면 `WEB_VIEW_PATHS`에 넣는다. 뒤로 가기 · 닫기는 네이티브가 처리한다
+- `webViewNavigation`이 web origin의 허용 경로만 WebView 안에서 열고, 외부 https는 `Linking.openURL`, 그 외 scheme · 모르는 경로는 막는다. 경로를 추가하면 `WEB_VIEW_PATHS`에 넣는다. 동적 경로는 처리 결과 하나(`/history/{소문자 uuid}`, `@snapdone/webview-bridge`의 `isJobDetailPath`)뿐이고, Go 핸드오프 `allowedNext`와 web `safeReturnPath`가 같은 규칙이다. 홈의 기록 항목이 이 경로를 연다. 뒤로 가기 · 닫기는 네이티브가 처리한다
 - 핸드오프 · `auth-required` 처리는 `WebContentScreen` + `src/auth/webHandoff.ts`(순수 상태)다. 메시지는 보낸 page의 origin · path와 대기 상태를 확인한 뒤에만 받는다
 - 메시지 타입은 `libs/`의 계약만 쓴다
 - WebView 화면은 `src/screens/WebContentScreen.tsx` 하나를 재사용한다 — `navigate('WebContent', { path, title })`. 로딩 · 오류(다시 시도) · 외부 링크 · 로그인 핸드오프가 이미 들어 있다

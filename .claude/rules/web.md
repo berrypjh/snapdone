@@ -60,7 +60,9 @@ Tailwind v4 + `@berrypjh/react-ui`. 색 · 타입 스케일 · radius · shadow�
 
 - API 주소를 아는 파일은 `src/lib/api.ts` **하나뿐이다.** component에 URL 문자열을 쓰지 않는다
 - 서버에서 호출한다 — 읽기는 Server Component, mutation은 Server Action · Route Handler. 브라우저가 Go API를 직접 부르지 않으므로 CORS 설정이 없다. 인증 endpoint 호출은 `src/lib/auth/api.ts`에, 온보딩 진행 · 사진 처리 호출은 `src/lib/onboarding/api.ts`에, 처리 방식 호출은 `src/lib/processing-preferences/api.ts`에, 최근 처리 기록 호출은 `src/lib/processing-jobs/api.ts`에 모은다. 처리 방식의 기본값은 서버가 주고 web이 만들지 않는다. 홈은 `src/lib/home/home.ts`(`loadHome`)가 둘을 함께 읽고, 한쪽이 실패해도 다른 쪽을 쓰며 실패를 빈 기록 · 기본값으로 바꾸지 않는다. 값 · parser · 이름표는 `@snapdone/processing`
-- 온보딩 첫 사진은 Server Action으로 올린다(본문 상한 `next.config.js` `experimental.serverActions.bodySizeLimit`). 처리 Action은 오류를 던지지 않고 값(`JobResponse`)으로 돌려준다 — production에서 Action 오류 내용은 가려진다
+- 사진은 Server Action으로 올린다 — 온보딩 첫 사진(`lib/onboarding/actions.ts`), 사진 처리 화면 `/process`와 재처리 · 영수증 필드 확정(`lib/processing-jobs/actions.ts`). 본문 상한은 `next.config.js` `experimental.serverActions.bodySizeLimit`. 처리 Action은 오류를 던지지 않고 값(`JobResponse` · `DetailResponse`)으로 돌려준다 — production에서 Action 오류 내용은 가려진다
+- 처리 결과는 `components/processing/`이 그린다. `ProcessingResult`는 서버 작업(`JobDetail`)만 보이고, 원본(`File` · blob 주소)은 그 사진을 고른 흐름(`PhotoFlow` · `FirstImageFlow`)만 갖는다. 그래서 다시 처리(`ReprocessPanel`) · 유형 선택은 그 흐름 안에서만 보이고, 사진이 없는 기록 결과(`/history/[jobId]`)에는 없다. 다시 처리(`reprocessWithAction`)와 기본값 저장(`saveProcessingPreference`)은 다른 Action이다 — 사용자가 "앞으로도"를 골랐을 때만 저장을 부른다(`@snapdone/processing`의 `preferenceToSave`)
+- 로그인 뒤 돌아갈 경로 · 앱 WebView 경로의 처리 결과 하나는 `/history/{소문자 uuid}`뿐이다(`@snapdone/webview-bridge`의 `isJobDetailPath`). 동적 경로를 넓히지 않는다
 - `app/api/*` route를 만들지 않는다. 브라우저 직접 호출이 필요해지면 [data-access.md](../../docs/architecture/data-access.md)의 전환 절차를 먼저 읽는다
 - 환경변수는 `API_BASE_URL`이다. `NEXT_PUBLIC_` 접두사가 없는 것은 의도적이다 — 서버 전용 값이라 Client Component에서 읽으면 `undefined`
 - 응답은 좁은 타입 가드로 확인한다. `any`를 쓰지 않는다

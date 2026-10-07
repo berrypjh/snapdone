@@ -5,7 +5,7 @@ paths:
 
 # libs (`libs/`)
 
-지금 lib은 넷이고 web과 mobile이 모두 쓴다 — `webview-bridge`(앱 ↔ WebView 계약: User-Agent 토큰 · 메시지 타입), `auth-contracts`(인증 wire 타입: provider · 오류 코드 · `Session` · 온보딩 단계 · 로그인 응답 해석), `onboarding`(사용 목적 규칙 · 저장된 진행 · 사진 처리 작업 계약과 조회 흐름), `processing`(처리 방식 · 최근 처리 기록 계약: 값 · parser · 이름표 · 기록 상태 · 한국 시각 formatter). 단건 처리 작업 계약(`parseJob`)은 `onboarding`에 있고 `processing`이 그것을 쓴다.
+지금 lib은 넷이고 web과 mobile이 모두 쓴다 — `webview-bridge`(앱 ↔ WebView 계약: User-Agent 토큰 · 메시지 타입), `auth-contracts`(인증 wire 타입: provider · 오류 코드 · `Session` · 온보딩 단계 · 로그인 응답 해석), `onboarding`(사용 목적 규칙 · 저장된 진행 · 사진 처리 작업 계약과 조회 흐름), `processing`(처리 방식 · 제품 결과(`outcome` · `selection`) · 작업(`JobDetail` · `readJobDetail`) · 최근 처리 기록 계약과, 결과 화면 내용(`presentJob`) · 목록 요약(`summarizeJob`) · 기본값 저장 판단(`preferenceToSave`) · 금액 · 날짜 · 한국 시각 formatter). 분류 결과만 읽는 단건 처리 계약(`parseJob`)과 조회 흐름(`runProcessing`)은 `onboarding`에 있고 `processing`이 그것을 쓴다. `webview-bridge`에는 처리 결과 하나의 경로 규칙(`isJobDetailPath`)도 있다.
 
 ## 모양
 

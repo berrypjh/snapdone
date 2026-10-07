@@ -13,14 +13,14 @@ Nx Workspace (repository root)
 
 ## 현재 상태
 
-| 영역          | 상태                                                                                                                                                               |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Nx workspace  | integrated, pnpm workspaces                                                                                                                                        |
-| `apps/web`    | Next.js App Router. `(product)` 홈 · `/history` · `/settings/processing`, `(auth)` 로그인 · 온보딩 · callback · 핸드오프, 브라우저 셸과 앱 WebView 모드            |
-| `apps/mobile` | Expo. React Navigation native stack — 로그인 · 온보딩 소개 · 네이티브 홈 · WebView 콘텐츠 화면                                                                     |
-| `apps/api`    | module `snapdone/api`. `/health` · 인증 · 온보딩 진행 · 사진 분류, Postgres. 평가 harness는 서버와 분리된 개발자 CLI([agent-evaluation.md](./agent-evaluation.md)) |
-| `libs/`       | `webview-bridge` · `auth-contracts` · `onboarding` · `processing` (모두 web · mobile이 사용)                                                                       |
-| `docs/`       | 제품 · 아키텍처 · 디자인 · 개발 · 품질                                                                                                                             |
+| 영역          | 상태                                                                                                                                                                                      |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Nx workspace  | integrated, pnpm workspaces                                                                                                                                                               |
+| `apps/web`    | Next.js App Router. `(product)` 홈 · `/process` · `/history` · `/history/{jobId}` · `/settings/processing`, `(auth)` 로그인 · 온보딩 · callback · 핸드오프, 브라우저 셸과 앱 WebView 모드 |
+| `apps/mobile` | Expo. React Navigation native stack — 로그인 · 온보딩 · 네이티브 홈 · 사진 추가 → 확인 → 처리 → 결과 · WebView 콘텐츠 화면                                                                |
+| `apps/api`    | module `snapdone/api`. `/health` · 인증 · 온보딩 진행 · 사진 분류, Postgres. 평가 harness는 서버와 분리된 개발자 CLI([agent-evaluation.md](./agent-evaluation.md))                        |
+| `libs/`       | `webview-bridge` · `auth-contracts` · `onboarding` · `processing` (모두 web · mobile이 사용)                                                                                              |
+| `docs/`       | 제품 · 아키텍처 · 디자인 · 개발 · 품질                                                                                                                                                    |
 
 버전은 아래 [버전 정책](#버전-정책)에 한 곳으로 모아 두었다.
 
@@ -30,28 +30,30 @@ Nx Workspace (repository root)
 
 ### 무엇이 있고 무엇이 없는가
 
-**지금 있는 것은 인프라 · 인증 · 온보딩까지다.** 사진 처리는 온보딩 첫 사진 분류뿐이고 Act(실행)는 없다.
+**지금 있는 것은 인프라 · 인증 · 온보딩과 사진 한 장의 처리까지다.** 사진 유형(텍스트 · 영수증)을 판단하고 저장된 처리 방식(추출 · 번역 · 요약 · 지출 정보 정리)을 실행해 결과를 보이지만, 앱 밖의 행동(캘린더 등록 · 지출 앱 저장 등)은 없다.
 
 구현된 것:
 
 - Nx monorepo와 세 앱의 골격
-- 홈 — web(Server Component)과 mobile(네이티브)이 온보딩 뒤 처리한 사진(`GET /v1/processing-jobs`의 general 작업) 유무로 빈 홈 · 최근 처리 홈을 보이고, 서버에 저장된 처리 방식을 요약한다. 사진 추가는 아직 비활성이고 확인이 필요한 처리는 빈 상태만 있다
+- 홈 — web(Server Component)과 mobile(네이티브)이 온보딩 뒤 처리한 사진(`GET /v1/processing-jobs`의 general 작업) 유무로 빈 홈 · 최근 처리 홈을 보이고, 서버에 저장된 처리 방식을 요약한다. 최근 처리 한 건은 적용한 유형 · 처리 방식과 결과 앞부분을 보이고 그 처리 결과(`/history/{jobId}`)로 이어진다. 확인이 필요한 처리는 서버 결과에 확인이 필요한 영수증 값이 있는 작업만이다
 - 디자인 토큰과 App Shell, web 라이트/다크 테마
 - 네이티브 셸 + 웹 콘텐츠 골격 — mobile native stack, WebView 화면(로딩 · 오류 · 외부 링크), web in-app 모드, `libs/webview-bridge` 계약과 모듈 경계 lint
 - Go `GET /health`, Gin HTTP 경계와 swag로 생성한 Swagger 2.0 문서
 - Postgres 연결 · 마이그레이션(로컬 Docker)과 인증 저장소 · `/v1/auth/*`
 - Google 로그인 화면과 세션 — mobile 네이티브 흐름, web 로그인 · HttpOnly 세션 cookie, WebView 로그인 핸드오프. **실계정 · 실기기 인수는 남아 있다**
-- 온보딩 소개 → 사용 목적 → 첫 사진 → 처리 — mobile(네이티브)과 web(브라우저 단독, 파일 선택)이 같은 순서로 간다. 진행은 서버(`/v1/onboarding`)에 있어 어느 쪽에서든 이어 간다. 두 앱 모두 첫 결과 화면(사진에서 찾은 값 · 추천 작업, 실행은 하지 않음)에서 온보딩을 마치고 홈으로 간다(`POST /v1/onboarding/complete`). mobile은 완료 뒤 세션을 다시 받아 root stack이 홈으로 바뀐다
+- 온보딩 소개 → 사용 목적 → 첫 사진 → 처리 — mobile(네이티브)과 web(브라우저 단독, 파일 선택)이 같은 순서로 간다. 진행은 서버(`/v1/onboarding`)에 있어 어느 쪽에서든 이어 간다. 두 앱 모두 첫 결과 화면(일반 사진과 같은 실제 처리 결과, 같은 사진을 다른 방식으로 다시 처리 가능)에서 완료를 눌러야 온보딩을 마치고 홈으로 간다(`POST /v1/onboarding/complete`). mobile은 완료 뒤 세션을 다시 받아 root stack이 홈으로 바뀐다
+- 사진 한 장의 처리 — 홈의 사진 추가에서 web은 `/process`(파일 선택 · 끌어 놓기), mobile은 네이티브 화면(사진 선택 · 카메라)으로 한 장을 받아 확인 → 처리 → 결과까지 간다. 서버는 분류와 유형 판단(text · receipt · unsupported · ambiguous)을 하고, 요청 시점에 저장된 처리 방식을 실행해 결과(`outcome`)를 작업에 남긴다. 결과 화면에서 같은 사진을 다른 처리 방식으로 다시 처리하고(`sourceJobId`), 사용자가 고를 때만 그 처리 방식을 기본값으로 따로 저장한다. 영수증의 확인이 필요한 값은 필드 하나씩 확정한다(`PATCH /v1/processing-jobs/{jobId}/receipt-fields/{field}`). 사진은 저장하지 않고 내용의 SHA-256만 남겨, 다시 처리는 지금 사진을 들고 있는 화면에서만 된다
+- 처리 기록 — web `/history`(목록)와 `/history/{jobId}`(결과 하나). 사진이 없어 다시 처리는 없고 영수증 값 확정만 된다. mobile은 홈의 기록 항목에서 이 결과 화면을 WebView로 연다
 - 검증 명령과 문서
 
 아직 구현하지 않은 것:
 
 - 로그인 수단은 Google만 (코드만 있고 실계정 검증 전). Apple · 네이버 · 카카오는 나중에 추가
-- 온보딩 첫 사진 밖의 이미지 업로드 · AI 분석 — 지금은 온보딩 첫 사진 한 장을 올려 분류 결과를 받는 데까지만 있다(사진은 저장하지 않는다)
+- 여러 장 · 붙여넣기 업로드, 공유 시트 · 앱 안 카메라 화면
+- 실제 모델로 잰 처리 품질 · 지연 — 처리 코드는 가짜 HTTP 응답으로만 검증했다
 - 장소
 - 캘린더
-- 영수증
-- 번역
+- 영수증 지출 정보의 외부 저장(지출 앱 · 가계부 연동)
 - 자동화
 - production DB (Cloud SQL 미생성)
 - production 배포

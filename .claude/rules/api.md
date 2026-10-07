@@ -21,7 +21,7 @@ internal/database/               pgx pool · 마이그레이션 (migrations/*.sq
 internal/database/databasetest/  테스트용 격리 schema
 internal/auth/                   인증 저장소 (사용자 · 세션 · grant · transaction) · 토큰 · AES-GCM · OAuth 흐름(oauth.go)
 internal/google/                 Google OIDC authorize URL · token 교환 · ID token claim 검사
-internal/processing/             사진 처리 작업 저장소 · 공용 지시 · 결과 검증(result.go) · 분류기(claude.go · openai.go) · 백그라운드 처리(processor.go)
+internal/processing/             사진 처리 작업 저장소(store.go) · 분류 계약(result.go · contract.go, 평가가 씀) · 유형 판단(typing.go) · 처리 방식 실행(action.go · receipt.go) · 제품 결과 계약(outcome.go) · 공급자(claude.go · openai.go) · 백그라운드 처리 · 재처리(processor.go)
 internal/onboarding/             온보딩 진행(단계 · 사용 목적) 저장소와 저장 규칙(Validate)
 internal/preference/             이미지 유형별 처리 방식(텍스트 · 영수증) 저장소. 유형마다 타입과 허용 값이 다르고 기본값은 DB 컬럼 DEFAULT
 internal/evaluation/             평가 core — dataset · variant · runner · 채점 · 산출물 · 비교. internal/processing을 import하지 않고, cmd/server가 import하지 않음. 설계는 docs/architecture/agent-evaluation.md
@@ -32,9 +32,12 @@ internal/evaluation/processingadapter/  core ↔ production 분류기 다리. ev
 - endpoint 목록의 정본은 `router.go`와 `docs/swagger/`다 — `/health`, `/v1/auth/*`(OAuth · WebView 핸드오프 포함), `/v1/onboarding`, `/v1/processing-jobs`, `/v1/processing-preferences`
 - **처리 방식은 유형 하나씩 바꾼다.** `PUT /v1/processing-preferences/{imageType}`은 그 유형의 컬럼만 UPDATE하고 바뀐 뒤의 전체를 돌려준다. 전체를 통째로 바꾸는 쓰기를 두지 않는다 — 오래된 화면이 다른 유형의 값을 덮어쓴다
 - **온보딩 진행은 서버가 가진다.** mobile과 web이 같은 진행을 읽고 써서 어느 쪽에서든 이어 간다. **단계 순서는 서버가 강제한다** — 같은 단계를 다시 저장하거나 한 단계 앞으로만 가고(`onboarding.CanMove`), 어기면 409 `onboarding_out_of_order`다. 검사와 쓰기는 한 UPDATE 안에서 일어난다
-- **사진은 저장하지 않는다.** 처리 요청은 작업만 만들고 202로 돌아가며, 분류는 백그라운드에서 끝나 결과만 `processing_jobs`에 남는다
+- **사진은 저장하지 않는다.** 처리 요청은 작업만 만들고 202로 돌아가며, 처리는 백그라운드에서 끝나 결과만 `processing_jobs`에 남는다. 사진 대신 내용의 SHA-256(`image_sha256`)만 남기고 응답에 내보내지 않는다
+- **처리는 분류 · 유형 판단 · 실행이다.** `Classify`(평가 계약, `DescribeContract` hash 고정)와 `TypeImage`(text · receipt · unsupported · ambiguous)를 함께 묻고, 확정된 유형이면 **요청 시점에 읽은** 사용자 처리 방식(`decide`)을 `Act`로 실행한다. 처리 방식을 읽지 못하면 기본값으로 대신하지 않고 작업을 만들지 않는다(500). 유형에 없는 처리 방식 · 계약 밖 결과는 저장하지 않고 실패다(`Completion.Validate` · DB CHECK). 분류 enum이나 지시를 바꾸면 평가 hash가 바뀌므로 제품 판단은 `typing.go`에서 바꾼다
+- **재처리는 같은 POST다.** `sourceJobId`와 같은 사진을 다시 보내고 `action`(처리를 마친 작업) 또는 `imageType`(ambiguous)을 고른다. 서버가 digest로 같은 사진인지 보고, 분류는 다시 하지 않고 원래 작업의 분류 결과를 쓴다. unsupported · 실패 작업은 재처리하지 않는다(409). **재처리는 저장된 처리 방식을 바꾸지 않는다** — 기본값 저장은 클라이언트가 따로 `PUT /v1/processing-preferences/{imageType}`을 부른다
+- **영수증 필드는 하나씩 확정한다.** `PATCH /v1/processing-jobs/{jobId}/receipt-fields/{field}`가 행을 잠그고 확정하지 않은 필드만 바꾼다. 같은 값이면 그대로 200, 다른 값으로 확정된 필드는 409다. 모델은 다시 부르지 않는다
 - **작업의 출처(`origin`)는 서버가 정한다.** 요청 세션의 온보딩 단계가 `complete`면 `general`, 그 전이면 `onboarding`이다. 클라이언트 입력 · User-Agent로 고르지 않는다. `GET /v1/processing-jobs`는 내 `general` 작업만 최근 순(`created_at DESC, id DESC`)으로 20개까지 돌려주고, 상태는 단건 조회와 같은 규칙(`jobColumns`의 stale running → failed)으로 읽는다
-- **모델은 설정으로 고른다.** `PROCESSING_PROVIDER`(`anthropic` · `openai` 호환)와 `PROCESSING_MODEL`. 모델을 바꾸려고 코드를 고치지 않는다. 모든 공급자가 같은 지시 · 결과 schema를 쓰고 `parseResult`가 결과를 다시 검사한다. 새 공급자는 `Classifier` 구현 하나를 더한다
+- **모델은 설정으로 고른다.** `PROCESSING_PROVIDER`(`anthropic` · `openai` 호환)와 `PROCESSING_MODEL`. 모델을 바꾸려고 코드를 고치지 않는다. 모든 공급자가 같은 지시 · 결과 schema를 쓰고 `parseResult` · `parseTyping` · `actionSpec.parse`가 결과를 다시 검사한다. 새 공급자는 `Model`(`Classifier` · `Typer` · `Actor`) 구현 하나를 더한다
 - 업로드는 파일 내용으로 판별한 JPEG · PNG · GIF · WebP만, 원본 7,500,000 byte까지(Claude API 이미지 상한 base64 10 MB 기준)
 - **provider 토큰을 앱 · web으로 보내지 않는다.** callback은 60초 result code만 복귀 URI(서버 설정)로 redirect한다. ID token 서명 생략은 token endpoint에서 TLS로 직접 받은 경우에만 허용하고, 클라이언트가 보낸 토큰에는 쓰지 않는다
 - 외부 HTTP 호출은 timeout · 응답 크기 제한 · redirect 미추적을 둔다. 테스트는 포트를 열지 않고 `http.Client.Transport`로 가짜 응답을 준다(샌드박스가 포트 바인딩을 막는다)
