@@ -10,6 +10,9 @@ const job = {
   status: 'failed',
   createdAt: '2026-10-06T09:00:00Z',
   finishedAt: null,
+  selection: null,
+  outcome: null,
+  sourceJobId: null,
 } as const;
 const preferences = { text: 'summarize', receipt: 'record_expense' } as const;
 

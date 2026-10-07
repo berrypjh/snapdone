@@ -14,20 +14,26 @@ const IMAGE_HEIGHT_RATIO = 0.45;
 
 const LOAD_FAILED = '사진을 불러오지 못했습니다. 다른 사진을 선택해 주세요.';
 
+/** 온보딩 첫 사진의 안내. 처리 방식을 아직 고르지 않은 사용자에게 보인다. */
+const ONBOARDING_NOTE = '사진 속 내용을 확인하고\n필요한 작업을 찾아 드립니다.';
+
 type OnboardingPreviewScreenProps = {
   image: SelectedImage;
   onProcess: (image: SelectedImage) => void;
   onChooseAnother: () => void;
+  /** 확인 화면의 안내. 홈의 사진 추가는 설정한 처리 방식을 말한다. */
+  note?: string;
 };
 
 /**
- * 고른 사진 확인. 처리 비용이 들고 잘못 고른 사진을 바꿀 수 있어야 해서, 처리 전에 한 번 확인받는다.
+ * 고른 사진 확인. 온보딩 첫 사진과 홈의 사진 추가가 같이 쓴다. 처리 비용이 들고 잘못 고른 사진을 바꿀 수 있어야 해서, 처리 전에 한 번 확인받는다.
  * 사진이 무엇인지 앱이 아직 읽지 않았으므로 내용을 말하지 않는다.
  */
 export const OnboardingPreviewScreen = ({
   image,
   onProcess,
   onChooseAnother,
+  note = ONBOARDING_NOTE,
 }: OnboardingPreviewScreenProps) => {
   const theme = useTheme();
   const { typography } = theme.tokens;
@@ -54,7 +60,7 @@ export const OnboardingPreviewScreen = ({
           lineBreakStrategyIOS="hangul-word"
           style={[textStyle(typography.paragraph.default), muted, styles.center]}
         >
-          사진 속 내용을 확인하고{'\n'}필요한 작업을 찾아 드립니다.
+          {note}
         </Text>
 
         <Stack gap="sm">

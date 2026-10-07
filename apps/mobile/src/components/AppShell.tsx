@@ -21,6 +21,8 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
           paddingBottom: spacing['2xl'],
         }}
         keyboardShouldPersistTaps="handled"
+        // iOS: 키보드가 올라오면 입력이 가리지 않도록 스크롤 inset을 늘린다.
+        automaticallyAdjustKeyboardInsets
       >
         <Stack gap="xl">{children}</Stack>
       </ScrollView>

@@ -3,8 +3,9 @@ import { AccessibilityInfo, ActivityIndicator, StyleSheet, Text } from 'react-na
 
 import { Button, getColor, Stack, useTheme } from '@berrypjh/react-native-ui';
 import {
+  type CompletedJob,
+  type ProcessingJob,
   type ProcessingPort,
-  type ProcessingResult,
   type ProcessingState,
   runProcessing,
 } from '@snapdone/onboarding';
@@ -23,28 +24,28 @@ import { textStyle } from '../theme/text';
 /** 사진 칸이 화면 높이에서 차지하는 비율. 확인 화면보다 작게 둔다. */
 const IMAGE_HEIGHT_RATIO = 0.3;
 
-type OnboardingProcessingScreenProps = {
+type OnboardingProcessingScreenProps<Job extends ProcessingJob> = {
   image: SelectedImage;
-  port: ProcessingPort<SelectedImage>;
-  onCompleted: (result: ProcessingResult) => void;
+  port: ProcessingPort<SelectedImage, Job>;
+  onCompleted: (job: CompletedJob<Job>) => void;
   onChooseAnother: () => void;
 };
 
 /**
- * 첫 처리. 사진을 서버에 보내고 작업이 끝날 때까지 기다린다.
+ * 사진 처리. 사진을 서버에 보내고 작업이 끝날 때까지 기다린다. 온보딩 첫 사진과 홈의 사진 추가가 같이 쓴다.
  * 서버가 알려주는 것은 처리 중 · 완료 · 실패뿐이라 중간 단계를 지어내지 않는다.
- * 화면을 떠나면 조회를 멈춘다.
+ * 화면을 떠나면 조회를 멈추고, 늦게 온 응답은 화면을 바꾸지 않는다.
  */
-export const OnboardingProcessingScreen = ({
+export const OnboardingProcessingScreen = <Job extends ProcessingJob>({
   image,
   port,
   onCompleted,
   onChooseAnother,
-}: OnboardingProcessingScreenProps) => {
+}: OnboardingProcessingScreenProps<Job>) => {
   const theme = useTheme();
   const { typography } = theme.tokens;
   const completedRef = useRef(onCompleted);
-  const [state, setState] = useState<ProcessingState>({ status: 'starting' });
+  const [state, setState] = useState<ProcessingState<Job>>({ status: 'starting' });
   const [attempt, setAttempt] = useState(0);
   const failure = state.status === 'failed' ? FAILURE_COPY[state.reason] : null;
   completedRef.current = onCompleted;
@@ -56,7 +57,7 @@ export const OnboardingProcessingScreen = ({
       image,
       (next) => {
         setState(next);
-        if (next.status === 'completed') completedRef.current(next.result);
+        if (next.status === 'completed') completedRef.current(next.job);
       },
       () => stopped,
     );

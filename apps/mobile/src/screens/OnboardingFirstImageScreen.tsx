@@ -1,13 +1,11 @@
-import { useEffect, useState } from 'react';
-import { AccessibilityInfo, Linking, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { Box, Button, getColor, Stack, useTheme } from '@berrypjh/react-native-ui';
+import { getColor, Stack, useTheme } from '@berrypjh/react-native-ui';
 
 import { AuthShell } from '../components/auth/AuthShell';
-import { type CaptureNotice, captureNotice } from '../components/onboarding/captureCopy';
+import { CaptureChoices } from '../components/capture/CaptureChoices';
 import { OnboardingTitle } from '../components/onboarding/OnboardingTitle';
-import { type CaptureSource, createImageCapture, type SelectedImage } from '../onboarding/capture';
-import { systemImageCapture } from '../onboarding/imagePicker';
+import type { SelectedImage } from '../onboarding/capture';
 import { textStyle } from '../theme/text';
 
 const EXAMPLES = ['영수증', '외국어가 있는 사진'] as const;
@@ -21,24 +19,7 @@ type OnboardingFirstImageScreenProps = { onSelected: (image: SelectedImage) => v
 export const OnboardingFirstImageScreen = ({ onSelected }: OnboardingFirstImageScreenProps) => {
   const theme = useTheme();
   const { typography } = theme.tokens;
-  const [capture] = useState(() => createImageCapture(systemImageCapture));
-  const [busy, setBusy] = useState<CaptureSource | null>(null);
-  const [notice, setNotice] = useState<CaptureNotice | null>(null);
   const muted = { color: getColor(theme, 'text.light') };
-
-  useEffect(() => {
-    if (notice) AccessibilityInfo.announceForAccessibility(notice.message);
-  }, [notice]);
-
-  const choose = async (source: CaptureSource) => {
-    setNotice(null);
-    setBusy((current) => current ?? source);
-    const result = await capture(source);
-    if (!result) return;
-    setBusy(null);
-    if (result.type === 'selected') onSelected(result.image);
-    else setNotice(captureNotice(result));
-  };
 
   return (
     <AuthShell edges={['bottom', 'left', 'right']}>
@@ -53,48 +34,7 @@ export const OnboardingFirstImageScreen = ({ onSelected }: OnboardingFirstImageS
           </Text>
         </Stack>
 
-        <Stack gap="sm">
-          <Button
-            variant="contained"
-            size="lg"
-            fullWidth
-            loading={busy === 'library'}
-            disabled={busy !== null}
-            onPress={() => void choose('library')}
-          >
-            사진에서 선택
-          </Button>
-          <Button
-            variant="outlined"
-            size="lg"
-            fullWidth
-            loading={busy === 'camera'}
-            disabled={busy !== null}
-            onPress={() => void choose('camera')}
-          >
-            카메라로 촬영
-          </Button>
-        </Stack>
-
-        {notice && (
-          <Box p="lg" radius="md" bg="background.grey">
-            <Stack gap="sm">
-              <Text
-                style={[
-                  textStyle(typography.paragraph.small),
-                  { color: getColor(theme, 'text.default') },
-                ]}
-              >
-                {notice.message}
-              </Text>
-              {notice.openSettings && (
-                <Button variant="outlined" size="sm" onPress={() => void Linking.openSettings()}>
-                  설정 열기
-                </Button>
-              )}
-            </Stack>
-          </Box>
-        )}
+        <CaptureChoices onSelected={onSelected} />
 
         <View accessible accessibilityLabel={`추천: ${EXAMPLES.join(', ')}`}>
           <Text style={[textStyle(typography.caption.default), muted, styles.center]}>추천</Text>

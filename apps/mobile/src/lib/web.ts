@@ -1,3 +1,5 @@
+import { isJobDetailPath } from '@snapdone/webview-bridge';
+
 export const getWebBaseUrl = (): string => {
   const value = process.env.EXPO_PUBLIC_WEB_BASE_URL;
 
@@ -13,7 +15,10 @@ export const getWebBaseUrl = (): string => {
 export const webUrl = (path: string) =>
   `${getWebBaseUrl()}${path.startsWith('/') ? path : `/${path}`}`;
 
-/** WebView 안에서 열 수 있는 web 경로. 정확히 같아야 한다. `/auth/callback`(Google)은 넣지 않는다. */
+/**
+ * WebView 안에서 열 수 있는 web 경로. 정확히 같아야 한다. `/auth/callback`(Google)은 넣지 않는다.
+ * 처리 결과 하나(`/history/{소문자 uuid}`)는 `isJobDetailPath`가 따로 판단한다 — 그 밖의 하위 경로는 막는다.
+ */
 const WEB_VIEW_PATHS = new Set([
   '/',
   '/history',
@@ -63,7 +68,9 @@ export const webViewNavigation = (url: string): WebNavigation => {
   if (url === 'about:blank') return 'load';
   const target = parseHttpUrl(url);
   if (!target) return 'block';
-  if (isWebPage(url)) return WEB_VIEW_PATHS.has(target.path) ? 'load' : 'block';
+  if (isWebPage(url)) {
+    return WEB_VIEW_PATHS.has(target.path) || isJobDetailPath(target.path) ? 'load' : 'block';
+  }
   return target.origin.startsWith('https://') ? 'external' : 'block';
 };
 

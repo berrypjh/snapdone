@@ -20,6 +20,9 @@ const errorCode = (promise: Promise<unknown>) =>
     (error: unknown) => (error instanceof ProcessingApiError ? error.code : String(error)),
   );
 
+/** 처리 결과 계약 전의 모양으로 온 작업은 selection · outcome · 원래 작업이 없다. */
+const legacy = { selection: null, outcome: null, sourceJobId: null };
+
 const completedBody = {
   jobId: 'job-1',
   status: 'completed',
@@ -45,6 +48,7 @@ describe('start', () => {
     await expect(processingApi.start('c', image)).resolves.toEqual({
       jobId: 'job-1',
       status: 'running',
+      ...legacy,
     });
     const [url, init] = fetchMock.mock.calls[0] ?? [];
     expect(url).toBe(`${BASE_URL}/v1/processing-jobs`);
@@ -76,7 +80,10 @@ describe('find', () => {
   it('reads a completed job with its result', async () => {
     const fetchMock = stubFetch(() => json(completedBody));
 
-    await expect(processingApi.find('c', 'job/1')).resolves.toEqual(completedBody);
+    await expect(processingApi.find('c', 'job/1')).resolves.toEqual({
+      ...completedBody,
+      ...legacy,
+    });
     expect(fetchMock.mock.calls[0]?.[0]).toBe(`${BASE_URL}/v1/processing-jobs/job%2F1`);
   });
 

@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { type ComponentProps, useEffect, useState } from 'react';
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { POLL_INTERVAL_MS, type ProcessingPort, type ResumeStep } from '@snapdone/onboarding';
+import type { JobDetail } from '@snapdone/processing';
 
 import type { AuthController } from '../auth/controller';
 import { LogoutButton } from '../components/auth/LogoutButton';
@@ -12,6 +13,9 @@ import { selectedPurposes } from '../onboarding/model';
 import { processingApi } from '../onboarding/processingApi';
 import { fromSaved, type ProgressStore, toUpdate } from '../onboarding/progress';
 import { progressApi } from '../onboarding/progressApi';
+import { jobApi } from '../processing/jobApi';
+import { createJobPort } from '../processing/port';
+import { resultActions } from '../processing/resultActions';
 import { OnboardingFirstImageScreen } from '../screens/OnboardingFirstImageScreen';
 import { OnboardingIntroScreen } from '../screens/OnboardingIntroScreen';
 import { OnboardingPreviewScreen } from '../screens/OnboardingPreviewScreen';
@@ -24,7 +28,9 @@ import type { OnboardingStackParamList } from './navigation';
 const OnboardingStack = createNativeStackNavigator<OnboardingStackParamList>();
 
 /** 로그인 세션으로 처리 API를 부른다. credential은 AuthController 밖으로 나오지 않는다. */
-const createProcessingPort = (controller: AuthController): ProcessingPort<SelectedImage> => ({
+const createProcessingPort = (
+  controller: AuthController,
+): ProcessingPort<SelectedImage, JobDetail> => ({
   start: (image) => controller.authorized((credential) => processingApi.start(credential, image)),
   find: (jobId) => controller.authorized((credential) => processingApi.find(credential, jobId)),
   wait: () => new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS)),
@@ -50,6 +56,18 @@ const finish = (controller: AuthController) =>
     complete: () => controller.authorized((credential) => progressApi.complete(credential)),
     refreshSession: controller.refreshSession,
   });
+
+/**
+ * 처리 화면. 처음 받은 port를 화면이 떠날 때까지 그대로 써서 처리 요청을 한 번만 보낸다.
+ * render 함수가 다시 불려 새 port가 와도 처리를 다시 시작하지 않는다.
+ */
+const OnboardingProcessingRoute = ({
+  port,
+  ...props
+}: ComponentProps<typeof OnboardingProcessingScreen<JobDetail>>) => {
+  const [stable] = useState(() => port);
+  return <OnboardingProcessingScreen {...props} port={stable} />;
+};
 
 const RESUME_ROUTE: Record<ResumeStep, keyof OnboardingStackParamList> = {
   intro: 'OnboardingIntro',
@@ -134,21 +152,33 @@ export const OnboardingFlow = ({ controller }: OnboardingFlowProps) => {
       </OnboardingStack.Screen>
       <OnboardingStack.Screen name="OnboardingProcessing">
         {({ navigation, route }) => (
-          <OnboardingProcessingScreen
+          <OnboardingProcessingRoute
+            key={route.key}
             image={route.params.image}
-            port={processingPort}
-            onCompleted={(result) =>
-              navigation.replace('OnboardingResult', { image: route.params.image, result })
+            port={
+              route.params.choice
+                ? createJobPort(controller, jobApi, route.params.choice)
+                : processingPort
+            }
+            onCompleted={(job) =>
+              navigation.replace('OnboardingResult', { image: route.params.image, job })
             }
             onChooseAnother={() => navigation.popTo('OnboardingFirstImage')}
           />
         )}
       </OnboardingStack.Screen>
       <OnboardingStack.Screen name="OnboardingResult">
-        {({ route }) => (
+        {({ navigation, route }) => (
           <OnboardingResultScreen
             image={route.params.image}
-            result={route.params.result}
+            initial={route.params.job}
+            {...resultActions(controller)}
+            onChooseType={(source, imageType) =>
+              navigation.replace('OnboardingProcessing', {
+                image: route.params.image,
+                choice: { sourceJobId: source.jobId, imageType },
+              })
+            }
             onComplete={() => finish(controller)}
           />
         )}

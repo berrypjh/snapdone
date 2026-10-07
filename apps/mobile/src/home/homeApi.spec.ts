@@ -26,7 +26,15 @@ describe('homeApi.recentJobs', () => {
     );
 
     await expect(homeApi.recentJobs('c')).resolves.toEqual([
-      { jobId: 'job-1', status: 'failed', createdAt: '2026-10-06T09:00:00Z', finishedAt: null },
+      {
+        jobId: 'job-1',
+        status: 'failed',
+        createdAt: '2026-10-06T09:00:00Z',
+        finishedAt: null,
+        selection: null,
+        outcome: null,
+        sourceJobId: null,
+      },
     ]);
     const [url, init] = fetchMock.mock.calls[0] ?? [];
     expect(url).toBe(`${BASE_URL}/v1/processing-jobs`);
