@@ -73,44 +73,38 @@ export const parseJob = (value: unknown): ProcessingJob | null => {
   return result ? { jobId, status: 'completed', result } : null;
 };
 
-/**
- * 처리 API 응답을 작업으로 바꾼다. 401이면 `null`(로그인이 끝남)이고, 그 밖의 실패는
- * 서버 오류 코드를, 모양이 틀린 응답은 `unknown`을 `ProcessingApiError`로 던진다.
- */
-export const readJobResponse = (
-  response: { ok: boolean; status: number },
-  body: unknown,
-): ProcessingJob | null => {
-  if (response.status === 401) return null;
-  if (!response.ok) {
-    throw new ProcessingApiError(
-      isRecord(body) && typeof body.error === 'string' ? body.error : 'unknown',
-    );
-  }
-  const job = parseJob(body);
-  if (!job) throw new ProcessingApiError('unknown');
-  return job;
-};
-
 /** 실패 이유. 사용자에게는 이유별로 다른 안내가 간다. */
 export type ProcessingFailure = 'unsupported' | 'too-large' | 'network' | 'failed';
 
-/** 화면이 보이는 상태. 서버 작업 상태만 따르고 중간 단계를 지어내지 않는다. */
-export type ProcessingState =
+/** 끝난 작업. 처리 작업 계약을 넓힌 작업(`Job`)이면 그 모양을 그대로 가진다. */
+export type CompletedJob<Job extends ProcessingJob> = Job & {
+  status: 'completed';
+  result: ProcessingResult;
+};
+
+/**
+ * 화면이 보이는 상태. 서버 작업 상태만 따르고 중간 단계를 지어내지 않는다.
+ * 완료에는 끝난 작업 전체(`job`)도 함께 온다 — port가 읽은 모양 그대로다.
+ */
+export type ProcessingState<Job extends ProcessingJob = ProcessingJob> =
   | { status: 'starting' }
   | { status: 'running'; jobId: string }
-  | { status: 'completed'; jobId: string; result: ProcessingResult }
+  | { status: 'completed'; jobId: string; result: ProcessingResult; job: CompletedJob<Job> }
   | { status: 'failed'; reason: ProcessingFailure };
 
 /**
  * 처리 시작 · 조회 · 대기. 사진의 모양은 플랫폼이 정한다(mobile 파일 주소, web `File`).
+ * 작업은 처리 작업 계약이거나 그것을 넓힌 계약(예: 제품 결과가 붙은 작업)이다.
  * start · find가 `null`이면 로그인이 끝난 것이다.
  */
-export type ProcessingPort<Image> = {
-  start: (image: Image) => Promise<ProcessingJob | null>;
-  find: (jobId: string) => Promise<ProcessingJob | null>;
+export type ProcessingPort<Image, Job extends ProcessingJob = ProcessingJob> = {
+  start: (image: Image) => Promise<Job | null>;
+  find: (jobId: string) => Promise<Job | null>;
   wait: () => Promise<void>;
 };
+
+const isCompleted = <Job extends ProcessingJob>(job: Job): job is CompletedJob<Job> =>
+  job.status === 'completed';
 
 export const failureOf = (error: unknown): ProcessingFailure => {
   if (!(error instanceof ProcessingApiError)) return 'failed';
@@ -126,7 +120,7 @@ export const failureOf = (error: unknown): ProcessingFailure => {
   }
 };
 
-const settle = async (call: () => Promise<ProcessingJob | null>) => {
+const settle = async <Job extends ProcessingJob>(call: () => Promise<Job | null>) => {
   try {
     return { job: await call() };
   } catch (error) {
@@ -138,13 +132,13 @@ const settle = async (call: () => Promise<ProcessingJob | null>) => {
  * 처리를 시작하고 끝(완료 · 실패)날 때까지 조회한다. 조회는 한 번에 하나라 응답 순서가 뒤섞이지 않는다.
  * stopped가 참이 되면(화면을 떠남) 더 알리지도 조회하지도 않는다. 로그인이 끝나도 멈춘다.
  */
-export const runProcessing = async <Image>(
-  port: ProcessingPort<Image>,
+export const runProcessing = async <Image, Job extends ProcessingJob = ProcessingJob>(
+  port: ProcessingPort<Image, Job>,
   image: Image,
-  onChange: (state: ProcessingState) => void,
+  onChange: (state: ProcessingState<Job>) => void,
   stopped: () => boolean,
 ) => {
-  const report = (state: ProcessingState) => {
+  const report = (state: ProcessingState<Job>) => {
     if (!stopped()) onChange(state);
   };
 
@@ -158,8 +152,9 @@ export const runProcessing = async <Image>(
     outcome = await settle(() => port.find(jobId));
   }
 
+  const job = outcome.job;
   if (outcome.failure) report({ status: 'failed', reason: outcome.failure });
-  else if (outcome.job?.status === 'completed') {
-    report({ status: 'completed', jobId: outcome.job.jobId, result: outcome.job.result });
-  } else if (outcome.job?.status === 'failed') report({ status: 'failed', reason: 'failed' });
+  else if (job && isCompleted(job)) {
+    report({ status: 'completed', jobId: job.jobId, result: job.result, job });
+  } else if (job?.status === 'failed') report({ status: 'failed', reason: 'failed' });
 };

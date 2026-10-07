@@ -1,4 +1,5 @@
 export {
+  type CompletedJob,
   MAX_IMAGE_BYTES,
   parseJob,
   POLL_INTERVAL_MS,
@@ -8,7 +9,6 @@ export {
   type ProcessingPort,
   type ProcessingResult,
   type ProcessingState,
-  readJobResponse,
   runProcessing,
 } from './lib/processing';
 export {

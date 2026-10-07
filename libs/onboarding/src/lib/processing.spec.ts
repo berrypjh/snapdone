@@ -8,7 +8,6 @@ import {
   type ProcessingPort,
   type ProcessingResult,
   type ProcessingState,
-  readJobResponse,
   runProcessing,
 } from './processing';
 
@@ -52,7 +51,7 @@ describe('runProcessing', () => {
       { status: 'starting' },
       { status: 'running', jobId: 'job-1' },
       { status: 'running', jobId: 'job-1' },
-      { status: 'completed', jobId: 'job-1', result },
+      { status: 'completed', jobId: 'job-1', result, job: completed },
     ]);
   });
 
@@ -108,7 +107,7 @@ describe('runProcessing', () => {
 
     expect(states).toEqual([
       { status: 'starting' },
-      { status: 'completed', jobId: 'job-1', result },
+      { status: 'completed', jobId: 'job-1', result, job: completed },
     ]);
   });
 });
@@ -161,39 +160,5 @@ describe('parseJob', () => {
     ],
   ])('rejects %s', (_name, body) => {
     expect(parseJob(body)).toBeNull();
-  });
-});
-
-describe('readJobResponse', () => {
-  const codeOf = (read: () => unknown) => {
-    try {
-      read();
-      return null;
-    } catch (error) {
-      return error instanceof ProcessingApiError ? error.code : error;
-    }
-  };
-
-  it('reads a job from a successful response', () => {
-    expect(
-      readJobResponse({ ok: true, status: 202 }, { jobId: 'job-1', status: 'running' }),
-    ).toEqual({ jobId: 'job-1', status: 'running' });
-  });
-
-  it('returns null when the server no longer accepts the session', () => {
-    expect(readJobResponse({ ok: false, status: 401 }, { error: 'session_expired' })).toBeNull();
-  });
-
-  it('keeps the server error code, or unknown without one', () => {
-    expect(
-      codeOf(() => readJobResponse({ ok: false, status: 413 }, { error: 'image_too_large' })),
-    ).toBe('image_too_large');
-    expect(codeOf(() => readJobResponse({ ok: false, status: 502 }, null))).toBe('unknown');
-  });
-
-  it('rejects a successful response it cannot read', () => {
-    expect(
-      codeOf(() => readJobResponse({ ok: true, status: 200 }, { jobId: 'job-1', status: 'done' })),
-    ).toBe('unknown');
   });
 });
