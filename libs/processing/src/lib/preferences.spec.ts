@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  actionLabel,
+  actionsFor,
   parsePreferences,
   RECEIPT_ACTION_LABEL,
   RECEIPT_ACTIONS,
@@ -66,5 +68,24 @@ describe('action labels', () => {
       '텍스트만 추출',
       '요약',
     ]);
+  });
+});
+
+describe('actionsFor', () => {
+  it('lists only the actions of that image type', () => {
+    expect(actionsFor('text')).toEqual([
+      'extract_and_translate',
+      'extract_text',
+      'summarize',
+      'extract_and_summarize',
+    ]);
+    expect(actionsFor('receipt')).toEqual(['record_expense', 'extract_text', 'summarize']);
+  });
+
+  it('names an action of the type and nothing outside it', () => {
+    expect(actionLabel('text', 'summarize')).toBe('요약');
+    expect(actionLabel('receipt', 'record_expense')).toBe('지출 정보로 정리');
+    expect(actionLabel('text', 'record_expense')).toBeNull();
+    expect(actionLabel('receipt', 'extract_and_translate')).toBeNull();
   });
 });

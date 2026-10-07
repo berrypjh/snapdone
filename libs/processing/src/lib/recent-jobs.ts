@@ -1,19 +1,87 @@
-import { parseJob, type ProcessingJob, type ProcessingResult } from '@snapdone/onboarding';
+import {
+  parseJob,
+  ProcessingApiError,
+  type ProcessingJob,
+  type ProcessingResult,
+} from '@snapdone/onboarding';
 
+import {
+  parseOutcome,
+  parseSelection,
+  type ProcessingOutcome,
+  type ProcessingSelection,
+} from './outcome';
 import { IMAGE_TYPE_LABEL } from './preferences';
 import { isRecord } from './record';
+
+/**
+ * 처리 작업 하나와 그 제품 결과(Go `GET /v1/processing-jobs/{jobId}`). 온보딩 첫 사진도 같은 모양이다.
+ * `selection`은 서버가 유형 · 처리 방식을 고른 작업에만 있다 — unsupported · ambiguous · 그 계약 전 작업은 `null`이다.
+ * `outcome`은 제품 결과를 남긴 완료 작업에만 있다 — 그 계약 전에 만든 작업은 `null`이다.
+ * `sourceJobId`는 원래 작업이 남아 있는 재처리 작업에만 있다.
+ */
+export type JobDetail = ProcessingJob & {
+  selection: ProcessingSelection | null;
+  outcome: ProcessingOutcome | null;
+  sourceJobId: string | null;
+};
 
 /**
  * 온보딩을 마친 뒤 올린 사진의 처리 작업 하나(Go `GET /v1/processing-jobs`).
  * `finishedAt`은 끝난 시각을 아는 작업에만 있다 — 끝나지 못해 실패로 보는 작업에는 없다.
  */
-export type RecentJob = ProcessingJob & { createdAt: string; finishedAt: string | null };
+export type RecentJob = JobDetail & { createdAt: string; finishedAt: string | null };
 
 const isTimestamp = (value: unknown): value is string =>
   typeof value === 'string' && !Number.isNaN(Date.parse(value));
 
-const parseRecentJob = (value: unknown): RecentJob | null => {
+/** 없으면 `null`, 있으면 읽은 값, 읽지 못하면 `undefined`다. */
+const optional = <T>(value: unknown, parse: (value: unknown) => T | null): T | null | undefined =>
+  value === undefined ? null : (parse(value) ?? undefined);
+
+const parseSourceJobId = (value: unknown) =>
+  typeof value === 'string' && value !== '' ? value : null;
+
+/** processed 결과는 고른 유형 · 처리 방식과 같고, unsupported · ambiguous는 고른 것이 없다(Go `Completion.Validate`). */
+const matches = (selection: ProcessingSelection | null, outcome: ProcessingOutcome) =>
+  outcome.kind === 'processed'
+    ? selection?.imageType === outcome.imageType &&
+      selection.appliedAction === outcome.appliedAction
+    : selection === null;
+
+/** 작업 응답을 읽는다. 작업 · 고른 처리 방식 · 결과 중 하나라도 계약 밖이거나 서로 맞지 않으면 `null`이다. */
+export const parseJobDetail = (value: unknown): JobDetail | null => {
   const job = parseJob(value);
+  if (!job || !isRecord(value)) return null;
+  const selection = optional(value.selection, parseSelection);
+  const outcome = optional(value.outcome, parseOutcome);
+  const sourceJobId = optional(value.sourceJobId, parseSourceJobId);
+  if (selection === undefined || outcome === undefined || sourceJobId === undefined) return null;
+  if (outcome && (job.status !== 'completed' || !matches(selection, outcome))) return null;
+  return { ...job, selection, outcome, sourceJobId };
+};
+
+/**
+ * 작업 응답을 작업으로 바꾼다. 401이면 `null`(로그인이 끝남)이고, 그 밖의 실패는 서버 오류 코드를,
+ * 계약 밖의 응답은 `unknown`을 `ProcessingApiError`로 던진다. web · mobile이 같은 규칙으로 읽는다.
+ */
+export const readJobDetail = (
+  response: { ok: boolean; status: number },
+  body: unknown,
+): JobDetail | null => {
+  if (response.status === 401) return null;
+  if (!response.ok) {
+    throw new ProcessingApiError(
+      isRecord(body) && typeof body.error === 'string' ? body.error : 'unknown',
+    );
+  }
+  const job = parseJobDetail(body);
+  if (!job) throw new ProcessingApiError('unknown');
+  return job;
+};
+
+const parseRecentJob = (value: unknown): RecentJob | null => {
+  const job = parseJobDetail(value);
   if (!job || !isRecord(value) || !isTimestamp(value.createdAt)) return null;
   if (value.finishedAt !== undefined && !isTimestamp(value.finishedAt)) return null;
   return { ...job, createdAt: value.createdAt, finishedAt: value.finishedAt ?? null };
@@ -38,12 +106,6 @@ export type RecentState = 'empty' | 'active' | 'unknown';
 export const recentState = (recent: Loaded<readonly RecentJob[]>): RecentState => {
   if (!recent.ok) return 'unknown';
   return recent.value.length === 0 ? 'empty' : 'active';
-};
-
-export const STATUS_LABEL: Record<RecentJob['status'], string> = {
-  running: '처리 중',
-  completed: '처리 완료',
-  failed: '처리하지 못함',
 };
 
 /**

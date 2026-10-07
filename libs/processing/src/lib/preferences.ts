@@ -48,3 +48,16 @@ export const RECEIPT_ACTION_LABEL: Record<ReceiptAction, string> = {
   extract_text: '텍스트만 추출',
   summarize: '요약',
 };
+
+/** 유형에 고를 수 있는 처리 방식. 다른 유형의 처리 방식은 섞지 않는다. 처리 설정 화면과 같은 순서다. */
+export const actionsFor = (imageType: keyof ProcessingPreferences): readonly string[] =>
+  imageType === 'text' ? TEXT_ACTIONS : RECEIPT_ACTIONS;
+
+/** 처리 방식 이름. 유형에 없는 처리 방식이면 `null`이다. */
+export const actionLabel = (
+  imageType: keyof ProcessingPreferences,
+  action: string,
+): string | null => {
+  if (imageType === 'text') return isTextAction(action) ? TEXT_ACTION_LABEL[action] : null;
+  return isReceiptAction(action) ? RECEIPT_ACTION_LABEL[action] : null;
+};
