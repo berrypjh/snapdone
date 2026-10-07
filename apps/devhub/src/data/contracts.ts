@@ -103,4 +103,32 @@ export const contracts: ContractRef[] = [
     definedIn: { path: 'libs/onboarding/src/lib/processing.ts', symbol: 'ProcessingJob' },
     owner: 'onboarding',
   },
+  {
+    id: 'processing-job-detail',
+    kind: 'wire-type',
+    name: 'JobDetail',
+    definedIn: { path: 'libs/processing/src/lib/recent-jobs.ts', symbol: 'JobDetail' },
+    owner: 'processing',
+  },
+  {
+    id: 'processing-recent-job',
+    kind: 'wire-type',
+    name: 'RecentJob',
+    definedIn: { path: 'libs/processing/src/lib/recent-jobs.ts', symbol: 'RecentJob' },
+    owner: 'processing',
+  },
+  {
+    id: 'processing-outcome',
+    kind: 'wire-type',
+    name: 'ProcessingOutcome',
+    definedIn: { path: 'libs/processing/src/lib/outcome.ts', symbol: 'ProcessingOutcome' },
+    owner: 'processing',
+  },
+  {
+    id: 'processing-preferences',
+    kind: 'wire-type',
+    name: 'ProcessingPreferences',
+    definedIn: { path: 'libs/processing/src/lib/preferences.ts', symbol: 'ProcessingPreferences' },
+    owner: 'processing',
+  },
 ];

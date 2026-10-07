@@ -28,7 +28,6 @@ const allSteps = catalog.scenarios.flatMap((scenario) =>
 );
 
 const CURRENT: ImplementationStatus[] = ['implemented', 'partial'];
-const TARGET: ImplementationStatus[] = ['documented-only', 'planned', 'not-found'];
 const hasCode = (step: ScenarioStep) => CURRENT.includes(step.status);
 
 describe('scenario structure', () => {
@@ -97,11 +96,8 @@ describe('scenario structure', () => {
 });
 
 describe('scenario status', () => {
-  it('keeps current scenarios and product targets apart', () => {
-    for (const scenario of catalog.scenarios) {
-      const allowed = scenario.track === 'product-target' ? TARGET : CURRENT;
-      expect(allowed).toContain(scenario.status);
-    }
+  it('describes only flows that have code', () => {
+    for (const scenario of catalog.scenarios) expect(CURRENT).toContain(scenario.status);
   });
 
   it('gives every step the evidence its status claims', () => {
@@ -147,13 +143,6 @@ describe('scenario status', () => {
     );
     expect(untested).toEqual([]);
   });
-
-  it('keeps product targets free of source', () => {
-    const leaked = catalog.scenarios
-      .filter((scenario) => scenario.track === 'product-target')
-      .flatMap((scenario) => scenario.steps.filter((step) => step.source.length > 0));
-    expect(leaked).toEqual([]);
-  });
 });
 
 describe('absence checks', () => {
@@ -161,14 +150,16 @@ describe('absence checks', () => {
     (step.absence ?? []).map((check) => ({ where: `${scenario.id}/${step.id}`, check })),
   );
 
-  it.each(checks)('hold for $where: $check.meaning', ({ check }) => {
-    const hits = check.scope.flatMap((scope) =>
-      filesUnder(scope).flatMap((file) => {
-        const text = read(file);
-        return check.terms
-          .filter((term) => text.includes(term))
-          .map((term) => `${term} in ${file}`);
-      }),
+  it('hold: no searched term appears in its scope', () => {
+    const hits = checks.flatMap(({ where, check }) =>
+      check.scope.flatMap((scope) =>
+        filesUnder(scope).flatMap((file) => {
+          const text = read(file);
+          return check.terms
+            .filter((term) => text.includes(term))
+            .map((term) => `${where}: ${term} in ${file}`);
+        }),
+      ),
     );
     expect(hits).toEqual([]);
   });

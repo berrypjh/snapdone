@@ -22,8 +22,7 @@ export const onboardingFirstPhoto: Scenario = {
   gaps: [
     {
       kind: 'runtime-unverified',
-      note: 'web 온보딩 E2E는 이 환경에서 실행 못 함. 앱 화면은 실행해 볼 수단 없음',
-      tests: ['e2e-web-onboarding-flow', 'e2e-web-onboarding-unsure-skip'],
+      note: '앱 화면은 실기기로 실행해 볼 수단 없음. web은 E2E로 확인',
     },
   ],
   steps: [
@@ -184,7 +183,7 @@ export const onboardingFirstPhoto: Scenario = {
       id: 'classify',
       intent: '(자동) 사진이 무엇인지 파악',
       behavior:
-        '요청과 따로 도는 작업이 사진을 설정된 모델(Claude API 또는 OpenAI 호환 서버)에 보내 분류 · 찾은 값 · 제안 행동 · 신뢰 단계를 받음. 계약 밖의 답은 실패로 저장. 사진은 저장하지 않음',
+        '요청과 따로 도는 작업이 사진을 설정된 모델(Claude API 또는 OpenAI 호환 서버)에 보내 분류 · 찾은 값 · 제안 행동 · 신뢰 단계를 받고, 같은 사진의 유형(text · receipt)을 판단해 저장된 처리 방식을 실행함. 계약 밖의 답은 실패로 저장. 사진은 저장하지 않음',
       runtime: 'go-api',
       owner: 'api',
       status: 'implemented',
@@ -270,9 +269,9 @@ export const onboardingFirstPhoto: Scenario = {
     }),
     step({
       id: 'show-result-web',
-      intent: '브라우저에서 사진에서 찾은 것과 추천 작업 보기',
+      intent: '브라우저에서 첫 사진의 처리 결과 보기',
       behavior:
-        '처리가 끝나면 같은 사진과 함께 "사진을 확인했습니다", 사진 종류(영수증 · 텍스트 / 외국어만), 서버가 읽은 값, 추천 작업과 "아직 이 작업을 실행하지 않았습니다." 표시. 완료를 누르면 온보딩을 끝내고 홈으로',
+        '처리가 끝나면 같은 사진과 함께 서버가 실제로 처리한 결과(끝낸 일 · 적용한 처리 방식 · 원문 · 번역 · 요약 · 지출 정보)를 일반 사진과 같은 결과 화면으로 표시하고, 같은 사진을 다른 방식으로 다시 처리할 수 있음. 완료를 누르면 온보딩을 끝내고 홈으로',
       runtime: 'browser',
       owner: 'web',
       status: 'implemented',
@@ -281,31 +280,27 @@ export const onboardingFirstPhoto: Scenario = {
           path: 'apps/web/src/components/onboarding/result-view.tsx',
           symbol: 'ResultView',
         },
-        { path: 'libs/onboarding/src/lib/result.ts', symbol: 'presentResult' },
+        {
+          path: 'apps/web/src/components/processing/processing-result.tsx',
+          symbol: 'ProcessingResult',
+        },
+        { path: 'libs/processing/src/lib/result.ts', symbol: 'presentJob' },
       ],
+      contracts: ['processing-job-detail'],
+      via: ['reprocess-photo'],
       tests: [
         'onboarding-present-result',
+        'processing-present-expense',
         'e2e-web-onboarding-flow',
         'e2e-web-onboarding-foreign-text',
         'e2e-web-first-result-keyboard',
       ],
-      gaps: [
-        {
-          kind: 'runtime-unverified',
-          note: '렌더링 · 320px · 키보드 완료를 고정한 E2E는 이 환경에서 실행 못 함',
-          tests: [
-            'e2e-web-onboarding-flow',
-            'e2e-web-onboarding-foreign-text',
-            'e2e-web-first-result-keyboard',
-          ],
-        },
-      ],
     }),
     step({
       id: 'show-result-app',
-      intent: '앱에서 사진에서 찾은 것과 추천 작업 보기',
+      intent: '앱에서 첫 사진의 처리 결과 보기',
       behavior:
-        'web과 같은 내용 — 처리한 사진, "사진을 확인했습니다", 사진 종류(영수증 · 텍스트 / 외국어만), 서버가 읽은 값, 추천 작업과 "아직 이 작업을 실행하지 않았습니다." 완료를 누르면 서버에서 온보딩을 끝내고 세션을 다시 받아 홈으로',
+        'web과 같은 결과 — 처리한 사진과 서버가 실제로 처리한 결과를 홈의 사진 추가와 같은 결과 내용으로 표시하고, 다른 방식으로 다시 처리할 수 있음. 완료를 누르면 서버에서 온보딩을 끝내고 세션을 다시 받아 홈으로',
       runtime: 'mobile-app',
       owner: 'mobile',
       status: 'implemented',
@@ -314,9 +309,12 @@ export const onboardingFirstPhoto: Scenario = {
           path: 'apps/mobile/src/screens/OnboardingResultScreen.tsx',
           symbol: 'OnboardingResultScreen',
         },
-        { path: 'libs/onboarding/src/lib/result.ts', symbol: 'presentResult' },
+        { path: 'apps/mobile/src/components/processing/ResultBody.tsx', symbol: 'ResultBody' },
+        { path: 'libs/processing/src/lib/result.ts', symbol: 'presentJob' },
       ],
-      tests: ['onboarding-present-result'],
+      contracts: ['processing-job-detail'],
+      via: ['reprocess-photo'],
+      tests: ['onboarding-present-result', 'processing-present-expense'],
       gaps: [
         {
           kind: 'runtime-unverified',

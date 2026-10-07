@@ -142,7 +142,7 @@ export const entityHref = (entity: Pick<Entity, 'section' | 'id'>) =>
 export const entityStatus = (entity: Entity): ImplementationStatus | undefined =>
   entity.section === 'scenarios' ? entity.record.status : undefined;
 
-/** 시나리오의 한 단계로 바로 가는 링크 (devhub.md 20.4). */
+/** 시나리오의 한 단계로 바로 가는 링크. */
 export const stepHref = (scenarioId: string, stepId: string) =>
   `/scenarios/${scenarioId}/steps/${stepId}`;
 

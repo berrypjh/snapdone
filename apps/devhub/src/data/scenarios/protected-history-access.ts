@@ -8,16 +8,11 @@ const HISTORY = 'apps/web/src/app/(product)/history/page.tsx';
 export const protectedHistoryAccess: Scenario = {
   id: 'protected-history-access',
   title: '보호된 기록 화면 접근',
-  goal: '브라우저에서 기록 화면은 로그인하고 온보딩을 마친 사용자만 볼 수 있음',
+  goal: '브라우저에서 처리 기록과 결과는 로그인하고 온보딩을 마친 사용자 자신의 것만 볼 수 있음',
   track: 'current',
   status: 'implemented',
   docs: [{ document: 'foundation', heading: 'Web Shell' }],
-  gaps: [
-    {
-      kind: 'code-not-found',
-      note: '접근 제어는 구현됐지만 기록 내용은 고정 빈 상태 문구. 기록 데이터 · API 없음',
-    },
-  ],
+  gaps: [],
   steps: [
     step({
       id: 'visit',
@@ -71,15 +66,49 @@ export const protectedHistoryAccess: Scenario = {
     step({
       id: 'render',
       intent: '기록 화면 보기',
-      behavior: '헤더 · 사이드바(홈 · 기록) · 로그아웃이 있는 셸 안에 기록 page를 렌더',
+      behavior:
+        '셸(헤더 · 사이드바 · 로그아웃) 안에서 온보딩 뒤 올린 사진의 최근 처리 기록을 서버에서 읽어 보임. 읽지 못하면 비었다고 하지 않고 그렇다고 알림. 사진은 저장하지 않아 기록에 사진이 없음',
       runtime: 'next-server',
       owner: 'web',
       status: 'implemented',
       source: [
         { path: 'apps/web/src/components/app-shell.tsx', symbol: 'AppShell' },
         { path: HISTORY, symbol: 'HistoryPage' },
+        { path: 'apps/web/src/lib/processing-jobs/api.ts', symbol: 'fetchRecentJobs' },
+        { path: 'apps/web/src/components/home/recent-jobs.tsx', symbol: 'RecentJobs' },
+        { path: 'apps/api/internal/httpserver/processing.go', symbol: 'handlers.processingJobs' },
+        { path: 'apps/api/internal/processing/store.go', symbol: 'Store.RecentGeneral' },
       ],
-      tests: ['web-require-session-complete', 'e2e-protected-direct'],
+      apis: ['get-processing-jobs'],
+      contracts: ['processing-recent-job'],
+      tests: [
+        'web-require-session-complete',
+        'e2e-protected-direct',
+        'web-recent-jobs',
+        'processing-go-wire',
+        'go-http-recent',
+        'go-http-recent-outcome',
+        'go-recent-general',
+        'e2e-history-unreadable',
+      ],
+      next: ['open-job'],
+    }),
+    step({
+      id: 'open-job',
+      intent: '기록 하나를 열어 처리 결과 보기',
+      behavior:
+        '/history/{소문자 uuid}로 그 작업의 결과를 보임. 로그인 뒤에는 이 결과로 돌아옴. 다른 사용자 · 없는 작업은 찾을 수 없다고 하고, 원본 사진 · 다시 처리는 없음',
+      runtime: 'next-server',
+      owner: 'web',
+      status: 'implemented',
+      source: [
+        { path: 'apps/web/src/app/(product)/history/[jobId]/page.tsx', symbol: 'JobResultPage' },
+        { path: 'apps/web/src/lib/auth/redirect.ts', symbol: 'safeReturnPath' },
+        { path: 'libs/webview-bridge/src/lib/paths.ts', symbol: 'jobDetailPath' },
+      ],
+      apis: ['get-processing-job'],
+      contracts: ['processing-job-detail'],
+      tests: ['e2e-history-list', 'e2e-history-owner', 'e2e-result-signed-out', 'go-job-owner'],
     }),
   ],
 };

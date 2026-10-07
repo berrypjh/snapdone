@@ -57,9 +57,9 @@ function ItemList({ entities, selection }: { entities: Entity[]; selection: Sele
   );
 }
 
-/** 시나리오를 트랙으로 나눈다. 제품 목표가 현재 동작 사이에 섞이지 않게 한다. */
+/** 시나리오를 사용자 흐름과 개발 흐름으로 나눈다. */
 function ScenarioGroups({ section, selection }: { section: Section; selection: Selection }) {
-  const tracks: Scenario['track'][] = ['current', 'product-target', 'developer'];
+  const tracks: Scenario['track'][] = ['current', 'developer'];
   return tracks.map((track) => {
     const entities = section.entities.filter(
       (entity) => entity.section === 'scenarios' && entity.record.track === track,

@@ -5,10 +5,7 @@ import { WorkspaceSection } from '@berrypjh/devhub-ui';
 import { catalog } from '@/data';
 import type { Relation } from '@/domain/model';
 import { architectureHref, findNode, nodeLabel } from '@/lib/catalog/architecture';
-import { entityHref, stepHref } from '@/lib/catalog/entities';
 import { INTERACTION, RELATION } from '@/lib/catalog/labels';
-
-import { StatusChip } from '../entity/status-chip';
 
 const relationText = (relation: Relation) =>
   relation.kind === 'runtime' ? INTERACTION[relation.interaction] : RELATION[relation.kind];
@@ -103,48 +100,6 @@ export function RelationList() {
           </section>
         );
       })}
-    </WorkspaceSection>
-  );
-}
-
-/** 문서에만 있는 구성. 그림에서 빼고 그렇다고 밝힌 목록으로만 보인다. */
-export function TargetOnlyList() {
-  const targets = catalog.scenarios.filter((scenario) => scenario.track === 'product-target');
-  return (
-    <WorkspaceSection id="architecture-target" title="문서에만 있는 구성 — 그림에 없음">
-      <p className="typo-caption-small text-text-light">
-        아래 단계는 문서가 약속하지만 코드 없음. 현재 아키텍처 그림에 node로 넣지 않음
-      </p>
-      {targets.map((scenario) => (
-        <section
-          key={scenario.id}
-          aria-labelledby={`target-${scenario.id}`}
-          className="flex flex-col gap-1"
-        >
-          <h3 id={`target-${scenario.id}`} className="typo-body-small-strong">
-            <Link
-              href={entityHref({ section: 'scenarios', id: scenario.id })}
-              className="text-text-link underline-offset-2 hover:underline"
-            >
-              {scenario.title}
-            </Link>{' '}
-            <span className="typo-caption-small text-text-light">단계 {scenario.steps.length}</span>
-          </h3>
-          <ul className="flex flex-col divide-y divide-stroke-light border-l-2 border-stroke-light pl-3">
-            {scenario.steps.map((step) => (
-              <li key={step.id} className="flex items-center justify-between gap-3 py-2">
-                <Link
-                  href={stepHref(scenario.id, step.id)}
-                  className="typo-body-small text-text-link underline-offset-2 hover:underline"
-                >
-                  {step.intent}
-                </Link>
-                <StatusChip status={step.status} />
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
     </WorkspaceSection>
   );
 }

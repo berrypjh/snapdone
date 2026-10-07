@@ -11,13 +11,7 @@ export const onboardingIntro: Scenario = {
   track: 'current',
   status: 'implemented',
   docs: [{ document: 'local-development', heading: '앱 안 WebView 화면 보기' }],
-  gaps: [
-    {
-      kind: 'runtime-unverified',
-      note: '신규 사용자가 로그인 직후 /onboarding에 닿는 E2E는 이 환경에서 실행 못 함',
-      tests: ['e2e-new-user-onboarding'],
-    },
-  ],
+  gaps: [],
   steps: [
     step({
       id: 'new-user',
@@ -77,13 +71,6 @@ export const onboardingIntro: Scenario = {
         { path: 'apps/web/src/app/(product)/page.tsx', symbol: 'HomePage' },
       ],
       tests: ['web-callback-onboarding', 'e2e-new-user-onboarding'],
-      gaps: [
-        {
-          kind: 'runtime-unverified',
-          note: '같은 기대의 E2E는 이 환경에서 실행 못 함',
-          tests: ['e2e-new-user-onboarding'],
-        },
-      ],
       next: ['intro-web'],
     }),
     step({
@@ -104,10 +91,6 @@ export const onboardingIntro: Scenario = {
         {
           kind: 'no-test',
           note: '화면 컴포넌트 테스트 없음(mobile 런타임 검증 수단 없음)',
-        },
-        {
-          kind: 'code-not-found',
-          note: '예시(영수증 · 외국어 안내문)는 EXAMPLES 고정 문구. 사진에서 값을 확인하는 데까지이고 지출 저장 · 번역 실행 코드는 없음 — finish-task-from-image 참고',
         },
       ],
       next: ['finish'],
@@ -183,13 +166,7 @@ export const onboardingIntro: Scenario = {
       gaps: [
         {
           kind: 'runtime-unverified',
-          note: 'web이 홈까지 가는 E2E는 이 환경에서 실행 못 함. 앱은 런타임 검증 수단이 없어 실기기 확인이 남음',
-          tests: ['e2e-web-onboarding-flow', 'e2e-web-first-result-keyboard'],
-        },
-        {
-          kind: 'config-required',
-          note: '저장소 테스트는 TEST_DATABASE_URL이 있어야 돌아감',
-          tests: ['go-onboarding-store-complete', 'go-onboarding-store-complete-concurrently'],
+          note: '앱은 런타임 검증 수단이 없어 실기기 확인이 남음',
         },
       ],
     }),

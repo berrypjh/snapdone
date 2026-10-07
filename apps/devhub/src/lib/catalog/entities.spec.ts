@@ -45,12 +45,4 @@ describe('inspect', () => {
       expect(cited.filter((id) => !shown.has(id))).toEqual([]);
     }
   });
-
-  it('shows no source for a product target', () => {
-    const targets = entities.filter(
-      (entity) => entity.section === 'scenarios' && entity.record.track === 'product-target',
-    );
-    expect(targets.length).toBeGreaterThan(0);
-    for (const entity of targets) expect(inspect(entity).source).toEqual([]);
-  });
 });

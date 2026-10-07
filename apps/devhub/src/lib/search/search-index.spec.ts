@@ -79,7 +79,7 @@ describe('concept queries reach scenarios, sources, docs, and tests', () => {
     expect(shown('webview')).toEqual(
       expect.arrayContaining([
         'concept:WebView 경계',
-        'scenario:앱 → 기록 WebView',
+        'scenario:앱 → 처리 결과 WebView',
         'scenario:WebView 로그인 핸드오프',
         'library:webview-bridge',
         'source:libs/webview-bridge/src/lib/bridge.ts',

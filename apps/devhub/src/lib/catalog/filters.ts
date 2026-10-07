@@ -38,7 +38,7 @@ const statusesInUse = [...new Set(catalog.scenarios.map((s) => s.status))];
 const runtimesInUse = catalog.runtimes.filter((runtime) =>
   catalog.scenarios.some((s) => s.steps.some((step) => step.runtime === runtime.id)),
 );
-const tracks: Scenario['track'][] = ['current', 'product-target', 'developer'];
+const tracks: Scenario['track'][] = ['current', 'developer'];
 
 export const SCENARIO_FILTERS: FilterGroup[] = [
   {

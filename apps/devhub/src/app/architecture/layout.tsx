@@ -3,11 +3,7 @@ import { type ReactNode, Suspense } from 'react';
 import { WorkspaceFrame, WorkspaceSection } from '@berrypjh/devhub-ui';
 import type { Metadata } from 'next';
 
-import {
-  BoundaryList,
-  RelationList,
-  TargetOnlyList,
-} from '@/components/architecture/architecture-sections';
+import { BoundaryList, RelationList } from '@/components/architecture/architecture-sections';
 import { ArchitectureViews } from '@/components/architecture/architecture-views';
 import { FilteredArchitecture } from '@/components/architecture/filtered-architecture';
 import { DevHubShell } from '@/components/shell/devhub-shell';
@@ -32,10 +28,7 @@ export default function ArchitectureLayout({
     <DevHubShell inspector={inspector}>
       <WorkspaceFrame>
         {children}
-        <p className="typo-body-small">
-          지금 저장소에 코드가 있는 구성 요소와 관계만 표시. 문서에만 있는 구성은 아래 목록에 따로
-          정리
-        </p>
+        <p className="typo-body-small">지금 저장소에 코드가 있는 구성 요소와 관계</p>
         <WorkspaceSection id="architecture-map" title="구성 요소와 관계">
           <Suspense fallback={<ArchitectureViews model={model} />}>
             <FilteredArchitecture model={model} />
@@ -43,7 +36,6 @@ export default function ArchitectureLayout({
         </WorkspaceSection>
         <BoundaryList />
         <RelationList />
-        <TargetOnlyList />
       </WorkspaceFrame>
     </DevHubShell>
   );

@@ -84,7 +84,7 @@ export type ExternalSystemRef = {
 
 export type ArchitectureNode = ApplicationRef | LibraryRef | ExternalSystemRef;
 
-export type HttpMethod = 'GET' | 'POST' | 'PUT';
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH';
 
 export type ApiRef = {
   id: string;
@@ -282,16 +282,14 @@ export type ScenarioStep = {
 };
 
 /**
- * 코드로 따라간 목표. `current` 시나리오는 오늘 도는 사용자 흐름을 설명하고,
- * `product-target` 시나리오는 문서가 약속한 것을 설명하며 source를 달면 안 된다.
- * `developer` 시나리오는 사용자가 아니라 개발자가 저장소 안에서 돌리는 흐름(평가 harness 등)이며
- * 상태 규칙은 `current`와 같다.
+ * 코드로 따라간 흐름. `current`는 사용자 흐름, `developer`는 개발자가 저장소 안에서 돌리는
+ * 흐름(평가 harness 등)이다. 상태 규칙은 같다.
  */
 export type Scenario = {
   id: string;
   title: string;
   goal: string;
-  track: 'current' | 'product-target' | 'developer';
+  track: 'current' | 'developer';
   status: ImplementationStatus;
   /** 첫 단계가 진입점이다. */
   steps: ScenarioStep[];

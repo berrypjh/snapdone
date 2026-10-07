@@ -49,7 +49,7 @@ export function Workspace({ children, ...header }: HeaderProps & { children: Rea
   );
 }
 
-/** 관계 그림 자리. 아직 그리지 않았고, 옆의 목록이 정본이다 (devhub.md 21). */
+/** 관계 그림 자리. 아직 그리지 않았고, 옆의 목록이 정본이다. */
 export function DiagramPlaceholder({ listId }: { listId: string }) {
   return (
     <figure className="flex h-48 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-stroke-default bg-background-default devhub-grid">

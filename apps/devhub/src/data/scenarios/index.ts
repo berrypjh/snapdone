@@ -10,23 +10,27 @@ import { mobileGoogleLogin } from './mobile-google-login';
 import { mobileHistoryWebView } from './mobile-history-webview';
 import { onboardingFirstPhoto } from './onboarding-first-photo';
 import { onboardingIntro } from './onboarding-intro';
+import { processPhoto } from './process-photo';
 import { protectedHistoryAccess } from './protected-history-access';
+import { reprocessPhoto } from './reprocess-photo';
 import { webViewAuthHandoff } from './webview-auth-handoff';
 import { webViewRecovery } from './webview-recovery';
 
-/** 지금 동작을 먼저, 그다음 제품 목표, 마지막에 개발자 흐름을 둔다. */
+/** 사용자 흐름을 먼저, 마지막에 개발자 흐름을 둔다. */
 export const scenarios: Scenario[] = [
   appEntrySessionRestore,
   browserGoogleLogin,
   mobileGoogleLogin,
   onboardingIntro,
   onboardingFirstPhoto,
+  finishTaskFromImage,
+  processPhoto,
+  reprocessPhoto,
   mobileHistoryWebView,
   webViewAuthHandoff,
   protectedHistoryAccess,
   logoutSessionRevocation,
   authFailureRecovery,
   webViewRecovery,
-  finishTaskFromImage,
   evaluateModelVariants,
 ];

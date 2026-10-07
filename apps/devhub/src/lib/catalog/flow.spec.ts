@@ -18,11 +18,11 @@ const overlaps = (a: { x: number; y: number }, b: { x: number; y: number }) =>
   b.y < a.y + NODE.height;
 
 describe('flowModel', () => {
-  it('draws the mobile history WebView flow in its two runtimes, left to right', () => {
+  it('draws the mobile job result WebView flow in its two runtimes, left to right', () => {
     const model = flowModel(scenario('mobile-history-webview'));
     expect(model.lanes.map((lane) => lane.id)).toEqual(['mobile-app', 'mobile-webview']);
     expect(model.nodes.map((node) => node.id)).toEqual([
-      'tap-history',
+      'tap-recent',
       'open-webview',
       'render',
       'title',
@@ -30,7 +30,7 @@ describe('flowModel', () => {
     const xs = model.nodes.map((node) => node.x);
     expect([...xs].sort((a, b) => a - b)).toEqual(xs);
     expect(model.edges.map((edge) => edge.id)).toEqual([
-      'tap-history->open-webview',
+      'tap-recent->open-webview',
       'open-webview->render',
       'render->title',
     ]);

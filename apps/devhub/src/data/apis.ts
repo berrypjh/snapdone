@@ -118,6 +118,14 @@ export const apis: ApiRef[] = [
     exposure: 'always',
   },
   {
+    id: 'patch-receipt-field',
+    method: 'PATCH',
+    path: '/v1/processing-jobs/{jobId}/receipt-fields/{field}',
+    handler: { path: PROCESSING, symbol: 'handlers.resolveReceiptField' },
+    alsoHead: false,
+    exposure: 'always',
+  },
+  {
     id: 'get-onboarding',
     method: 'GET',
     path: '/v1/onboarding',

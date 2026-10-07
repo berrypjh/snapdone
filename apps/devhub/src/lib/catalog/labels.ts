@@ -21,7 +21,6 @@ export const STATUS: Record<ImplementationStatus, { label: string; glyph: string
 
 export const TRACK: Record<Scenario['track'], string> = {
   current: '현재 동작',
-  'product-target': '제품 목표 — 아직 구현되지 않음',
   developer: '개발 흐름',
 };
 

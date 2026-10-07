@@ -1,175 +1,143 @@
-import type { AbsenceCheck, Scenario } from '../../domain/model';
+import type { Scenario } from '../../domain/model';
 
 import { step } from './step';
 
-const PRODUCT_SOURCE = ['apps/mobile/src', 'apps/web/src', 'apps/api/internal', 'libs'];
-
-/** `action`은 검색하지 않는다: `transaction`(OAuth transaction) · `suggestedAction`에 걸린다. */
-const ACTION_SURFACE: AbsenceCheck = {
-  terms: ['execute', '/actions'],
-  scope: ['apps/api/docs/swagger/swagger.json', 'apps/api/internal/database/migrations'],
-  meaning: '행동을 실행하는 API route · 테이블 없음(사진 분류 결과까지만 있음)',
-};
+const PROCESSOR = 'apps/api/internal/processing/processor.go';
 
 /**
- * 문서가 약속한 제품 loop. 오늘 도는 것은 하나도 없다. 모든 단계가 documented-only이고
- * 코드가 없음을 증명하는 검색을 들고 있다.
+ * 제품 loop 전체를 한 장으로 본다. 단계마다 대표 근거만 두고, 자세한 흐름은
+ * `process-photo` · `reprocess-photo` · 기록 시나리오로 넘긴다.
  */
 export const finishTaskFromImage: Scenario = {
   id: 'finish-task-from-image',
-  title: '사진으로 할 일 끝내기 (제품 목표)',
-  goal: '사진이나 스크린샷을 넣으면 하려던 일을 알아채고 대신 끝내 줌',
-  track: 'product-target',
-  status: 'documented-only',
+  title: '사진으로 할 일 끝내기',
+  goal: '사진이나 스크린샷을 넣으면 유형을 알아채고, 사용자가 정한 처리 방식으로 일을 끝내 결과를 남김',
+  track: 'current',
+  status: 'implemented',
   docs: [
     { document: 'product-principles', heading: '핵심 UX loop' },
     { document: 'target-architecture', heading: '무엇이 있고 무엇이 없는가' },
   ],
   gaps: [
     {
-      kind: 'code-not-found',
-      note: 'Capture · Understand는 온보딩 첫 사진 한 장에만 있음 — 앱이나 web이 사진을 올리면 api가 설정된 모델로 분류해 결과 반환(/v1/processing-jobs). Route → Act → Learn은 코드 · API · 스키마에 없음. 온보딩 소개의 예시(영수증 · 외국어 안내문)는 고정 문구',
+      kind: 'runtime-unverified',
+      note: '앱 화면은 실기기로 실행해 볼 수단 없음. web은 E2E로 확인',
+    },
+    {
+      kind: 'external-unverified',
+      note: '실제 모델 품질 · 지연은 자동 테스트가 재지 않음. 가짜 HTTP 응답으로 요청 모양과 응답 해석만 확인',
     },
   ],
   steps: [
     step({
-      id: 'capture-app',
-      intent: '앱에서 사진 · 스크린샷을 찍거나 고르거나 공유 시트로 보내기',
-      behavior: '(목표) 네이티브가 카메라 · 사진 라이브러리 · 공유 시트로 입력을 받음',
+      id: 'capture',
+      intent: '앱에서 찍거나 고르기, 브라우저에서 파일을 고르거나 끌어다 놓기',
+      behavior:
+        '사진 한 장을 받아 확인 화면에 보여 줌. 앱은 시스템 카메라 · 사진 선택기, web은 /process의 파일 선택 · 끌어 놓기. 사진은 서버에 저장하지 않음',
       runtime: 'mobile-app',
       owner: 'mobile',
-      status: 'documented-only',
-      docs: [
-        { document: 'product-principles', heading: '핵심 UX loop' },
-        { document: 'target-architecture', heading: '제품 구성 — 네이티브 셸 + 웹 콘텐츠' },
+      status: 'implemented',
+      source: [
+        { path: 'apps/mobile/src/components/capture/CaptureChoices.tsx', symbol: 'CaptureChoices' },
+        { path: 'apps/web/src/components/processing/photo-flow.tsx', symbol: 'PhotoFlow' },
       ],
-      absence: [
-        {
-          terms: ['expo-camera', 'expo-media-library', 'expo-document-picker', 'expo-sharing'],
-          scope: ['pnpm-lock.yaml'],
-          meaning:
-            '앱 안 카메라 화면 · 사진 라이브러리 관리 · 문서 선택 · 공유 패키지 없음. 온보딩 첫 사진만 expo-image-picker의 시스템 카메라 · 사진 선택기 사용',
-        },
-        {
-          terms: ['camera', 'photo', 'capture', 'share'],
-          scope: ['libs/webview-bridge/src'],
-          meaning: 'web이 앱에 촬영 · 공유를 요청하는 bridge 메시지 없음',
-        },
-      ],
+      tests: ['mobile-capture-permission', 'e2e-photo-preview', 'e2e-photo-drop'],
       next: ['understand'],
-    }),
-    step({
-      id: 'capture-web',
-      intent: '브라우저에서 파일을 고르거나 붙여넣거나 끌어다 놓기',
-      behavior: '(목표) 브라우저 단독 접속에서 web이 파일 · 붙여넣기 · 드래그 앤 드롭을 받음',
-      runtime: 'browser',
-      owner: 'web',
-      status: 'documented-only',
-      docs: [{ document: 'target-architecture', heading: '`apps/web` — Next.js' }],
-      absence: [
-        {
-          terms: ['onPaste', 'onDrop', 'DataTransfer'],
-          scope: ['apps/web/src'],
-          meaning:
-            'web에 붙여넣기 · 드롭 처리 코드 없음. 파일 선택은 온보딩 첫 사진(first-image-flow)에만 있음',
-        },
-      ],
-      next: ['understand'],
+      via: ['process-photo'],
     }),
     step({
       id: 'understand',
-      intent: '(자동) 이미지의 내용과 하려던 일을 알아챔',
-      behavior: '(목표) api가 이미지 파이프라인과 모델 호출을 맡고 결과 정규화',
+      intent: '(자동) 사진이 무엇인지 알아챔',
+      behavior:
+        'api가 사진을 분류하고 같은 사진의 유형(글자 · 영수증 · 지원하지 않음 · 애매함)을 판단. 애매하면 후보를 보여 사용자가 고름',
       runtime: 'go-api',
       owner: 'api',
-      status: 'documented-only',
-      docs: [
-        { document: 'product-principles', heading: '핵심 UX loop' },
-        { document: 'target-architecture', heading: '`apps/api` — Go' },
+      status: 'implemented',
+      source: [
+        { path: PROCESSOR, symbol: 'Processor.process' },
+        { path: 'apps/api/internal/processing/claude.go', symbol: 'ClaudeClassifier.TypeImage' },
       ],
-      absence: [
-        {
-          terms: ['@anthropic-ai', 'openai', '@google/generative-ai', '@google/genai'],
-          scope: ['pnpm-lock.yaml'],
-          meaning:
-            '앱 쪽에는 모델 SDK 없음. 모델 호출은 api만 하고(Claude SDK 또는 OpenAI 호환 HTTP, 설정으로 선택) 온보딩 첫 사진에만 쓰임',
-        },
-      ],
+      contracts: ['processing-outcome'],
+      tests: ['go-claude-type-image', 'go-processor-unsupported-ambiguous', 'e2e-photo-ambiguous'],
       next: ['route'],
     }),
     step({
       id: 'route',
-      intent: '할 수 있는 행동과 그 근거 보기',
+      intent: '(자동) 이 사진에 할 일을 정함',
       behavior:
-        '(목표) 근거(이미지에서 찾은 사실)와 함께 행동을 제안하고, 위험하면 실행 전에 확인을 받음',
-      runtime: 'mobile-app',
-      owner: 'mobile',
-      status: 'documented-only',
-      docs: [
-        { document: 'product-principles', heading: '신뢰 UX — Undo, Why, Confirmation' },
-        { document: 'product-principles', heading: 'AI보다 Action 결과를 우선한다' },
+        '유형마다 사용자가 저장한 처리 방식(없으면 서버 기본값)을 작업을 만드는 순간 읽어 둔 값으로 고름. 처리 방식은 설정 화면에서 바꾸거나 결과에서 다른 방식으로 다시 처리할 수 있음',
+      runtime: 'go-api',
+      owner: 'api',
+      status: 'implemented',
+      source: [
+        { path: PROCESSOR, symbol: 'Processor.Start' },
+        { path: 'apps/api/internal/processing/typing.go', symbol: 'decide' },
       ],
-      absence: [ACTION_SURFACE],
+      apis: ['get-processing-preferences', 'put-processing-preference'],
+      contracts: ['processing-preferences'],
+      tests: ['go-decide-actions', 'go-processor-defaults', 'go-processor-action-fixed'],
       next: ['act'],
+      via: ['reprocess-photo'],
     }),
     step({
       id: 'act',
-      intent: '(자동) 선택한 행동이 실제로 실행됨 — 캘린더 등록 · 지출 저장 등',
-      behavior: '(목표) 네이티브 기능이나 외부 서비스로 일을 끝냄',
+      intent: '(자동) 고른 처리 방식으로 일을 끝냄',
+      behavior:
+        '글자 사진은 추출 · 번역 · 요약 · 추출과 요약, 영수증은 지출 정보 정리 · 추출 · 요약. 번역이 필요 없으면 하지 않고, 영수증 값은 읽은 것만 넣고 불확실하면 후보와 함께 남김. 계약 밖의 답은 작업 실패',
       runtime: 'go-api',
       owner: 'api',
-      status: 'documented-only',
-      docs: [{ document: 'target-architecture', heading: '무엇이 있고 무엇이 없는가' }],
-      absence: [
-        {
-          terms: ['expo-calendar', 'expo-notifications'],
-          scope: ['pnpm-lock.yaml'],
-          meaning: '캘린더 · 알림 패키지 없음',
-        },
-        {
-          terms: ['Calendar', 'RecordExpense(', 'recordExpense'],
-          scope: PRODUCT_SOURCE,
-          meaning:
-            '캘린더 등록 · 지출 기록을 하는 코드(타입 · 함수) 없음. 분류 결과의 값 이름(add_to_calendar · record_expense), 고른 처리 방식을 저장만 하는 설정, 한글 예시 문구만 있음',
-        },
-        ACTION_SURFACE,
+      status: 'implemented',
+      source: [
+        { path: PROCESSOR, symbol: 'Processor.execute' },
+        { path: 'apps/api/internal/processing/claude.go', symbol: 'ClaudeClassifier.Act' },
+        { path: 'apps/api/internal/processing/openai.go', symbol: 'OpenAIClassifier.Act' },
+      ],
+      tests: [
+        'go-act-claude',
+        'go-act-openai',
+        'go-translation-not-needed',
+        'go-receipt-fields',
+        'go-processor-invalid-output',
       ],
       next: ['result'],
     }),
     step({
       id: 'result',
-      intent: '끝난 일과 결과를 확인하고 필요하면 되돌리기',
+      intent: '끝난 일과 결과 확인',
       behavior:
-        '(목표) "캘린더에 등록했습니다" 같은 완료 문장 · 결과의 실체 · 되돌리기 · 다음 행동 하나 표시',
+        '"텍스트를 추출하고 번역했습니다" · "지출 정보를 정리했습니다" 같은 완료 문장과 결과의 실체(원문 · 번역 · 요약 · 지출 정보)를 표시. 확인이 필요한 영수증 값은 그 자리에서 확정',
       runtime: 'mobile-app',
       owner: 'mobile',
-      status: 'documented-only',
-      docs: [{ document: 'product-principles', heading: '성공 화면의 정의' }],
-      absence: [
+      status: 'implemented',
+      source: [
+        { path: 'apps/mobile/src/components/processing/ResultBody.tsx', symbol: 'ResultBody' },
         {
-          terms: ['undo', 'Undo', '되돌리기'],
-          scope: ['apps/mobile/src', 'apps/web/src'],
-          meaning: '되돌리기 동작 없음',
+          path: 'apps/web/src/components/processing/processing-result.tsx',
+          symbol: 'ProcessingResult',
         },
+        { path: 'libs/processing/src/lib/result.ts', symbol: 'presentJob' },
       ],
-      next: ['learn'],
+      apis: ['patch-receipt-field'],
+      tests: ['processing-present-expense', 'e2e-photo-text', 'e2e-result-confirm-field'],
+      next: ['remember'],
     }),
     step({
-      id: 'learn',
-      intent: '반복되는 일을 사용자가 켠 자동화에 맡기기',
+      id: 'remember',
+      intent: '처리한 일을 기록에서 다시 보고, 고른 방식을 다음에도 쓰기',
       behavior:
-        '(목표) 반복 패턴을 근거와 함께 제안하고, 사용자가 켠 자동화만 실행하며 실행 사실 알림',
-      runtime: 'go-api',
-      owner: 'api',
-      status: 'documented-only',
-      docs: [{ document: 'product-principles', heading: 'Automation은 사용자 통제 아래 진행한다' }],
-      absence: [
-        {
-          terms: ['automation', 'Automation', '자동화'],
-          scope: PRODUCT_SOURCE,
-          meaning: '자동화 코드 없음',
-        },
+        '처리한 작업은 홈의 최근 처리와 기록에 남고 앱 · 브라우저 어디서든 결과를 다시 엶. 다른 방식으로 다시 처리하면서 사용자가 고를 때만 그 방식을 다음 사진의 기본값으로 저장',
+      runtime: 'next-server',
+      owner: 'web',
+      status: 'implemented',
+      source: [
+        { path: 'apps/web/src/app/(product)/history/page.tsx', symbol: 'HistoryPage' },
+        { path: 'apps/mobile/src/components/home/RecentJobList.tsx', symbol: 'RecentJobList' },
+        { path: 'libs/processing/src/lib/result.ts', symbol: 'preferenceToSave' },
       ],
+      apis: ['get-processing-jobs'],
+      contracts: ['processing-recent-job'],
+      tests: ['e2e-history-list', 'e2e-reprocess-next-photo', 'processing-save-off'],
+      via: ['protected-history-access', 'mobile-history-webview', 'reprocess-photo'],
     }),
   ],
 };

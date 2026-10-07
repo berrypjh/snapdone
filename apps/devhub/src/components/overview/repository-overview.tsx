@@ -49,7 +49,6 @@ function ProductSummary() {
     <WorkspaceSection id="overview-product" title="제품">
       <p className="typo-body-small">{catalog.product.text}</p>
       <ScenarioList track="current" />
-      <ScenarioList track="product-target" />
       <ScenarioList track="developer" />
     </WorkspaceSection>
   );

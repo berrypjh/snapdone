@@ -41,6 +41,9 @@ const MOBILE_ONBOARDING = 'apps/mobile/src/onboarding';
 const LIB_ONBOARDING = 'libs/onboarding/src/lib';
 const PROCESSING = 'apps/api/internal/processing';
 const ONBOARDING = 'apps/api/internal/onboarding/onboarding_test.go';
+const WEB_JOBS = 'apps/web/src/lib/processing-jobs';
+const MOBILE_JOBS = 'apps/mobile/src/processing';
+const LIB_PROCESSING = 'libs/processing/src/lib';
 
 /** 시나리오가 근거로 지목하는 테스트. 제목과 함수 이름은 파일에 있는 그대로 적는다. */
 export const tests: TestRef[] = [
@@ -239,6 +242,92 @@ export const tests: TestRef[] = [
     'createProcessingPort',
     'stops and tells the page when the session is gone',
   ),
+  // web — Vitest, 사진 처리
+  vitest(
+    'web-job-start',
+    `${WEB_JOBS}/actions.spec.ts`,
+    'processing job actions',
+    'starts one photo as the image field',
+  ),
+  vitest(
+    'web-job-origin',
+    `${WEB_JOBS}/actions.spec.ts`,
+    'processing job actions',
+    'refuses a request from another origin',
+  ),
+  vitest(
+    'web-job-choose-type',
+    `${WEB_JOBS}/actions.spec.ts`,
+    'processing job actions',
+    'continues an ambiguous job with the held photo and the chosen type',
+  ),
+  vitest(
+    'web-job-reprocess',
+    `${WEB_JOBS}/actions.spec.ts`,
+    'processing job actions',
+    'reprocesses the held photo with another action and sends no type',
+  ),
+  vitest(
+    'web-job-reprocess-refuses',
+    `${WEB_JOBS}/actions.spec.ts`,
+    'processing job actions',
+    'refuses a reprocess without a photo, a source job or an action',
+  ),
+  vitest(
+    'web-job-port-too-large',
+    `${WEB_JOBS}/port.spec.ts`,
+    'createJobPort',
+    'refuses a photo over the Go limit without uploading it',
+  ),
+  vitest(
+    'web-job-port-polls',
+    `${WEB_JOBS}/port.spec.ts`,
+    'createJobPort',
+    'polls a running job until it finishes and hands over the whole finished job',
+  ),
+  vitest(
+    'web-job-port-errors',
+    `${WEB_JOBS}/port.spec.ts`,
+    'createJobPort',
+    'turns an error response into the server code, and a failed call into network',
+  ),
+  vitest(
+    'web-job-port-signed-out',
+    `${WEB_JOBS}/port.spec.ts`,
+    'createJobPort',
+    'stops and tells the page when the session is gone',
+  ),
+  vitest(
+    'web-job-reprocess-mismatch',
+    `${WEB_JOBS}/api.spec.ts`,
+    'reprocessJob',
+    'throws the server code when the photo differs',
+  ),
+  vitest(
+    'web-job-resolve-field',
+    `${WEB_JOBS}/api.spec.ts`,
+    'resolveReceiptField',
+    'patches one field and reads the job the server returns',
+  ),
+  vitest(
+    'web-recent-jobs',
+    `${WEB_JOBS}/api.spec.ts`,
+    'fetchRecentJobs',
+    'reads the recent jobs with the bearer credential',
+  ),
+  vitest(
+    'web-job-fetch',
+    `${WEB_JOBS}/api.spec.ts`,
+    'fetchJob',
+    'reads one job with its selection and outcome',
+  ),
+  vitest(
+    'web-preference-save',
+    'apps/web/src/lib/processing-preferences/actions.spec.ts',
+    'saveProcessingPreference',
+    'saves one image type and returns what the server saved',
+  ),
+
   // mobile — Vitest
   vitest(
     'mobile-restore-anonymous',
@@ -529,6 +618,68 @@ export const tests: TestRef[] = [
     'start',
     'reports network when the request never completes',
   ),
+  // mobile — Vitest, 사진 처리
+  vitest(
+    'mobile-job-upload',
+    `${MOBILE_JOBS}/jobApi.spec.ts`,
+    'jobApi',
+    'uploads the photo by its file address with the bearer credential',
+  ),
+  vitest(
+    'mobile-job-choose-type',
+    `${MOBILE_JOBS}/jobApi.spec.ts`,
+    'jobApi',
+    'continues an ambiguous job with the same photo and the chosen type',
+  ),
+  vitest(
+    'mobile-job-confirm-field',
+    `${MOBILE_JOBS}/jobApi.spec.ts`,
+    'jobApi',
+    'confirms one receipt field',
+  ),
+  vitest(
+    'mobile-job-reprocess',
+    `${MOBILE_JOBS}/jobApi.spec.ts`,
+    'jobApi',
+    'reprocesses the same photo with another action, without a type and without touching preferences',
+  ),
+  vitest(
+    'mobile-port-polls',
+    `${MOBILE_JOBS}/port.spec.ts`,
+    'createJobPort',
+    'starts a new job and polls it until the server finishes it',
+  ),
+  vitest(
+    'mobile-port-signed-out',
+    `${MOBILE_JOBS}/port.spec.ts`,
+    'createJobPort',
+    'stops without a result when the session is gone',
+  ),
+  vitest(
+    'mobile-port-late',
+    `${MOBILE_JOBS}/port.spec.ts`,
+    'createJobPort',
+    'does not report a late answer after the screen is gone',
+  ),
+  vitest(
+    'mobile-result-reprocess',
+    `${MOBILE_JOBS}/resultActions.spec.ts`,
+    'resultActions',
+    'reprocesses with the chosen action and never calls the preference API',
+  ),
+  vitest(
+    'mobile-result-save-default',
+    `${MOBILE_JOBS}/resultActions.spec.ts`,
+    'resultActions',
+    'saves the default of the applied image type only, as its own request',
+  ),
+  vitest(
+    'mobile-preference-save',
+    `${MOBILE_JOBS}/preferenceApi.spec.ts`,
+    'savePreference',
+    'saves one image type only and returns what the server stored',
+  ),
+
   // libs — Vitest
   vitest(
     'bridge-user-agent',
@@ -597,6 +748,86 @@ export const tests: TestRef[] = [
     'runProcessing',
     'ends with the server failure',
   ),
+  // libs — Vitest, processing · 처리 결과 경로
+  vitest(
+    'processing-present-expense',
+    `${LIB_PROCESSING}/result.spec.ts`,
+    'presentJob',
+    'shows the expense fields with their state, formatting only what the server sent',
+  ),
+  vitest(
+    'processing-present-translation-skipped',
+    `${LIB_PROCESSING}/result.spec.ts`,
+    'presentJob',
+    'says the translation was skipped instead of making one',
+  ),
+  vitest(
+    'processing-present-not-finished',
+    `${LIB_PROCESSING}/result.spec.ts`,
+    'presentJob',
+    'keeps unsupported, ambiguous, running and failed apart from a finished result',
+  ),
+  vitest(
+    'processing-present-legacy',
+    `${LIB_PROCESSING}/result.spec.ts`,
+    'presentJob',
+    'shows only the found facts of an earlier job without a result',
+  ),
+  vitest(
+    'processing-save-off',
+    `${LIB_PROCESSING}/result.spec.ts`,
+    'preferenceToSave',
+    'saves nothing unless the user chose to remember the action',
+  ),
+  vitest(
+    'processing-save-applied-type',
+    `${LIB_PROCESSING}/result.spec.ts`,
+    'preferenceToSave',
+    'saves the type and action the server applied, only that type',
+  ),
+  vitest(
+    'processing-actions-for',
+    `${LIB_PROCESSING}/preferences.spec.ts`,
+    'actionsFor',
+    'lists only the actions of that image type',
+  ),
+  vitest(
+    'processing-summarize',
+    `${LIB_PROCESSING}/summary.spec.ts`,
+    'summarizeJob',
+    'names the applied type and action and shows the summary first',
+  ),
+  vitest(
+    'processing-summarize-check',
+    `${LIB_PROCESSING}/summary.spec.ts`,
+    'summarizeJob',
+    'shows the readable expense values and flags a receipt that needs a check',
+  ),
+  vitest(
+    'processing-recent-unread',
+    `${LIB_PROCESSING}/recent-jobs.spec.ts`,
+    'recentState',
+    'does not guess empty when the jobs could not be read',
+  ),
+  vitest(
+    'processing-go-wire',
+    `${LIB_PROCESSING}/recent-jobs.spec.ts`,
+    'the Go wire contract',
+    'reads every job the Go API sends, with its selection, outcome and source',
+  ),
+  vitest(
+    'bridge-job-path',
+    'libs/webview-bridge/src/lib/paths.spec.ts',
+    'job detail path',
+    'builds and accepts the path of one lowercase uuid job',
+  ),
+  vitest(
+    'bridge-job-path-rejects',
+    'libs/webview-bridge/src/lib/paths.spec.ts',
+    'job detail path',
+    'makes no path for an id outside the rule',
+  ),
+
   // api — go test (TEST_DATABASE_URL이 없으면 DB 테스트는 건너뛴다)
   goTest(
     'go-capabilities',
@@ -700,13 +931,13 @@ export const tests: TestRef[] = [
   goTest(
     'go-processor-background',
     `${PROCESSING}/processor_test.go`,
-    'TestStartCompletesInBackground',
+    'TestOnboardingJobGetsTheSameProcessing',
     [],
   ),
   goTest(
     'go-processor-fails',
     `${PROCESSING}/processor_test.go`,
-    'TestStartFailsWhenClassifyFails',
+    'TestModelFailureFailsTheJob',
     [],
   ),
   goTest('go-claude-request', `${PROCESSING}/claude_test.go`, 'TestClassifyRequestShape', []),
@@ -733,6 +964,129 @@ export const tests: TestRef[] = [
     'TestRevokeRootInvalidatesChildren',
     DB,
   ),
+
+  // api — go test, 사진 처리
+  goTest(
+    'go-typing-eval-contract',
+    `${PROCESSING}/typing_test.go`,
+    'TestTypingLeavesTheEvaluationContract',
+    [],
+  ),
+  goTest(
+    'go-decide-actions',
+    `${PROCESSING}/typing_test.go`,
+    'TestDecideMapsEveryStoredAction',
+    [],
+  ),
+  goTest('go-claude-type-image', `${PROCESSING}/typing_test.go`, 'TestClaudeTypeImage', []),
+  goTest('go-act-claude', `${PROCESSING}/action_test.go`, 'TestClaudeActEveryAction', []),
+  goTest('go-act-openai', `${PROCESSING}/action_test.go`, 'TestOpenAIActEveryAction', []),
+  goTest('go-act-rejects', `${PROCESSING}/action_test.go`, 'TestActionAnswerRejects', []),
+  goTest(
+    'go-translation-not-needed',
+    `${PROCESSING}/action_test.go`,
+    'TestTranslationNotNeededAnswer',
+    [],
+  ),
+  goTest('go-receipt-fields', `${PROCESSING}/outcome_test.go`, 'TestReceiptFields', []),
+  goTest(
+    'go-processor-stored-action',
+    `${PROCESSING}/processor_test.go`,
+    'TestGeneralJobAppliesTheStoredAction',
+    [],
+  ),
+  goTest(
+    'go-processor-defaults',
+    `${PROCESSING}/processor_test.go`,
+    'TestGeneralJobAppliesServerDefaults',
+    [],
+  ),
+  goTest(
+    'go-processor-unsupported-ambiguous',
+    `${PROCESSING}/processor_test.go`,
+    'TestGeneralJobUnsupportedAndAmbiguous',
+    [],
+  ),
+  goTest(
+    'go-processor-action-fixed',
+    `${PROCESSING}/processor_test.go`,
+    'TestActionIsFixedWhenTheJobStarts',
+    [],
+  ),
+  goTest(
+    'go-processor-invalid-output',
+    `${PROCESSING}/processor_test.go`,
+    'TestActionOutputOutsideTheContractFailsTheJob',
+    [],
+  ),
+  goTest(
+    'go-processor-digest',
+    `${PROCESSING}/processor_test.go`,
+    'TestStartPassesImageDigest',
+    [],
+  ),
+  goTest(
+    'go-reprocess-action',
+    `${PROCESSING}/reprocess_test.go`,
+    'TestReprocessWithAnotherAction',
+    [],
+  ),
+  goTest(
+    'go-reprocess-ambiguous',
+    `${PROCESSING}/reprocess_test.go`,
+    'TestAmbiguousTypeChoiceUsesTheStoredAction',
+    [],
+  ),
+  goTest('go-reprocess-rejects', `${PROCESSING}/reprocess_test.go`, 'TestReprocessRejects', []),
+  goTest(
+    'go-reprocess-failure',
+    `${PROCESSING}/reprocess_test.go`,
+    'TestReprocessFailureFailsOnlyTheNewJob',
+    [],
+  ),
+  goTest('go-resolve-field', `${PROCESSING}/reprocess_test.go`, 'TestResolveField', []),
+  goTest(
+    'go-complete-outcome',
+    `${PROCESSING}/outcome_store_test.go`,
+    'TestCompleteStoresOutcome',
+    DB,
+  ),
+  goTest(
+    'go-reprocess-store-link',
+    `${PROCESSING}/resolve_store_test.go`,
+    'TestProcessorReprocessStoresALinkedJob',
+    DB,
+  ),
+  goTest(
+    'go-resolve-field-concurrently',
+    `${PROCESSING}/resolve_store_test.go`,
+    'TestResolveReceiptFieldConcurrently',
+    DB,
+  ),
+  goTest(
+    'go-recent-general',
+    `${PROCESSING}/store_test.go`,
+    'TestRecentGeneralFiltersAndOrders',
+    DB,
+  ),
+  goTest('go-http-recent', `${HTTP}/processing_test.go`, 'TestProcessingJobs', []),
+  goTest('go-http-recent-outcome', `${HTTP}/processing_test.go`, 'TestProcessingJobsOutcome', []),
+  goTest('go-http-reprocess', `${HTTP}/processing_test.go`, 'TestReprocessProcessingJob', []),
+  goTest(
+    'go-http-reprocess-errors',
+    `${HTTP}/processing_test.go`,
+    'TestReprocessProcessingJobErrors',
+    [],
+  ),
+  goTest('go-http-resolve-field', `${HTTP}/processing_test.go`, 'TestResolveReceiptField', []),
+  goTest(
+    'go-http-resolve-field-errors',
+    `${HTTP}/processing_test.go`,
+    'TestResolveReceiptFieldErrors',
+    [],
+  ),
+  goTest('go-http-set-preference', `${HTTP}/preference_test.go`, 'TestSetProcessingPreference', []),
+  goTest('go-handoff-allowed-next', `${AUTH}/handoff_next_test.go`, 'TestAllowedNext', []),
 
   // web-e2e — Playwright (가짜 인증 API + next dev)
   playwright(
@@ -889,7 +1243,7 @@ export const tests: TestRef[] = [
   playwright(
     'e2e-web-onboarding-foreign-text',
     'onboarding.spec.ts',
-    'a foreign-language photo shows what was read and suggests a translation it has not done',
+    'a foreign-language first photo shows the extracted text and its translation',
   ),
   playwright(
     'e2e-web-first-result-keyboard',
@@ -1109,4 +1463,135 @@ export const tests: TestRef[] = [
     [],
   ),
   goTest('go-eval-run-metadata-rejects', `${EVAL}/run_test.go`, 'TestDecodeRunMetadataRejects', []),
+
+  // web-e2e — Playwright, 사진 처리 · 기록
+  playwright('e2e-photo-open', 'photo-flow.spec.ts', 'opens the photo flow from the home'),
+  playwright(
+    'e2e-photo-preview',
+    'photo-flow.spec.ts',
+    'previews one chosen photo without guessing its type or action',
+  ),
+  playwright('e2e-photo-drop', 'photo-flow.spec.ts', 'takes one dropped photo and refuses several'),
+  playwright(
+    'e2e-photo-refuse',
+    'photo-flow.spec.ts',
+    'refuses another format or a photo over 7.5MB before uploading, keeping the current photo',
+  ),
+  playwright(
+    'e2e-photo-text',
+    'photo-flow.spec.ts',
+    'processes a text photo once and shows the server result with the photo',
+  ),
+  playwright(
+    'e2e-photo-receipt',
+    'photo-flow.spec.ts',
+    'processes a receipt and confirms a field on the result',
+  ),
+  playwright(
+    'e2e-photo-unsupported',
+    'photo-flow.spec.ts',
+    'says an unsupported photo cannot be processed and offers another one',
+  ),
+  playwright(
+    'e2e-photo-ambiguous',
+    'photo-flow.spec.ts',
+    'continues an ambiguous photo with the chosen type without picking it again',
+  ),
+  playwright(
+    'e2e-photo-retry',
+    'photo-flow.spec.ts',
+    'keeps the photo after a failed upload and retries it',
+  ),
+  playwright('e2e-photo-keyboard', 'photo-flow.spec.ts', 'runs the whole flow by keyboard'),
+  playwright(
+    'e2e-photo-in-app',
+    'photo-flow.spec.ts',
+    'inside the app WebView',
+    'does not offer the browser file picker in place of the app camera',
+  ),
+  playwright(
+    'e2e-reprocess-actions',
+    'reprocess.spec.ts',
+    'offers only the actions of this image type, with the applied one marked',
+  ),
+  playwright(
+    'e2e-reprocess-no-preference',
+    'reprocess.spec.ts',
+    'reprocesses this photo once without changing the stored preferences',
+  ),
+  playwright(
+    'e2e-reprocess-save-default',
+    'reprocess.spec.ts',
+    'keeps the new action as the default only when the box is checked, for this type only',
+  ),
+  playwright(
+    'e2e-reprocess-fails',
+    'reprocess.spec.ts',
+    'keeps the previous result when reprocessing fails',
+  ),
+  playwright(
+    'e2e-reprocess-save-retry',
+    'reprocess.spec.ts',
+    'keeps the new result when only saving the default fails, and retries only the save',
+  ),
+  playwright(
+    'e2e-reprocess-next-photo',
+    'reprocess.spec.ts',
+    'applies a saved default to the next photo, and an unsaved choice to none',
+  ),
+  playwright(
+    'e2e-result-confirm-field',
+    'processing-result.spec.ts',
+    'a finished receipt job',
+    'confirms one field from a candidate and keeps the others',
+  ),
+  playwright(
+    'e2e-result-not-found',
+    'processing-result.spec.ts',
+    'a job that is not a finished result',
+    'says another user’s or an unknown job cannot be found',
+  ),
+  playwright(
+    'e2e-result-signed-out',
+    'processing-result.spec.ts',
+    'a job that is not a finished result',
+    'sends a signed-out browser to the login page, back to this result after it',
+  ),
+  playwright(
+    'e2e-result-in-app',
+    'processing-result.spec.ts',
+    'inside the app WebView',
+    'renders the result without the web shell and tells the app the title',
+  ),
+  playwright(
+    'e2e-inapp-job-handoff',
+    'in-app.spec.ts',
+    'inside the app WebView',
+    'starts a handoff to one job result, and only to a strictly formed one',
+  ),
+  playwright(
+    'e2e-home-active',
+    'home.spec.ts',
+    'shows the active home with what the server processed',
+  ),
+  playwright(
+    'e2e-home-flow-active',
+    'home-flow.spec.ts',
+    'turns the empty home active with the processed photo, flags its check, and opens its result',
+  ),
+  playwright(
+    'e2e-history-list',
+    'home-flow.spec.ts',
+    'lists the general jobs in the history and opens one',
+  ),
+  playwright(
+    'e2e-history-owner',
+    'home-flow.spec.ts',
+    'does not open another user’s job from the history path',
+  ),
+  playwright(
+    'e2e-history-unreadable',
+    'home-flow.spec.ts',
+    'says the history could not be read instead of showing it empty',
+  ),
 ];
