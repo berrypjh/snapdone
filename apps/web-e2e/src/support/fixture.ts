@@ -46,11 +46,43 @@ export type JobResult = {
  * The `*Fails` switches make that one request answer 500 for this user.
  */
 export type UserOptions = {
-  generalJobs?: JobResult[];
+  generalJobs?: (JobResult | SeededJob)[];
+  /** What each photo this user uploads becomes, in order; the last one repeats. */
+  uploads?: (JobResult | SeededJob | TypedUpload)[];
+  /** The error this user's next upload answers with, once. */
+  uploadError?: { status: number; error: string };
   preferenceSaveFails?: boolean;
   preferencesReadFail?: boolean;
   recentJobsFail?: boolean;
 };
+
+/** Go `processing.ReceiptField`. */
+export type ReceiptField = { value: string | null; candidates: string[]; resolved: boolean };
+
+/**
+ * A whole job as Go returns it: the classification, and the product result when the job has one
+ * (`selection` · `outcome`, apps/api `processing.Selection` · `processing.Outcome`).
+ */
+export type SeededJob = {
+  result: JobResult;
+  status?: 'running' | 'completed' | 'failed';
+  selection?: { imageType: 'text' | 'receipt'; appliedAction: string };
+  outcome?: Record<string, unknown>;
+};
+
+/** A completed job that applied this action and returned this output. */
+export const processedJob = (
+  imageType: 'text' | 'receipt',
+  appliedAction: string,
+  output: Record<string, unknown>,
+): SeededJob => ({
+  result:
+    imageType === 'receipt'
+      ? receiptJob()
+      : { ...receiptJob(), category: 'foreign_text', suggestedAction: 'translate' },
+  selection: { imageType, appliedAction },
+  outcome: { kind: 'processed', imageType, appliedAction, output },
+});
 
 /** A completed receipt job with these facts. */
 export const receiptJob = (...facts: [label: string, value: string][]): JobResult => ({
@@ -74,6 +106,25 @@ export const mintSession = async (
   return ((await response.json()) as { credential: string }).credential;
 };
 
+/** Signs a complete user in with these jobs already processed and returns their ids, oldest first. */
+export const signInWithJobs = async (
+  context: BrowserContext,
+  baseURL: string,
+  generalJobs: (JobResult | SeededJob)[],
+): Promise<string[]> => {
+  const response = await context.request.post(`${FAKE_API_URL}/__fixture/sessions`, {
+    data: { onboardingStep: 'complete', kind: 'web', result: 'receipt', generalJobs },
+  });
+  const { credential, jobIds } = (await response.json()) as {
+    credential: string;
+    jobIds: string[];
+  };
+  await context.addCookies([
+    { name: SESSION_COOKIE, value: credential, url: baseURL, httpOnly: true, sameSite: 'Lax' },
+  ]);
+  return jobIds;
+};
+
 /** Signs this browser context in the way `/auth/callback` would: an HttpOnly session cookie. */
 export const signIn = async (
   context: BrowserContext,
@@ -90,7 +141,7 @@ export const signIn = async (
 };
 
 /** 1×1 PNG. The fake API does not read it; Go would judge the format by its content. */
-const PHOTO = {
+export const PHOTO = {
   name: 'photo.png',
   mimeType: 'image/png',
   buffer: Buffer.from(
@@ -152,3 +203,41 @@ export const setFaults = async (request: APIRequestContext, faults: Faults) => {
 export const startCalls = async (request: APIRequestContext): Promise<number> =>
   ((await (await request.get(`${FAKE_API_URL}/__fixture/faults`)).json()) as { startCalls: number })
     .startCalls;
+
+/** This user's general jobs as the fake API lists them (Go `GET /v1/processing-jobs`), newest first. */
+export const listJobs = async (
+  request: APIRequestContext,
+  credential: string,
+): Promise<{ jobId: string; sourceJobId?: string }[]> => {
+  const response = await request.get(`${FAKE_API_URL}/v1/processing-jobs`, {
+    headers: { Authorization: `Bearer ${credential}` },
+  });
+  return ((await response.json()) as { jobs: { jobId: string; sourceJobId?: string }[] }).jobs;
+};
+
+/** Ends this credential's session the way logging out elsewhere would. */
+export const revokeSession = async (request: APIRequestContext, credential: string) => {
+  await request.post(`${FAKE_API_URL}/v1/auth/logout`, {
+    headers: { Authorization: `Bearer ${credential}` },
+  });
+};
+
+/** This user's stored processing preferences as the fake API holds them (Go `GET /v1/processing-preferences`). */
+export const readPreferences = async (
+  request: APIRequestContext,
+  credential: string,
+): Promise<{ text: string; receipt: string }> => {
+  const response = await request.get(`${FAKE_API_URL}/v1/processing-preferences`, {
+    headers: { Authorization: `Bearer ${credential}` },
+  });
+  return (await response.json()) as { text: string; receipt: string };
+};
+
+/**
+ * A photo the fake API types as `imageType` and processes like Go: with the action a reprocess asked for,
+ * or else the user's stored preference for that type. `outputs` is what each action returns.
+ */
+export type TypedUpload = {
+  imageType: 'text' | 'receipt';
+  outputs: Record<string, Record<string, unknown>>;
+};

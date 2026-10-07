@@ -49,9 +49,11 @@ test('shows the empty home to a user without photos since the onboarding', async
   await openHome(page, context, baseURL ?? '');
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('이미지 액션 라우터');
-  const add = page.getByRole('button', { name: '사진 추가하기' });
-  await expect(add).toBeDisabled();
-  await expect(add).toHaveAccessibleDescription('새 사진 추가 기능을 준비하고 있습니다.');
+  // Adding a photo opens the photo flow, never the onboarding first-photo page.
+  await expect(page.getByRole('link', { name: '사진 추가하기' })).toHaveAttribute(
+    'href',
+    '/process',
+  );
 
   const preferences = section(page, '기본 처리 설정');
   await expect(preferences.getByText('추출 및 번역', { exact: true })).toBeVisible();
@@ -171,7 +173,7 @@ test('does not scroll sideways at 320px with long values', async ({ page, contex
   expect(await overflowsSideways(page)).toBe(false);
 });
 
-test('reaches the settings link by keyboard, past the disabled photo button', async ({
+test('reaches the photo flow and the settings link by keyboard', async ({
   page,
   context,
   baseURL,
@@ -186,7 +188,9 @@ test('reaches the settings link by keyboard, past the disabled photo button', as
   ]);
 
   await enterMain(page, browserName);
-  // The disabled photo button is not a stop: one Tab from the main reaches the settings link.
+  // The photo link is the first stop in the main, the settings link the next one.
+  await page.keyboard.press(linkTabKey(browserName));
+  await expect(page.getByRole('link', { name: '사진 추가하기' })).toBeFocused();
   await page.keyboard.press(linkTabKey(browserName));
   await expect(
     section(page, '기본 처리 설정').getByRole('link', { name: '설정 변경' }),

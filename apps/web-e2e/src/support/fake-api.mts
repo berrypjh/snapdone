@@ -7,7 +7,7 @@
  * the serial `faults` Playwright projects change them. The photo result is chosen per user when
  * the session is minted, so parallel tests never share it.
  */
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 
 const PORT = Number(process.env['FAKE_API_PORT']);
@@ -37,10 +37,7 @@ const userResults = new Map<string, PhotoResult>();
  * Processing jobs, owned by one user, finish on their first lookup. Like Go, the origin comes from
  * the session's onboarding step: a photo before the onboarding is complete never shows on the home.
  */
-const jobs = new Map<
-  string,
-  { userId: string; result: Result; origin: 'onboarding' | 'general'; createdAt: string }
->();
+const jobs = new Map<string, Job>();
 /** Users whose recent job list fails with 500. Chosen per user so parallel tests stay apart. */
 const failingRecentJobs = new Set<string>();
 /** Users whose preference reads fail with 500. Chosen per user so parallel tests stay apart. */
@@ -49,6 +46,13 @@ const failingPreferenceReads = new Set<string>();
 const preferences = new Map<string, Preferences>();
 /** Users whose preference saves fail with 500. Chosen per user so parallel tests stay apart. */
 const failingPreferenceSaves = new Set<string>();
+/**
+ * What each upload of a user becomes, in order; the last one repeats. Like Go, the job is running when
+ * it is created and finishes on its first lookup. Absent means a classification-only job (`userResults`).
+ */
+const uploads = new Map<string, (SeededJob | TypedUpload)[]>();
+/** The error this user's next upload answers with, once — so a retry succeeds. */
+const uploadErrors = new Map<string, { status: number; error: string }>();
 
 /** Go `preference` values and the defaults its migration gives every profile. */
 const PREFERENCE_ACTIONS = {
@@ -61,10 +65,15 @@ const DEFAULT_PREFERENCES: Preferences = {
   receipt: 'record_expense',
 };
 
-/** Go `handoffNext`: the exact web paths a handoff may land on. */
+/** Go `handoffNext` · `jobDetailPath`: the exact web paths a handoff may land on, or one job's result. */
 const HANDOFF_NEXT = new Set(['/', '/history', '/settings/processing']);
+const JOB_DETAIL = /^\/history\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const allowedNext = (next: unknown) =>
+  typeof next === 'string' && (HANDOFF_NEXT.has(next) || JOB_DETAIL.test(next));
 
 const token = () => randomBytes(32).toString('base64url');
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
 const s256 = (verifier: string) => createHash('sha256').update(verifier).digest('base64url');
 
 /** Stores a new session (a child shares its parent's user) and returns it with its credential. */
@@ -173,6 +182,109 @@ type Result = {
   confidence: string;
 };
 
+/** Go `processing.ReceiptField`. */
+type ReceiptField = { value: string | null; candidates: string[]; resolved: boolean };
+
+/**
+ * One processing job as Go stores it. `selection` · `outcome` are the product result (Go `processing.Selection` ·
+ * `processing.Outcome`); a job made before that contract has neither. Jobs without a status finish on their first lookup.
+ */
+type Job = {
+  userId: string;
+  result: Result;
+  origin: 'onboarding' | 'general';
+  createdAt: string;
+  status?: 'running' | 'completed' | 'failed';
+  selection?: { imageType: string; appliedAction: string };
+  sourceJobId?: string;
+  outcome?: {
+    kind: string;
+    output?: { expense?: Record<string, ReceiptField> } & Record<string, unknown>;
+  } & Record<string, unknown>;
+};
+
+/** A job seeded by a test: a bare classification, or a whole job. */
+type SeededJob = Result | Pick<Job, 'result' | 'status' | 'selection' | 'outcome'>;
+
+/**
+ * An upload typed as `imageType`, processed the way Go does it (`processing.decide`): the action is the one the
+ * request asked for (reprocess), or else the user's stored preference for that type. `outputs` is what each action returns.
+ */
+type TypedUpload = {
+  imageType: 'text' | 'receipt';
+  outputs: Record<string, Record<string, unknown>>;
+};
+
+const isTypedUpload = (entry: unknown): entry is TypedUpload =>
+  typeof entry === 'object' && entry !== null && 'imageType' in entry && 'outputs' in entry;
+
+const multipartField = (body: string, name: string) =>
+  new RegExp(`name="${name}"\\r\\n\\r\\n([^\\r]+)`).exec(body)?.[1];
+
+/** The job Go would make for a typed upload: the applied action and its output, or nothing for an unknown action. */
+const typedJob = (upload: TypedUpload, userId: string, body: string) => {
+  const stored = preferences.get(userId) ?? DEFAULT_PREFERENCES;
+  const imageType = multipartField(body, 'imageType') ?? upload.imageType;
+  const appliedAction = multipartField(body, 'action') ?? stored[imageType as keyof Preferences];
+  const output = upload.outputs[appliedAction];
+  return {
+    result: RESULTS.receipt,
+    ...(output && {
+      selection: { imageType, appliedAction },
+      outcome: { kind: 'processed', imageType, appliedAction, output },
+    }),
+  };
+};
+
+/** Go `GET /v1/processing-jobs/{jobId}`: result only when completed, selection · outcome only when present. */
+const jobBody = (jobId: string, job: Job) => {
+  const status = job.status ?? 'completed';
+  return {
+    jobId,
+    status,
+    ...(status === 'completed' && { result: job.result }),
+    ...(job.selection && { selection: job.selection }),
+    ...(job.outcome && { outcome: job.outcome }),
+    ...(job.sourceJobId && { sourceJobId: job.sourceJobId }),
+  };
+};
+
+/** Go `Expense` value formats (`processing/outcome.go`). */
+const RECEIPT_FORMATS: Record<string, RegExp> = {
+  merchant: /^.+$/,
+  date: /^\d{4}-\d{2}-\d{2}$/,
+  total: /^(0|[1-9][0-9]*)(\.[0-9]+)?$/,
+  currency: /^[A-Z]{3}$/,
+  paymentMethod: /^.+$/,
+};
+
+/** Go `PATCH /v1/processing-jobs/{jobId}/receipt-fields/{field}`: one unresolved field, the whole job back. */
+const resolveReceiptField = async (
+  req: IncomingMessage,
+  res: ServerResponse,
+  jobId: string,
+  field: string,
+) => {
+  const body = await readJson(req);
+  const session = authorized(req, res);
+  if (!session) return;
+  const job = jobs.get(jobId);
+  if (job?.userId !== session.userId) return send(res, 404, { error: 'job_not_found' });
+  const expense = job.outcome?.output?.expense;
+  if (!expense) return send(res, 409, { error: 'job_not_resolvable' });
+  const value = body.value;
+  const format = RECEIPT_FORMATS[field];
+  const target = expense[field];
+  if (!format || !target || typeof value !== 'string' || !format.test(value)) {
+    return send(res, 400, { error: 'invalid_receipt_field' });
+  }
+  if (target.resolved && target.value !== value) {
+    return send(res, 409, { error: 'receipt_field_resolved' });
+  }
+  expense[field] = { ...target, value, resolved: true };
+  send(res, 200, jobBody(jobId, job));
+};
+
 const routes: Record<string, Handler> = {
   'GET /v1/auth/capabilities': (_req, res) => send(res, 200, { providers: ['google'] }),
 
@@ -236,7 +348,7 @@ const routes: Record<string, Handler> = {
       return send(res, 401, { error: 'session_expired' });
     }
     const body = await readJson(req);
-    if (!HANDOFF_NEXT.has(String(body.next))) return invalid(res);
+    if (!allowedNext(body.next)) return invalid(res);
     const code = token();
     handoffGrants.set(code, { challenge: String(body.challenge), next: String(body.next), parent });
     send(res, 200, { code });
@@ -247,7 +359,7 @@ const routes: Record<string, Handler> = {
     const grant = handoffGrants.get(String(body.code));
     if (
       !grant ||
-      !HANDOFF_NEXT.has(String(body.next)) ||
+      !allowedNext(body.next) ||
       grant.next !== body.next ||
       grant.challenge !== s256(String(body.verifier))
     ) {
@@ -305,20 +417,41 @@ const routes: Record<string, Handler> = {
     send(res, 200, progressBody(session));
   },
 
+  /**
+   * Go `POST /v1/processing-jobs`. A `sourceJobId` field makes it a reprocess of that job — the fake does not
+   * check the photo digest Go compares. The job is the user's next queued upload, if any.
+   */
   'POST /v1/processing-jobs': async (req, res) => {
-    for await (const _chunk of req);
+    let body = '';
+    for await (const chunk of req) body += chunk;
     const session = authorized(req, res);
     if (!session) return;
-    const jobId = `job-${token().slice(0, 8)}`;
-    const result = RESULTS[userResults.get(session.userId) ?? 'receipt'];
-    const origin = session.step === 'complete' ? 'general' : 'onboarding';
+    const failure = uploadErrors.get(session.userId);
+    if (failure) {
+      uploadErrors.delete(session.userId);
+      return send(res, failure.status, { error: failure.error });
+    }
+    const queued = uploads.get(session.userId);
+    const next = queued && queued.length > 1 ? queued.shift() : queued?.[0];
+    const seeded = isTypedUpload(next)
+      ? typedJob(next, session.userId, body)
+      : next && ('category' in next ? { result: next } : next);
+    const sourceJobId = multipartField(body, 'sourceJobId');
+    if (sourceJobId && jobs.get(sourceJobId)?.userId !== session.userId) {
+      return send(res, 404, { error: 'job_not_found' });
+    }
+    const jobId = randomUUID();
     jobs.set(jobId, {
+      result: RESULTS[userResults.get(session.userId) ?? 'receipt'],
+      ...seeded,
+      // An upload finishes on its first lookup, whatever the seeded status said.
+      status: undefined,
       userId: session.userId,
-      result,
-      origin,
+      origin: session.step === 'complete' ? 'general' : 'onboarding',
       createdAt: new Date().toISOString(),
+      ...(sourceJobId && { sourceJobId }),
     });
-    send(res, 202, { jobId, status: 'running' });
+    send(res, 202, { jobId, status: 'running', ...(sourceJobId && { sourceJobId }) });
   },
 
   /** Go `GET /v1/processing-jobs`: this user's general jobs, newest first (`created_at`, then id), at most 20. */
@@ -335,11 +468,9 @@ const routes: Record<string, Handler> = {
       )
       .slice(0, 20)
       .map(([jobId, job]) => ({
-        jobId,
-        status: 'completed',
+        ...jobBody(jobId, job),
         createdAt: job.createdAt,
-        finishedAt: job.createdAt,
-        result: job.result,
+        ...(job.status !== 'running' && { finishedAt: job.createdAt }),
       }));
     send(res, 200, { jobs: recent });
   },
@@ -372,18 +503,24 @@ const routes: Record<string, Handler> = {
     if (body.preferenceSaveFails === true) failingPreferenceSaves.add(session.userId);
     if (body.recentJobsFail === true) failingRecentJobs.add(session.userId);
     if (body.preferencesReadFail === true) failingPreferenceReads.add(session.userId);
-    // General jobs this user processed after the onboarding, oldest first — rows Go would hold.
-    const seeded = Array.isArray(body.generalJobs) ? (body.generalJobs as Result[]) : [];
-    seeded.forEach((result, index) => {
-      const createdAt = new Date(Date.UTC(2026, 9, 6, 9, index)).toISOString();
-      jobs.set(`job-${token().slice(0, 8)}`, {
-        userId: session.userId,
-        result,
-        origin: 'general',
-        createdAt,
+    if (Array.isArray(body.uploads))
+      uploads.set(session.userId, [...(body.uploads as SeededJob[])]);
+    if (isRecord(body.uploadError)) {
+      uploadErrors.set(session.userId, {
+        status: Number(body.uploadError.status),
+        error: String(body.uploadError.error),
       });
+    }
+    // General jobs this user processed after the onboarding, oldest first — rows Go would hold.
+    const seeded = Array.isArray(body.generalJobs) ? (body.generalJobs as SeededJob[]) : [];
+    const jobIds = seeded.map((entry, index) => {
+      const jobId = randomUUID();
+      const createdAt = new Date(Date.UTC(2026, 9, 6, 9, index)).toISOString();
+      const job = 'category' in entry ? { result: entry } : entry;
+      jobs.set(jobId, { ...job, userId: session.userId, origin: 'general', createdAt });
+      return jobId;
     });
-    send(res, 200, { credential });
+    send(res, 200, { credential, jobIds });
   },
 
   'GET /__fixture/faults': (_req, res) => send(res, 200, faults),
@@ -428,7 +565,14 @@ createServer((req, res) => {
     const job = jobs.get(jobId);
     // Go answers another user's job the same as a missing one.
     if (job?.userId !== session.userId) return send(res, 404, { error: 'job_not_found' });
-    return send(res, 200, { jobId, status: 'completed', result: job.result });
+    return send(res, 200, jobBody(jobId, job));
+  }
+  const fieldUpdate = /^\/v1\/processing-jobs\/([^/]+)\/receipt-fields\/([^/]+)$/.exec(
+    url.pathname,
+  );
+  if (req.method === 'PATCH' && fieldUpdate) {
+    const [, jobId = '', field = ''] = fieldUpdate;
+    return void resolveReceiptField(req, res, decodeURIComponent(jobId), decodeURIComponent(field));
   }
   const preferenceUpdate = /^\/v1\/processing-preferences\/([^/]+)$/.exec(url.pathname);
   if (req.method === 'PUT' && preferenceUpdate) {

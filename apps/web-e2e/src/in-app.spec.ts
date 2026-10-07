@@ -115,6 +115,25 @@ test.describe('inside the app WebView', () => {
     expect(await page.evaluate(() => document.cookie)).not.toContain('handoff');
   });
 
+  test('starts a handoff to one job result, and only to a strictly formed one', async ({
+    page,
+  }) => {
+    const jobId = '4f1c2a9e-0000-4000-8000-000000000000';
+    await recordAppMessages(page);
+    await page.goto(`/auth/handoff/start?next=%2Fhistory%2F${jobId}`);
+
+    await expect(page).toHaveURL(new RegExp(`/auth/handoff/ready\\?next=%2Fhistory%2F${jobId}$`));
+    await expect
+      .poll(() => appMessages(page))
+      .toContainEqual(expect.stringContaining(`"next":"/history/${jobId}"`));
+
+    // A malformed job path is not a destination: the handoff falls back to the home.
+    for (const next of ['%2Fhistory%2Fjob-1', `%2Fhistory%2F${jobId}%2Freceipt`]) {
+      await page.goto(`/auth/handoff/start?next=${next}`);
+      await expect(page).toHaveURL(/\/auth\/handoff\/ready\?next=%2F$/);
+    }
+  });
+
   test('asks the app to start over when the ready page has no verifier', async ({ page }) => {
     await recordAppMessages(page);
     await page.goto('/auth/handoff/ready?next=%2Fhistory');
