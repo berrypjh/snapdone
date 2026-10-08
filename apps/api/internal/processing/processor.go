@@ -29,7 +29,7 @@ type jobs interface {
 	Complete(ctx context.Context, id string, c Completion) error
 	Fail(ctx context.Context, id string) error
 	Find(ctx context.Context, userID, id string, staleAfter time.Duration) (Job, error)
-	RecentGeneral(ctx context.Context, userID string, limit int, staleAfter time.Duration) ([]Job, error)
+	Recent(ctx context.Context, userID string, origins []Origin, limit int, staleAfter time.Duration) ([]Job, error)
 	ResolveReceiptField(ctx context.Context, userID, id, field, value string) (Job, error)
 }
 
@@ -78,9 +78,9 @@ func (p *Processor) Find(ctx context.Context, userID, id string) (Job, error) {
 	return p.jobs.Find(ctx, userID, id, staleAfter)
 }
 
-// 사용자의 general 작업을 최근에 만든 것부터 recentLimit개까지. 단건 조회와 같은 규칙으로 상태를 읽는다.
-func (p *Processor) Recent(ctx context.Context, userID string) ([]Job, error) {
-	return p.jobs.RecentGeneral(ctx, userID, recentLimit, staleAfter)
+// 사용자의 작업 중 출처가 origins인 것을 최근에 만든 것부터 recentLimit개까지. 단건 조회와 같은 규칙으로 상태를 읽는다.
+func (p *Processor) Recent(ctx context.Context, userID string, origins []Origin) ([]Job, error) {
+	return p.jobs.Recent(ctx, userID, origins, recentLimit, staleAfter)
 }
 
 // 재처리 요청. 원래 작업과, 사용자가 고른 유형 · 처리 방식이다.

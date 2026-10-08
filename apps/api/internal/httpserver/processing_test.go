@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -28,6 +29,7 @@ type fakeProcessing struct {
 	resolved  []string
 	userID    string
 	origin    processing.Origin
+	listed    []processing.Origin
 	mediaType string
 	image     []byte
 }
@@ -56,8 +58,8 @@ func (f *fakeProcessing) ResolveReceiptField(_ context.Context, userID, id, fiel
 	return f.job, nil
 }
 
-func (f *fakeProcessing) Recent(_ context.Context, userID string) ([]processing.Job, error) {
-	f.userID = userID
+func (f *fakeProcessing) Recent(_ context.Context, userID string, origins []processing.Origin) ([]processing.Job, error) {
+	f.userID, f.listed = userID, origins
 	if userID != "user-1" {
 		return []processing.Job{}, f.err
 	}
@@ -213,7 +215,6 @@ func TestRunningJobHasNoResult(t *testing.T) {
 func TestCreateProcessingJobOrigin(t *testing.T) {
 	for step, want := range map[string]processing.Origin{
 		"intro":       processing.OriginOnboarding,
-		"purpose":     processing.OriginOnboarding,
 		"first-image": processing.OriginOnboarding,
 		"complete":    processing.OriginGeneral,
 	} {
@@ -251,6 +252,25 @@ func TestProcessingJobs(t *testing.T) {
 		t.Errorf("listed jobs of %q, want the session's user", service.userID)
 	}
 	assertNoStore(t, r)
+}
+
+// 온보딩 첫 사진은 온보딩을 마친 뒤에만 목록에 들어간다.
+func TestProcessingJobsOrigins(t *testing.T) {
+	both := []processing.Origin{processing.OriginOnboarding, processing.OriginGeneral}
+	for step, want := range map[string][]processing.Origin{
+		"intro":       {processing.OriginGeneral},
+		"first-image": {processing.OriginGeneral},
+		"complete":    both,
+	} {
+		service := &fakeProcessing{recent: []processing.Job{}}
+		handler := NewRouter(Deps{Sessions: &fakeSessions{step: step}, Processing: service})
+		if r := send(handler, http.MethodGet, "/v1/processing-jobs", "", bearer...); r.Code != http.StatusOK {
+			t.Fatalf("%s: status %d", step, r.Code)
+		}
+		if !slices.Equal(service.listed, want) {
+			t.Errorf("%s: origins = %v, want %v", step, service.listed, want)
+		}
+	}
 }
 
 // 제품 결과와 재처리 관계는 이 모양으로 나간다. libs/processing의 parser가 같은 본문을 읽는다.

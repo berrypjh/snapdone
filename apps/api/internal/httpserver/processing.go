@@ -30,7 +30,7 @@ type ProcessingService interface {
 	Start(ctx context.Context, userID string, origin processing.Origin, image []byte, mediaType string) (processing.Job, error)
 	Reprocess(ctx context.Context, userID string, origin processing.Origin, image []byte, mediaType string, r processing.Reprocess) (processing.Job, error)
 	Find(ctx context.Context, userID, id string) (processing.Job, error)
-	Recent(ctx context.Context, userID string) ([]processing.Job, error)
+	Recent(ctx context.Context, userID string, origins []processing.Origin) ([]processing.Job, error)
 	ResolveReceiptField(ctx context.Context, userID, id, field, value string) (processing.Job, error)
 }
 
@@ -41,6 +41,14 @@ func jobOrigin(onboardingStep string) processing.Origin {
 		return processing.OriginGeneral
 	}
 	return processing.OriginOnboarding
+}
+
+// 목록에 넣는 출처. 온보딩 첫 사진은 온보딩을 마친 뒤에만 보인다.
+func listedOrigins(onboardingStep string) []processing.Origin {
+	if onboardingStep == "complete" {
+		return []processing.Origin{processing.OriginOnboarding, processing.OriginGeneral}
+	}
+	return []processing.Origin{processing.OriginGeneral}
 }
 
 // @Summary     사진 처리 시작
@@ -207,7 +215,7 @@ func (h *handlers) processingJob(c *gin.Context) {
 }
 
 // @Summary     최근 사진 처리 작업
-// @Description 온보딩을 마친 뒤 올린 내 처리 작업을 최근에 만든 것부터 20개까지. 온보딩 첫 사진은 넣지 않는다.
+// @Description 내 처리 작업을 최근에 만든 것부터 20개까지. 온보딩 첫 사진은 온보딩을 마친 뒤에만 넣는다.
 // @Description 상태는 작업 조회와 같은 규칙이다. 끝나지 못해 실패로 보는 작업에는 finishedAt이 없다.
 // @Tags        processing
 // @Produce     json
@@ -222,7 +230,7 @@ func (h *handlers) processingJobs(c *gin.Context) {
 	if !ok {
 		return
 	}
-	jobs, err := h.processing.Recent(c.Request.Context(), session.User.ID)
+	jobs, err := h.processing.Recent(c.Request.Context(), session.User.ID, listedOrigins(session.User.OnboardingStep))
 	if err != nil {
 		h.internalError(c, "processing list failed", err)
 		return

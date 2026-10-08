@@ -30,7 +30,7 @@ type UserResponse struct {
 
 type SessionResponse struct {
 	User           UserResponse `json:"user"`
-	OnboardingStep string       `json:"onboardingStep" enums:"intro,purpose,first-image,complete" example:"intro"`
+	OnboardingStep string       `json:"onboardingStep" enums:"intro,first-image,complete" example:"intro"`
 	ExpiresAt      time.Time    `json:"expiresAt" format:"date-time" example:"2026-10-01T00:00:00Z"`
 }
 
@@ -266,19 +266,17 @@ func toReceiptFieldResponse(f processing.ReceiptField) ReceiptFieldResponse {
 	return ReceiptFieldResponse{Value: f.Value, Candidates: f.Candidates, Resolved: f.Resolved}
 }
 
-// 온보딩 진행. purposes는 first-image부터 있다 — null은 아직 답하지 않음, 빈 목록은 건너뜀이다.
+// 온보딩 진행.
 type OnboardingRequest struct {
-	Step     string   `json:"step" binding:"required" enums:"intro,purpose,first-image" example:"first-image"`
-	Purposes []string `json:"purposes" enums:"food,shopping,travel,events,receipt,foreign-language,work,unsure" example:"food,receipt"`
+	Step string `json:"step" binding:"required" enums:"intro,first-image" example:"first-image"`
 }
 
 type OnboardingResponse struct {
-	Step     string   `json:"step" enums:"intro,purpose,first-image,complete" example:"first-image"`
-	Purposes []string `json:"purposes" enums:"food,shopping,travel,events,receipt,foreign-language,work,unsure" example:"food,receipt"`
+	Step string `json:"step" enums:"intro,first-image,complete" example:"first-image"`
 }
 
 func toOnboardingResponse(p onboarding.Progress) OnboardingResponse {
-	return OnboardingResponse{Step: p.Step, Purposes: p.Purposes}
+	return OnboardingResponse{Step: p.Step}
 }
 
 // 이미지 유형 하나의 처리 방식. 고를 수 있는 값은 유형마다 다르다(경로의 imageType).

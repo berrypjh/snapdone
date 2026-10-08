@@ -220,14 +220,18 @@ func (s *Store) ResolveReceiptField(ctx context.Context, userID, id, field, valu
 	return resolved, nil
 }
 
-// 사용자의 general 작업을 최근에 만든 것부터 limit개까지. 온보딩 첫 사진은 넣지 않는다.
+// 사용자의 작업 중 출처가 origins인 것을 최근에 만든 것부터 limit개까지.
 // 같은 시각에 만든 작업은 id로 순서를 고정한다.
-func (s *Store) RecentGeneral(ctx context.Context, userID string, limit int, staleAfter time.Duration) ([]Job, error) {
+func (s *Store) Recent(ctx context.Context, userID string, origins []Origin, limit int, staleAfter time.Duration) ([]Job, error) {
+	names := make([]string, len(origins))
+	for i, origin := range origins {
+		names[i] = string(origin)
+	}
 	rows, err := s.pool.Query(ctx,
 		"SELECT "+jobColumns+` FROM processing_jobs
-		 WHERE user_id = $2::uuid AND origin = 'general'
+		 WHERE user_id = $2::uuid AND origin = ANY($4::text[])
 		 ORDER BY created_at DESC, id DESC LIMIT $3`,
-		staleAfter.Seconds(), userID, limit)
+		staleAfter.Seconds(), userID, limit, names)
 	if err != nil {
 		return nil, err
 	}

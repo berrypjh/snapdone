@@ -200,9 +200,10 @@ func at(t *testing.T, pool *pgxpool.Pool, id string, created time.Time) {
 	}
 }
 
+// recent는 general 작업만 읽는다. 출처를 고르는 시험은 store.Recent를 직접 부른다.
 func recent(t *testing.T, store *processing.Store, userID string, limit int, staleAfter time.Duration) []processing.Job {
 	t.Helper()
-	jobs, err := store.RecentGeneral(context.Background(), userID, limit, staleAfter)
+	jobs, err := store.Recent(context.Background(), userID, []processing.Origin{processing.OriginGeneral}, limit, staleAfter)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -217,7 +218,7 @@ func ids(jobs []processing.Job) []string {
 	return out
 }
 
-func TestRecentGeneralEmpty(t *testing.T) {
+func TestRecentEmpty(t *testing.T) {
 	store, userID := setup(t)
 	create(t, store, userID)
 
@@ -226,8 +227,8 @@ func TestRecentGeneralEmpty(t *testing.T) {
 	}
 }
 
-// 이 사용자의 general 작업만, 최근에 만든 것부터 상한까지. 같은 시각이면 id가 큰 것부터다.
-func TestRecentGeneralFiltersAndOrders(t *testing.T) {
+// 이 사용자의 고른 출처 작업만, 최근에 만든 것부터 상한까지. 같은 시각이면 id가 큰 것부터다.
+func TestRecentFiltersAndOrders(t *testing.T) {
 	store, pool, userID := setupPool(t)
 	other := newUser(t, pool, "g-2")
 	base := time.Date(2026, 10, 6, 9, 0, 0, 0, time.UTC)
@@ -258,10 +259,18 @@ func TestRecentGeneralFiltersAndOrders(t *testing.T) {
 	if got := ids(recent(t, store, other, 20, staleAfter)); len(got) != 1 {
 		t.Errorf("other user's jobs = %v, want only their own", got)
 	}
+	both := []processing.Origin{processing.OriginOnboarding, processing.OriginGeneral}
+	all, err := store.Recent(context.Background(), userID, both, 20, staleAfter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := ids(all); !slices.Equal(got, append([]string{onboarding.ID}, want...)) {
+		t.Errorf("jobs with onboarding = %v, want the onboarding job first", got)
+	}
 }
 
 // 목록은 단건 조회와 같은 상태 · 결과를 보인다. 끝나지 못한 작업은 둘 다 실패이고 끝난 시각이 없다.
-func TestRecentGeneralMatchesFind(t *testing.T) {
+func TestRecentMatchesFind(t *testing.T) {
 	store, userID := setup(t)
 	ctx := context.Background()
 	completed := createFrom(t, store, userID, processing.OriginGeneral)

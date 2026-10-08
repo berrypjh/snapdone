@@ -457,7 +457,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "내 온보딩 단계와 사용 목적. mobile과 web이 같은 진행에서 이어 간다.",
+                "description": "내 온보딩 단계. mobile과 web이 같은 진행에서 이어 간다.",
                 "produces": [
                     "application/json"
                 ],
@@ -498,7 +498,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "단계(intro · purpose · first-image)와 사용 목적을 저장한다. 목적은 first-image에서만 있고 빈 목록은 건너뜀이다.\nunsure는 혼자만 고를 수 있다. 같은 단계를 다시 저장하거나 한 단계 앞으로만 갈 수 있고, 온보딩을 마친 뒤에는 바꿀 수 없다.",
+                "description": "단계(intro · first-image)를 저장한다. 같은 단계를 다시 저장하거나 한 단계 앞으로만 갈 수 있고, 온보딩을 마친 뒤에는 바꿀 수 없다.",
                 "consumes": [
                     "application/json"
                 ],
@@ -567,7 +567,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "첫 사진 단계(first-image)에서 온보딩을 끝낸다. 본문은 없고 사용 목적은 바꾸지 않는다.\n이미 마쳤으면 그대로 성공한다 — 두 번 누르거나 다른 기기 · 탭이 먼저 마쳐도 오류가 아니다.",
+                "description": "첫 사진 단계(first-image)에서 온보딩을 끝낸다. 본문은 없다.\n이미 마쳤으면 그대로 성공한다 — 두 번 누르거나 다른 기기 · 탭이 먼저 마쳐도 오류가 아니다.",
                 "produces": [
                     "application/json"
                 ],
@@ -616,7 +616,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "온보딩을 마친 뒤 올린 내 처리 작업을 최근에 만든 것부터 20개까지. 온보딩 첫 사진은 넣지 않는다.\n상태는 작업 조회와 같은 규칙이다. 끝나지 못해 실패로 보는 작업에는 finishedAt이 없다.",
+                "description": "내 처리 작업을 최근에 만든 것부터 20개까지. 온보딩 첫 사진은 온보딩을 마친 뒤에만 넣는다.\n상태는 작업 조회와 같은 규칙이다. 끝나지 못해 실패로 보는 작업에는 finishedAt이 없다.",
                 "produces": [
                     "application/json"
                 ],
@@ -1229,31 +1229,10 @@ const docTemplate = `{
                 "step"
             ],
             "properties": {
-                "purposes": {
-                    "type": "array",
-                    "items": {
-                        "type": "string",
-                        "enum": [
-                            "food",
-                            "shopping",
-                            "travel",
-                            "events",
-                            "receipt",
-                            "foreign-language",
-                            "work",
-                            "unsure"
-                        ]
-                    },
-                    "example": [
-                        "food",
-                        "receipt"
-                    ]
-                },
                 "step": {
                     "type": "string",
                     "enum": [
                         "intro",
-                        "purpose",
                         "first-image"
                     ],
                     "example": "first-image"
@@ -1263,31 +1242,10 @@ const docTemplate = `{
         "httpserver.OnboardingResponse": {
             "type": "object",
             "properties": {
-                "purposes": {
-                    "type": "array",
-                    "items": {
-                        "type": "string",
-                        "enum": [
-                            "food",
-                            "shopping",
-                            "travel",
-                            "events",
-                            "receipt",
-                            "foreign-language",
-                            "work",
-                            "unsure"
-                        ]
-                    },
-                    "example": [
-                        "food",
-                        "receipt"
-                    ]
-                },
                 "step": {
                     "type": "string",
                     "enum": [
                         "intro",
-                        "purpose",
                         "first-image",
                         "complete"
                     ],
@@ -1638,7 +1596,6 @@ const docTemplate = `{
                     "type": "string",
                     "enum": [
                         "intro",
-                        "purpose",
                         "first-image",
                         "complete"
                     ],

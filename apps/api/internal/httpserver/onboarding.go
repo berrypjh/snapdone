@@ -18,7 +18,7 @@ type OnboardingStore interface {
 }
 
 // @Summary     온보딩 진행
-// @Description 내 온보딩 단계와 사용 목적. mobile과 web이 같은 진행에서 이어 간다.
+// @Description 내 온보딩 단계. mobile과 web이 같은 진행에서 이어 간다.
 // @Tags        onboarding
 // @Produce     json
 // @Security    BearerAuth
@@ -41,8 +41,7 @@ func (h *handlers) onboarding(c *gin.Context) {
 }
 
 // @Summary     온보딩 진행 저장
-// @Description 단계(intro · purpose · first-image)와 사용 목적을 저장한다. 목적은 first-image에서만 있고 빈 목록은 건너뜀이다.
-// @Description unsure는 혼자만 고를 수 있다. 같은 단계를 다시 저장하거나 한 단계 앞으로만 갈 수 있고, 온보딩을 마친 뒤에는 바꿀 수 없다.
+// @Description 단계(intro · first-image)를 저장한다. 같은 단계를 다시 저장하거나 한 단계 앞으로만 갈 수 있고, 온보딩을 마친 뒤에는 바꿀 수 없다.
 // @Tags        onboarding
 // @Accept      json
 // @Produce     json
@@ -65,7 +64,7 @@ func (h *handlers) saveOnboarding(c *gin.Context) {
 		writeError(c, http.StatusBadRequest, errInvalidOnboarding)
 		return
 	}
-	progress := onboarding.Progress{Step: body.Step, Purposes: body.Purposes}
+	progress := onboarding.Progress{Step: body.Step}
 	err := h.onboardingStore.Save(c.Request.Context(), session.User.ID, progress)
 	switch {
 	case errors.Is(err, onboarding.ErrInvalid):
@@ -82,7 +81,7 @@ func (h *handlers) saveOnboarding(c *gin.Context) {
 }
 
 // @Summary     온보딩 완료
-// @Description 첫 사진 단계(first-image)에서 온보딩을 끝낸다. 본문은 없고 사용 목적은 바꾸지 않는다.
+// @Description 첫 사진 단계(first-image)에서 온보딩을 끝낸다. 본문은 없다.
 // @Description 이미 마쳤으면 그대로 성공한다 — 두 번 누르거나 다른 기기 · 탭이 먼저 마쳐도 오류가 아니다.
 // @Tags        onboarding
 // @Produce     json

@@ -2,9 +2,7 @@ package httpserver
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
-	"slices"
 	"testing"
 
 	"snapdone/api/internal/onboarding"
@@ -54,48 +52,23 @@ func onboardingRouter(store OnboardingStore) http.Handler {
 	return NewRouter(Deps{Sessions: &fakeSessions{}, Onboarding: store})
 }
 
-func decodeOnboarding(t *testing.T, r *http.Response) map[string]any {
-	t.Helper()
-	var body map[string]any
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		t.Fatalf("decoding body: %v", err)
-	}
-	return body
-}
-
 func TestOnboardingProgress(t *testing.T) {
-	store := &fakeOnboarding{progress: onboarding.Progress{Step: "purpose"}}
+	store := &fakeOnboarding{progress: onboarding.Progress{Step: "intro"}}
 	handler := onboardingRouter(store)
 
 	r := send(handler, http.MethodGet, "/v1/onboarding", "", bearer...)
-	body := decodeOnboarding(t, r.Result())
-	if r.Code != http.StatusOK || body["step"] != "purpose" || body["purposes"] != nil {
-		t.Fatalf("status %d, body %v", r.Code, body)
+	if r.Code != http.StatusOK || r.Body.String() != `{"step":"intro"}` {
+		t.Fatalf("status %d, body %s", r.Code, r.Body)
 	}
 	assertNoStore(t, r)
 
-	r = send(handler, http.MethodPut, "/v1/onboarding", `{"step":"first-image","purposes":["food","receipt"]}`,
+	r = send(handler, http.MethodPut, "/v1/onboarding", `{"step":"first-image"}`,
 		append([]string{"Content-Type", "application/json"}, bearer...)...)
-	body = decodeOnboarding(t, r.Result())
-	if r.Code != http.StatusOK || body["step"] != "first-image" {
-		t.Fatalf("status %d, body %v", r.Code, body)
-	}
-	if !slices.Equal(store.progress.Purposes, []string{"food", "receipt"}) {
-		t.Errorf("saved %+v", store.progress)
-	}
-}
-
-// 건너뛴 목적(빈 목록)은 null이 아니라 빈 배열로 저장 · 응답된다.
-func TestOnboardingSkippedPurposes(t *testing.T) {
-	store := &fakeOnboarding{progress: onboarding.Progress{Step: "purpose"}}
-	r := send(onboardingRouter(store), http.MethodPut, "/v1/onboarding", `{"step":"first-image","purposes":[]}`,
-		append([]string{"Content-Type", "application/json"}, bearer...)...)
-
-	if r.Code != http.StatusOK || r.Body.String() != `{"step":"first-image","purposes":[]}` {
+	if r.Code != http.StatusOK || r.Body.String() != `{"step":"first-image"}` {
 		t.Fatalf("status %d, body %s", r.Code, r.Body)
 	}
-	if store.progress.Purposes == nil {
-		t.Error("skipped purposes were saved as unanswered")
+	if store.progress.Step != "first-image" {
+		t.Errorf("saved %+v", store.progress)
 	}
 }
 
@@ -111,14 +84,13 @@ func TestOnboardingRejects(t *testing.T) {
 		code    string
 	}{
 		{"no credential", &fakeOnboarding{}, http.MethodGet, "", nil, http.StatusUnauthorized, "session_expired"},
-		{"no credential on save", &fakeOnboarding{}, http.MethodPut, `{"step":"purpose"}`, json, http.StatusUnauthorized, "session_expired"},
+		{"no credential on save", &fakeOnboarding{}, http.MethodPut, `{"step":"first-image"}`, json, http.StatusUnauthorized, "session_expired"},
 		{"not json", &fakeOnboarding{}, http.MethodPut, "step", append(json, bearer...), http.StatusBadRequest, "invalid_onboarding"},
 		{"no step", &fakeOnboarding{}, http.MethodPut, `{}`, append(json, bearer...), http.StatusBadRequest, "invalid_onboarding"},
 		{"complete from client", &fakeOnboarding{}, http.MethodPut, `{"step":"complete"}`, append(json, bearer...), http.StatusBadRequest, "invalid_onboarding"},
-		{"unknown purpose", &fakeOnboarding{}, http.MethodPut, `{"step":"first-image","purposes":["cooking"]}`, append(json, bearer...), http.StatusBadRequest, "invalid_onboarding"},
-		{"already complete", &fakeOnboarding{complete: true}, http.MethodPut, `{"step":"purpose"}`, append(json, bearer...), http.StatusConflict, "onboarding_complete"},
-		{"skipping purpose", &fakeOnboarding{progress: onboarding.Progress{Step: "intro"}}, http.MethodPut, `{"step":"first-image","purposes":[]}`, append(json, bearer...), http.StatusConflict, "onboarding_out_of_order"},
-		{"going back", &fakeOnboarding{progress: onboarding.Progress{Step: "first-image", Purposes: []string{}}}, http.MethodPut, `{"step":"intro"}`, append(json, bearer...), http.StatusConflict, "onboarding_out_of_order"},
+		{"removed purpose step", &fakeOnboarding{}, http.MethodPut, `{"step":"purpose"}`, append(json, bearer...), http.StatusBadRequest, "invalid_onboarding"},
+		{"already complete", &fakeOnboarding{complete: true}, http.MethodPut, `{"step":"first-image"}`, append(json, bearer...), http.StatusConflict, "onboarding_complete"},
+		{"going back", &fakeOnboarding{progress: onboarding.Progress{Step: "first-image"}}, http.MethodPut, `{"step":"intro"}`, append(json, bearer...), http.StatusConflict, "onboarding_out_of_order"},
 	}
 	for _, tc := range cases {
 		r := send(onboardingRouter(tc.store), tc.method, "/v1/onboarding", tc.body, tc.headers...)
@@ -130,18 +102,18 @@ func TestOnboardingRejects(t *testing.T) {
 
 // 다시 누르거나 다른 곳에서 먼저 마쳐도 같은 응답이다. 마친 뒤의 진행 저장은 그대로 409다.
 func TestOnboardingComplete(t *testing.T) {
-	store := &fakeOnboarding{progress: onboarding.Progress{Step: "first-image", Purposes: []string{"food"}}}
+	store := &fakeOnboarding{progress: onboarding.Progress{Step: "first-image"}}
 	handler := onboardingRouter(store)
 
 	for range 2 {
 		r := send(handler, http.MethodPost, "/v1/onboarding/complete", "", bearer...)
-		if r.Code != http.StatusOK || r.Body.String() != `{"step":"complete","purposes":["food"]}` {
+		if r.Code != http.StatusOK || r.Body.String() != `{"step":"complete"}` {
 			t.Fatalf("status %d, body %s", r.Code, r.Body)
 		}
 		assertNoStore(t, r)
 	}
 
-	r := send(handler, http.MethodPut, "/v1/onboarding", `{"step":"first-image","purposes":[]}`,
+	r := send(handler, http.MethodPut, "/v1/onboarding", `{"step":"first-image"}`,
 		append([]string{"Content-Type", "application/json"}, bearer...)...)
 	if r.Code != http.StatusConflict || errorCode(t, r) != "onboarding_complete" {
 		t.Errorf("save after complete: status %d", r.Code)
@@ -158,7 +130,6 @@ func TestOnboardingCompleteRejects(t *testing.T) {
 	}{
 		{"no credential", "first-image", nil, http.StatusUnauthorized, "session_expired"},
 		{"from intro", "intro", bearer, http.StatusConflict, "onboarding_out_of_order"},
-		{"from purpose", "purpose", bearer, http.StatusConflict, "onboarding_out_of_order"},
 	}
 	for _, tc := range cases {
 		store := &fakeOnboarding{progress: onboarding.Progress{Step: tc.step}}

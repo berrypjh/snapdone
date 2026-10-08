@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"reflect"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -17,6 +18,7 @@ import (
 type fakeJobs struct {
 	finished chan Job
 	created  []NewJob
+	origins  []Origin
 	limit    int
 	stale    time.Duration
 	stored   map[string]Job
@@ -27,8 +29,8 @@ func (f *fakeJobs) Create(_ context.Context, _ string, job NewJob) (Job, error) 
 	return Job{ID: "job-1", Status: StatusRunning}, nil
 }
 
-func (f *fakeJobs) RecentGeneral(_ context.Context, _ string, limit int, staleAfter time.Duration) ([]Job, error) {
-	f.limit, f.stale = limit, staleAfter
+func (f *fakeJobs) Recent(_ context.Context, _ string, origins []Origin, limit int, staleAfter time.Duration) ([]Job, error) {
+	f.origins, f.limit, f.stale = origins, limit, staleAfter
 	return []Job{}, nil
 }
 
@@ -371,13 +373,14 @@ func TestStartPassesImageDigest(t *testing.T) {
 	}
 }
 
-// 목록은 단건 조회와 같은 staleAfter와 정한 상한으로 읽는다.
+// 목록은 단건 조회와 같은 staleAfter와 정한 상한으로, 받은 출처만 읽는다.
 func TestRecentUsesSameStaleRule(t *testing.T) {
 	jobs := &fakeJobs{}
-	if _, err := newTestProcessor(jobs, fakeModel{}, defaults()).Recent(context.Background(), "user-1"); err != nil {
+	origins := []Origin{OriginGeneral}
+	if _, err := newTestProcessor(jobs, fakeModel{}, defaults()).Recent(context.Background(), "user-1", origins); err != nil {
 		t.Fatal(err)
 	}
-	if jobs.limit != recentLimit || jobs.stale != staleAfter {
-		t.Errorf("limit %d, staleAfter %v", jobs.limit, jobs.stale)
+	if jobs.limit != recentLimit || jobs.stale != staleAfter || !slices.Equal(jobs.origins, origins) {
+		t.Errorf("limit %d, staleAfter %v, origins %v", jobs.limit, jobs.stale, jobs.origins)
 	}
 }

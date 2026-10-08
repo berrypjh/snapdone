@@ -339,7 +339,7 @@ func TestProcessorStoresTheActionResult(t *testing.T) {
 		got.Outcome == nil || got.Outcome.AppliedAction != "extract_text" || *got.Outcome.Output.Original != "Open daily extract_text" {
 		t.Fatalf("job = %+v, outcome %+v, want the stored extract_text result", got, got.Outcome)
 	}
-	listed, err := processor.Recent(context.Background(), userID)
+	listed, err := processor.Recent(context.Background(), userID, []processing.Origin{processing.OriginGeneral})
 	if err != nil || len(listed) != 1 || listed[0].Outcome == nil || listed[0].Selection == nil {
 		t.Errorf("recent = %+v, %v, want the same job", listed, err)
 	}

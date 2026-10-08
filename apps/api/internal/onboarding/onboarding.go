@@ -1,4 +1,4 @@
-// Package onboarding은 사용자의 온보딩 진행(단계 · 사용 목적)을 저장한다.
+// Package onboarding은 사용자의 온보딩 진행 단계를 저장한다.
 // mobile과 web이 같은 진행을 읽고 써서 어느 쪽에서든 이어 간다.
 package onboarding
 
@@ -21,12 +21,10 @@ var (
 )
 
 // 저장할 단계마다 지금 있어도 되는 단계. 같은 단계를 다시 저장하거나 한 단계 앞으로만 간다.
-// 목적을 다시 고르는 것은 first-image를 다시 저장하는 것이라 되돌아갈 일이 없다.
 // complete는 Save가 아니라 Complete만 쓴다.
 var from = map[string][]string{
 	"intro":       {"intro"},
-	"purpose":     {"intro", "purpose"},
-	"first-image": {"purpose", "first-image"},
+	"first-image": {"intro", "first-image"},
 	"complete":    {"first-image", "complete"},
 }
 
@@ -35,35 +33,14 @@ func CanMove(current, next string) bool {
 	return slices.Contains(from[next], current)
 }
 
-// 사용 목적 선택지. unsure("아직 모르겠어요")는 다른 목적과 함께 고를 수 없다.
-var purposes = []string{"food", "shopping", "travel", "events", "receipt", "foreign-language", "work", "unsure"}
-
-// 온보딩 진행. Purposes는 first-image부터 있다 — nil은 아직 답하지 않음, 빈 목록은 건너뜀이다.
+// 온보딩 진행. 단계는 intro → first-image → complete다.
 type Progress struct {
-	Step     string
-	Purposes []string
+	Step string
 }
 
 // 클라이언트가 저장할 수 있는 진행인가. complete는 Complete가 만들며 여기서 받지 않는다.
 func Validate(p Progress) error {
-	switch p.Step {
-	case "intro", "purpose":
-		if p.Purposes != nil {
-			return ErrInvalid
-		}
-	case "first-image":
-		if p.Purposes == nil {
-			return ErrInvalid
-		}
-		for i, purpose := range p.Purposes {
-			if !slices.Contains(purposes, purpose) || slices.Contains(p.Purposes[:i], purpose) {
-				return ErrInvalid
-			}
-		}
-		if slices.Contains(p.Purposes, "unsure") && len(p.Purposes) > 1 {
-			return ErrInvalid
-		}
-	default:
+	if p.Step != "intro" && p.Step != "first-image" {
 		return ErrInvalid
 	}
 	return nil
@@ -81,8 +58,8 @@ func NewStore(pool *pgxpool.Pool) *Store {
 func (s *Store) Find(ctx context.Context, userID string) (Progress, error) {
 	var p Progress
 	err := s.pool.QueryRow(ctx,
-		"SELECT onboarding_step, onboarding_purposes FROM profiles WHERE user_id = $1::uuid", userID).
-		Scan(&p.Step, &p.Purposes)
+		"SELECT onboarding_step FROM profiles WHERE user_id = $1::uuid", userID).
+		Scan(&p.Step)
 	return p, err
 }
 
@@ -93,8 +70,8 @@ func (s *Store) Save(ctx context.Context, userID string, p Progress) error {
 		return err
 	}
 	tag, err := s.pool.Exec(ctx,
-		`UPDATE profiles SET onboarding_step = $2, onboarding_purposes = $3, updated_at = now()
-		 WHERE user_id = $1::uuid AND onboarding_step = ANY($4)`, userID, p.Step, p.Purposes, from[p.Step])
+		`UPDATE profiles SET onboarding_step = $2, updated_at = now()
+		 WHERE user_id = $1::uuid AND onboarding_step = ANY($3)`, userID, p.Step, from[p.Step])
 	if err != nil {
 		return err
 	}
@@ -112,7 +89,7 @@ func (s *Store) Save(ctx context.Context, userID string, p Progress) error {
 }
 
 // 온보딩을 끝내고 끝난 진행을 돌려준다. first-image에서만 끝낼 수 있고, 이미 마쳤으면 그대로 성공한다
-// (두 번 누름 · 다른 기기가 먼저 마침). 목적은 바꾸지 않는다. 그 밖의 단계면 ErrOutOfOrder다.
+// (두 번 누름 · 다른 기기가 먼저 마침). 그 밖의 단계면 ErrOutOfOrder다.
 // 단계 검사와 쓰기는 한 UPDATE 안에서 일어나 동시 요청도 모두 complete로 끝난다.
 func (s *Store) Complete(ctx context.Context, userID string) (Progress, error) {
 	var p Progress
@@ -120,8 +97,8 @@ func (s *Store) Complete(ctx context.Context, userID string) (Progress, error) {
 		`UPDATE profiles SET onboarding_step = 'complete',
 		        updated_at = CASE WHEN onboarding_step = 'complete' THEN updated_at ELSE now() END
 		 WHERE user_id = $1::uuid AND onboarding_step = ANY($2)
-		 RETURNING onboarding_step, onboarding_purposes`, userID, from["complete"]).
-		Scan(&p.Step, &p.Purposes)
+		 RETURNING onboarding_step`, userID, from["complete"]).
+		Scan(&p.Step)
 	if err == nil {
 		return p, nil
 	}

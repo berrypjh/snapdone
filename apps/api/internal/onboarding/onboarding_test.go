@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"sync"
 	"testing"
 
@@ -16,39 +15,22 @@ import (
 )
 
 func TestValidate(t *testing.T) {
-	valid := []onboarding.Progress{
-		{Step: "intro"},
-		{Step: "purpose"},
-		{Step: "first-image", Purposes: []string{}},
-		{Step: "first-image", Purposes: []string{"food", "receipt"}},
-		{Step: "first-image", Purposes: []string{"unsure"}},
-	}
-	for _, p := range valid {
-		if err := onboarding.Validate(p); err != nil {
-			t.Errorf("Validate(%+v) = %v", p, err)
+	for _, step := range []string{"intro", "first-image"} {
+		if err := onboarding.Validate(onboarding.Progress{Step: step}); err != nil {
+			t.Errorf("Validate(%s) = %v", step, err)
 		}
 	}
-
-	invalid := []onboarding.Progress{
-		{Step: "complete"},
-		{Step: "result"},
-		{Step: "purpose", Purposes: []string{}},
-		{Step: "first-image"},
-		{Step: "first-image", Purposes: []string{"cooking"}},
-		{Step: "first-image", Purposes: []string{"food", "food"}},
-		{Step: "first-image", Purposes: []string{"food", "unsure"}},
-	}
-	for _, p := range invalid {
-		if err := onboarding.Validate(p); !errors.Is(err, onboarding.ErrInvalid) {
-			t.Errorf("Validate(%+v) = %v, want ErrInvalid", p, err)
+	// purpose는 없앤 단계다. complete는 Complete만 만든다.
+	for _, step := range []string{"complete", "purpose", "result", ""} {
+		if err := onboarding.Validate(onboarding.Progress{Step: step}); !errors.Is(err, onboarding.ErrInvalid) {
+			t.Errorf("Validate(%q) = %v, want ErrInvalid", step, err)
 		}
 	}
 }
 
 func TestCanMove(t *testing.T) {
 	allowed := [][2]string{
-		{"intro", "intro"}, {"intro", "purpose"},
-		{"purpose", "purpose"}, {"purpose", "first-image"},
+		{"intro", "intro"}, {"intro", "first-image"},
 		{"first-image", "first-image"},
 		{"first-image", "complete"}, {"complete", "complete"},
 	}
@@ -59,10 +41,9 @@ func TestCanMove(t *testing.T) {
 	}
 
 	refused := [][2]string{
-		{"intro", "first-image"},
-		{"purpose", "intro"}, {"first-image", "purpose"}, {"first-image", "intro"},
+		{"first-image", "intro"},
 		{"complete", "first-image"}, {"complete", "intro"},
-		{"intro", "complete"}, {"purpose", "complete"},
+		{"intro", "complete"},
 	}
 	for _, move := range refused {
 		if onboarding.CanMove(move[0], move[1]) {
@@ -89,25 +70,16 @@ func TestStoreSavesProgress(t *testing.T) {
 	ctx := context.Background()
 
 	got, err := store.Find(ctx, userID)
-	if err != nil || got.Step != "intro" || got.Purposes != nil {
+	if err != nil || got.Step != "intro" {
 		t.Fatalf("new user = %+v, %v", got, err)
 	}
 
-	for _, want := range []onboarding.Progress{
-		{Step: "purpose"},
-		{Step: "first-image", Purposes: []string{"food", "receipt"}},
-		{Step: "first-image", Purposes: []string{}},
-	} {
-		if err := store.Save(ctx, userID, want); err != nil {
+	for _, step := range []string{"intro", "first-image", "first-image"} {
+		if err := store.Save(ctx, userID, onboarding.Progress{Step: step}); err != nil {
 			t.Fatal(err)
 		}
-		got, err := store.Find(ctx, userID)
-		if err != nil {
-			t.Fatal(err)
-		}
-		// 건너뜀(빈 목록)과 아직 답하지 않음(nil)이 저장 뒤에도 구분된다.
-		if got.Step != want.Step || (got.Purposes == nil) != (want.Purposes == nil) || !slices.Equal(got.Purposes, want.Purposes) {
-			t.Errorf("saved %+v, found %+v", want, got)
+		if got, err := store.Find(ctx, userID); err != nil || got.Step != step {
+			t.Errorf("saved %s, found %+v, %v", step, got, err)
 		}
 	}
 }
@@ -116,14 +88,16 @@ func TestStoreRejects(t *testing.T) {
 	store, pool, userID := setup(t)
 	ctx := context.Background()
 
-	if err := store.Save(ctx, userID, onboarding.Progress{Step: "first-image"}); !errors.Is(err, onboarding.ErrInvalid) {
-		t.Errorf("invalid progress = %v", err)
+	if err := store.Save(ctx, userID, onboarding.Progress{Step: "purpose"}); !errors.Is(err, onboarding.ErrInvalid) {
+		t.Errorf("removed step = %v", err)
 	}
-	skip := onboarding.Progress{Step: "first-image", Purposes: []string{}}
-	if err := store.Save(ctx, userID, skip); !errors.Is(err, onboarding.ErrOutOfOrder) {
-		t.Errorf("intro -> first-image = %v", err)
+	if err := store.Save(ctx, userID, onboarding.Progress{Step: "first-image"}); err != nil {
+		t.Fatal(err)
 	}
-	if got, _ := store.Find(ctx, userID); got.Step != "intro" {
+	if err := store.Save(ctx, userID, onboarding.Progress{Step: "intro"}); !errors.Is(err, onboarding.ErrOutOfOrder) {
+		t.Errorf("first-image -> intro = %v", err)
+	}
+	if got, _ := store.Find(ctx, userID); got.Step != "first-image" {
 		t.Errorf("refused save changed the step to %q", got.Step)
 	}
 
@@ -131,51 +105,37 @@ func TestStoreRejects(t *testing.T) {
 		"UPDATE profiles SET onboarding_step = $2 WHERE user_id = $1::uuid", userID, "complete"); err != nil {
 		t.Fatal(err)
 	}
-	if err := store.Save(ctx, userID, onboarding.Progress{Step: "purpose"}); !errors.Is(err, onboarding.ErrComplete) {
+	if err := store.Save(ctx, userID, onboarding.Progress{Step: "first-image"}); !errors.Is(err, onboarding.ErrComplete) {
 		t.Errorf("after complete = %v", err)
 	}
 }
 
-// toFirstImage는 사용자를 목적을 고른 first-image 단계로 옮긴다.
-func toFirstImage(t *testing.T, store *onboarding.Store, userID string, purposes []string) {
+// toFirstImage는 사용자를 first-image 단계로 옮긴다.
+func toFirstImage(t *testing.T, store *onboarding.Store, userID string) {
 	t.Helper()
-	ctx := context.Background()
-	for _, p := range []onboarding.Progress{{Step: "purpose"}, {Step: "first-image", Purposes: purposes}} {
-		if err := store.Save(ctx, userID, p); err != nil {
-			t.Fatal(err)
-		}
+	if err := store.Save(context.Background(), userID, onboarding.Progress{Step: "first-image"}); err != nil {
+		t.Fatal(err)
 	}
 }
 
 func TestStoreCompletes(t *testing.T) {
 	store, _, userID := setup(t)
 	ctx := context.Background()
-	toFirstImage(t, store, userID, []string{"food", "receipt"})
+	toFirstImage(t, store, userID)
 
 	// 두 번째는 두 번 누름 · 다른 기기가 먼저 마친 경우다. 둘 다 같은 진행으로 성공한다.
 	for range 2 {
 		got, err := store.Complete(ctx, userID)
-		if err != nil || got.Step != "complete" || !slices.Equal(got.Purposes, []string{"food", "receipt"}) {
+		if err != nil || got.Step != "complete" {
 			t.Fatalf("Complete = %+v, %v", got, err)
 		}
 	}
 	got, err := store.Find(ctx, userID)
-	if err != nil || got.Step != "complete" || !slices.Equal(got.Purposes, []string{"food", "receipt"}) {
+	if err != nil || got.Step != "complete" {
 		t.Fatalf("after complete = %+v, %v", got, err)
 	}
-	if err := store.Save(ctx, userID, onboarding.Progress{Step: "first-image", Purposes: []string{}}); !errors.Is(err, onboarding.ErrComplete) {
+	if err := store.Save(ctx, userID, onboarding.Progress{Step: "first-image"}); !errors.Is(err, onboarding.ErrComplete) {
 		t.Errorf("save after Complete = %v", err)
-	}
-}
-
-// 건너뛴 목적(빈 목록)도 완료 뒤에 null이 되지 않는다.
-func TestStoreCompleteKeepsSkippedPurposes(t *testing.T) {
-	store, _, userID := setup(t)
-	toFirstImage(t, store, userID, []string{})
-
-	got, err := store.Complete(context.Background(), userID)
-	if err != nil || got.Step != "complete" || got.Purposes == nil || len(got.Purposes) != 0 {
-		t.Fatalf("Complete = %+v, %v", got, err)
 	}
 }
 
@@ -183,25 +143,18 @@ func TestStoreCompleteRejectsEarlySteps(t *testing.T) {
 	store, _, userID := setup(t)
 	ctx := context.Background()
 
-	for _, step := range []string{"intro", "purpose"} {
-		if step == "purpose" {
-			if err := store.Save(ctx, userID, onboarding.Progress{Step: "purpose"}); err != nil {
-				t.Fatal(err)
-			}
-		}
-		if _, err := store.Complete(ctx, userID); !errors.Is(err, onboarding.ErrOutOfOrder) {
-			t.Errorf("Complete from %s = %v, want ErrOutOfOrder", step, err)
-		}
-		if got, _ := store.Find(ctx, userID); got.Step != step {
-			t.Errorf("refused Complete changed the step from %s to %q", step, got.Step)
-		}
+	if _, err := store.Complete(ctx, userID); !errors.Is(err, onboarding.ErrOutOfOrder) {
+		t.Errorf("Complete from intro = %v, want ErrOutOfOrder", err)
+	}
+	if got, _ := store.Find(ctx, userID); got.Step != "intro" {
+		t.Errorf("refused Complete changed the step to %q", got.Step)
 	}
 }
 
 // 동시에 온 완료 요청은 하나도 실패하지 않고 같은 진행으로 끝난다.
 func TestStoreCompleteConcurrently(t *testing.T) {
 	store, _, userID := setup(t)
-	toFirstImage(t, store, userID, []string{"travel"})
+	toFirstImage(t, store, userID)
 
 	const requests = 8
 	results := make(chan error, requests)
@@ -209,7 +162,7 @@ func TestStoreCompleteConcurrently(t *testing.T) {
 	for range requests {
 		wg.Go(func() {
 			got, err := store.Complete(context.Background(), userID)
-			if err == nil && (got.Step != "complete" || !slices.Equal(got.Purposes, []string{"travel"})) {
+			if err == nil && got.Step != "complete" {
 				err = fmt.Errorf("got %+v", got)
 			}
 			results <- err
