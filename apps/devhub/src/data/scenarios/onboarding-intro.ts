@@ -77,7 +77,7 @@ export const onboardingIntro: Scenario = {
       id: 'intro-app',
       intent: '앱에서 서비스 소개 보기',
       behavior:
-        '예시 3장(입력 → 끝난 일) · "시작하기" · 로그아웃 표시. 시작하기는 목적 선택 → 첫 사진 → 사진 확인으로 이어짐',
+        '예시 3장(입력 → 끝난 일) · "시작하기" · 로그아웃 표시. 시작하기는 첫 사진 → 사진 확인으로 이어짐',
       runtime: 'mobile-app',
       owner: 'mobile',
       status: 'implemented',
@@ -100,7 +100,7 @@ export const onboardingIntro: Scenario = {
       id: 'intro-web',
       intent: '브라우저에서 서비스 소개를 보고 온보딩 진행',
       behavior:
-        '앱과 같은 예시와 "시작하기" 표시. 시작하기는 목적 선택 → 첫 사진(파일 선택) → 사진 확인 → 처리로 이어짐. 진행은 서버에 저장돼 다시 열면 그 단계부터 시작. 앱 WebView 안에서는 로그아웃 버튼 숨김',
+        '앱과 같은 예시와 "시작하기" 표시. 시작하기는 첫 사진(파일 선택) → 사진 확인 → 처리로 이어짐. 진행은 서버에 저장돼 다시 열면 그 단계부터 시작. 앱 WebView 안에서는 로그아웃 버튼 숨김',
       runtime: 'next-server',
       owner: 'web',
       status: 'implemented',
@@ -133,7 +133,7 @@ export const onboardingIntro: Scenario = {
       id: 'finish',
       intent: '온보딩을 끝내고 홈으로 이동',
       behavior:
-        'POST /v1/onboarding/complete가 first-image에서 complete로 확정(이미 마쳤으면 그대로 성공, 목적 유지, 그 전 단계는 409). web은 결과 화면의 완료 버튼이 Server Action으로 부르고 홈(/)으로 보냄. 앱은 완료 뒤 세션을 다시 받아 onboardingStep이 complete가 되면 root stack이 홈으로 바뀜',
+        'POST /v1/onboarding/complete가 first-image에서 complete로 확정(이미 마쳤으면 그대로 성공, 그 전 단계는 409). web은 결과 화면의 완료 버튼이 Server Action으로 부르고 홈(/)으로 보냄. 앱은 완료 뒤 세션을 다시 받아 onboardingStep이 complete가 되면 root stack이 홈으로 바뀜',
       runtime: 'go-api',
       owner: 'api',
       status: 'implemented',

@@ -69,13 +69,6 @@ export const contracts: ContractRef[] = [
     owner: 'auth-contracts',
   },
   {
-    id: 'onboarding-purpose',
-    kind: 'wire-type',
-    name: 'Purpose',
-    definedIn: { path: 'libs/onboarding/src/lib/purposes.ts', symbol: 'Purpose' },
-    owner: 'onboarding',
-  },
-  {
     id: 'onboarding-progress',
     kind: 'wire-type',
     name: 'SavedProgress',

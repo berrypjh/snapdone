@@ -1,12 +1,6 @@
 import Link from 'next/link';
 
-import {
-  DocumentColumn,
-  DocumentHead,
-  RecordMeta,
-  ViewSwitch,
-  WorkspaceSection,
-} from '@berrypjh/devhub-ui';
+import { DocumentColumn, DocumentHead, RecordMeta, WorkspaceSection } from '@berrypjh/devhub-ui';
 
 import { catalog } from '@/data';
 import { type Entity, entityHref } from '@/lib/catalog/entities';
@@ -14,8 +8,7 @@ import { flowModel } from '@/lib/catalog/flow';
 import { RECORD_KIND, RELATION } from '@/lib/catalog/labels';
 
 import { DocumentLayout } from '../doc/document-layout';
-import { ScenarioFlow } from '../flow/scenario-flow';
-import { ScenarioOutline } from '../flow/scenario-outline';
+import { ScenarioViews } from '../flow/scenario-views';
 import { DiagramPlaceholder } from '../shell/workspace';
 import { SourceActions } from '../source/source-actions';
 
@@ -81,11 +74,7 @@ export function EntitySummary({ entity }: { entity: Entity }) {
         <>
           <p className="typo-body-small">{entity.record.goal}</p>
           <WorkspaceSection id={LIST_ID} title={`단계 ${entity.record.steps.length}개`}>
-            <ViewSwitch
-              label="흐름"
-              canvas={<ScenarioFlow model={flowModel(entity.record)} title={entity.record.title} />}
-              list={<ScenarioOutline scenario={entity.record} />}
-            />
+            <ScenarioViews scenario={entity.record} model={flowModel(entity.record)} />
           </WorkspaceSection>
         </>
       );

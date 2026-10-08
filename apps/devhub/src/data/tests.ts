@@ -201,12 +201,6 @@ export const tests: TestRef[] = [
     'saves with PUT and a JSON body',
   ),
   vitest(
-    'onboarding-present-result',
-    `${LIB_ONBOARDING}/result.spec.ts`,
-    'presentResult',
-    'names a receipt and suggests organizing the expense without claiming it was done',
-  ),
-  vitest(
     'web-onboarding-complete',
     `${WEB_ONBOARDING}/actions.spec.ts`,
     'completeOnboarding',
@@ -580,19 +574,13 @@ export const tests: TestRef[] = [
     'mobile-onboarding-save-fails',
     `${MOBILE_ONBOARDING}/controller.spec.ts`,
     'dispatch',
-    'keeps going when saving fails, and the next launch resumes the last saved step',
+    'keeps going when saving fails, and the next launch starts from the last saved step',
   ),
   vitest(
-    'mobile-purpose-answer',
+    'mobile-onboarding-start',
     `${MOBILE_ONBOARDING}/model.spec.ts`,
-    'purpose answer',
-    'keeps chosen purposes once each in the fixed order and moves to the first image',
-  ),
-  vitest(
-    'mobile-purpose-skip',
-    `${MOBILE_ONBOARDING}/model.spec.ts`,
-    'purpose answer',
-    'records a skip and moves to the first image',
+    'start',
+    'moves from the intro to the first image',
   ),
   vitest(
     'mobile-capture-cancel',
@@ -706,24 +694,6 @@ export const tests: TestRef[] = [
     'keeps only the three session fields',
   ),
 
-  vitest(
-    'onboarding-toggle-unsure',
-    `${LIB_ONBOARDING}/purposes.spec.ts`,
-    'togglePurpose',
-    'leaves only unsure when unsure is chosen',
-  ),
-  vitest(
-    'onboarding-selection-mixed-unsure',
-    `${LIB_ONBOARDING}/purposes.spec.ts`,
-    'isPurposeSelection',
-    'rejects unsure mixed with another purpose',
-  ),
-  vitest(
-    'onboarding-saved-skip',
-    `${LIB_ONBOARDING}/progress.spec.ts`,
-    'parseSavedProgress',
-    'keeps a skip apart from an unanswered purpose',
-  ),
   vitest(
     'onboarding-run-polls',
     `${LIB_ONBOARDING}/processing.spec.ts`,
@@ -1063,13 +1033,9 @@ export const tests: TestRef[] = [
     'TestResolveReceiptFieldConcurrently',
     DB,
   ),
-  goTest(
-    'go-recent-general',
-    `${PROCESSING}/store_test.go`,
-    'TestRecentGeneralFiltersAndOrders',
-    DB,
-  ),
+  goTest('go-recent-origins', `${PROCESSING}/store_test.go`, 'TestRecentFiltersAndOrders', DB),
   goTest('go-http-recent', `${HTTP}/processing_test.go`, 'TestProcessingJobs', []),
+  goTest('go-http-recent-origins', `${HTTP}/processing_test.go`, 'TestProcessingJobsOrigins', []),
   goTest('go-http-recent-outcome', `${HTTP}/processing_test.go`, 'TestProcessingJobsOutcome', []),
   goTest('go-http-reprocess', `${HTTP}/processing_test.go`, 'TestReprocessProcessingJob', []),
   goTest(
@@ -1249,11 +1215,6 @@ export const tests: TestRef[] = [
     'e2e-web-first-result-keyboard',
     'auth-accessibility.spec.ts',
     'the first result at 320px takes focus on its heading and completes with the keyboard',
-  ),
-  playwright(
-    'e2e-web-onboarding-unsure-skip',
-    'onboarding.spec.ts',
-    'unsure stays alone and a skip also reaches the first photo',
   ),
   playwright(
     'e2e-web-onboarding-resume',

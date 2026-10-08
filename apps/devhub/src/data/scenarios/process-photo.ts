@@ -175,7 +175,7 @@ export const processPhoto: Scenario = {
       id: 'result',
       intent: '처리 결과 보기',
       behavior:
-        '사진과 함께 끝낸 일 · 적용한 유형과 처리 방식 · 서버가 만든 글(원문 · 번역 · 요약) 또는 지출 정보를 표시. 번역이 필요 없었으면 그렇게 말함. 지원하지 않는 사진은 처리했다고 하지 않고 다른 사진을 권함. 앱과 web이 같은 화면 내용(presentJob)을 씀',
+        '사진과 함께 끝낸 일 · 적용한 유형과 처리 방식 · 서버가 만든 글(원문 · 번역 · 요약) 또는 지출 정보를 표시. 번역이 필요 없었으면 그렇게 말함. 지원하지 않는 사진은 처리했다고 하지 않고 다른 사진을 권함. 앱과 web이 같은 화면 내용(presentJob)을 씀. web은 결과 아래에서 다른 사진 처리 · 홈 · 처리 기록으로 이어짐',
       runtime: 'mobile-app',
       owner: 'mobile',
       status: 'implemented',

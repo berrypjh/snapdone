@@ -127,7 +127,7 @@ export const appEntrySessionRestore: Scenario = {
       id: 'web-home',
       intent: '브라우저에서 사이트(/) 열기',
       behavior:
-        '/는 보호 page. requireSession 뒤 처리 기록(GET /v1/processing-jobs)과 처리 방식을 함께 읽어 온보딩 뒤 처리한 사진이 없으면 빈 홈, 있으면 최근 처리 홈. 확인이 필요한 영수증 값이 있는 처리는 따로 모으고, 항목을 누르면 그 처리 결과로 감. 기록을 읽지 못하면 비었다고 추측하지 않음',
+        '/는 보호 page. requireSession 뒤 처리 기록(GET /v1/processing-jobs)과 처리 방식을 함께 읽어 처리한 사진(온보딩 첫 사진 포함)이 없으면 빈 홈, 있으면 최근 처리 홈. 확인이 필요한 영수증 값이 있는 처리는 따로 모으고, 항목을 누르면 그 처리 결과로 감. 기록을 읽지 못하면 비었다고 추측하지 않음',
       runtime: 'next-server',
       owner: 'web',
       status: 'implemented',

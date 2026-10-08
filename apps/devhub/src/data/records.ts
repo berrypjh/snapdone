@@ -6,6 +6,36 @@ import type { RecordRef } from '../domain/model';
  */
 export const records: RecordRef[] = [
   {
+    id: 'remove-onboarding-purpose',
+    path: 'docs/records/2026-10-08-remove-onboarding-purpose.md',
+    title: '온보딩 사용 목적 단계 제거',
+    kind: 'decision',
+    date: '2026-10-08',
+    summary:
+      '고른 목적이 어디에도 쓰이지 않아 단계 · API 필드 · DB 컬럼을 함께 없앰. 단계는 intro → first-image → complete',
+    sources: [
+      { path: 'apps/api/internal/onboarding/onboarding.go', symbol: 'Validate' },
+      { path: 'apps/api/internal/database/migrations/0009_remove_onboarding_purpose.sql' },
+      { path: 'libs/auth-contracts/src/lib/auth.ts', symbol: 'ONBOARDING_STEPS' },
+    ],
+    docs: [{ document: 'product-principles' }],
+    tests: ['go-onboarding-validate', 'e2e-web-onboarding-flow'],
+  },
+  {
+    id: 'onboarding-photo-in-history',
+    path: 'docs/records/2026-10-08-onboarding-photo-in-history.md',
+    title: '온보딩 첫 사진을 온보딩을 마친 뒤 최근 처리 · 기록에 표시',
+    kind: 'decision',
+    date: '2026-10-08',
+    summary: '목록에 넣는 출처를 Go가 세션의 온보딩 단계로 정함. 로그인 없는 홈이 생겨도 같은 규칙',
+    sources: [
+      { path: 'apps/api/internal/httpserver/processing.go', symbol: 'listedOrigins' },
+      { path: 'apps/api/internal/processing/store.go', symbol: 'Store.Recent' },
+    ],
+    docs: [{ document: 'target-architecture' }],
+    tests: ['go-http-recent-origins', 'go-recent-origins', 'e2e-web-onboarding-flow'],
+  },
+  {
     id: 'evaluation-retry',
     path: 'docs/records/2026-09-26-evaluation-retry.md',
     title: '일부 모델만 실패한 평가 run을 실패한 것만 다시 불러 한 run으로 모음',

@@ -11,7 +11,7 @@ const PROCESSOR = 'apps/api/internal/processing/processor.go';
 export const onboardingFirstPhoto: Scenario = {
   id: 'onboarding-first-photo',
   title: '온보딩 첫 사진 처리',
-  goal: '온보딩에서 사용 목적을 고르고 첫 사진 한 장을 올려 처리 결과 수신. 앱과 web 어느 쪽에서든 이어서 진행',
+  goal: '온보딩 소개 다음에 첫 사진 한 장을 올려 처리 결과 수신. 앱과 web 어느 쪽에서든 이어서 진행',
   track: 'current',
   status: 'implemented',
   docs: [
@@ -27,56 +27,43 @@ export const onboardingFirstPhoto: Scenario = {
   ],
   steps: [
     step({
-      id: 'choose-purpose-app',
-      intent: '앱에서 무엇에 쓰고 싶은지 고르거나 건너뛰기',
+      id: 'start-app',
+      intent: '앱 소개에서 시작하기',
       behavior:
-        '목적을 여러 개 고를 수 있고 "잘 모르겠어요"는 혼자만 남음. 답(건너뛰기는 빈 목록)을 서버에 저장하고 첫 사진 화면으로 이동. 저장이 실패해도 흐름은 이어지고 다음 실행은 마지막으로 저장된 단계부터 엶',
+        '첫 사진 단계를 서버에 저장하고 첫 사진 화면으로 이동. 저장이 실패해도 흐름은 이어지고 다음 실행은 마지막으로 저장된 단계부터 엶',
       runtime: 'mobile-app',
       owner: 'mobile',
       status: 'implemented',
       source: [
-        {
-          path: 'apps/mobile/src/screens/OnboardingPurposeScreen.tsx',
-          symbol: 'OnboardingPurposeScreen',
-        },
+        { path: 'apps/mobile/src/onboarding/model.ts', symbol: 'onboardingReducer' },
         { path: 'apps/mobile/src/onboarding/controller.ts', symbol: 'createOnboardingController' },
         { path: FLOW, symbol: 'createProgressStore' },
-        { path: 'libs/onboarding/src/lib/purposes.ts', symbol: 'togglePurpose' },
       ],
       apis: ['put-onboarding'],
-      contracts: ['onboarding-purpose', 'onboarding-progress-update'],
+      contracts: ['onboarding-progress-update'],
       tests: [
-        'mobile-purpose-answer',
-        'mobile-purpose-skip',
+        'mobile-onboarding-start',
         'mobile-onboarding-saves',
         'mobile-onboarding-save-fails',
         'mobile-onboarding-resume-web',
-        'onboarding-toggle-unsure',
       ],
       next: ['save-progress'],
     }),
     step({
-      id: 'choose-purpose-web',
-      intent: '브라우저에서 무엇에 쓰고 싶은지 고르거나 건너뛰기',
+      id: 'start-web',
+      intent: '브라우저 소개에서 시작하기',
       behavior:
-        '앱과 같은 규칙의 선택 양식을 Server Action이 받아 Go에 저장하고 /onboarding/first-image로 보냄. 다른 기기 · 탭이 먼저 진행을 바꿨으면(409) 서버의 진행 단계로 보냄',
+        'Server Action이 첫 사진 단계를 Go에 저장하고 /onboarding/first-image로 보냄. 다른 기기 · 탭이 먼저 진행을 바꿨으면(409) 서버의 진행 단계로 보냄',
       runtime: 'next-server',
       owner: 'web',
       status: 'implemented',
-      source: [
-        { path: 'apps/web/src/components/onboarding/purpose-form.tsx', symbol: 'PurposeForm' },
-        { path: WEB_ACTIONS, symbol: 'choosePurposes' },
-        { path: WEB_ACTIONS, symbol: 'skipPurpose' },
-        { path: 'libs/onboarding/src/lib/purposes.ts', symbol: 'isPurposeSelection' },
-      ],
+      source: [{ path: WEB_ACTIONS, symbol: 'startOnboarding' }],
       apis: ['put-onboarding'],
-      contracts: ['onboarding-purpose', 'onboarding-progress-update'],
+      contracts: ['onboarding-progress-update'],
       tests: [
         'web-onboarding-save',
         'web-onboarding-save-conflict',
-        'onboarding-selection-mixed-unsure',
         'e2e-web-onboarding-flow',
-        'e2e-web-onboarding-unsure-skip',
         'e2e-web-onboarding-resume',
       ],
       next: ['save-progress'],
@@ -85,7 +72,7 @@ export const onboardingFirstPhoto: Scenario = {
       id: 'save-progress',
       intent: '(자동) 서버가 온보딩 진행 저장',
       behavior:
-        '목적을 검사(알려진 값 · 중복 없음 · "잘 모르겠어요"는 혼자)하고, 같은 단계이거나 한 단계 앞일 때만 한 번의 조건부 UPDATE로 저장. 이미 마쳤으면 409 onboarding_complete, 순서가 어긋나면 409 onboarding_out_of_order. 건너뛰기(빈 목록)와 아직 답하지 않음(null)을 구분',
+        '단계(intro · first-image)만 받고, 같은 단계이거나 한 단계 앞일 때만 한 번의 조건부 UPDATE로 저장. 이미 마쳤으면 409 onboarding_complete, 순서가 어긋나면 409 onboarding_out_of_order',
       runtime: 'go-api',
       owner: 'api',
       status: 'implemented',
@@ -94,6 +81,7 @@ export const onboardingFirstPhoto: Scenario = {
         { path: 'apps/api/internal/onboarding/onboarding.go', symbol: 'CanMove' },
         { path: 'apps/api/internal/onboarding/onboarding.go', symbol: 'Store.Save' },
         { path: 'apps/api/internal/database/migrations/0004_onboarding_progress.sql' },
+        { path: 'apps/api/internal/database/migrations/0009_remove_onboarding_purpose.sql' },
       ],
       apis: ['put-onboarding', 'get-onboarding'],
       contracts: ['auth-onboarding-step', 'onboarding-progress'],
@@ -103,7 +91,6 @@ export const onboardingFirstPhoto: Scenario = {
         'go-onboarding-rejects',
         'go-onboarding-store',
         'go-onboarding-store-rejects',
-        'onboarding-saved-skip',
       ],
       next: ['pick-photo-app', 'pick-photo-web'],
     }),
@@ -255,7 +242,7 @@ export const onboardingFirstPhoto: Scenario = {
       status: 'implemented',
       source: [
         {
-          path: 'apps/web/src/components/onboarding/processing-view.tsx',
+          path: 'apps/web/src/components/processing/processing-view.tsx',
           symbol: 'ProcessingView',
         },
         { path: WEB_ACTIONS, symbol: 'findFirstImageJob' },
@@ -289,7 +276,6 @@ export const onboardingFirstPhoto: Scenario = {
       contracts: ['processing-job-detail'],
       via: ['reprocess-photo'],
       tests: [
-        'onboarding-present-result',
         'processing-present-expense',
         'e2e-web-onboarding-flow',
         'e2e-web-onboarding-foreign-text',
@@ -314,7 +300,7 @@ export const onboardingFirstPhoto: Scenario = {
       ],
       contracts: ['processing-job-detail'],
       via: ['reprocess-photo'],
-      tests: ['onboarding-present-result', 'processing-present-expense'],
+      tests: ['processing-present-expense', 'processing-present-legacy'],
       gaps: [
         {
           kind: 'runtime-unverified',
