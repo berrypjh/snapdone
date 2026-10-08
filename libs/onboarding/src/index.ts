@@ -19,12 +19,3 @@ export {
   type ResumeStep,
   type SavedProgress,
 } from './lib/progress';
-export {
-  isPurpose,
-  isPurposeSelection,
-  orderPurposes,
-  type Purpose,
-  PURPOSES,
-  togglePurpose,
-} from './lib/purposes';
-export { presentResult, type ResultPresentation } from './lib/result';
