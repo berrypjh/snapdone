@@ -201,10 +201,16 @@ describe('presentJob', () => {
   });
 
   it('shows only the found facts of an earlier job without a result', () => {
-    expect(presentJob(processed(null))).toEqual({
+    const job = processed(null);
+    const screen = presentJob(job);
+
+    expect(screen).toEqual({
       kind: 'without-outcome',
       facts: [{ label: '금액', value: '12,000원' }],
     });
+    // 화면이 서버 작업을 바꾸지 못하도록 복사한다.
+    if (screen.kind !== 'without-outcome' || job.status !== 'completed') throw new Error('kind');
+    expect(screen.facts[0]).not.toBe(job.result.facts[0]);
   });
 });
 

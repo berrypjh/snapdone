@@ -27,7 +27,7 @@ export type JobDetail = ProcessingJob & {
 };
 
 /**
- * 온보딩을 마친 뒤 올린 사진의 처리 작업 하나(Go `GET /v1/processing-jobs`).
+ * 최근 처리 작업 하나(Go `GET /v1/processing-jobs`). 온보딩 첫 사진은 온보딩을 마친 뒤에 들어간다.
  * `finishedAt`은 끝난 시각을 아는 작업에만 있다 — 끝나지 못해 실패로 보는 작업에는 없다.
  */
 export type RecentJob = JobDetail & { createdAt: string; finishedAt: string | null };

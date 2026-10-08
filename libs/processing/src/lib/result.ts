@@ -1,5 +1,3 @@
-import { presentResult } from '@snapdone/onboarding';
-
 import { formatAmount, formatDate } from './format';
 import type {
   Expense,
@@ -109,7 +107,11 @@ export const presentJob = (job: JobDetail): ResultScreen => {
   if (job.status === 'running') return { kind: 'running' };
   if (job.status === 'failed') return { kind: 'failed' };
   const { outcome } = job;
-  if (!outcome) return { kind: 'without-outcome', facts: presentResult(job.result).facts };
+  if (!outcome) {
+    // 서버가 읽은 값 그대로, 같은 순서로 복사한다. 화면이 작업을 바꾸지 못한다.
+    const facts = job.result.facts.map(({ label, value }) => ({ label, value }));
+    return { kind: 'without-outcome', facts };
+  }
   if (outcome.kind === 'unsupported') return { kind: 'unsupported' };
   if (outcome.kind === 'ambiguous') return { kind: 'ambiguous', candidates: outcome.candidates };
   return presentProcessed(outcome);
