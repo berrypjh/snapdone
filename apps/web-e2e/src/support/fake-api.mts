@@ -152,6 +152,14 @@ const FROM: Record<string, Step[]> = {
 
 const progressBody = (session: Session) => ({ step: session.step });
 
+/** Go `source_job_id ON DELETE SET NULL`: a job reprocessed from a deleted one stays, without its source. */
+const unlinkDeletedSources = () => {
+  for (const [id, job] of jobs) {
+    if (job.sourceJobId && !jobs.has(job.sourceJobId))
+      jobs.set(id, { ...job, sourceJobId: undefined });
+  }
+};
+
 /** Results a classifier could return (Go `processing.Result`). Only the server's facts, nothing more. */
 const RESULTS = {
   receipt: {
@@ -443,6 +451,23 @@ const routes: Record<string, Handler> = {
     send(res, 202, { jobId, status: 'running', ...(sourceJobId && { sourceJobId }) });
   },
 
+  /** Go `POST /v1/processing-jobs/delete`: 1–20 ids, only this user's jobs, counted; reprocessed jobs stay, unlinked. */
+  'POST /v1/processing-jobs/delete': async (req, res) => {
+    const session = authorized(req, res);
+    if (!session) return;
+    const body = await readJson(req);
+    const ids = Array.isArray(body.jobIds) ? body.jobIds.map(String) : [];
+    if (ids.length === 0 || ids.length > 20) return send(res, 400, { error: 'invalid_job_ids' });
+    let deleted = 0;
+    for (const id of ids) {
+      if (jobs.get(id)?.userId !== session.userId) continue;
+      jobs.delete(id);
+      deleted += 1;
+    }
+    unlinkDeletedSources();
+    send(res, 200, { deleted });
+  },
+
   /**
    * Go `GET /v1/processing-jobs`: this user's jobs, newest first (`created_at`, then id), at most 20.
    * The onboarding photo is listed only once the onboarding is finished.
@@ -561,6 +586,18 @@ createServer((req, res) => {
     // Go answers another user's job the same as a missing one.
     if (job?.userId !== session.userId) return send(res, 404, { error: 'job_not_found' });
     return send(res, 200, jobBody(jobId, job));
+  }
+  // Go `DELETE /v1/processing-jobs/{jobId}`: only the user's own job; a job reprocessed from it stays, unlinked.
+  if (req.method === 'DELETE' && jobLookup) {
+    const jobId = decodeURIComponent(jobLookup[1] ?? '');
+    const session = authorized(req, res);
+    if (!session) return;
+    if (jobs.get(jobId)?.userId !== session.userId)
+      return send(res, 404, { error: 'job_not_found' });
+    jobs.delete(jobId);
+    unlinkDeletedSources();
+    res.writeHead(204, { 'Cache-Control': 'no-store' }).end();
+    return;
   }
   const fieldUpdate = /^\/v1\/processing-jobs\/([^/]+)\/receipt-fields\/([^/]+)$/.exec(
     url.pathname,

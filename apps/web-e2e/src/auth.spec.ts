@@ -143,7 +143,9 @@ test.describe('signed in', () => {
     const credential = await signIn(context, baseURL ?? '');
     await page.goto('/history');
 
-    await page.getByRole('banner').getByRole('button', { name: '로그아웃' }).click();
+    // Logout lives on the profile page the header links to.
+    await page.getByRole('banner').getByRole('link', { name: '내 정보' }).click();
+    await page.getByRole('main').getByRole('button', { name: '로그아웃' }).click();
 
     await expect(page).toHaveURL(/\/login$/);
     expect(await sessionCookie(context)).toBeUndefined();

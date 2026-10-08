@@ -60,8 +60,9 @@ test.describe('a finished text job', () => {
       output: { original: 'Exit only', translation: { needed: true, text: '출구 전용' } },
       title: '텍스트를 추출하고 번역했습니다',
       applied: '추출 및 번역',
-      sections: ['원문', '번역'],
-      texts: ['Exit only', '출구 전용'],
+      // What the user asked for comes first, the original last.
+      sections: ['번역', '원문'],
+      texts: ['출구 전용', 'Exit only'],
     },
     {
       action: 'extract_text',
@@ -84,8 +85,8 @@ test.describe('a finished text job', () => {
       output: { original: 'Exit only', summary: '출구 안내입니다.' },
       title: '텍스트를 추출하고 요약했습니다',
       applied: '추출 및 요약',
-      sections: ['원문', '요약'],
-      texts: ['Exit only', '출구 안내입니다.'],
+      sections: ['요약', '원문'],
+      texts: ['출구 안내입니다.', 'Exit only'],
     },
   ]) {
     test(`shows only the server text of ${tc.action}`, async ({ page, context, baseURL }) => {
@@ -104,6 +105,59 @@ test.describe('a finished text job', () => {
       ).toBeVisible();
     });
   }
+
+  test('folds a long original under the summary and opens it in place', async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    const lines = Array.from({ length: 12 }, (_, index) => `메뉴 ${index + 1}`).join('\n');
+    await openJob(
+      page,
+      context,
+      baseURL ?? '',
+      processedJob('text', 'extract_and_summarize', {
+        original: lines,
+        summary: '메뉴 12개입니다.',
+      }),
+    );
+
+    const original = page.getByRole('region', { name: '원문' });
+    const toggle = original.getByRole('button', { name: '원문 전체 보기' });
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await toggle.click();
+    await expect(original.getByRole('button', { name: '원문 접기' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    // The summary has nothing to fold.
+    await expect(
+      page.getByRole('region', { name: '요약' }).getByRole('button', { name: /전체 보기/ }),
+    ).toHaveCount(0);
+  });
+
+  test('copies one result text with its own button', async ({ page, context, baseURL }) => {
+    // The clipboard records what the page wrote, the same way in every browser.
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'clipboard', {
+        value: { writeText: async (text: string) => sessionStorage.setItem('copied', text) },
+      });
+    });
+    await openJob(
+      page,
+      context,
+      baseURL ?? '',
+      processedJob('text', 'extract_and_summarize', {
+        original: 'Exit only',
+        summary: '출구 안내입니다.',
+      }),
+    );
+
+    const summary = page.getByRole('region', { name: '요약' });
+    await summary.getByRole('button', { name: '요약 복사' }).click();
+    await expect(summary.getByRole('status')).toHaveText('복사했습니다');
+    expect(await page.evaluate(() => sessionStorage.getItem('copied'))).toBe('출구 안내입니다.');
+  });
 
   test('says the text was already Korean instead of showing a translation', async ({
     page,
@@ -368,6 +422,8 @@ test.describe('inside the app WebView', () => {
 
     await expect(heading(page)).toHaveText('지출 정보를 정리했습니다');
     await expect(page.getByRole('banner')).toHaveCount(0);
+    // The app's native header goes back; the web adds no second way back.
+    await expect(page.getByRole('link', { name: '기록', exact: true })).toHaveCount(0);
     await expect
       .poll(() => page.evaluate(() => Reflect.get(window, '__appMessages')))
       .toContainEqual(JSON.stringify({ type: 'ready', title: '처리 결과' }));

@@ -55,12 +55,14 @@ test('shows the empty home to a user without photos since the onboarding', async
     '/process',
   );
 
-  const preferences = section(page, '기본 처리 설정');
-  await expect(preferences.getByText('추출 및 번역', { exact: true })).toBeVisible();
-  await expect(preferences.getByText('지출 정보로 정리', { exact: true })).toBeVisible();
   await expect(section(page, '최근 처리')).toContainText(EMPTY);
   await expect(section(page, '확인이 필요한 처리')).toHaveCount(0);
-  expect(await top(page, '기본 처리 설정')).toBeLessThan(await top(page, '최근 처리'));
+  // The preferences live on the profile page; the empty home only says where.
+  await expect(section(page, '기본 처리 설정')).toHaveCount(0);
+  await expect(page.getByRole('main').getByRole('link', { name: '내 정보' })).toHaveAttribute(
+    'href',
+    '/me',
+  );
 
   const main = page.getByRole('main');
   await expect(main).not.toContainText('초기 설정 중입니다');
@@ -75,15 +77,14 @@ test('shows the active home with what the server processed', async ({ page, cont
   await page.goto('/');
 
   const recent = section(page, '최근 처리');
-  await expect(recent.getByText('영수증 · 처리 완료')).toBeVisible();
+  await expect(recent.getByRole('link', { name: '영수증' })).toBeVisible();
+  // A finished job shows no status; only the unfinished ones say what happened.
+  await expect(recent).not.toContainText('처리 완료');
   await expect(recent.getByText('12,000원')).toBeVisible();
   await expect(page.getByRole('main').getByRole('img')).toHaveCount(0);
   await expect(section(page, '확인이 필요한 처리')).toContainText(REVIEW_EMPTY);
-  await expect(
-    section(page, '기본 처리 설정').getByText('추출 및 번역', { exact: true }),
-  ).toBeVisible();
   expect(await top(page, '최근 처리')).toBeLessThan(await top(page, '확인이 필요한 처리'));
-  expect(await top(page, '확인이 필요한 처리')).toBeLessThan(await top(page, '기본 처리 설정'));
+  await expect(section(page, '기본 처리 설정')).toHaveCount(0);
   await expect(page.getByText(EMPTY)).toHaveCount(0);
 });
 
@@ -100,7 +101,7 @@ test("never shows another user's jobs", async ({ page, context, baseURL, browser
   await expect(page.getByText('다른 사용자 상점')).toHaveCount(0);
 });
 
-test('shows the preferences this user saved, not the defaults', async ({
+test('shows on the profile page the preferences this user saved, not the defaults', async ({
   page,
   context,
   baseURL,
@@ -109,6 +110,12 @@ test('shows the preferences this user saved, not the defaults', async ({
   await savePreference(context.request, credential, 'text', 'summarize');
   await savePreference(context.request, credential, 'receipt', 'extract_text');
   await page.goto('/');
+  // At phone width the profile page is a bottom tab.
+  await page
+    .getByRole('navigation', { name: '하단 메뉴' })
+    .getByRole('link', { name: '내 정보' })
+    .click();
+  await expect(page).toHaveURL(/\/me$/);
 
   const preferences = section(page, '기본 처리 설정');
   await expect(preferences.getByText('요약', { exact: true })).toBeVisible();
@@ -129,23 +136,16 @@ test('says the jobs could not be read instead of showing an empty home', async (
   );
   await expect(page.getByText(EMPTY)).toHaveCount(0);
   await expect(section(page, '확인이 필요한 처리')).toHaveCount(0);
-  await expect(
-    section(page, '기본 처리 설정').getByText('추출 및 번역', { exact: true }),
-  ).toBeVisible();
 });
 
-test('keeps the active home when the preferences cannot be read, without defaults', async ({
+test('says on the profile page that the preferences cannot be read, without defaults', async ({
   page,
   context,
   baseURL,
 }) => {
-  await openHome(page, context, baseURL ?? '', {
-    preferencesReadFail: true,
-    generalJobs: [receiptJob(['금액', '8,500원'])],
-  });
+  await signIn(context, baseURL ?? '', 'complete', 'receipt', { preferencesReadFail: true });
+  await page.goto('/me');
 
-  await expect(section(page, '최근 처리').getByText('8,500원')).toBeVisible();
-  await expect(section(page, '확인이 필요한 처리')).toContainText(REVIEW_EMPTY);
   const preferences = section(page, '기본 처리 설정');
   await expect(preferences.getByRole('alert')).toHaveText('기본 처리 설정을 불러오지 못했습니다.');
   await expect(preferences.getByText('추출 및 번역', { exact: true })).toHaveCount(0);
@@ -173,7 +173,7 @@ test('does not scroll sideways at 320px with long values', async ({ page, contex
   expect(await overflowsSideways(page)).toBe(false);
 });
 
-test('reaches the photo flow and the settings link by keyboard', async ({
+test('reaches the photo flow and the profile page by keyboard', async ({
   page,
   context,
   baseURL,
@@ -182,21 +182,16 @@ test('reaches the photo flow and the settings link by keyboard', async ({
   await openHome(page, context, baseURL ?? '');
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
-  await expect(page.getByRole('main').getByRole('heading', { level: 2 })).toHaveText([
-    '기본 처리 설정',
-    '최근 처리',
-  ]);
+  await expect(page.getByRole('main').getByRole('heading', { level: 2 })).toHaveText(['최근 처리']);
 
   await enterMain(page, browserName);
-  // The photo link is the first stop in the main, the settings link the next one.
+  // The photo link is the first stop in the main, the profile link of the empty home the next one.
   await page.keyboard.press(linkTabKey(browserName));
   await expect(page.getByRole('link', { name: '사진 추가하기' })).toBeFocused();
   await page.keyboard.press(linkTabKey(browserName));
-  await expect(
-    section(page, '기본 처리 설정').getByRole('link', { name: '설정 변경' }),
-  ).toBeFocused();
+  await expect(page.getByRole('main').getByRole('link', { name: '내 정보' })).toBeFocused();
   await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(/\/settings\/processing$/);
+  await expect(page).toHaveURL(/\/me$/);
 });
 
 test('sends a signed-out visitor to login with home as the return path', async ({ page }) => {

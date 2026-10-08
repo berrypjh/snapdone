@@ -84,6 +84,10 @@ test('opens the photo flow from the home', async ({ page, context, baseURL }) =>
   await expect(page).toHaveURL(/\/process$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(CHOOSE_TITLE);
   await expect(page.getByRole('button', { name: '사진 선택' })).toBeVisible();
+  // At phone width the way back is the header's arrow, titled with this screen.
+  const header = page.getByRole('banner');
+  await expect(header).toContainText('사진 처리');
+  await expect(header.getByRole('link', { name: '홈으로 돌아가기' })).toHaveAttribute('href', '/');
 });
 
 test('previews one chosen photo without guessing its type or action', async ({

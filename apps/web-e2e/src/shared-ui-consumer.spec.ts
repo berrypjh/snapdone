@@ -97,7 +97,8 @@ test('follows the system color scheme until the user chooses', async ({ page }) 
 
 test('remembers the dark mode switch across reloads', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
-  await page.goto('/');
+  // The switch lives on the profile page.
+  await page.goto('/me');
   await expect.poll(() => isHydrated(page)).toBe(true);
 
   const darkMode = page.getByRole('switch', { name: '다크 모드' });

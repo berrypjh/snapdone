@@ -66,6 +66,8 @@ test.describe('inside the app WebView', () => {
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('사진 종류별 기본 처리');
     await expect(page.getByRole('banner')).toHaveCount(0);
+    // The app's native header goes back; the web adds no second way back.
+    await expect(page.getByRole('link', { name: '내 정보' })).toHaveCount(0);
     await expect(page.getByRole('complementary')).toHaveCount(0);
     await expect(
       page

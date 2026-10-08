@@ -66,9 +66,7 @@ test('a browser user goes from the intro through the first result to the home pa
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('이미지 액션 라우터');
   // Once the onboarding is finished, its photo is in the recent jobs like any other.
   const recent = page.getByRole('region', { name: '최근 처리' });
-  await expect(
-    recent.getByRole('link', { name: '영수증 · 지출 정보로 정리 · 처리 완료' }),
-  ).toBeVisible();
+  await expect(recent.getByRole('link', { name: '영수증 · 지출 정보로 정리' })).toBeVisible();
   await expect(recent.getByText(/카페 봄/)).toBeVisible();
   await expect(recent).not.toContainText('새로 추가한 사진의 처리 기록이 아직 없습니다.');
 

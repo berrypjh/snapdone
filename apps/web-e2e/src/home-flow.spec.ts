@@ -59,7 +59,7 @@ test('turns the empty home active with the processed photo, flags its check, and
 
   await page.goto('/');
   const recent = section(page, '최근 처리');
-  const item = recent.getByRole('link', { name: '영수증 · 지출 정보로 정리 · 처리 완료' });
+  const item = recent.getByRole('link', { name: '영수증 · 지출 정보로 정리' });
   await expect(item).toBeVisible();
   await expect(recent).toContainText('카페 봄 · 12,000원');
   await expect(recent).toContainText('확인이 필요한 정보가 있습니다');
@@ -86,12 +86,98 @@ test('keeps the review empty for results that need no check, and says a failed j
 
   const recent = section(page, '최근 처리');
   await expect(recent.getByRole('link', { name: '처리하지 못함' })).toBeVisible();
-  await expect(
-    recent.getByRole('link', { name: '텍스트 / 외국어 · 요약 · 처리 완료' }),
-  ).toBeVisible();
+  await expect(recent.getByRole('link', { name: '텍스트 / 외국어 · 요약' })).toBeVisible();
   await expect(section(page, '확인이 필요한 처리')).toContainText(
     '현재 확인이 필요한 처리가 없습니다.',
   );
+});
+
+test('shows only the three newest jobs on the home and leads to the whole history', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await signInWithJobs(context, baseURL ?? '', [
+    processedJob('text', 'extract_text', { original: 'First' }),
+    processedJob('text', 'extract_text', { original: 'Second' }),
+    processedJob('text', 'extract_text', { original: 'Third' }),
+    processedJob('text', 'extract_text', { original: 'Fourth' }),
+  ]);
+  await page.goto('/');
+
+  const recent = section(page, '최근 처리');
+  await expect(recent.getByRole('listitem')).toHaveCount(3);
+  // Newest first: the oldest one waits in the history.
+  await expect(recent).not.toContainText('First');
+  await recent.getByRole('link', { name: '전체 보기' }).click();
+  await expect(page).toHaveURL(/\/history$/);
+  await expect(page.getByRole('main').getByRole('listitem')).toHaveCount(4);
+});
+
+test('deletes a job from its result after a confirmation and returns to the history', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const [, textJob] = await signInWithJobs(context, baseURL ?? '', [
+    receiptJob(['금액', '12,000원']),
+    processedJob('text', 'extract_text', { original: 'Exit only' }),
+  ]);
+  await page.goto('/history');
+  await page.getByRole('link', { name: '텍스트 / 외국어 · 텍스트만 추출' }).click();
+
+  // Deleting cannot be undone, so the first press only asks.
+  const remove = page.getByRole('button', { name: '기록 삭제' });
+  await remove.click();
+  await expect(page.getByText('이 기록을 삭제할까요? 삭제하면 되돌릴 수 없습니다.')).toBeFocused();
+  await page.getByRole('button', { name: '취소' }).click();
+  await expect(remove).toBeFocused();
+
+  await remove.click();
+  await page.getByRole('button', { name: '삭제', exact: true }).click();
+  await expect(page).toHaveURL(/\/history$/);
+  const items = page.getByRole('main').getByRole('listitem');
+  await expect(items).toHaveCount(1);
+  await expect(items).toContainText('12,000원');
+  // The deleted job is gone for good, not just hidden from the list.
+  await page.goto(`/history/${textJob}`);
+  await expect(page.getByRole('alert')).toContainText('찾을 수 없');
+});
+
+test('deletes several chosen jobs at once after a confirmation', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await signInWithJobs(context, baseURL ?? '', [
+    processedJob('text', 'extract_text', { original: 'First' }),
+    processedJob('text', 'extract_text', { original: 'Second' }),
+    processedJob('text', 'extract_text', { original: 'Third' }),
+  ]);
+  await page.goto('/history');
+  const main = page.getByRole('main');
+
+  await main.getByRole('button', { name: '선택' }).click();
+  const boxes = main.getByRole('checkbox');
+  // One "select all" for the day and one box per job.
+  await expect(boxes).toHaveCount(4);
+  const remove = main.getByRole('button', { name: /^선택한 \d+개 삭제$/ });
+  await expect(remove).toBeDisabled();
+  await boxes.nth(1).check();
+  await boxes.nth(2).check();
+  await expect(main.getByText('2개 선택됨')).toBeVisible();
+
+  // Deleting cannot be undone, so the button only asks first.
+  await remove.click();
+  await expect(
+    main.getByText('선택한 2개 기록을 삭제할까요? 삭제하면 되돌릴 수 없습니다.'),
+  ).toBeFocused();
+  await main.getByRole('button', { name: '삭제', exact: true }).click();
+
+  await expect(main.getByRole('status')).toHaveText('2개를 삭제했습니다.');
+  await expect(main.getByRole('listitem')).toHaveCount(1);
+  await expect(main.getByRole('listitem')).toContainText('First');
+  await expect(main.getByRole('checkbox')).toHaveCount(0);
 });
 
 test('lists the general jobs in the history and opens one', async ({ page, context, baseURL }) => {
@@ -105,8 +191,13 @@ test('lists the general jobs in the history and opens one', async ({ page, conte
   await expect(items).toHaveCount(2);
   // An earlier job without a product result keeps its found facts.
   await expect(items.nth(1)).toContainText('12,000원');
-  await page.getByRole('link', { name: '텍스트 / 외국어 · 텍스트만 추출 · 처리 완료' }).click();
+  await page.getByRole('link', { name: '텍스트 / 외국어 · 텍스트만 추출' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('텍스트를 추출했습니다');
+
+  // The result leads back to the history, even when opened directly: at phone width through the header.
+  await expect(page.getByRole('banner')).toContainText('처리 결과');
+  await page.getByRole('banner').getByRole('link', { name: '기록으로 돌아가기' }).click();
+  await expect(page).toHaveURL(/\/history$/);
 });
 
 test('does not open another user’s job from the history path', async ({

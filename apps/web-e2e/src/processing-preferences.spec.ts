@@ -40,6 +40,10 @@ test('shows the server defaults with the recommended choices named in text', asy
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(TITLE);
   await expect(page.getByText('사진을 올렸을 때 기본으로 무엇을 할지 선택하세요.')).toBeVisible();
+  // The settings lead back to the profile page they are opened from, through the header's arrow.
+  await expect(
+    page.getByRole('banner').getByRole('link', { name: '내 정보로 돌아가기' }),
+  ).toHaveAttribute('href', '/me');
 
   const text = area(page, '텍스트 / 외국어');
   await expect(text.option('추출 및 번역')).toBeChecked();
@@ -70,6 +74,9 @@ test('saves each image type on its own and keeps both after a reload', async ({
   await text.save.click();
   await expect(text.status).toHaveText('저장했습니다.');
   await expect(text.current('요약')).toBeVisible();
+  // The saved choice stays chosen without a reload; the form is not reset to the first value.
+  await expect(text.option('요약')).toBeChecked();
+  await expect(text.option('추출 및 번역')).not.toBeChecked();
 
   await page.reload();
   await expect(text.option('요약')).toBeChecked();

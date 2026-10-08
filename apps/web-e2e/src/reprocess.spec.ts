@@ -121,10 +121,10 @@ test('keeps the new action as the default only when the box is checked, for this
     text: 'summarize',
   });
 
-  // The settings page and the home read the stored value again.
+  // The settings page and the profile page read the stored value again.
   await page.goto('/settings/processing');
   await expect(page.getByText('현재 설정: 요약')).toBeVisible();
-  await page.goto('/');
+  await page.goto('/me');
   await expect(
     page.getByRole('region', { name: '기본 처리 설정' }).getByText('요약', { exact: true }),
   ).toBeVisible();
