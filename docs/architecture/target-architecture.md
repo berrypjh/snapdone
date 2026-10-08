@@ -35,13 +35,13 @@ Nx Workspace (repository root)
 구현된 것:
 
 - Nx monorepo와 세 앱의 골격
-- 홈 — web(Server Component)과 mobile(네이티브)이 온보딩 뒤 처리한 사진(`GET /v1/processing-jobs`의 general 작업) 유무로 빈 홈 · 최근 처리 홈을 보이고, 서버에 저장된 처리 방식을 요약한다. 최근 처리 한 건은 적용한 유형 · 처리 방식과 결과 앞부분을 보이고 그 처리 결과(`/history/{jobId}`)로 이어진다. 확인이 필요한 처리는 서버 결과에 확인이 필요한 영수증 값이 있는 작업만이다
+- 홈 — web(Server Component)과 mobile(네이티브)이 처리한 사진(`GET /v1/processing-jobs`, 온보딩을 마친 뒤에는 온보딩 첫 사진 포함) 유무로 빈 홈 · 최근 처리 홈을 보이고, 서버에 저장된 처리 방식을 요약한다. 최근 처리 한 건은 적용한 유형 · 처리 방식과 결과 앞부분을 보이고 그 처리 결과(`/history/{jobId}`)로 이어진다. 확인이 필요한 처리는 서버 결과에 확인이 필요한 영수증 값이 있는 작업만이다
 - 디자인 토큰과 App Shell, web 라이트/다크 테마
 - 네이티브 셸 + 웹 콘텐츠 골격 — mobile native stack, WebView 화면(로딩 · 오류 · 외부 링크), web in-app 모드, `libs/webview-bridge` 계약과 모듈 경계 lint
 - Go `GET /health`, Gin HTTP 경계와 swag로 생성한 Swagger 2.0 문서
 - Postgres 연결 · 마이그레이션(로컬 Docker)과 인증 저장소 · `/v1/auth/*`
 - Google 로그인 화면과 세션 — mobile 네이티브 흐름, web 로그인 · HttpOnly 세션 cookie, WebView 로그인 핸드오프. **실계정 · 실기기 인수는 남아 있다**
-- 온보딩 소개 → 사용 목적 → 첫 사진 → 처리 — mobile(네이티브)과 web(브라우저 단독, 파일 선택)이 같은 순서로 간다. 진행은 서버(`/v1/onboarding`)에 있어 어느 쪽에서든 이어 간다. 두 앱 모두 첫 결과 화면(일반 사진과 같은 실제 처리 결과, 같은 사진을 다른 방식으로 다시 처리 가능)에서 완료를 눌러야 온보딩을 마치고 홈으로 간다(`POST /v1/onboarding/complete`). mobile은 완료 뒤 세션을 다시 받아 root stack이 홈으로 바뀐다
+- 온보딩 소개 → 첫 사진 → 처리 — mobile(네이티브)과 web(브라우저 단독, 파일 선택)이 같은 순서로 간다. 진행은 서버(`/v1/onboarding`)에 있어 어느 쪽에서든 이어 간다. 두 앱 모두 첫 결과 화면(일반 사진과 같은 실제 처리 결과, 같은 사진을 다른 방식으로 다시 처리 가능)에서 완료를 눌러야 온보딩을 마치고 홈으로 간다(`POST /v1/onboarding/complete`). mobile은 완료 뒤 세션을 다시 받아 root stack이 홈으로 바뀐다
 - 사진 한 장의 처리 — 홈의 사진 추가에서 web은 `/process`(파일 선택 · 끌어 놓기), mobile은 네이티브 화면(사진 선택 · 카메라)으로 한 장을 받아 확인 → 처리 → 결과까지 간다. 서버는 분류와 유형 판단(text · receipt · unsupported · ambiguous)을 하고, 요청 시점에 저장된 처리 방식을 실행해 결과(`outcome`)를 작업에 남긴다. 결과 화면에서 같은 사진을 다른 처리 방식으로 다시 처리하고(`sourceJobId`), 사용자가 고를 때만 그 처리 방식을 기본값으로 따로 저장한다. 영수증의 확인이 필요한 값은 필드 하나씩 확정한다(`PATCH /v1/processing-jobs/{jobId}/receipt-fields/{field}`). 사진은 저장하지 않고 내용의 SHA-256만 남겨, 다시 처리는 지금 사진을 들고 있는 화면에서만 된다
 - 처리 기록 — web `/history`(목록)와 `/history/{jobId}`(결과 하나). 사진이 없어 다시 처리는 없고 영수증 값 확정만 된다. mobile은 홈의 기록 항목에서 이 결과 화면을 WebView로 연다
 - 검증 명령과 문서

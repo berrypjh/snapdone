@@ -92,10 +92,10 @@ mobile 홈의 "설정 변경"은 web의 `/settings/processing`을, 최근 처리
 
 ### 온보딩 처음부터 보기
 
-온보딩 진행(단계 · 목적)은 **서버의 `profiles`에** 저장된다(`onboarding_step` · `onboarding_purposes`). 그래서 앱에서 하던 진행을 web에서, web에서 하던 진행을 앱에서 이어 간다. 처음부터 보려면 그 사용자의 진행을 되돌리거나 로컬 DB의 사용자를 지운다. 사용자를 지우면 세션 · 프로필 · 처리 작업이 `ON DELETE CASCADE`로 함께 지워져 다음 로그인이 새 사용자가 된다.
+온보딩 진행 단계는 **서버의 `profiles`에** 저장된다(`onboarding_step`). 그래서 앱에서 하던 진행을 web에서, web에서 하던 진행을 앱에서 이어 간다. 처음부터 보려면 그 사용자의 진행을 되돌리거나 로컬 DB의 사용자를 지운다. 사용자를 지우면 세션 · 프로필 · 처리 작업이 `ON DELETE CASCADE`로 함께 지워져 다음 로그인이 새 사용자가 된다.
 
 ```bash
-docker compose -f apps/api/compose.yaml exec postgres psql -U snapdone -d snapdone -c "UPDATE profiles SET onboarding_step = 'intro', onboarding_purposes = NULL;"
+docker compose -f apps/api/compose.yaml exec postgres psql -U snapdone -d snapdone -c "UPDATE profiles SET onboarding_step = 'intro';"
 ```
 
 ```bash
