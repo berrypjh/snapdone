@@ -205,16 +205,19 @@ export const ReprocessSection = ({
           <Text style={[textStyle(typography.caption.default), muted]}>{REMEMBER_HELP}</Text>
         </Stack>
       )}
-      <Button
-        variant="contained"
-        size="lg"
-        fullWidth
-        loading={running}
-        disabled={running || !changed}
-        onPress={submit}
-      >
-        {REPROCESS}
-      </Button>
+      {/* 지금 적용한 방식에서는 할 일이 없다. 다른 방식을 고를 때만 보인다(다시 처리 중에도 고른 방식이 남는다). */}
+      {changed && (
+        <Button
+          variant="contained"
+          size="lg"
+          fullWidth
+          loading={running}
+          disabled={running}
+          onPress={submit}
+        >
+          {REPROCESS}
+        </Button>
+      )}
       {message && (
         <Text
           accessibilityLiveRegion="polite"

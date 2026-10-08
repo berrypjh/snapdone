@@ -9,9 +9,8 @@ import { LogoutButton } from '../components/auth/LogoutButton';
 import type { SelectedImage } from '../onboarding/capture';
 import { completeOnboarding } from '../onboarding/completion';
 import { createOnboardingController, useOnboardingSnapshot } from '../onboarding/controller';
-import { selectedPurposes } from '../onboarding/model';
 import { processingApi } from '../onboarding/processingApi';
-import { fromSaved, type ProgressStore, toUpdate } from '../onboarding/progress';
+import { fromSaved, type ProgressStore } from '../onboarding/progress';
 import { progressApi } from '../onboarding/progressApi';
 import { jobApi } from '../processing/jobApi';
 import { createJobPort } from '../processing/port';
@@ -20,7 +19,6 @@ import { OnboardingFirstImageScreen } from '../screens/OnboardingFirstImageScree
 import { OnboardingIntroScreen } from '../screens/OnboardingIntroScreen';
 import { OnboardingPreviewScreen } from '../screens/OnboardingPreviewScreen';
 import { OnboardingProcessingScreen } from '../screens/OnboardingProcessingScreen';
-import { OnboardingPurposeScreen } from '../screens/OnboardingPurposeScreen';
 import { OnboardingResultScreen } from '../screens/OnboardingResultScreen';
 
 import type { OnboardingStackParamList } from './navigation';
@@ -43,7 +41,7 @@ const createProgressStore = (controller: AuthController): ProgressStore => ({
     return saved && fromSaved(saved);
   },
   save: async (progress) => {
-    await controller.authorized((credential) => progressApi.save(credential, toUpdate(progress)));
+    await controller.authorized((credential) => progressApi.save(credential, progress));
   },
 });
 
@@ -71,7 +69,6 @@ const OnboardingProcessingRoute = ({
 
 const RESUME_ROUTE: Record<ResumeStep, keyof OnboardingStackParamList> = {
   intro: 'OnboardingIntro',
-  purpose: 'OnboardingPurpose',
   'first-image': 'OnboardingFirstImage',
 };
 
@@ -114,21 +111,6 @@ export const OnboardingFlow = ({ controller }: OnboardingFlowProps) => {
             controller={controller}
             onStart={() => {
               onboarding.dispatch({ type: 'start' });
-              navigation.navigate('OnboardingPurpose');
-            }}
-          />
-        )}
-      </OnboardingStack.Screen>
-      <OnboardingStack.Screen name="OnboardingPurpose">
-        {({ navigation }) => (
-          <OnboardingPurposeScreen
-            initialSelection={selectedPurposes(snapshot.progress.purpose)}
-            onNext={(purposes) => {
-              onboarding.dispatch({ type: 'choose-purposes', purposes });
-              navigation.navigate('OnboardingFirstImage');
-            }}
-            onSkip={() => {
-              onboarding.dispatch({ type: 'skip-purpose' });
               navigation.navigate('OnboardingFirstImage');
             }}
           />

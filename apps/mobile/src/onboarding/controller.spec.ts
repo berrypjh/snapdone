@@ -44,7 +44,7 @@ describe('load', () => {
   });
 
   it('resumes the saved progress, including progress made on the web', async () => {
-    const progress = { step: 'purpose', purpose: { status: 'unanswered' } } as const;
+    const progress = { step: 'first-image' } as const;
     const { store } = memoryStore(progress);
 
     expect(progressOf(await ready(store))).toEqual(progress);
@@ -70,7 +70,7 @@ describe('load', () => {
     controller.dispatch({ type: 'start' });
     await second;
 
-    expect(progressOf(controller).step).toBe('purpose');
+    expect(progressOf(controller).step).toBe('first-image');
   });
 });
 
@@ -85,7 +85,7 @@ describe('dispatch', () => {
     await flush();
 
     expect(listener).toHaveBeenCalledTimes(1);
-    expect(state.saved).toEqual({ step: 'purpose', purpose: { status: 'unanswered' } });
+    expect(state.saved).toEqual({ step: 'first-image' });
   });
 
   it('neither publishes nor saves a repeated event', async () => {
@@ -113,42 +113,24 @@ describe('dispatch', () => {
     expect(store.save).not.toHaveBeenCalled();
   });
 
-  it('saves in the order the changes happened', async () => {
+  it('keeps going when saving fails, and the next launch starts from the last saved step', async () => {
     const { store, state } = memoryStore();
     const controller = await ready(store);
-
-    controller.dispatch({ type: 'start' });
-    controller.dispatch({ type: 'choose-purposes', purposes: ['events'] });
-    controller.dispatch({ type: 'skip-purpose' });
-    await flush();
-
-    expect(state.saved).toEqual({ step: 'first-image', purpose: { status: 'skipped' } });
-  });
-
-  it('keeps going when saving fails, and the next launch resumes the last saved step', async () => {
-    const { store, state } = memoryStore();
-    const controller = await ready(store);
-    controller.dispatch({ type: 'start' });
-    await flush();
     store.save.mockRejectedValueOnce(new Error('offline'));
 
-    controller.dispatch({ type: 'skip-purpose' });
+    controller.dispatch({ type: 'start' });
     await flush();
 
     expect(progressOf(controller).step).toBe('first-image');
-    expect(state.saved?.step).toBe('purpose');
+    expect(state.saved).toBeNull();
   });
 
-  it('resumes at the first image after an answer, carrying no image', async () => {
+  it('resumes at the first image after the intro, carrying no image', async () => {
     const { store } = memoryStore();
     const controller = await ready(store);
     controller.dispatch({ type: 'start' });
-    controller.dispatch({ type: 'choose-purposes', purposes: ['food'] });
     await flush();
 
-    expect(progressOf(await ready(store))).toEqual({
-      step: 'first-image',
-      purpose: { status: 'selected', purposes: ['food'] },
-    });
+    expect(progressOf(await ready(store))).toEqual({ step: 'first-image' });
   });
 });

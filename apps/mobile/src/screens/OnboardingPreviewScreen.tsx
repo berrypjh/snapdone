@@ -14,8 +14,9 @@ const IMAGE_HEIGHT_RATIO = 0.45;
 
 const LOAD_FAILED = '사진을 불러오지 못했습니다. 다른 사진을 선택해 주세요.';
 
-/** 온보딩 첫 사진의 안내. 처리 방식을 아직 고르지 않은 사용자에게 보인다. */
-const ONBOARDING_NOTE = '사진 속 내용을 확인하고\n필요한 작업을 찾아 드립니다.';
+/** 온보딩 첫 사진의 안내. 처리 방식을 아직 고르지 않은 사용자에게 서버 기본값(Go `preference.Defaults`)을 말한다. */
+const ONBOARDING_NOTE =
+  '글자 사진은 텍스트를 추출해 필요하면 번역하고,\n영수증은 지출 정보로 정리해 드려요.\n결과에서 다른 방식으로 바꿀 수 있어요.';
 
 type OnboardingPreviewScreenProps = {
   image: SelectedImage;

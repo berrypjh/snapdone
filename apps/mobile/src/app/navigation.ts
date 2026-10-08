@@ -23,7 +23,6 @@ export type RootStackParamList = {
 /** 서버 온보딩이 끝나기 전의 화면들. 앞으로 가는 순서대로 적는다. */
 export type OnboardingStackParamList = {
   OnboardingIntro: undefined;
-  OnboardingPurpose: undefined;
   OnboardingFirstImage: undefined;
   /** 고른 사진은 화면 사이에서만 오간다. 저장하지 않는다. */
   OnboardingPreview: { image: SelectedImage };

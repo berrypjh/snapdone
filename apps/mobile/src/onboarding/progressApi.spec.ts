@@ -21,12 +21,9 @@ afterEach(() => {
 
 describe('complete', () => {
   it('posts to the completion endpoint with the bearer credential and no body', async () => {
-    const fetchMock = stubFetch(() => json({ step: 'complete', purposes: ['receipt'] }));
+    const fetchMock = stubFetch(() => json({ step: 'complete' }));
 
-    await expect(progressApi.complete('c')).resolves.toEqual({
-      step: 'complete',
-      purposes: ['receipt'],
-    });
+    await expect(progressApi.complete('c')).resolves.toEqual({ step: 'complete' });
     const [url, init] = fetchMock.mock.calls[0] ?? [];
     expect(url).toBe(`${BASE_URL}/v1/onboarding/complete`);
     expect(init?.method).toBe('POST');
@@ -40,15 +37,14 @@ describe('complete', () => {
     await expect(progressApi.complete('c')).resolves.toBeNull();
   });
 
-  it.each([
-    { step: 'first-image', purposes: [] },
-    { step: 'complete' },
-    { error: 'provider_unavailable' },
-  ])('rejects a response that is not a finished onboarding: %j', async (body) => {
-    stubFetch(() => json(body));
+  it.each([{ step: 'first-image' }, { step: 'purpose' }, { error: 'provider_unavailable' }])(
+    'rejects a response that is not a finished onboarding: %j',
+    async (body) => {
+      stubFetch(() => json(body));
 
-    await expect(progressApi.complete('c')).rejects.toThrow();
-  });
+      await expect(progressApi.complete('c')).rejects.toThrow();
+    },
+  );
 
   it('fails when the onboarding is not at the first photo yet', async () => {
     stubFetch(() => json({ error: 'onboarding_out_of_order' }, 409));
@@ -59,10 +55,10 @@ describe('complete', () => {
 
 describe('find and save', () => {
   it('keep their path and method', async () => {
-    const fetchMock = stubFetch(() => json({ step: 'first-image', purposes: [] }));
+    const fetchMock = stubFetch(() => json({ step: 'first-image' }));
 
     await progressApi.find('c');
-    await progressApi.save('c', { step: 'first-image', purposes: [] });
+    await progressApi.save('c', { step: 'first-image' });
     expect(fetchMock.mock.calls.map(([url, init]) => [url, init?.method])).toEqual([
       [`${BASE_URL}/v1/onboarding`, undefined],
       [`${BASE_URL}/v1/onboarding`, 'PUT'],

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { completeOnboarding } from './completion';
 
-const completed: CompletedProgress = { step: 'complete', purposes: ['receipt'] };
+const completed: CompletedProgress = { step: 'complete' };
 
 const sessionAt = (onboardingStep: Session['onboardingStep']): Session => ({
   user: { id: 'user-1' },
