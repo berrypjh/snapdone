@@ -10,9 +10,10 @@ import { loginPage } from '@/lib/auth/redirect';
 import { createProcessingPort } from '@/lib/onboarding/processing-port';
 import { PHOTO_ACCEPT, useObjectUrl } from '@/lib/photo';
 
-import { ProcessingView } from './processing-view';
+import { ProcessingView } from '../processing/processing-view';
+import { SelectedImage } from '../processing/selected-image';
+
 import { ResultView } from './result-view';
-import { SelectedImage } from './selected-image';
 
 const EXAMPLES = ['영수증', '외국어가 있는 사진'] as const;
 
@@ -89,7 +90,8 @@ export function FirstImageFlow() {
         </h1>
         <SelectedImage url={url} />
         <p className="text-center typo-paragraph-default text-text-light">
-          사진 속 내용을 확인하고 필요한 작업을 찾아 드립니다.
+          글자 사진은 텍스트를 추출해 필요하면 번역하고, 영수증은 지출 정보로 정리해 드려요.
+          결과에서 다른 방식으로 바꿀 수 있어요.
         </p>
         <div className="flex flex-col gap-2">
           <Button

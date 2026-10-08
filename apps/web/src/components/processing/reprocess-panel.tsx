@@ -23,7 +23,6 @@ import { saveProcessingPreference } from '@/lib/processing-preferences/actions';
 import {
   ACTION_LEGEND,
   CURRENT,
-  currentAction,
   LOGIN_AGAIN,
   remember,
   REMEMBER_HELP,
@@ -154,13 +153,13 @@ export function ReprocessPanel({ job, file, onReprocessed, returnTo }: Reprocess
           : '';
 
   return (
-    <section aria-labelledby="reprocess-title" className="flex min-w-0 flex-col gap-4">
+    <section
+      aria-labelledby="reprocess-title"
+      className="flex min-w-0 flex-col gap-4 border-t border-stroke-light pt-6"
+    >
       <h2 id="reprocess-title" className="typo-body-medium-strong">
         {REPROCESS_TITLE}
       </h2>
-      <p className="typo-caption-default text-text-light">
-        {currentAction(actionLabel(applied.imageType, applied.appliedAction) ?? '')}
-      </p>
       <form onSubmit={submit} className="flex flex-col gap-4">
         <RadioGroup
           name="action"
@@ -197,16 +196,20 @@ export function ReprocessPanel({ job, file, onReprocessed, returnTo }: Reprocess
           </div>
         )}
 
-        <Button
-          type="submit"
-          variant="contained"
-          size="lg"
-          fullWidth
-          loading={running}
-          disabled={running || !changed}
-        >
-          {REPROCESS}
-        </Button>
+        {/* 지금 적용한 방식에서는 할 일이 없다. 다른 방식을 고를 때만 보인다(다시 처리 중에도 고른 방식이 남는다).
+            화면의 주 버튼(완료 · 다른 사진 처리)과 겹치지 않게 보조 버튼이다. */}
+        {changed && (
+          <Button
+            type="submit"
+            variant="outlined"
+            size="lg"
+            fullWidth
+            loading={running}
+            disabled={running}
+          >
+            {REPROCESS}
+          </Button>
+        )}
       </form>
 
       <p role="status" className="typo-paragraph-default empty:sr-only">

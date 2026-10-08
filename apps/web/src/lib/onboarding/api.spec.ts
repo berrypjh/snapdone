@@ -35,25 +35,25 @@ afterEach(() => {
 
 describe('progress', () => {
   it('reads the saved progress with the bearer credential', async () => {
-    const fetchMock = stubFetch(() => json({ step: 'first-image', purposes: [] }));
+    const fetchMock = stubFetch(() => json({ step: 'first-image' }));
 
-    await expect(fetchProgress('c')).resolves.toEqual({ step: 'first-image', purposes: [] });
+    await expect(fetchProgress('c')).resolves.toEqual({ step: 'first-image' });
     const [url, init] = fetchMock.mock.calls[0] ?? [];
     expect(url).toBe(`${BASE_URL}/v1/onboarding`);
     expect(init?.headers).toEqual({ Authorization: 'Bearer c' });
   });
 
   it('saves with PUT and a JSON body', async () => {
-    const fetchMock = stubFetch(() => json({ step: 'first-image', purposes: ['food'] }));
+    const fetchMock = stubFetch(() => json({ step: 'first-image' }));
 
-    await saveProgress('c', { step: 'first-image', purposes: ['food'] });
+    await saveProgress('c', { step: 'first-image' });
     const init = fetchMock.mock.calls[0]?.[1];
     expect(init?.method).toBe('PUT');
     expect(init?.headers).toEqual({
       'Content-Type': 'application/json',
       Authorization: 'Bearer c',
     });
-    expect(init?.body).toBe('{"step":"first-image","purposes":["food"]}');
+    expect(init?.body).toBe('{"step":"first-image"}');
   });
 
   it('returns null when Go no longer accepts the session', async () => {
@@ -65,13 +65,13 @@ describe('progress', () => {
   it('reports a conflict when the server moved on first', async () => {
     stubFetch(() => json({ error: 'onboarding_out_of_order' }, 409));
 
-    await expect(saveProgress('c', { step: 'purpose', purposes: null })).rejects.toBeInstanceOf(
+    await expect(saveProgress('c', { step: 'intro' })).rejects.toBeInstanceOf(
       ProgressConflictError,
     );
   });
 
   it('rejects a response outside the contract', async () => {
-    stubFetch(() => json({ step: 'first-image', purposes: null }));
+    stubFetch(() => json({ step: 'purpose' }));
 
     await expect(fetchProgress('c')).rejects.toThrow();
   });
@@ -79,12 +79,9 @@ describe('progress', () => {
 
 describe('completion', () => {
   it('posts to the completion endpoint with the bearer credential and no body', async () => {
-    const fetchMock = stubFetch(() => json({ step: 'complete', purposes: ['receipt'] }));
+    const fetchMock = stubFetch(() => json({ step: 'complete' }));
 
-    await expect(completeProgress('c')).resolves.toEqual({
-      step: 'complete',
-      purposes: ['receipt'],
-    });
+    await expect(completeProgress('c')).resolves.toEqual({ step: 'complete' });
     const [url, init] = fetchMock.mock.calls[0] ?? [];
     expect(url).toBe(`${BASE_URL}/v1/onboarding/complete`);
     expect(init?.method).toBe('POST');
@@ -104,15 +101,14 @@ describe('completion', () => {
     await expect(completeProgress('c')).rejects.toBeInstanceOf(ProgressConflictError);
   });
 
-  it.each([
-    { step: 'first-image', purposes: [] },
-    { step: 'complete' },
-    { error: 'provider_unavailable' },
-  ])('rejects a successful response that is not a finished onboarding: %j', async (body) => {
-    stubFetch(() => json(body));
+  it.each([{ step: 'first-image' }, { step: 'purpose' }, { error: 'provider_unavailable' }])(
+    'rejects a successful response that is not a finished onboarding: %j',
+    async (body) => {
+      stubFetch(() => json(body));
 
-    await expect(completeProgress('c')).rejects.toThrow();
-  });
+      await expect(completeProgress('c')).rejects.toThrow();
+    },
+  );
 
   it('fails on a server error', async () => {
     stubFetch(() => json({ error: 'provider_unavailable' }, 500));

@@ -54,7 +54,7 @@ afterEach(() => {
 describe('completeOnboarding', () => {
   it('finishes onboarding and goes home', async () => {
     const fetchMock = stubApi({
-      'POST /v1/onboarding/complete': () => json({ step: 'complete', purposes: ['receipt'] }),
+      'POST /v1/onboarding/complete': () => json({ step: 'complete' }),
     });
 
     await expect(completeOnboarding()).rejects.toThrow(/^REDIRECT \/$/);
@@ -78,15 +78,15 @@ describe('completeOnboarding', () => {
   it('follows the saved step when the onboarding is not at the first photo', async () => {
     stubApi({
       'POST /v1/onboarding/complete': () => json({ error: 'onboarding_out_of_order' }, 409),
-      'GET /v1/onboarding': () => json({ step: 'purpose', purposes: null }),
+      'GET /v1/onboarding': () => json({ step: 'intro' }),
     });
 
-    await expect(completeOnboarding()).rejects.toThrow('REDIRECT /onboarding/purpose');
+    await expect(completeOnboarding()).rejects.toThrow(/^REDIRECT \/onboarding$/);
   });
 
   it.each([
     ['a server error', () => json({ error: 'provider_unavailable' }, 500)],
-    ['an unreadable response', () => json({ step: 'first-image', purposes: [] })],
+    ['an unreadable response', () => json({ step: 'first-image' })],
     ['an unreachable server', () => Promise.reject(new TypeError('fetch failed'))],
   ])('returns an error to retry on %s', async (_name, response) => {
     stubApi({ 'POST /v1/onboarding/complete': response });

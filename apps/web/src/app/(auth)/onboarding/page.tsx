@@ -22,7 +22,7 @@ export const metadata: Metadata = { title: TITLE };
 
 /**
  * 서비스 소개. 진행은 서버에 있어 mobile에서 더 진행했다면 그 단계로 보낸다.
- * 시작하기가 목적 선택으로 넘긴다.
+ * 시작하기가 첫 사진으로 넘긴다.
  */
 export default async function OnboardingPage() {
   const session = await requireSignedIn('/onboarding');

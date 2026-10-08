@@ -3,7 +3,6 @@ import { IMAGE_TYPE_LABEL, type ImageType } from '@snapdone/processing';
 export const REPROCESS_TITLE = '다른 방식으로 처리';
 export const ACTION_LEGEND = '처리 방식';
 export const CURRENT = '현재 적용';
-export const currentAction = (label: string) => `${CURRENT}: ${label}`;
 export const REPROCESS = '이 방식으로 다시 처리';
 export const REPROCESSING = '같은 사진을 다시 처리하고 있습니다';
 export const REPROCESSED = '다른 방식으로 다시 처리했습니다.';

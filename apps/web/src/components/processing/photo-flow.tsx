@@ -1,6 +1,7 @@
 'use client';
 
 import { type ChangeEvent, type DragEvent, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@berrypjh/react-ui';
@@ -10,9 +11,6 @@ import { loginPage } from '@/lib/auth/redirect';
 import { checkPhoto, PHOTO_ACCEPT, type PhotoCheck, useObjectUrl } from '@/lib/photo';
 import { createJobPort } from '@/lib/processing-jobs/port';
 
-import { ProcessingView } from '../onboarding/processing-view';
-import { SelectedImage } from '../onboarding/selected-image';
-
 import {
   CHOOSE,
   CHOOSE_ANOTHER,
@@ -20,6 +18,8 @@ import {
   CHOOSE_TITLE,
   DROP_HINT,
   FORMAT_NOTE,
+  GO_HISTORY,
+  GO_HOME,
   INVALID_PHOTO,
   PATH,
   PREVIEW_NOTE,
@@ -28,9 +28,14 @@ import {
   PROCESS_ANOTHER,
 } from './photo-flow-copy';
 import { ProcessingResult } from './processing-result';
+import { ProcessingView } from './processing-view';
 import { ReprocessPanel } from './reprocess-panel';
+import { SelectedImage } from './selected-image';
 
 type Step = 'choose' | 'preview' | 'processing' | 'result';
+
+const NEXT_LINK =
+  'inline-flex min-h-11 items-center typo-body-medium-strong text-text-link underline-offset-4 hover:underline';
 type Invalid = Extract<PhotoCheck, { type: 'invalid' }>['reason'];
 
 /**
@@ -109,6 +114,15 @@ export function PhotoFlow() {
         <Button type="button" variant="outlined" size="lg" fullWidth onClick={choose}>
           {PROCESS_ANOTHER}
         </Button>
+        {/* 처리한 작업은 홈의 최근 처리와 기록에 남는다. 사이드바가 없는 폰 폭에서도 바로 간다. */}
+        <nav aria-label="다음으로 갈 곳" className="flex justify-center gap-6">
+          <Link href="/" className={NEXT_LINK}>
+            {GO_HOME}
+          </Link>
+          <Link href="/history" className={NEXT_LINK}>
+            {GO_HISTORY}
+          </Link>
+        </nav>
       </div>
     );
   }

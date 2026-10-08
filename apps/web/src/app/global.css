@@ -61,3 +61,49 @@ body {
   outline: var(--ds-semantic-border-default) solid var(--ds-stroke-primary);
   outline-offset: var(--ds-spacing-2xs);
 }
+
+/*
+ * 처리 중 표시. 서버는 처리 중 · 완료 · 실패만 알려 주므로 진행률 없이 계속 흐르기만 한다.
+ * 사진 위를 훑는 띠와 사진 아래의 짧은 막대. 움직임을 줄인 사용자에게는 보이지 않는다(제목 문장이 상태를 말한다).
+ */
+@keyframes processing-scan {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(250%);
+  }
+}
+
+@keyframes processing-bar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+.processing-scan {
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--ds-stroke-primary) 24%, transparent) 85%,
+    var(--ds-stroke-primary)
+  );
+  animation: processing-scan calc(var(--ds-motion-duration-slower) * 2)
+    var(--ds-motion-easing-standard) infinite;
+}
+
+.processing-bar {
+  background-color: var(--ds-stroke-primary);
+  animation: processing-bar var(--ds-motion-duration-slower) var(--ds-motion-easing-standard)
+    infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .processing-scan,
+  .processing-bar {
+    display: none;
+  }
+}

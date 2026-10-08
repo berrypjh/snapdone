@@ -32,7 +32,7 @@ const loadJobs = async (): Promise<RecentJob[] | null> => {
 };
 
 /**
- * 처리 기록. 온보딩을 마친 뒤 올린 사진(general 작업)의 최근 기록을 서버에서 읽는다. 기록 하나를 열면 그 처리 결과다.
+ * 처리 기록. 처리한 사진(온보딩 첫 사진 포함)의 최근 기록을 서버에서 읽는다. 기록 하나를 열면 그 처리 결과다.
  * 사진은 저장하지 않으므로 기록에는 사진이 없고, 같은 사진으로 다시 처리할 수도 없다.
  */
 export default async function HistoryPage() {

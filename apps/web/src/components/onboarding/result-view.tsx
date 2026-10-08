@@ -62,7 +62,8 @@ export function ResultView({ image, job, onReprocessed }: ResultViewProps) {
         />
       )}
 
-      <div className="flex flex-col gap-2">
+      {/* 끝내는 버튼은 하나뿐인 주 행동이라 화면 아래에 붙여 둔다. 긴 결과를 읽는 중에도 바로 누른다. */}
+      <div className="sticky bottom-0 flex flex-col gap-2 border-t border-stroke-light bg-background-surface py-4">
         {failed && !pending && (
           <p role="alert" className="text-center typo-paragraph-default">
             완료하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.

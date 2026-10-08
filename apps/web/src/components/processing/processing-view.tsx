@@ -12,6 +12,7 @@ import {
 } from '@snapdone/onboarding';
 
 import { FAILED_TITLE, FAILURE_COPY, PROCESSING_MESSAGE } from './processing-copy';
+import { ProcessingBar, ScanOverlay } from './processing-indicator';
 import { SelectedImage } from './selected-image';
 
 type ProcessingViewProps<Job extends ProcessingJob> = {
@@ -77,7 +78,11 @@ export function ProcessingView<Job extends ProcessingJob>({
       <h1 ref={title} tabIndex={-1} className="text-center typo-heading-h4">
         {message}
       </h1>
-      <SelectedImage url={url} />
+      <div className="relative">
+        <SelectedImage url={url} />
+        {!failure && <ScanOverlay />}
+      </div>
+      {!failure && <ProcessingBar />}
 
       {/* 항상 있는 live region 하나에 문장만 바꿔야 스크린 리더가 놓치지 않는다. 실패는 alert가 알린다. */}
       <p role="status" className="sr-only">

@@ -2,14 +2,7 @@
 
 import { redirect } from 'next/navigation';
 
-import {
-  isPurpose,
-  isPurposeSelection,
-  orderPurposes,
-  ProcessingApiError,
-  type ProgressUpdate,
-  type SavedProgress,
-} from '@snapdone/onboarding';
+import { ProcessingApiError, type SavedProgress } from '@snapdone/onboarding';
 import type { JobDetail } from '@snapdone/processing';
 
 import { loginPage } from '../auth/redirect';
@@ -40,34 +33,15 @@ const orCurrent = (credential: string, request: Promise<SavedProgress | null>) =
     return fetchProgress(credential);
   });
 
-const save = (credential: string, update: ProgressUpdate) =>
-  orCurrent(credential, saveProgress(credential, update));
-
-/** 진행을 저장하고 서버의 단계에 맞는 page로 보낸다. 로그인이 없으면 로그인으로. */
-const saveAndContinue = async (credential: string | null, update: ProgressUpdate) => {
-  const saved = credential ? await save(credential, update) : null;
-  redirect(saved ? onboardingPath(saved.step) : LOGIN);
-};
-
-/** 소개에서 목적 선택으로. 이미 더 진행했다면 그 단계로 보낸다. */
+/** 소개에서 첫 사진으로. 이미 더 진행했다면 그 단계로, 로그인이 없으면 로그인으로 보낸다. */
 export async function startOnboarding(): Promise<void> {
   const credential = await credentialFromAllowedOrigin();
-  const progress = credential ? await fetchProgress(credential) : null;
+  if (!credential) redirect(LOGIN);
+  const progress = await fetchProgress(credential);
   if (!progress) redirect(LOGIN);
   if (progress.step !== 'intro') redirect(onboardingPath(progress.step));
-  await saveAndContinue(credential, { step: 'purpose', purposes: null });
-}
-
-/** 고른 목적을 남기고 첫 사진으로. 선택 규칙에 맞지 않으면 목적 선택에 머문다. */
-export async function choosePurposes(form: FormData): Promise<void> {
-  const purposes = orderPurposes(form.getAll('purpose').filter(isPurpose));
-  if (!isPurposeSelection(purposes)) redirect('/onboarding/purpose');
-  await saveAndContinue(await credentialFromAllowedOrigin(), { step: 'first-image', purposes });
-}
-
-/** 목적을 건너뛴 사실을 남기고 첫 사진으로. */
-export async function skipPurpose(): Promise<void> {
-  await saveAndContinue(await credentialFromAllowedOrigin(), { step: 'first-image', purposes: [] });
+  const saved = await orCurrent(credential, saveProgress(credential, { step: 'first-image' }));
+  redirect(saved ? onboardingPath(saved.step) : LOGIN);
 }
 
 /** 완료 Action이 돌아왔다면 실패다. 성공 · 로그인 만료 · 단계 어긋남은 redirect로 끝난다. */

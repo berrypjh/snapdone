@@ -8,7 +8,7 @@ import {
 
 import { apiFetch, bearer } from '../api';
 
-/** 온보딩을 마친 뒤 올린 사진의 최근 처리 작업. 세션이 끝났으면 `null`이다. */
+/** 최근 처리 작업. 온보딩 첫 사진은 온보딩을 마친 뒤에 들어간다. 세션이 끝났으면 `null`이다. */
 export const fetchRecentJobs = async (credential: string): Promise<RecentJob[] | null> => {
   const response = await apiFetch('/v1/processing-jobs', { headers: bearer(credential) });
   if (response.status === 401) return null;

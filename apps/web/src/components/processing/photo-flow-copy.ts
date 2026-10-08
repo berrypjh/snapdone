@@ -14,6 +14,8 @@ export const PREVIEW_NOTE = '사진 속 내용을 확인하고 설정한 방식�
 export const PROCESS = '처리하기';
 export const CHOOSE_ANOTHER = '다른 사진 선택';
 export const PROCESS_ANOTHER = '다른 사진 처리';
+export const GO_HOME = '홈으로';
+export const GO_HISTORY = '처리 기록 보기';
 
 export const INVALID_PHOTO: Record<Extract<PhotoCheck, { type: 'invalid' }>['reason'], string> = {
   multiple: '사진은 한 장만 올릴 수 있습니다. 한 장을 골라 주세요.',

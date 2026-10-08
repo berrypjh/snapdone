@@ -16,8 +16,6 @@ import { needsReview, presentJob, type ResultScreen } from '@snapdone/processing
 import { loginPage } from '@/lib/auth/redirect';
 import { findJob } from '@/lib/processing-jobs/actions';
 
-import { SelectedImage } from '../onboarding/selected-image';
-
 import { ExpenseFields } from './expense-fields';
 import {
   AMBIGUOUS_NOTE,
@@ -48,6 +46,7 @@ import {
   WITHOUT_OUTCOME_NOTE,
   WITHOUT_OUTCOME_TITLE,
 } from './result-copy';
+import { SelectedImage } from './selected-image';
 import { TypeChoice } from './type-choice';
 
 /** 결과 화면이 쓰는 원본. 이 처리 흐름이 고른 `File`과 그 blob 주소이고, 주소는 흐름이 만들고 해제한다. */
@@ -178,7 +177,7 @@ export function ProcessingResult({
       </div>
 
       {image ? (
-        <SelectedImage url={image.url} />
+        <SelectedImage url={image.url} compact />
       ) : (
         <p className="text-center typo-caption-default text-text-light">{NO_PHOTO}</p>
       )}
