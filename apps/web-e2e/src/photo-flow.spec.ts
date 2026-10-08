@@ -178,6 +178,12 @@ test('processes a text photo once and shows the server result with the photo', a
   await expect(page.getByRole('img', { name: '선택한 사진' })).toBeVisible();
   // One upload, even with the development double effect.
   expect(await listJobs(page.request, credential)).toHaveLength(1);
+
+  // The processed photo is kept, so the result leads on to the home and the history.
+  const next = page.getByRole('navigation', { name: '다음으로 갈 곳' });
+  await expect(next.getByRole('link', { name: '홈으로' })).toHaveAttribute('href', '/');
+  await next.getByRole('link', { name: '처리 기록 보기' }).click();
+  await expect(page).toHaveURL(/\/history$/);
 });
 
 test('processes a receipt and confirms a field on the result', async ({
@@ -265,6 +271,8 @@ test('keeps the photo after a failed upload and retries it', async ({ page, cont
     '사진을 처리하지 못했습니다. 다시 시도하거나 다른 사진을 선택해 주세요.',
   );
   await expect(page.getByRole('img', { name: '선택한 사진' })).toBeVisible();
+  // A failed job is not still working: the processing motion stops.
+  await expect(page.getByTestId('processing-indicator')).toHaveCount(0);
   await page.getByRole('button', { name: '다시 시도' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('텍스트를 추출했습니다');
 });

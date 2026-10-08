@@ -26,7 +26,7 @@ export const linkTabKey = (browserName: string) => (browserName === 'webkit' ? '
 /** `next dev` cookie name (`authCookies()` outside production). */
 export const SESSION_COOKIE = 'snapdone-session-dev';
 
-/** `first-image` is a user who skipped the purposes and is about to add the first photo. */
+/** `first-image` is a user past the intro, about to add the first photo. */
 type OnboardingStep = 'intro' | 'first-image' | 'complete';
 
 /** What the fake API returns for this user's photos. Chosen per user so parallel tests stay apart. */
@@ -178,6 +178,8 @@ export const startJob = async (request: APIRequestContext, credential: string) =
 export const processFirstPhoto = async (page: Page) => {
   await page.locator('input[type="file"]').setInputFiles(PHOTO);
   await expect(page.getByRole('heading', { name: '사진을 처리할까요?' })).toBeVisible();
+  // Says what the server's defaults will do, not that it will find the work by itself.
+  await expect(page.getByText(/영수증은 지출 정보로 정리해 드려요/)).toBeVisible();
   await page.getByRole('button', { name: '처리하기' }).click();
 };
 

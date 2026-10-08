@@ -14,8 +14,8 @@ import { enterMain } from './support/keyboard';
 
 /**
  * The home against the fake API, which keeps processing jobs and preferences per user like Go.
- * Whether the home is empty or active depends only on the user's general jobs — photos processed
- * after the onboarding — never on a query, a flag, or the onboarding photo.
+ * Whether the home is empty or active depends only on the jobs the server lists — every photo once
+ * the onboarding is finished, the onboarding photo included — never on a query or a flag.
  */
 
 test.use({ viewport: { width: 390, height: 844 } });

@@ -15,7 +15,7 @@ const WEB_ORIGIN = process.env['WEB_ORIGIN'];
 /** Same as `fixture.ts`. `.test` never resolves, so a navigation that escapes `page.route` reaches no provider. */
 const FAKE_AUTHORIZE_URL = 'https://oauth.fake.test/authorize';
 
-type Step = 'intro' | 'purpose' | 'first-image' | 'complete';
+type Step = 'intro' | 'first-image' | 'complete';
 type Session = {
   userId: string;
   step: Step;
@@ -29,8 +29,6 @@ const transactions = new Map<string, string>();
 const loginGrants = new Map<string, { state: string; challenge: string; step: Step }>();
 const handoffGrants = new Map<string, { challenge: string; next: string; parent: string }>();
 const faults = { startStatus: 0, startDelayMs: 0, startCalls: 0 };
-/** Onboarding purposes per user. Absent means unanswered (`null`). */
-const purposes = new Map<string, string[]>();
 /** The result every photo of a user gets. Absent means a receipt. */
 const userResults = new Map<string, PhotoResult>();
 /**
@@ -149,14 +147,10 @@ const authorized = (req: IncomingMessage, res: ServerResponse) => {
 /** Steps a save may come from: the same step again or the one before it (Go `onboarding.CanMove`). */
 const FROM: Record<string, Step[]> = {
   intro: ['intro'],
-  purpose: ['intro', 'purpose'],
-  'first-image': ['purpose', 'first-image'],
+  'first-image': ['intro', 'first-image'],
 };
 
-const progressBody = (session: Session) => ({
-  step: session.step,
-  purposes: purposes.get(session.userId) ?? null,
-});
+const progressBody = (session: Session) => ({ step: session.step });
 
 /** Results a classifier could return (Go `processing.Result`). Only the server's facts, nothing more. */
 const RESULTS = {
@@ -380,16 +374,13 @@ const routes: Record<string, Handler> = {
     if (session) send(res, 200, progressBody(session));
   },
 
-  /** Go's contract: resume steps only, purposes from first-image, one step forward, nothing after complete. */
+  /** Go's contract: resume steps only, one step forward, nothing after complete. */
   'PUT /v1/onboarding': async (req, res) => {
     const session = authorized(req, res);
     if (!session) return;
     if (session.step === 'complete') return send(res, 409, { error: 'onboarding_complete' });
     const body = await readJson(req);
-    const answered = Array.isArray(body.purposes);
-    const valid =
-      body.step === 'first-image' ? answered : body.step === 'intro' || body.step === 'purpose';
-    if (!valid || (body.step !== 'first-image' && body.purposes !== null)) {
+    if (body.step !== 'intro' && body.step !== 'first-image') {
       return send(res, 400, { error: 'invalid_onboarding' });
     }
     if (!FROM[String(body.step)]?.includes(session.step)) {
@@ -398,12 +389,10 @@ const routes: Record<string, Handler> = {
     for (const other of sessions.values()) {
       if (other.userId === session.userId) other.step = body.step as Step;
     }
-    if (answered) purposes.set(session.userId, (body.purposes as unknown[]).map(String));
-    else purposes.delete(session.userId);
     send(res, 200, progressBody(session));
   },
 
-  /** Go `Store.Complete`: from first-image (or again from complete) for every session of the user. Purposes stay. */
+  /** Go `Store.Complete`: from first-image (or again from complete) for every session of the user. */
   'POST /v1/onboarding/complete': async (req, res) => {
     for await (const _chunk of req);
     const session = authorized(req, res);
@@ -454,7 +443,10 @@ const routes: Record<string, Handler> = {
     send(res, 202, { jobId, status: 'running', ...(sourceJobId && { sourceJobId }) });
   },
 
-  /** Go `GET /v1/processing-jobs`: this user's general jobs, newest first (`created_at`, then id), at most 20. */
+  /**
+   * Go `GET /v1/processing-jobs`: this user's jobs, newest first (`created_at`, then id), at most 20.
+   * The onboarding photo is listed only once the onboarding is finished.
+   */
   'GET /v1/processing-jobs': (req, res) => {
     const session = authorized(req, res);
     if (!session) return;
@@ -462,7 +454,11 @@ const routes: Record<string, Handler> = {
       return send(res, 500, { error: 'provider_unavailable' });
     }
     const recent = [...jobs]
-      .filter(([, job]) => job.userId === session.userId && job.origin === 'general')
+      .filter(
+        ([, job]) =>
+          job.userId === session.userId &&
+          (job.origin === 'general' || session.step === 'complete'),
+      )
       .sort(
         ([idA, a], [idB, b]) => b.createdAt.localeCompare(a.createdAt) || idB.localeCompare(idA),
       )
@@ -487,8 +483,8 @@ const routes: Record<string, Handler> = {
   'GET /__fixture/health': (_req, res) => send(res, 200, { status: 'ok' }),
 
   /**
-   * `{ onboardingStep, kind, result, ...UserOptions }` → `{ credential }` (`fixture.ts`). A first-image
-   * user skipped the purposes. `result` is what this user's photos come back as, `generalJobs`
+   * `{ onboardingStep, kind, result, ...UserOptions }` → `{ credential }` (`fixture.ts`).
+   * `result` is what this user's photos come back as, `generalJobs`
    * the results of photos they already processed after the onboarding.
    */
   'POST /__fixture/sessions': async (req, res) => {
@@ -498,7 +494,6 @@ const routes: Record<string, Handler> = {
         ? body.onboardingStep
         : 'complete';
     const { credential, session } = newSession(step, body.kind === 'mobile' ? 'mobile' : 'web');
-    if (step === 'first-image') purposes.set(session.userId, []);
     if (body.result === 'foreign_text') userResults.set(session.userId, 'foreign_text');
     if (body.preferenceSaveFails === true) failingPreferenceSaves.add(session.userId);
     if (body.recentJobsFail === true) failingRecentJobs.add(session.userId);

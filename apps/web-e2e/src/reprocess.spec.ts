@@ -55,9 +55,10 @@ test('offers only the actions of this image type, with the applied one marked', 
   const radios = panel(page).getByRole('radio');
   await expect(radios).toHaveCount(4);
   await expect(panel(page).getByRole('radio', { name: '추출 및 번역(현재 적용)' })).toBeChecked();
-  await expect(panel(page).getByText('현재 적용: 추출 및 번역')).toBeVisible();
-  // Nothing to do until another action is chosen; the box only appears then.
-  await expect(panel(page).getByRole('button', { name: '이 방식으로 다시 처리' })).toBeDisabled();
+  // The current action is marked once, on its own option.
+  await expect(panel(page).getByText(/현재 적용/)).toHaveCount(1);
+  // Nothing to do until another action is chosen; the button and the box only appear then.
+  await expect(panel(page).getByRole('button', { name: '이 방식으로 다시 처리' })).toHaveCount(0);
   await expect(remember(page)).toHaveCount(0);
 });
 
@@ -93,6 +94,8 @@ test('reprocesses this photo once without changing the stored preferences', asyn
   await expect(
     page.getByRole('status').filter({ hasText: '다른 방식으로 다시 처리했습니다.' }),
   ).toBeVisible();
+  // The new result is now the current action, so there is nothing left to press.
+  await expect(panel(page).getByRole('button', { name: '이 방식으로 다시 처리' })).toHaveCount(0);
   const [reprocess, source] = await listJobs(page.request, credential);
   expect(reprocess?.sourceJobId).toBe(source?.jobId);
   expect(await readPreferences(page.request, credential)).toEqual(DEFAULTS);
