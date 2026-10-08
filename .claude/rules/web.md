@@ -45,11 +45,11 @@ Tailwind v4 + `@berrypjh/react-ui`. 색 · 타입 스케일 · radius · shadow�
 - **shared 토큰 이름으로만 쓴다** — `bg-background-surface` · `text-text-default` · `border-stroke-light` · `rounded-lg` · `shadow-xs`. Tailwind 기본 팔레트 · 크기 · radius · shadow는 `initial`로 제거돼 있어 `bg-blue-500` 같은 클래스는 존재하지 않는다
 - 글자 스타일은 `global.css`의 `typo-*` utility(`typo-heading-h4` · `typo-paragraph-default` · `typo-body-medium-strong` · `typo-caption-default`)로만 쓴다. shared CSS 변수를 조합한 것이다
 - **preset spacing 이름이 Tailwind 크기 이름을 가린다** — `max-w-3xl`은 48rem이 아니라 `--ds-spacing-3xl`(2.5rem)이 된다. 본문 폭은 `max-w-(--container-3xl)`로 쓴다
-- spacing은 `p-1 p-2 p-3 p-4 p-5 p-6 p-8`(4/8/12/16/20/24/32)만 쓴다
+- spacing은 `p-1 p-2 p-3 p-4 p-5 p-6 p-8`(4/8/12/16/20/24/32)만 쓴다. 그보다 큰 간격은 숫자 대신 preset 토큰 이름으로 쓴다 — 본문 틀의 아래 여백 `pb-5xl`(64px)
 - 브레이크포인트는 `md`(768px) 하나다. 고정 폭(`w-[380px]` 등)은 320px에서 넘친다
 - focus는 `global.css`의 전역 `:focus-visible` 하나로 처리한다
 - shared 컴포넌트는 `@berrypjh/react-ui`에서 바로 import한다. 패키지가 `'use client'`를 스스로 보존하므로 앱에 client 경계 파일을 두지 않는다
-- theme은 **`<html data-theme>` 하나가 소유한다** (light = 공용 `:root`, dark = 공용 `[data-theme="dark"]`). 저장된 선택이 없으면 시스템 설정을 따르고, `src/lib/theme.ts`의 head 스크립트가 첫 paint 전에 적용한다. 전환 UI는 헤더의 `ThemeSwitch`(공용 `Switch`) 하나다
+- theme은 **`<html data-theme>` 하나가 소유한다** (light = 공용 `:root`, dark = 공용 `[data-theme="dark"]`). 저장된 선택이 없으면 시스템 설정을 따르고, `src/lib/theme.ts`의 head 스크립트가 첫 paint 전에 적용한다. 전환 UI는 내 정보(`/me`)의 `ThemeSwitch`(공용 `Switch`) 하나다(로그인 전에는 헤더)
 - 고정 `mode`를 가진 `ThemeProvider`로 감싸지 않는다 — `<div data-theme>`가 사용자 선택과 다른 두 번째 theme 주인이 된다. 색은 CSS 변수가 바꾸므로 컴포넌트에서 theme을 분기하지 않는다
 
 ## 공용 UI API 조회
@@ -59,7 +59,7 @@ Tailwind v4 + `@berrypjh/react-ui`. 색 · 타입 스케일 · radius · shadow�
 ## Data
 
 - API 주소를 아는 파일은 `src/lib/api.ts` **하나뿐이다.** component에 URL 문자열을 쓰지 않는다
-- 서버에서 호출한다 — 읽기는 Server Component, mutation은 Server Action · Route Handler. 브라우저가 Go API를 직접 부르지 않으므로 CORS 설정이 없다. 인증 endpoint 호출은 `src/lib/auth/api.ts`에, 온보딩 진행 · 사진 처리 호출은 `src/lib/onboarding/api.ts`에, 처리 방식 호출은 `src/lib/processing-preferences/api.ts`에, 최근 처리 기록 호출은 `src/lib/processing-jobs/api.ts`에 모은다. 처리 방식의 기본값은 서버가 주고 web이 만들지 않는다. 홈은 `src/lib/home/home.ts`(`loadHome`)가 둘을 함께 읽고, 한쪽이 실패해도 다른 쪽을 쓰며 실패를 빈 기록 · 기본값으로 바꾸지 않는다. 값 · parser · 이름표는 `@snapdone/processing`
+- 서버에서 호출한다 — 읽기는 Server Component, mutation은 Server Action · Route Handler. 브라우저가 Go API를 직접 부르지 않으므로 CORS 설정이 없다. 인증 endpoint 호출은 `src/lib/auth/api.ts`에, 온보딩 진행 · 사진 처리 호출은 `src/lib/onboarding/api.ts`에, 처리 방식 호출은 `src/lib/processing-preferences/api.ts`에, 최근 처리 기록 호출은 `src/lib/processing-jobs/api.ts`에 모은다. 처리 방식의 기본값은 서버가 주고 web이 만들지 않는다. 홈은 처리 기록만, 내 정보(`/me`)는 처리 방식만 읽는다. 둘 다 `@snapdone/processing`의 `toLoaded`로 읽음 · 읽지 못함 · 로그아웃을 나누고(앱과 같은 helper), 실패를 빈 기록 · 기본값으로 바꾸지 않는다. 값 · parser · 이름표는 `@snapdone/processing`
 - 사진은 Server Action으로 올린다 — 온보딩 첫 사진(`lib/onboarding/actions.ts`), 사진 처리 화면 `/process`와 재처리 · 영수증 필드 확정(`lib/processing-jobs/actions.ts`). 본문 상한은 `next.config.js` `experimental.serverActions.bodySizeLimit`. 처리 Action은 오류를 던지지 않고 값(`JobResponse` · `DetailResponse`)으로 돌려준다 — production에서 Action 오류 내용은 가려진다
 - 처리 결과는 `components/processing/`이 그린다. `ProcessingResult`는 서버 작업(`JobDetail`)만 보이고, 원본(`File` · blob 주소)은 그 사진을 고른 흐름(`PhotoFlow` · `FirstImageFlow`)만 갖는다. 그래서 다시 처리(`ReprocessPanel`) · 유형 선택은 그 흐름 안에서만 보이고, 사진이 없는 기록 결과(`/history/[jobId]`)에는 없다. 다시 처리(`reprocessWithAction`)와 기본값 저장(`saveProcessingPreference`)은 다른 Action이다 — 사용자가 "앞으로도"를 골랐을 때만 저장을 부른다(`@snapdone/processing`의 `preferenceToSave`)
 - 로그인 뒤 돌아갈 경로 · 앱 WebView 경로의 처리 결과 하나는 `/history/{소문자 uuid}`뿐이다(`@snapdone/webview-bridge`의 `isJobDetailPath`). 동적 경로를 넓히지 않는다

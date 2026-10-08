@@ -23,12 +23,13 @@ Expo managed + React Native. 진입점은 `index.js` → `src/app/App.tsx`.
 
 - 파일 이름은 **PascalCase**(`AppShell.tsx`). web의 kebab-case와 다르다
 - **navigation은 React Navigation native stack이다** (`src/app/App.tsx`, 화면 타입은 `src/app/navigation.ts`). Expo Router는 `@nx/expo` 생성기가 지원하지 않는다 (nrwl/nx#36442). 화면은 `src/screens/`, 파일 이름은 `XxxScreen.tsx`
-- 제목과 상단 inset은 native stack header가 가진다. `AppShell`은 좌우 inset + 스크롤 본문만 준다. bottom navigation은 실제 탭이 생길 때 넣는다
+- 로그인 뒤는 하단 탭(`app/MainTabs.tsx`, `@react-navigation/bottom-tabs`) — 홈 · 기록(web `/history` WebView) · 내 정보. web 폰 폭의 하단 탭과 같은 구성이다. 사진 흐름 · 처리 결과(`WebContent`) 같은 세부 화면은 root stack에서 탭 위에 쌓는다. 기록 탭의 처리 결과 링크는 `WebContentScreen`의 `onOpenJob`으로 새 화면에 연다
+- 제목과 상단 inset은 header(탭 헤더 · stack 헤더)가 가진다. `AppShell`은 좌우 inset + 스크롤 본문만 준다
 - **로컬 primitive를 만들지 않는다.** 공용 `@berrypjh/react-native-ui`(`Box` · `Stack` · `Button` · `ThemeProvider` 등)를 조합한다. 앱이 소유하는 것은 `AppShell`, 화면(`src/screens/`), 기능별 제품 조합(`src/components/auth/` 등)뿐이다
 - **인증은 `src/auth/`다.** 화면은 `controller`만 부르고, API는 `api.ts`, 기기 저장 · 암호 · 시스템 인증 브라우저는 `device.ts`(expo-secure-store · expo-crypto · expo-web-browser)만 안다. provider 동의 화면은 `openAuthSessionAsync`로만 열고 제품 WebView에서 열지 않는다. 복귀 URL은 `callback.ts` 하나로 검사한다. credential을 AsyncStorage · route params · 로그 · WebView에 넣지 않는다. native header가 없는 인증 화면은 `AuthShell`이 상하좌우 inset을 가진다
 - **온보딩은 `src/onboarding/`이다.** 흐름은 `app/OnboardingFlow.tsx`(안쪽 native stack)가 가진다. 진행(단계 · 목적)은 서버 `/v1/onboarding`(`progressApi.ts`)에 저장해 web과 이어지고, **사진 · 파일 주소 · 처리 상태는 저장하지 않는다** — 다시 열면 첫 사진 단계로 돌아간다. 목적 규칙 · 처리 계약과 조회 흐름(`runProcessing`)은 web과 함께 쓰는 `@snapdone/onboarding`에 있다. expo-image-picker는 `imagePicker.ts`만 알고, 카메라 권한은 누른 순간에만 묻는다. 처리 API는 `processingApi.ts`이고 credential은 `AuthController.authorized`로만 받는다. 처리 화면은 서버가 준 상태(처리 중 · 완료 · 실패)만 보이고 단계를 지어내지 않는다
 - **사진 처리는 네이티브다(`src/processing/` · `app/photoRoutes.tsx`).** 홈의 사진 추가 → `PhotoCapture`(온보딩과 같은 `CaptureChoices`) → `PhotoPreview` → `PhotoProcessing` → `PhotoResult`. 처리 API는 `processing/jobApi.ts`, port는 `processing/port.ts`이고 credential은 `AuthController.authorized`로만 받는다. 원본은 route params의 파일 주소뿐이라 저장하지 않는다 — 처리 화면은 끝나면 결과로 `replace`해 뒤로 가면 같은 사진의 확인 화면이다. 결과 내용은 `components/processing/ResultBody.tsx` 하나를 홈 사진과 온보딩 첫 사진(`OnboardingResultScreen`)이 함께 쓴다. 필드 확정 · 다시 처리 · 기본값 저장은 `processing/resultActions.ts`가 묶고, 다시 처리와 기본값 저장은 다른 요청이다
-- **홈은 네이티브다(`screens/HomeScreen.tsx` · `src/home/`).** `App.tsx`가 render function으로 `controller`를 넘기고, `useHomeData`가 화면이 보일 때마다(`useFocusEffect`) 최근 처리 기록과 처리 방식을 `authorized`로 함께 다시 읽는다 — 처리 설정 WebView에서 돌아오면 바뀐 값이 보인다. 값 · parser · 이름표 · 기록 상태(`recentState`)는 web과 같은 `@snapdone/processing`이다. 기록을 읽지 못하면 비었다고 하지 않고, 처리 방식을 읽지 못하면 기본값을 만들지 않는다
+- **홈은 네이티브다(`screens/HomeScreen.tsx` · `src/home/`).** `App.tsx`가 render function으로 `controller`를 넘기고, 홈은 최근 처리 기록만 `lib/useFocusData`로 화면이 보일 때마다(`useFocusEffect`) `authorized`로 다시 읽는다. 처리 방식 · 로그아웃은 "내 정보" 탭(`screens/MeScreen.tsx`, web `/me`와 같은 구성)에 있다 — 처리 설정 WebView에서 돌아오면 바뀐 값이 보인다. 값 · parser · 이름표 · 기록 상태(`recentState`)는 web과 같은 `@snapdone/processing`이다. 기록을 읽지 못하면 비었다고 하지 않고, 처리 방식을 읽지 못하면 기본값을 만들지 않는다
 
 ## 네이티브 셸 · WebView 호스트
 
@@ -53,7 +54,7 @@ mobile이 주 제품이다. 네비게이션 · 로그인 · 권한 · 푸시와 
 - **line-height는 절대값이다.** RN이 비율을 받지 않는다. 공용 RN 토큰이 이미 숫자(px)로 준다
 - `textStyle`은 토큰의 `fontFamily`(Pretendard)를 버린다 — 앱에 폰트 파일이 없어 시스템 폰트로 한국어를 그린다
 - border는 `StyleSheet.hairlineWidth`
-- `AppShell`의 Safe Area는 `edges={['left','right']}`다. top은 native stack header가 가진다. **bottom은 일부러 뺐다** — bottom navigation이 하단 inset을 직접 가져가야 이중 패딩이 안 생긴다. `android.edgeToEdgeEnabled: true`라 Safe Area 처리는 선택이 아니다
+- `AppShell`의 Safe Area는 `edges={['left','right']}`다. top은 native stack header가 가진다. **bottom은 하단 탭이 가진다** — `AppShell`이 같이 가지면 이중 패딩이 생긴다. `android.edgeToEdgeEnabled: true`라 Safe Area 처리는 선택이 아니다
 - hover와 focus 링이 없다. 공용 `Button`이 pressed · disabled · `accessibilityRole`을 처리한다. 직접 만드는 누를 수 있는 것은 최소 44px과 `accessibilityRole` · `accessibilityState`를 지킨다
 - `<StatusBar />`는 `App.tsx`에 하나만 둔다. 화면마다 추가하지 않는다
 - `AppShell`이 이미 세로 `ScrollView`(`keyboardShouldPersistTaps="handled"`)다. 그 안에 세로 `ScrollView`를 중첩하지 않는다

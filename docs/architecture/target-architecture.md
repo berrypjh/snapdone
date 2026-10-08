@@ -22,11 +22,7 @@ Nx Workspace (repository root)
 | `libs/`       | `webview-bridge` · `auth-contracts` · `onboarding` · `processing` (모두 web · mobile이 사용)                                                                                              |
 | `docs/`       | 제품 · 아키텍처 · 디자인 · 개발 · 품질                                                                                                                                                    |
 
-버전은 아래 [버전 정책](#버전-정책)에 한 곳으로 모아 두었다.
-
-프로젝트 목록과 각 프로젝트의 실제 target은 `nx show projects` · `nx show project <이름>`이 기준이다. 이 문서에 목록을 박아두지 않는다.
-
-실행·검증 명령은 [docs/development/local-development.md](../development/local-development.md).
+버전은 [버전 정책](#버전-정책), 프로젝트 목록과 target은 `nx show projects` · `nx show project <이름>`이 기준이다. 실행 · 검증 명령은 [docs/development/local-development.md](../development/local-development.md).
 
 ### 무엇이 있고 무엇이 없는가
 
@@ -34,21 +30,19 @@ Nx Workspace (repository root)
 
 구현된 것:
 
-- Nx monorepo와 세 앱의 골격
-- 홈 — web(Server Component)과 mobile(네이티브)이 처리한 사진(`GET /v1/processing-jobs`, 온보딩을 마친 뒤에는 온보딩 첫 사진 포함) 유무로 빈 홈 · 최근 처리 홈을 보이고, 서버에 저장된 처리 방식을 요약한다. 최근 처리 한 건은 적용한 유형 · 처리 방식과 결과 앞부분을 보이고 그 처리 결과(`/history/{jobId}`)로 이어진다. 확인이 필요한 처리는 서버 결과에 확인이 필요한 영수증 값이 있는 작업만이다
-- 디자인 토큰과 App Shell, web 라이트/다크 테마
+- Nx monorepo와 세 앱의 골격, 디자인 토큰과 App Shell, web 라이트/다크 테마
+- 홈 — 처리한 사진(`GET /v1/processing-jobs`, 마친 온보딩의 첫 사진 포함) 유무로 빈 홈 · 최근 처리 홈. 처리 방식 요약 · 테마 · 로그아웃은 내 정보(web `/me`, mobile 네이티브 화면)에 있다
+- 기록 — web `/history`(한국 날짜로 묶은 목록)와 `/history/{jobId}`(결과 하나). 하나 또는 선택한 여러 개를 지운다. mobile은 기록 · 결과를 WebView로 연다
 - 네이티브 셸 + 웹 콘텐츠 골격 — mobile native stack, WebView 화면(로딩 · 오류 · 외부 링크), web in-app 모드, `libs/webview-bridge` 계약과 모듈 경계 lint
-- Go `GET /health`, Gin HTTP 경계와 swag로 생성한 Swagger 2.0 문서
-- Postgres 연결 · 마이그레이션(로컬 Docker)과 인증 저장소 · `/v1/auth/*`
-- Google 로그인 화면과 세션 — mobile 네이티브 흐름, web 로그인 · HttpOnly 세션 cookie, WebView 로그인 핸드오프. **실계정 · 실기기 인수는 남아 있다**
-- 온보딩 소개 → 첫 사진 → 처리 — mobile(네이티브)과 web(브라우저 단독, 파일 선택)이 같은 순서로 간다. 진행은 서버(`/v1/onboarding`)에 있어 어느 쪽에서든 이어 간다. 두 앱 모두 첫 결과 화면(일반 사진과 같은 실제 처리 결과, 같은 사진을 다른 방식으로 다시 처리 가능)에서 완료를 눌러야 온보딩을 마치고 홈으로 간다(`POST /v1/onboarding/complete`). mobile은 완료 뒤 세션을 다시 받아 root stack이 홈으로 바뀐다
-- 사진 한 장의 처리 — 홈의 사진 추가에서 web은 `/process`(파일 선택 · 끌어 놓기), mobile은 네이티브 화면(사진 선택 · 카메라)으로 한 장을 받아 확인 → 처리 → 결과까지 간다. 서버는 분류와 유형 판단(text · receipt · unsupported · ambiguous)을 하고, 요청 시점에 저장된 처리 방식을 실행해 결과(`outcome`)를 작업에 남긴다. 결과 화면에서 같은 사진을 다른 처리 방식으로 다시 처리하고(`sourceJobId`), 사용자가 고를 때만 그 처리 방식을 기본값으로 따로 저장한다. 영수증의 확인이 필요한 값은 필드 하나씩 확정한다(`PATCH /v1/processing-jobs/{jobId}/receipt-fields/{field}`). 사진은 저장하지 않고 내용의 SHA-256만 남겨, 다시 처리는 지금 사진을 들고 있는 화면에서만 된다
-- 처리 기록 — web `/history`(목록)와 `/history/{jobId}`(결과 하나). 사진이 없어 다시 처리는 없고 영수증 값 확정만 된다. mobile은 홈의 기록 항목에서 이 결과 화면을 WebView로 연다
+- Go `GET /health` · Gin HTTP 경계 · Swagger 2.0 문서, Postgres 연결 · 마이그레이션(로컬 Docker)과 `/v1/auth/*`
+- Google 로그인과 세션 — mobile 네이티브 흐름, web HttpOnly 세션 cookie, WebView 로그인 핸드오프. **실계정 · 실기기 인수는 남아 있다**
+- 온보딩 소개 → 첫 사진 → 처리 — mobile과 web이 같은 순서다. 진행은 서버(`/v1/onboarding`)에 있어 어느 쪽에서든 이어 간다. 첫 결과 화면에서 완료를 눌러야 온보딩을 마친다(`POST /v1/onboarding/complete`)
+- 사진 한 장의 처리 — web `/process`(파일 선택 · 끌어 놓기), mobile 네이티브 화면(사진 선택 · 카메라)에서 확인 → 처리 → 결과. 서버가 유형(text · receipt · unsupported · ambiguous)을 판단하고 요청 시점의 처리 방식을 실행해 결과를 작업에 남긴다. 같은 사진을 다른 방식으로 다시 처리하고(`sourceJobId`), 영수증의 확인이 필요한 값은 필드 하나씩 확정한다. **사진은 저장하지 않고 SHA-256만 남기므로** 다시 처리는 사진을 들고 있는 화면에서만 된다
 - 검증 명령과 문서
 
 아직 구현하지 않은 것:
 
-- 로그인 수단은 Google만 (코드만 있고 실계정 검증 전). Apple · 네이버 · 카카오는 나중에 추가
+- Google 외 로그인 수단(Apple · 네이버 · 카카오)
 - 여러 장 · 붙여넣기 업로드, 공유 시트 · 앱 안 카메라 화면
 - 실제 모델로 잰 처리 품질 · 지연 — 처리 코드는 가짜 HTTP 응답으로만 검증했다
 - 장소
@@ -58,13 +52,11 @@ Nx Workspace (repository root)
 - production DB (Cloud SQL 미생성)
 - production 배포
 
-**이 목록은 "예정"이 아니라 "없음"이다.** 위 기능과 관련된 코드는 저장소에 존재하지 않는다.
-
-다음 단계는 공통 앱 셸과 디자인 시스템 위에 실제 화면을 기획서 순서대로 하나씩 올리는 것이다. 테스트가 어디까지 덮고 있는지는 [quality-gates.md](../engineering/quality-gates.md).
+**이 목록은 "예정"이 아니라 "없음"이다.** 관련 코드는 저장소에 없다. 테스트 범위는 [quality-gates.md](../engineering/quality-gates.md).
 
 ## 제품 구성 — 네이티브 셸 + 웹 콘텐츠
 
-**결정:** mobile이 주 제품이다. web은 브라우저 단독 서비스이면서 앱 안 WebView로도 열린다. 하이브리드 앱에서 가장 보편적인 분담을 따른다.
+**결정:** mobile이 주 제품이다. web은 브라우저 단독 서비스이면서 앱 안 WebView로도 열린다.
 
 | 영역                                                                     | 담당                              | 이유                                                     |
 | ------------------------------------------------------------------------ | --------------------------------- | -------------------------------------------------------- |
@@ -77,13 +69,11 @@ Nx Workspace (repository root)
 
 web과 mobile은 **코드로 서로 참조하지 않는다.** 앱은 web을 URL로 연다. 둘 사이 계약은 아래 다섯 가지뿐이다.
 
-1. **in-app 판별** — 앱이 WebView User-Agent 뒤에 `SnapdoneApp/<bridge 계약 버전>`(지금 `SnapdoneApp/1`)을 붙인다(`react-native-webview`의 `applicationNameForUserAgent`). 앱 버전이 아니라 계약 버전이라 web이 어떤 메시지를 쓸 수 있는지 안다. web은 서버에서 이 값을 읽으므로 첫 HTML부터 in-app 모드가 적용된다. 판별 함수는 web에 하나만 둔다
+1. **in-app 판별** — 앱이 WebView User-Agent 뒤에 `SnapdoneApp/<bridge 계약 버전>`(지금 `SnapdoneApp/1`)을 붙인다. 앱 버전이 아니라 계약 버전이라 web이 쓸 수 있는 메시지를 안다. web은 서버에서 읽으므로 첫 HTML부터 in-app 모드다. 판별 함수는 web에 하나만 둔다
 2. **로그인** — 일회용 코드 핸드오프. [data-access.md](./data-access.md#webview-로그인-핸드오프)
-3. **메시지** — web → 앱 `window.ReactNativeWebView.postMessage(JSON)`, 앱 → web `postMessage` · `injectJavaScript`. 메시지 타입(닫기 · 결과 전달 · 오류 · 촬영/공유 요청)은 web과 mobile이 함께 쓰므로 `libs/`의 플랫폼 중립 TypeScript 계약으로 둔다
-4. **링크 · 뒤로 가기** — 같은 도메인은 WebView 안에서, 외부 도메인은 시스템 브라우저로(`onShouldStartLoadWithRequest` → `Linking.openURL`). 뒤로 가기 · 닫기는 네이티브가 담당한다
+3. **메시지** — web → 앱 `window.ReactNativeWebView.postMessage(JSON)`, 앱 → web `postMessage` · `injectJavaScript`. 메시지 타입은 `libs/`의 플랫폼 중립 TypeScript 계약으로 둔다
+4. **링크 · 뒤로 가기** — 같은 도메인은 WebView 안에서, 외부 도메인은 시스템 브라우저로. 뒤로 가기 · 닫기는 네이티브가 담당한다
 5. **URL** — web 경로와 앱 딥링크(Universal Link / App Link) 경로를 같게 둔다. 공유 링크는 앱이 있으면 앱, 없으면 브라우저로 열린다
-
-**구현된 것 (MVP 골격):** `react-native-webview` · React Navigation native stack, web `isInAppRequest()` · `InAppReady`, mobile `WebContentScreen` · `webViewNavigation`, `libs/webview-bridge`(User-Agent 토큰 · `ready` · `auth-required` · `handoff-ready` 메시지), 로그인 핸드오프(web `/auth/handoff*` · Go `/v1/auth/handoff/*`), in-app E2E.
 
 **아직 없는 것:** 앱 → web 메시지, 딥링크 설정, 촬영 · 공유 요청 메시지. 핵심 흐름을 WebView로 옮기지 않는다.
 
@@ -91,7 +81,7 @@ web과 mobile은 **코드로 서로 참조하지 않는다.** 앱은 web을 URL�
 
 ### `apps/web` — Next.js
 
-브라우저 단독 서비스 전체와, 앱 WebView로 여는 콘텐츠 화면을 담당한다. 두 환경은 **같은 코드 한 벌**이며 in-app 모드에서는 셸만 숨긴다.
+브라우저 단독 서비스 전체와 앱 WebView로 여는 콘텐츠 화면을 담당한다. 두 환경은 **같은 코드 한 벌**이며 in-app 모드에서는 셸만 숨긴다.
 
 - 라우팅, 페이지 구성, 데이터 페칭 (App Router)
 - 서버에서 할 수 있는 일은 Server Component에서 한다
@@ -99,11 +89,14 @@ web과 mobile은 **코드로 서로 참조하지 않는다.** 앱은 web을 URL�
 - 폰 폭(320–767px) 우선 반응형 — WebView는 항상 이 폭이다
 - 웹 고유의 입력 경로 — 파일 선택, 드래그 앤 드롭, 붙여넣기 (브라우저 단독 접속에서)
 
-담지 않는 것: 웹 전용이 아닌 도메인 규칙과 검증 로직을 웹에 묶어두는 일. 아직 web에서만 쓰는 동안에는 web 안에 두고, mobile에서도 필요해지는 시점에 `libs/`로 올린다. in-app 모드에서 카메라 · 공유 시트를 web으로 구현하는 일 — 앱에 메시지로 요청한다.
+담지 않는 것:
+
+- 웹 전용이 아닌 도메인 규칙 · 검증 로직을 웹에 묶어 두는 일. web에서만 쓰는 동안은 web 안에 두고, mobile에서도 필요해지면 `libs/`로 올린다
+- in-app 모드의 카메라 · 공유 시트 구현 — 앱에 메시지로 요청한다
 
 ### `apps/mobile` — React Native + Expo
 
-주 제품이다. 네이티브 셸과 핵심 흐름, 그리고 web 콘텐츠를 여는 WebView 호스트를 담당한다.
+주 제품이다. 네이티브 셸과 핵심 흐름, web 콘텐츠를 여는 WebView 호스트를 담당한다.
 
 - 네이티브 입력 경로 — 카메라, 사진 라이브러리, 공유 시트
 - 권한 요청과 그 실패 처리
@@ -111,9 +104,9 @@ web과 mobile은 **코드로 서로 참조하지 않는다.** 앱은 web을 URL�
 - Safe Area, 키보드, 접근성
 - WebView 호스트 — in-app User-Agent, 로그인 핸드오프, 메시지 수신, 외부 링크 처리
 
-담지 않는 것: web과 동일한 화면 구조를 억지로 맞추는 일. 결과는 같고 구현은 각자에 맞게 한다. web 콘텐츠 화면을 RN으로 다시 만드는 일.
+담지 않는 것: web과 같은 화면 구조를 억지로 맞추는 일(결과는 같고 구현은 각자), web 콘텐츠 화면을 RN으로 다시 만드는 일.
 
-**네비게이션은 React Navigation native stack이다.** `src/app/App.tsx`가 인증 · 온보딩 상태에 따라 등록할 화면을 고른다(복원 → 로그인 → 온보딩 → `Home` · `WebContent`). bottom navigation은 실제 탭이 생길 때 넣는다. 가짜 탭을 미리 만들지 않는다 ([foundation.md](../design/foundation.md)의 Mobile Shell).
+**네비게이션은 React Navigation native stack이다.** 인증 · 온보딩 상태에 따라 복원 → 로그인 → 온보딩 → 하단 탭 `Main`(홈 · 기록 · 내 정보)을 고르고, 그 위에 `WebContent` · 사진 흐름이 쌓인다. 셸 구성은 [foundation.md](../design/foundation.md)의 Mobile Shell.
 
 ### `apps/api` — Go
 
@@ -124,23 +117,16 @@ web과 mobile은 **코드로 서로 참조하지 않는다.** 앱은 web을 URL�
 - 외부 서비스 연동 (캘린더, 저장소 등)
 - 인증, 저장, 사용자 데이터
 
-**표준 Go 프로젝트 구조를 유지한다.** Nx에 맞추려고 Go 관례를 벗어난 배치를 하지 않는다. Nx에는 target을 연결해 `build` · `test` · `vet` · `fmt`를 orchestration에 참여시킨다(`lint` target은 없다).
+**표준 Go 프로젝트 구조를 유지한다.** Nx에 맞추려고 Go 관례를 벗어나지 않는다. Nx target은 `build` · `test` · `vet` · `fmt`다(`lint` 없음).
 
-**Nx 연결 방식 (결정 완료):** 서드파티 Go 플러그인을 쓰지 않고 `apps/api/project.json`의 `nx:run-commands` target으로 연결한다. Nx에 first-party Go 플러그인이 없고, 서드파티를 넣으면 Go 관례를 플러그인 규약에 맞춰 변형해야 하기 때문이다. Nx는 `go` 명령을 감싸기만 하고 Go 쪽 구조에는 관여하지 않는다.
-
-**Go module path (결정 완료):** `snapdone/api`.
-
-remote가 정해지지 않아 도메인 없는 경로를 쓴다. remote가 생기면 그 시점에 `go mod edit -module <새 경로>`로 한 번에 바꾼다(내부 import 경로가 함께 바뀐다).
-
-**HTTP 경계 (결정 완료):** 수명주기는 `net/http.Server`가 갖고 Gin engine은 그 `Handler`일 뿐이다. Gin은 `internal/httpserver` 안에서만 쓴다. DB는 pgx 직접 접근이고 ORM · repository 계층은 두지 않는다. API 문서는 swag로 생성한 Swagger 2.0이다. 세부 규칙은 `.claude/rules/api.md`.
-
-**빌드 산출물:** `dist/apps/api/api`. 소스 디렉터리에 바이너리를 남기지 않으며 `dist/`는 git ignore 대상이다.
+- **Nx 연결** — 서드파티 Go 플러그인 없이 `apps/api/project.json`의 `nx:run-commands`로 `go` 명령만 감싼다. first-party Go 플러그인이 없고, 서드파티는 Go 관례를 플러그인 규약에 맞춰 바꾸게 한다
+- **module path** — `snapdone/api`. remote가 정해지지 않아 도메인 없는 경로를 쓴다
+- **HTTP 경계** — 수명주기는 `net/http.Server`, Gin engine은 그 `Handler`일 뿐이며 `internal/httpserver` 안에서만 쓴다. DB는 pgx 직접 접근, ORM · repository 계층 없음. API 문서는 swag로 생성한 Swagger 2.0. 세부 규칙은 `.claude/rules/api.md`
+- **빌드 산출물** — `dist/apps/api/api`. 소스 디렉터리에 바이너리를 남기지 않는다
 
 ### `libs/` — 공유 코드
 
-**지금 lib은 `webview-bridge` · `auth-contracts` · `onboarding` · `processing` 넷이다.** 모양과 경계 규칙은 `.claude/rules/libs.md`.
-
-라이브러리는 재사용이 실제로 발생한 뒤에 만든다. 두 번째 사용처가 나타나기 전에는 코드를 쓰는 앱 안에 둔다.
+**지금 lib은 `webview-bridge` · `auth-contracts` · `onboarding` · `processing` 넷이다.** 모양과 경계 규칙은 `.claude/rules/libs.md`. 두 번째 사용처가 나타나기 전에는 코드를 쓰는 앱 안에 둔다.
 
 **들어올 수 있는 것**
 
@@ -159,9 +145,7 @@ remote가 정해지지 않아 도메인 없는 경로를 쓴다. remote가 생�
 - platform navigation
 - platform-specific modal / sheet
 
-한 파일이 `document`나 `react-native`를 import한다면 그것은 `libs/`에 있을 코드가 아니다.
-
-이 문서에 미래 라이브러리 이름을 미리 나열하지 않는다. 만들어질 때 이름이 정해진다.
+한 파일이 `document`나 `react-native`를 import한다면 `libs/`에 있을 코드가 아니다.
 
 ### `docs/` — 문서
 
@@ -171,7 +155,7 @@ remote가 정해지지 않아 도메인 없는 경로를 쓴다. remote가 생�
 - `docs/development/` — 로컬 실행 · 환경변수
 - `docs/engineering/` — 검증 · 의존성 · 보안
 
-구현 결정이 문서와 어긋나면 둘 중 하나를 고친다. 어긋난 채로 두지 않는다.
+구현 결정이 문서와 어긋나면 둘 중 하나를 고친다.
 
 ## 의존 방향
 
@@ -187,15 +171,11 @@ apps/web ─→ apps/mobile     (금지)
 apps/mobile ─→ apps/web     (금지)
 ```
 
-- `libs/`는 어떤 app도 알지 못한다
-- app 사이의 직접 참조는 없다. 공유가 필요하면 `libs/`로 올린다
-- `apps/api`는 Go이므로 TypeScript `libs/`를 코드로 공유하지 않는다
+app 사이 공유가 필요하면 `libs/`로 올린다. `apps/api`는 Go라 TypeScript `libs/`를 코드로 공유하지 않는다.
 
 ## Web · Mobile · API 사이의 계약
 
-`apps/api`(Go)와 TypeScript 앱들은 언어가 다르므로 타입을 직접 공유할 수 없다. 계약은 생성되거나 명시적으로 선언되어야 한다.
-
-지금은 타입을 손으로 두며, 호출 경로 · CORS 판단 · 생성 전략을 도입할 시점은 [data-access.md](./data-access.md)에 있다.
+Go와 TypeScript 앱은 타입을 직접 공유할 수 없어 계약은 생성하거나 명시적으로 선언한다. 지금은 손으로 두며, 호출 경로 · CORS · 생성 전략 도입 시점은 [data-access.md](./data-access.md).
 
 ## Nx가 담당하는 것
 
@@ -203,7 +183,7 @@ apps/mobile ─→ apps/web     (금지)
 - 태스크 캐싱
 - 세 앱에 걸친 `build` · `test` · `lint` 일관 실행
 
-`nx affected`는 아직 쓰지 않는다. CI가 없어 기준 커밋을 잡을 곳이 없고, 스크립트는 전부 `nx run-many`다. CI가 생기면 base SHA를 "main의 마지막 성공 커밋"으로 두고 도입한다.
+`nx affected`는 쓰지 않는다. CI가 없어 기준 커밋이 없으므로 스크립트는 전부 `nx run-many`다.
 
 Nx는 orchestration 계층이다. 각 플랫폼의 빌드 도구(Next.js, Expo, Go toolchain)를 대체하지 않는다.
 
@@ -228,10 +208,8 @@ Nx는 orchestration 계층이다. 각 플랫폼의 빌드 도구(Next.js, Expo, 
 | Vitest       | 4.1.10                            |
 | Playwright   | 1.62.1                            |
 
-`nx`와 모든 `@nx/*` 플러그인은 **정확히 같은 버전**이어야 한다. 플러그인 dependency가 exact pin이라 하나만 어긋나면 중복 설치와 그래프 오류가 난다.
-
-**React는 `19.2.3`으로 정확히 고정한다** (root · `apps/web` 모두, `^` 금지). react-native 렌더러와 버전이 다르면 `Incompatible React versions`로 멈춘다. web도 같은 React를 쓴다. 네이티브 모듈 버전(`react-native-svg` 등)도 `expo/bundledNativeModules.json` 값을 따른다. **사본이 갈리면 안 되는 패키지는 `pnpm-workspace.yaml`의 `overrides`에 적어** 앱이 `"*"`로 적어도 워크스페이스 전체가 한 버전으로 해석되게 한다.
-
-**Expo는 SDK 56에 고정한다.** `@nx/expo`가 아직 SDK 57을 생성·마이그레이션하지 못한다 (nrwl/nx#36443).
-
-버전 변경은 `nx migrate`로만 한다. 개별 `pnpm add`로 올리지 않는다.
+- **`nx`와 모든 `@nx/*`는 정확히 같은 버전** — 플러그인 dependency가 exact pin이라 하나만 어긋나도 중복 설치와 그래프 오류가 난다
+- **React는 `19.2.3`으로 정확히 고정** (root · `apps/web` 모두, `^` 금지) — react-native 렌더러와 다르면 `Incompatible React versions`로 멈춘다. 네이티브 모듈 버전(`react-native-svg` 등)은 `expo/bundledNativeModules.json`을 따른다
+- **사본이 갈리면 안 되는 패키지는 `pnpm-workspace.yaml`의 `overrides`에 적는다** — 앱이 `"*"`로 적어도 워크스페이스 전체가 한 버전이 된다
+- **Expo는 SDK 56에 고정** — `@nx/expo`가 아직 SDK 57을 생성 · 마이그레이션하지 못한다 (nrwl/nx#36443)
+- **버전 변경은 `nx migrate`로만** — 개별 `pnpm add`로 올리지 않는다
