@@ -18,7 +18,7 @@ export const AUTH_ERROR_CODES = [
 export type AuthErrorCode = (typeof AUTH_ERROR_CODES)[number];
 
 /** 온보딩 단계(서버 순서). `complete`가 아니면 온보딩 화면으로 보낸다. */
-export const ONBOARDING_STEPS = ['intro', 'purpose', 'first-image', 'complete'] as const;
+export const ONBOARDING_STEPS = ['intro', 'first-image', 'complete'] as const;
 
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 

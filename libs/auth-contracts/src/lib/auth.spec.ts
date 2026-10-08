@@ -27,7 +27,7 @@ describe('parseSession', () => {
     ).toEqual(session);
   });
 
-  it.each(['intro', 'purpose', 'first-image', 'complete'])('accepts the %s step', (step) => {
+  it.each(['intro', 'first-image', 'complete'])('accepts the %s step', (step) => {
     expect(parseSession({ ...session, onboardingStep: step })?.onboardingStep).toBe(step);
   });
 
@@ -37,6 +37,8 @@ describe('parseSession', () => {
     { ...session, user: null },
     { ...session, user: { id: 1 } },
     { ...session, onboardingStep: 'unknown' },
+    // 없앤 사용 목적 단계.
+    { ...session, onboardingStep: 'purpose' },
     { ...session, expiresAt: 0 },
   ])('rejects %j', (value) => {
     expect(parseSession(value)).toBeNull();
