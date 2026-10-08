@@ -21,17 +21,19 @@ var pngImage = append([]byte("\x89PNG\r\n\x1a\n"), make([]byte, 64)...)
 
 // fakeProcessing은 user-1의 job-1과 최근 작업 recent만 알고, 시작 요청과 목록을 물은 사용자를 기록한다.
 type fakeProcessing struct {
-	job       processing.Job
-	recent    []processing.Job
-	err       error
-	startErr  error
-	reprocess *processing.Reprocess
-	resolved  []string
-	userID    string
-	origin    processing.Origin
-	listed    []processing.Origin
-	mediaType string
-	image     []byte
+	job        processing.Job
+	recent     []processing.Job
+	err        error
+	startErr   error
+	reprocess  *processing.Reprocess
+	resolved   []string
+	userID     string
+	origin     processing.Origin
+	listed     []processing.Origin
+	deleted    string
+	deletedAll []string
+	mediaType  string
+	image      []byte
 }
 
 func (f *fakeProcessing) Start(_ context.Context, userID string, origin processing.Origin, image []byte, mediaType string) (processing.Job, error) {
@@ -64,6 +66,32 @@ func (f *fakeProcessing) Recent(_ context.Context, userID string, origins []proc
 		return []processing.Job{}, f.err
 	}
 	return f.recent, f.err
+}
+
+func (f *fakeProcessing) Delete(_ context.Context, userID, id string) error {
+	if f.err != nil {
+		return f.err
+	}
+	if userID != "user-1" || id != "job-1" {
+		return processing.ErrNotFound
+	}
+	f.deleted = id
+	return nil
+}
+
+// user-1의 job-1 · job-2만 지운다. 나머지는 실제 Store처럼 건너뛴다.
+func (f *fakeProcessing) DeleteMany(_ context.Context, userID string, ids []string) (int, error) {
+	if f.err != nil {
+		return 0, f.err
+	}
+	f.deletedAll = ids
+	deleted := 0
+	for _, id := range ids {
+		if userID == "user-1" && (id == "job-1" || id == "job-2") {
+			deleted++
+		}
+	}
+	return deleted, nil
 }
 
 func (f *fakeProcessing) Find(_ context.Context, userID, id string) (processing.Job, error) {
@@ -478,5 +506,68 @@ func TestProcessingJobsRejects(t *testing.T) {
 	failing := send(processingRouter(&fakeProcessing{err: errors.New("db: connection reset")}), http.MethodGet, "/v1/processing-jobs", "", bearer...)
 	if failing.Code != http.StatusInternalServerError || errorCode(t, failing) != "provider_unavailable" {
 		t.Errorf("store failure: status %d", failing.Code)
+	}
+}
+
+// 지우면 본문 없이 204다. 남의 작업 · 없는 작업은 404, 로그인 없음은 401, 저장소 실패는 500이다.
+func TestDeleteProcessingJob(t *testing.T) {
+	service := &fakeProcessing{}
+	r := send(processingRouter(service), http.MethodDelete, "/v1/processing-jobs/job-1", "", bearer...)
+	if r.Code != http.StatusNoContent || r.Body.Len() != 0 || service.deleted != "job-1" {
+		t.Fatalf("status %d, body %q, deleted %q", r.Code, r.Body, service.deleted)
+	}
+	assertNoStore(t, r)
+
+	cases := []struct {
+		name    string
+		service *fakeProcessing
+		path    string
+		headers []string
+		status  int
+		code    string
+	}{
+		{"unknown job", &fakeProcessing{}, "/v1/processing-jobs/job-2", bearer, http.StatusNotFound, "job_not_found"},
+		{"no credential", &fakeProcessing{}, "/v1/processing-jobs/job-1", nil, http.StatusUnauthorized, "session_expired"},
+		{"store failure", &fakeProcessing{err: errors.New("db: connection reset")}, "/v1/processing-jobs/job-1", bearer, http.StatusInternalServerError, "provider_unavailable"},
+	}
+	for _, tc := range cases {
+		r := send(processingRouter(tc.service), http.MethodDelete, tc.path, "", tc.headers...)
+		if r.Code != tc.status || errorCode(t, r) != tc.code {
+			t.Errorf("%s: status %d", tc.name, r.Code)
+		}
+	}
+}
+
+// 여러 개를 한 번에 지우고 실제로 지운 개수만 센다. 비었거나 20개를 넘으면 400이다.
+func TestDeleteProcessingJobs(t *testing.T) {
+	json := append([]string{"Content-Type", "application/json"}, bearer...)
+	service := &fakeProcessing{}
+	r := send(processingRouter(service), http.MethodPost, "/v1/processing-jobs/delete",
+		`{"jobIds":["job-1","job-2","job-9"]}`, json...)
+	if r.Code != http.StatusOK || r.Body.String() != `{"deleted":2}` || len(service.deletedAll) != 3 {
+		t.Fatalf("status %d, body %s, ids %v", r.Code, r.Body, service.deletedAll)
+	}
+	assertNoStore(t, r)
+
+	tooMany := `{"jobIds":["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21"]}`
+	cases := []struct {
+		name    string
+		service *fakeProcessing
+		body    string
+		headers []string
+		status  int
+		code    string
+	}{
+		{"no ids", &fakeProcessing{}, `{"jobIds":[]}`, json, http.StatusBadRequest, "invalid_job_ids"},
+		{"empty id", &fakeProcessing{}, `{"jobIds":[""]}`, json, http.StatusBadRequest, "invalid_job_ids"},
+		{"too many", &fakeProcessing{}, tooMany, json, http.StatusBadRequest, "invalid_job_ids"},
+		{"no credential", &fakeProcessing{}, `{"jobIds":["job-1"]}`, []string{"Content-Type", "application/json"}, http.StatusUnauthorized, "session_expired"},
+		{"store failure", &fakeProcessing{err: errors.New("db: connection reset")}, `{"jobIds":["job-1"]}`, json, http.StatusInternalServerError, "provider_unavailable"},
+	}
+	for _, tc := range cases {
+		r := send(processingRouter(tc.service), http.MethodPost, "/v1/processing-jobs/delete", tc.body, tc.headers...)
+		if r.Code != tc.status || errorCode(t, r) != tc.code {
+			t.Errorf("%s: status %d", tc.name, r.Code)
+		}
 	}
 }

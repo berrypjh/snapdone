@@ -116,6 +116,16 @@ type ProcessingFactResponse struct {
 }
 
 // 영수증 필드 하나를 확정할 값. 후보 중 하나이거나 그 필드 형식의 직접 입력이다.
+// 한 번에 지울 작업들. 최근 처리 목록과 같은 20개까지다.
+type DeleteJobsRequest struct {
+	JobIDs []string `json:"jobIds" binding:"required,min=1,max=20,dive,required" example:"0f8fad5b-d9cb-469f-a165-70867728950e"`
+}
+
+// 실제로 지운 작업 수. 없거나 다른 사용자의 작업은 세지 않는다.
+type DeleteJobsResponse struct {
+	Deleted int `json:"deleted" example:"2"`
+}
+
 type ReceiptFieldRequest struct {
 	Value string `json:"value" binding:"required" example:"12000"`
 }

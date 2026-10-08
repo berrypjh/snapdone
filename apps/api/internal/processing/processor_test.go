@@ -47,6 +47,14 @@ func (f *fakeJobs) Fail(_ context.Context, id string) error {
 	return nil
 }
 
+func (f *fakeJobs) Delete(_ context.Context, _, _ string) error {
+	return nil
+}
+
+func (f *fakeJobs) DeleteMany(_ context.Context, _ string, ids []string) (int, error) {
+	return len(ids), nil
+}
+
 func (f *fakeJobs) Find(_ context.Context, userID, id string, _ time.Duration) (Job, error) {
 	job, ok := f.stored[id]
 	if userID != "user-1" || !ok {

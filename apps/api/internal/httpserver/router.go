@@ -32,6 +32,7 @@ const (
 	errInvalidReceiptField    = "invalid_receipt_field"
 	errJobNotResolvable       = "job_not_resolvable"
 	errReceiptFieldResolved   = "receipt_field_resolved"
+	errInvalidJobIDs          = "invalid_job_ids"
 )
 
 // Router가 쓰는 의존성. Sessions · OAuth · Handoff · Processing · Onboarding · Preferences가 nil이면 해당 endpoint는 503이다.
@@ -106,6 +107,8 @@ func NewRouter(deps Deps) *gin.Engine {
 	jobs.POST("", extendDeadline(uploadTimeout), limitBody(maxUploadBody), h.createProcessingJob)
 	get(jobs, "", h.processingJobs)
 	get(jobs, "/:jobId", h.processingJob)
+	jobs.DELETE("/:jobId", h.deleteProcessingJob)
+	jobs.POST("/delete", limitBody(maxJSONBody), h.deleteProcessingJobs)
 	jobs.PATCH("/:jobId/receipt-fields/:field", limitBody(maxJSONBody), h.resolveReceiptField)
 
 	onboardingGroup := v1.Group("/onboarding", noStore, limitBody(maxJSONBody), requireConfigured(deps.Sessions != nil && deps.Onboarding != nil))

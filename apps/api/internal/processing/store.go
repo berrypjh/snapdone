@@ -171,6 +171,36 @@ func (s *Store) Fail(ctx context.Context, id string) error {
 	return err
 }
 
+// 사용자의 작업 하나를 지운다. 없거나 다른 사용자의 작업이면 ErrNotFound다.
+// 이 작업을 다시 처리한 작업은 남고 원래 작업과의 연결만 끊긴다(source_job_id ON DELETE SET NULL).
+// 처리 중이던 작업이면 끝나는 쪽의 UPDATE가 바꿀 행이 없어 아무 일도 없다.
+func (s *Store) Delete(ctx context.Context, userID, id string) error {
+	tag, err := s.pool.Exec(ctx,
+		"DELETE FROM processing_jobs WHERE id = $2::uuid AND user_id = $1::uuid", userID, id)
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == invalidTextRepresentation {
+		return ErrNotFound
+	}
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// 사용자의 작업 여러 개를 한 번에 지우고 지운 개수를 돌려준다. 없거나 다른 사용자의 작업 · 형식이 틀린 id는 건너뛴다.
+// 한 문장이라 일부만 지워진 채 끝나지 않는다. 다시 처리한 작업은 Delete와 같이 연결만 끊긴다.
+func (s *Store) DeleteMany(ctx context.Context, userID string, ids []string) (int, error) {
+	tag, err := s.pool.Exec(ctx,
+		"DELETE FROM processing_jobs WHERE user_id = $1::uuid AND id::text = ANY($2::text[])", userID, ids)
+	if err != nil {
+		return 0, err
+	}
+	return int(tag.RowsAffected()), nil
+}
+
 // 사용자의 작업을 찾는다. staleAfter보다 오래 처리 중이면 실패로 본다(jobColumns).
 func (s *Store) Find(ctx context.Context, userID, id string, staleAfter time.Duration) (Job, error) {
 	job, err := scanJob(s.pool.QueryRow(ctx,

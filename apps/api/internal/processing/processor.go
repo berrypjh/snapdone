@@ -31,6 +31,8 @@ type jobs interface {
 	Find(ctx context.Context, userID, id string, staleAfter time.Duration) (Job, error)
 	Recent(ctx context.Context, userID string, origins []Origin, limit int, staleAfter time.Duration) ([]Job, error)
 	ResolveReceiptField(ctx context.Context, userID, id, field, value string) (Job, error)
+	Delete(ctx context.Context, userID, id string) error
+	DeleteMany(ctx context.Context, userID string, ids []string) (int, error)
 }
 
 // 사용자가 고른 처리 방식. 운영에서는 *preference.Store다.
@@ -76,6 +78,16 @@ func (p *Processor) Start(ctx context.Context, userID string, origin Origin, ima
 // 사용자의 작업을 찾는다. 다른 사용자의 작업은 ErrNotFound다.
 func (p *Processor) Find(ctx context.Context, userID, id string) (Job, error) {
 	return p.jobs.Find(ctx, userID, id, staleAfter)
+}
+
+// 사용자의 작업 하나를 지운다. 다른 사용자의 작업은 ErrNotFound다.
+func (p *Processor) Delete(ctx context.Context, userID, id string) error {
+	return p.jobs.Delete(ctx, userID, id)
+}
+
+// 사용자의 작업 여러 개를 한 번에 지우고 지운 개수를 돌려준다. 다른 사용자의 작업은 건너뛴다.
+func (p *Processor) DeleteMany(ctx context.Context, userID string, ids []string) (int, error) {
+	return p.jobs.DeleteMany(ctx, userID, ids)
 }
 
 // 사용자의 작업 중 출처가 origins인 것을 최근에 만든 것부터 recentLimit개까지. 단건 조회와 같은 규칙으로 상태를 읽는다.

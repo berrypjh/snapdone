@@ -314,3 +314,55 @@ func TestRecentMatchesFind(t *testing.T) {
 		}
 	}
 }
+
+// 지우면 그 작업만 사라지고, 다시 처리한 작업은 원래 작업과의 연결만 끊긴 채 남는다.
+// 다른 사용자의 작업 · 없는 작업 · 형식이 틀린 id는 모두 없는 작업이다.
+func TestDeleteJob(t *testing.T) {
+	store, pool, userID := setupPool(t)
+	ctx := context.Background()
+	source := createJob(t, store, userID, processing.NewJob{Origin: processing.OriginGeneral, ImageSHA256: digestA})
+	child := createJob(t, store, userID, processing.NewJob{
+		Origin: processing.OriginGeneral, ImageSHA256: digestA, SourceJobID: source.ID,
+	})
+	other := newUser(t, pool, "g-2")
+
+	for _, tc := range []struct{ user, id string }{{other, source.ID}, {userID, "not-a-uuid"}} {
+		if err := store.Delete(ctx, tc.user, tc.id); !errors.Is(err, processing.ErrNotFound) {
+			t.Errorf("Delete(%s, %s) = %v, want ErrNotFound", tc.user, tc.id, err)
+		}
+	}
+	if err := store.Delete(ctx, userID, source.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Find(ctx, userID, source.ID, staleAfter); !errors.Is(err, processing.ErrNotFound) {
+		t.Errorf("deleted job: err = %v, want ErrNotFound", err)
+	}
+	if err := store.Delete(ctx, userID, source.ID); !errors.Is(err, processing.ErrNotFound) {
+		t.Errorf("second delete = %v, want ErrNotFound", err)
+	}
+	if kept := find(t, store, userID, child.ID); kept.SourceJobID != nil {
+		t.Errorf("reprocessed job = %+v, want it kept without its source", kept)
+	}
+}
+
+// 여러 개를 한 문장으로 지운다. 본인 작업만 세고, 다른 사용자의 작업 · 없는 작업 · 형식이 틀린 id는 건너뛴다.
+func TestDeleteManyJobs(t *testing.T) {
+	store, pool, userID := setupPool(t)
+	ctx := context.Background()
+	first := createFrom(t, store, userID, processing.OriginGeneral)
+	second := createFrom(t, store, userID, processing.OriginGeneral)
+	kept := createFrom(t, store, userID, processing.OriginGeneral)
+	other := newUser(t, pool, "g-2")
+	othersJob := createFrom(t, store, other, processing.OriginGeneral)
+
+	deleted, err := store.DeleteMany(ctx, userID, []string{first.ID, second.ID, othersJob.ID, "not-a-uuid"})
+	if err != nil || deleted != 2 {
+		t.Fatalf("DeleteMany = %d, %v, want 2", deleted, err)
+	}
+	if got := ids(recent(t, store, userID, 20, staleAfter)); len(got) != 1 || got[0] != kept.ID {
+		t.Errorf("left %v, want only %s", got, kept.ID)
+	}
+	if got := recent(t, store, other, 20, staleAfter); len(got) != 1 {
+		t.Errorf("other user's jobs = %v, want untouched", got)
+	}
+}

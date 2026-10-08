@@ -32,6 +32,8 @@ type ProcessingService interface {
 	Find(ctx context.Context, userID, id string) (processing.Job, error)
 	Recent(ctx context.Context, userID string, origins []processing.Origin) ([]processing.Job, error)
 	ResolveReceiptField(ctx context.Context, userID, id, field, value string) (processing.Job, error)
+	Delete(ctx context.Context, userID, id string) error
+	DeleteMany(ctx context.Context, userID string, ids []string) (int, error)
 }
 
 // 작업의 출처는 요청 세션의 온보딩 단계로 서버가 정한다. 온보딩을 마친 뒤에만 general이다.
@@ -212,6 +214,67 @@ func (h *handlers) processingJob(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, toProcessingJobResponse(job))
+}
+
+// @Summary     사진 처리 작업 삭제
+// @Description 내 처리 작업 하나를 지운다. 되돌릴 수 없다. 이 작업을 다시 처리한 작업은 남고 원래 작업과의 연결만 끊긴다.
+// @Description 다른 사용자의 작업은 없는 작업과 같다.
+// @Tags        processing
+// @Security    BearerAuth
+// @Param       jobId path string true "지울 작업의 jobId"
+// @Success     204
+// @Failure     401 {object} ErrorResponse "credential 없음 · 만료 · 취소 (session_expired)"
+// @Failure     404 {object} ErrorResponse "없는 작업 (job_not_found)"
+// @Failure     500 {object} ErrorResponse "내부 오류 (provider_unavailable)"
+// @Failure     503 {object} ErrorResponse "처리 비활성 (provider_unavailable)"
+// @Router      /v1/processing-jobs/{jobId} [delete]
+func (h *handlers) deleteProcessingJob(c *gin.Context) {
+	session, ok := h.requireSession(c)
+	if !ok {
+		return
+	}
+	err := h.processing.Delete(c.Request.Context(), session.User.ID, c.Param("jobId"))
+	if errors.Is(err, processing.ErrNotFound) {
+		writeError(c, http.StatusNotFound, errJobNotFound)
+		return
+	}
+	if err != nil {
+		h.internalError(c, "processing delete failed", err)
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+// @Summary     사진 처리 작업 여러 개 삭제
+// @Description 내 처리 작업 여러 개(1~20개)를 한 번에 지우고 지운 개수를 돌려준다. 되돌릴 수 없다. 한 번에 지워 일부만 남지 않는다.
+// @Description 없거나 다른 사용자의 작업은 건너뛴다. 이 작업들을 다시 처리한 작업은 남고 원래 작업과의 연결만 끊긴다.
+// @Tags        processing
+// @Accept      json
+// @Produce     json
+// @Security    BearerAuth
+// @Param       body body DeleteJobsRequest true "지울 작업들"
+// @Success     200 {object} DeleteJobsResponse
+// @Failure     400 {object} ErrorResponse "jobIds 없음 · 20개 초과 (invalid_job_ids)"
+// @Failure     401 {object} ErrorResponse "credential 없음 · 만료 · 취소 (session_expired)"
+// @Failure     500 {object} ErrorResponse "내부 오류 (provider_unavailable)"
+// @Failure     503 {object} ErrorResponse "처리 비활성 (provider_unavailable)"
+// @Router      /v1/processing-jobs/delete [post]
+func (h *handlers) deleteProcessingJobs(c *gin.Context) {
+	session, ok := h.requireSession(c)
+	if !ok {
+		return
+	}
+	var body DeleteJobsRequest
+	if err := c.ShouldBindJSON(&body); err != nil {
+		writeError(c, http.StatusBadRequest, errInvalidJobIDs)
+		return
+	}
+	deleted, err := h.processing.DeleteMany(c.Request.Context(), session.User.ID, body.JobIDs)
+	if err != nil {
+		h.internalError(c, "processing delete many failed", err)
+		return
+	}
+	c.JSON(http.StatusOK, DeleteJobsResponse{Deleted: deleted})
 }
 
 // @Summary     최근 사진 처리 작업

@@ -15,6 +15,25 @@ definitions:
           type: string
         type: array
     type: object
+  httpserver.DeleteJobsRequest:
+    properties:
+      jobIds:
+        example:
+        - 0f8fad5b-d9cb-469f-a165-70867728950e
+        items:
+          type: string
+        maxItems: 20
+        minItems: 1
+        type: array
+    required:
+    - jobIds
+    type: object
+  httpserver.DeleteJobsResponse:
+    properties:
+      deleted:
+        example: 2
+        type: integer
+    type: object
   httpserver.ErrorResponse:
     properties:
       error:
@@ -945,6 +964,40 @@ paths:
       tags:
       - processing
   /v1/processing-jobs/{jobId}:
+    delete:
+      description: |-
+        내 처리 작업 하나를 지운다. 되돌릴 수 없다. 이 작업을 다시 처리한 작업은 남고 원래 작업과의 연결만 끊긴다.
+        다른 사용자의 작업은 없는 작업과 같다.
+      parameters:
+      - description: 지울 작업의 jobId
+        in: path
+        name: jobId
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: credential 없음 · 만료 · 취소 (session_expired)
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+        "404":
+          description: 없는 작업 (job_not_found)
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+        "500":
+          description: 내부 오류 (provider_unavailable)
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+        "503":
+          description: 처리 비활성 (provider_unavailable)
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 사진 처리 작업 삭제
+      tags:
+      - processing
     get:
       description: 내 처리 작업의 상태와, 완료됐다면 결과. 다른 사용자의 작업은 없는 작업과 같다.
       parameters:
@@ -1046,6 +1099,48 @@ paths:
       security:
       - BearerAuth: []
       summary: 영수증 필드 확정
+      tags:
+      - processing
+  /v1/processing-jobs/delete:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        내 처리 작업 여러 개(1~20개)를 한 번에 지우고 지운 개수를 돌려준다. 되돌릴 수 없다. 한 번에 지워 일부만 남지 않는다.
+        없거나 다른 사용자의 작업은 건너뛴다. 이 작업들을 다시 처리한 작업은 남고 원래 작업과의 연결만 끊긴다.
+      parameters:
+      - description: 지울 작업들
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/httpserver.DeleteJobsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpserver.DeleteJobsResponse'
+        "400":
+          description: jobIds 없음 · 20개 초과 (invalid_job_ids)
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+        "401":
+          description: credential 없음 · 만료 · 취소 (session_expired)
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+        "500":
+          description: 내부 오류 (provider_unavailable)
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+        "503":
+          description: 처리 비활성 (provider_unavailable)
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 사진 처리 작업 여러 개 삭제
       tags:
       - processing
   /v1/processing-preferences:
