@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { fetchPreferences } from '../processing/preferenceApi';
+
 import { homeApi } from './homeApi';
 
 const BASE_URL = 'http://192.168.0.10:8080';
@@ -48,22 +50,10 @@ describe('homeApi.recentJobs', () => {
   });
 });
 
-describe('homeApi.preferences', () => {
-  it('reads the saved preferences with the bearer credential', async () => {
-    const fetchMock = stubFetch(() => json({ text: 'summarize', receipt: 'record_expense' }));
-
-    await expect(homeApi.preferences('c')).resolves.toEqual({
-      text: 'summarize',
-      receipt: 'record_expense',
-    });
-    expect(fetchMock.mock.calls[0]?.[0]).toBe(`${BASE_URL}/v1/processing-preferences`);
-  });
-});
-
 describe.each([
-  ['recentJobs', homeApi.recentJobs],
-  ['preferences', homeApi.preferences],
-] as const)('homeApi.%s', (_name, read) => {
+  ['homeApi.recentJobs', homeApi.recentJobs],
+  ['fetchPreferences', fetchPreferences],
+] as const)('%s', (_name, read) => {
   it('returns null when Go no longer accepts the session', async () => {
     stubFetch(() => json({ error: 'session_expired' }, 401));
 
@@ -80,5 +70,17 @@ describe.each([
     stubFetch(() => json({ jobs: 'x', text: 'translate' }));
 
     await expect(read('c')).rejects.toThrow('형식');
+  });
+});
+
+describe('fetchPreferences', () => {
+  it('reads the saved preferences with the bearer credential', async () => {
+    const fetchMock = stubFetch(() => json({ text: 'summarize', receipt: 'record_expense' }));
+
+    await expect(fetchPreferences('c')).resolves.toEqual({
+      text: 'summarize',
+      receipt: 'record_expense',
+    });
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(`${BASE_URL}/v1/processing-preferences`);
   });
 });

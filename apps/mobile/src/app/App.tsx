@@ -12,16 +12,15 @@ import { destinationFor } from '../auth/model';
 import { createHandoffMemory } from '../auth/webHandoff';
 import { AuthRestoreFailed } from '../components/auth/AuthRestoreFailed';
 import { AuthRestoring } from '../components/auth/AuthRestoring';
-import { LogoutButton } from '../components/auth/LogoutButton';
 import { PREVIEW_NOTE } from '../components/processing/resultCopy';
 import { AuthScreen } from '../screens/AuthScreen';
-import { HomeScreen } from '../screens/HomeScreen';
 import { OnboardingPreviewScreen } from '../screens/OnboardingPreviewScreen';
 import { PhotoCaptureScreen } from '../screens/PhotoCaptureScreen';
 import { WebContentScreen } from '../screens/WebContentScreen';
 import { navigationTheme } from '../theme/navigationTheme';
 
 import { createAppAuthController, legalLinks, resumeFromLaunchUrl } from './appAuth';
+import { MainTabs } from './MainTabs';
 import type { RootStackParamList } from './navigation';
 import { OnboardingFlow } from './OnboardingFlow';
 import { PhotoProcessingRoute, PhotoResultRoute } from './photoRoutes';
@@ -84,22 +83,19 @@ const AppNavigator = () => {
         )}
         {destination === 'home' && (
           <>
-            <Stack.Screen
-              name="Home"
-              options={{
-                title: '이미지 액션 라우터',
-                headerRight: () => <LogoutButton controller={controller} />,
-              }}
-            >
-              {(props) => <HomeScreen {...props} controller={controller} />}
+            <Stack.Screen name="Main" options={{ headerShown: false }}>
+              {(props) => (
+                <MainTabs {...props} controller={controller} handoffMemory={handoffMemory} />
+              )}
             </Stack.Screen>
             <Stack.Screen
               name="WebContent"
               options={({ route }) => ({ title: route.params.title })}
             >
-              {(props) => (
+              {({ navigation, route }) => (
                 <WebContentScreen
-                  {...props}
+                  path={route.params.path}
+                  onTitle={(title) => navigation.setOptions({ title })}
                   controller={controller}
                   handoffMemory={handoffMemory}
                 />

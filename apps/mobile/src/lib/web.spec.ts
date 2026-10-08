@@ -5,6 +5,7 @@ import {
   handoffExchangeUrl,
   handoffStartUrl,
   isWebPage,
+  jobDetailPathOf,
   parseHttpUrl,
   webUrl,
   webViewNavigation,
@@ -33,6 +34,14 @@ describe('getWebBaseUrl', () => {
 describe('with a web base URL', () => {
   beforeEach(() => {
     vi.stubEnv('EXPO_PUBLIC_WEB_BASE_URL', BASE_URL);
+  });
+
+  it('picks out a job result link the history tab opens as its own screen', () => {
+    const id = '0f8fad5b-d9cb-469f-a165-70867728950e';
+    expect(jobDetailPathOf(`${BASE_URL}/history/${id}`)).toBe(`/history/${id}`);
+    expect(jobDetailPathOf(`${BASE_URL}/history`)).toBeNull();
+    expect(jobDetailPathOf(`https://evil.example/history/${id}`)).toBeNull();
+    expect(jobDetailPathOf(`${BASE_URL}/history/${id.toUpperCase()}`)).toBeNull();
   });
 
   it('joins a path with or without a leading slash', () => {

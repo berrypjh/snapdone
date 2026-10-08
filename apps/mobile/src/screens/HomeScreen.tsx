@@ -1,49 +1,60 @@
+import { useCallback } from 'react';
 import { ActivityIndicator, Text } from 'react-native';
 
 import { Button, getColor, useTheme } from '@berrypjh/react-native-ui';
+import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import type { CompositeScreenProps } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { needsCheck, recentState } from '@snapdone/processing';
+import { HOME_LIST_LIMIT, needsCheck, recentState, toLoaded } from '@snapdone/processing';
+import { Camera, ChevronRight, CircleUserRound } from 'lucide-react-native';
 
-import type { RootStackParamList } from '../app/navigation';
+import type { MainTabParamList, RootStackParamList } from '../app/navigation';
 import type { AuthController } from '../auth/controller';
 import { AppShell } from '../components/AppShell';
 import {
   ADD_PHOTO,
   HOME_DESCRIPTION,
-  JOB_PAGE_TITLE,
   LOADING,
-  PREFERENCES_PAGE,
-  PREFERENCES_TITLE,
+  PREFERENCES_HINT,
   RECENT_EMPTY,
   RECENT_FAILED,
   RECENT_TITLE,
   REVIEW_EMPTY,
   REVIEW_TITLE,
+  SEE_ALL,
 } from '../components/home/homeCopy';
-import { HomeMessage } from '../components/home/HomeMessage';
-import { HomeSection } from '../components/home/HomeSection';
-import { PreferenceSummary } from '../components/home/PreferenceSummary';
 import { RecentJobList } from '../components/home/RecentJobList';
-import { useHomeData } from '../home/useHomeData';
+import { ME_TITLE } from '../components/me/meCopy';
+import { SectionCard } from '../components/SectionCard';
+import { SectionMessage } from '../components/SectionMessage';
+import { homeApi } from '../home/homeApi';
+import { useFocusData } from '../lib/useFocusData';
+import { JOB_PAGE_TITLE } from '../lib/web';
 import { textStyle } from '../theme/text';
 
-type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Home'> & {
+type HomeScreenProps = CompositeScreenProps<
+  BottomTabScreenProps<MainTabParamList, 'Home'>,
+  NativeStackScreenProps<RootStackParamList>
+> & {
   controller: AuthController;
 };
 
 /**
- * 홈. 온보딩 뒤 처리한 사진이 없으면 사진 추가 · 설정 · 빈 기록 순으로, 있으면 사진 추가 · 최근 처리 ·
- * 확인 필요 · 설정 순으로 보인다. 처리 기록을 읽지 못하면 비었다고 추측하지 않고 그렇다고 말한다.
- * 사진 추가는 네이티브 사진 흐름으로, 설정 변경은 web 처리 설정 화면을 WebView로 연다.
+ * 홈. 사진 추가 · 최근 처리 · 확인이 필요한 처리만 둔다 — 처리 방식은 내 정보에서 바꾼다.
+ * 처리한 사진이 없으면 빈 기록과 처리 방식을 바꿀 곳을 알려 주고, 처리 기록을 읽지 못하면 비었다고 추측하지 않는다.
+ * 두 목록은 최근 것부터 `HOME_LIST_LIMIT`개만 보이고, 나머지는 기록 탭(전체 보기)에서 본다.
  * 사진을 처리하고 돌아오면(focus) 서버 기록을 다시 읽는다.
  */
 export const HomeScreen = ({ navigation, controller }: HomeScreenProps) => {
   const theme = useTheme();
   const { typography } = theme.tokens;
   const muted = { color: getColor(theme, 'text.light') };
-  const home = useHomeData(controller);
+  const link = getColor(theme, 'text.primary');
+  const recent = useFocusData(
+    useCallback(() => toLoaded(controller.authorized(homeApi.recentJobs)), [controller]),
+  );
 
-  if (!home) {
+  if (!recent) {
     return (
       <AppShell>
         <ActivityIndicator
@@ -55,19 +66,11 @@ export const HomeScreen = ({ navigation, controller }: HomeScreenProps) => {
     );
   }
 
-  const state = recentState(home.recent);
+  const state = recentState(recent);
   // 확인이 필요한 처리는 서버 결과에 확인이 필요한 영수증 값이 있을 때만이다.
-  const review = home.recent.ok ? home.recent.value.filter(needsCheck) : [];
+  const review = recent.ok ? recent.value.filter(needsCheck) : [];
   const openJob = (path: string) =>
     navigation.navigate('WebContent', { path, title: JOB_PAGE_TITLE });
-  const preferences = (
-    <HomeSection title={PREFERENCES_TITLE}>
-      <PreferenceSummary
-        preferences={home.preferences}
-        onEdit={() => navigation.navigate('WebContent', PREFERENCES_PAGE)}
-      />
-    </HomeSection>
-  );
 
   return (
     <AppShell>
@@ -85,36 +88,61 @@ export const HomeScreen = ({ navigation, controller }: HomeScreenProps) => {
         variant="contained"
         size="lg"
         fullWidth
+        startIcon={<Camera size={20} color={getColor(theme, 'text.contrastText')} />}
         onPress={() => navigation.navigate('PhotoCapture')}
       >
         {ADD_PHOTO}
       </Button>
 
-      {state === 'empty' && preferences}
-
-      <HomeSection title={RECENT_TITLE}>
-        {home.recent.ok ? (
-          home.recent.value.length > 0 ? (
-            <RecentJobList jobs={home.recent.value} onOpen={openJob} />
+      <SectionCard
+        title={RECENT_TITLE}
+        action={
+          state === 'active' && (
+            <Button
+              variant="text"
+              size="md"
+              endIcon={<ChevronRight size={16} color={link} />}
+              onPress={() => navigation.navigate('History')}
+            >
+              {SEE_ALL}
+            </Button>
+          )
+        }
+      >
+        {recent.ok ? (
+          recent.value.length > 0 ? (
+            <RecentJobList jobs={recent.value.slice(0, HOME_LIST_LIMIT)} onOpen={openJob} />
           ) : (
-            <HomeMessage>{RECENT_EMPTY}</HomeMessage>
+            <SectionMessage>{RECENT_EMPTY}</SectionMessage>
           )
         ) : (
-          <HomeMessage error>{RECENT_FAILED}</HomeMessage>
+          <SectionMessage error>{RECENT_FAILED}</SectionMessage>
         )}
-      </HomeSection>
+      </SectionCard>
 
       {state === 'active' && (
-        <HomeSection title={REVIEW_TITLE}>
+        <SectionCard title={REVIEW_TITLE}>
           {review.length > 0 ? (
-            <RecentJobList jobs={review} onOpen={openJob} />
+            <RecentJobList jobs={review.slice(0, HOME_LIST_LIMIT)} onOpen={openJob} />
           ) : (
-            <HomeMessage>{REVIEW_EMPTY}</HomeMessage>
+            <SectionMessage>{REVIEW_EMPTY}</SectionMessage>
           )}
-        </HomeSection>
+        </SectionCard>
       )}
 
-      {state !== 'empty' && preferences}
+      {state === 'empty' && (
+        <>
+          <SectionMessage>{PREFERENCES_HINT}</SectionMessage>
+          <Button
+            variant="outlined"
+            size="md"
+            startIcon={<CircleUserRound size={18} color={link} />}
+            onPress={() => navigation.navigate('Me')}
+          >
+            {ME_TITLE}
+          </Button>
+        </>
+      )}
     </AppShell>
   );
 };

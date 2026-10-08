@@ -58,7 +58,7 @@ export const PhotoResultRoute = ({
         })
       }
       onChooseAnother={() => navigation.popTo('PhotoCapture')}
-      onHome={() => navigation.popTo('Home')}
+      onHome={() => navigation.popTo('Main', { screen: 'Home' })}
     />
   );
 };

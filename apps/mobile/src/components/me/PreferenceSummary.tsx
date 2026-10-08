@@ -10,9 +10,9 @@ import {
 } from '@snapdone/processing';
 
 import { textStyle } from '../../theme/text';
+import { SectionMessage } from '../SectionMessage';
 
-import { PREFERENCES_EDIT, PREFERENCES_FAILED } from './homeCopy';
-import { HomeMessage } from './HomeMessage';
+import { PREFERENCES_EDIT, PREFERENCES_FAILED } from './meCopy';
 
 type PreferenceSummaryProps = {
   preferences: Loaded<ProcessingPreferences>;
@@ -54,7 +54,7 @@ export const PreferenceSummary = ({ preferences, onEdit }: PreferenceSummaryProp
           </View>
         ))
       ) : (
-        <HomeMessage error>{PREFERENCES_FAILED}</HomeMessage>
+        <SectionMessage error>{PREFERENCES_FAILED}</SectionMessage>
       )}
       <Button variant="outlined" onPress={onEdit}>
         {PREFERENCES_EDIT}

@@ -1,16 +1,10 @@
-import {
-  parsePreferences,
-  parseRecentJobs,
-  type ProcessingPreferences,
-  type RecentJob,
-} from '@snapdone/processing';
+import { parseRecentJobs, type RecentJob } from '@snapdone/processing';
 
 import { bearer, getApiBaseUrl } from '../lib/api';
 
 /** 홈이 읽는 API. 서버가 세션을 받지 않으면(401) `null`이고, 그 밖의 실패 · 계약 밖 응답은 던진다. */
 export type HomeApi = {
   recentJobs: (credential: string) => Promise<RecentJob[] | null>;
-  preferences: (credential: string) => Promise<ProcessingPreferences | null>;
 };
 
 const read = async <T>(
@@ -28,5 +22,4 @@ const read = async <T>(
 
 export const homeApi: HomeApi = {
   recentJobs: (credential) => read('/v1/processing-jobs', credential, parseRecentJobs),
-  preferences: (credential) => read('/v1/processing-preferences', credential, parsePreferences),
 };

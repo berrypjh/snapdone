@@ -15,6 +15,15 @@ export const getWebBaseUrl = (): string => {
 export const webUrl = (path: string) =>
   `${getWebBaseUrl()}${path.startsWith('/') ? path : `/${path}`}`;
 
+/** 앱이 WebView로 여는 web 화면의 경로와 헤더 제목. 제목은 web 화면의 제목과 같다. */
+export const WEB_PAGES = {
+  history: { path: '/history', title: '처리 기록' },
+  preferences: { path: '/settings/processing', title: '사진 종류별 기본 처리' },
+} as const;
+
+/** 처리 결과 하나(`/history/{소문자 uuid}`)를 여는 WebView 헤더 제목. */
+export const JOB_PAGE_TITLE = '처리 결과';
+
 /**
  * WebView 안에서 열 수 있는 web 경로. 정확히 같아야 한다. `/auth/callback`(Google)은 넣지 않는다.
  * 처리 결과 하나(`/history/{소문자 uuid}`)는 `isJobDetailPath`가 따로 판단한다 — 그 밖의 하위 경로는 막는다.
@@ -72,6 +81,12 @@ export const webViewNavigation = (url: string): WebNavigation => {
     return WEB_VIEW_PATHS.has(target.path) || isJobDetailPath(target.path) ? 'load' : 'block';
   }
   return target.origin.startsWith('https://') ? 'external' : 'block';
+};
+
+/** web 주소가 처리 결과 하나(`/history/{소문자 uuid}`)면 그 경로, 아니면 `null`이다. 기록 탭이 결과를 새 화면으로 열 때 쓴다. */
+export const jobDetailPathOf = (url: string): string | null => {
+  const target = parseHttpUrl(url);
+  return target && isWebPage(url) && isJobDetailPath(target.path) ? target.path : null;
 };
 
 /** 핸드오프 1단계: web이 verifier cookie를 만들고 ready page로 보낸다. */

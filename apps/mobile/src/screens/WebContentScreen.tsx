@@ -2,11 +2,9 @@ import { useRef, useState } from 'react';
 import { ActivityIndicator, Linking, StyleSheet, Text } from 'react-native';
 
 import { Box, Button, getColor, Stack, useTheme } from '@berrypjh/react-native-ui';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { decodeWebToAppMessage, inAppUserAgentName } from '@snapdone/webview-bridge';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 
-import type { RootStackParamList } from '../app/navigation';
 import { type AuthController, useAuthSnapshot } from '../auth/controller';
 import {
   handoffKey,
@@ -18,10 +16,19 @@ import {
   retryHandoff,
   type WebContent,
 } from '../auth/webHandoff';
-import { webViewNavigation } from '../lib/web';
+import { jobDetailPathOf, webViewNavigation } from '../lib/web';
 import { textStyle } from '../theme/text';
 
-type WebContentScreenProps = NativeStackScreenProps<RootStackParamList, 'WebContent'> & {
+type WebContentScreenProps = {
+  /** 처음 열 web 경로. */
+  path: string;
+  /** web이 ready 메시지로 알린 제목. 이 화면을 담은 헤더가 받는다. */
+  onTitle: (title: string) => void;
+  /**
+   * 처리 결과 하나로 가는 링크를 이 WebView 안에서 열지 않고 넘긴다(기록 탭). 없으면 안에서 연다.
+   * 탭 안의 WebView는 네이티브 뒤로 가기가 없어, 결과를 새 화면으로 쌓아야 기록으로 돌아올 수 있다.
+   */
+  onOpenJob?: (path: string) => void;
   controller: AuthController;
   handoffMemory: HandoffMemory;
 };
@@ -59,8 +66,9 @@ const openOutside = (url: string) => {
  * web이 `auth-required`를 보내면 앱 세션을 확인한 뒤 한 번만 다시 핸드오프한다.
  */
 export const WebContentScreen = ({
-  navigation,
-  route,
+  path,
+  onTitle,
+  onOpenJob,
   controller,
   handoffMemory,
 }: WebContentScreenProps) => {
@@ -70,7 +78,7 @@ export const WebContentScreen = ({
     auth.status === 'authenticated' ? handoffKey(auth.generation, auth.session.user.id) : null;
 
   const [content, setContentState] = useState(() =>
-    initialWebContent(route.params.path, key !== null && handoffMemory.needs(key)),
+    initialWebContent(path, key !== null && handoffMemory.needs(key)),
   );
   const contentRef = useRef(content);
   const setContent = (next: WebContent) => {
@@ -100,7 +108,7 @@ export const WebContentScreen = ({
 
     switch (effect.type) {
       case 'title':
-        navigation.setOptions({ title: effect.title });
+        onTitle(effect.title);
         return;
       case 'start-handoff':
         await handoff(effect.challenge);
@@ -160,6 +168,11 @@ export const WebContentScreen = ({
       onHttpError={() => setContent({ ...contentRef.current, failure: 'load' })}
       onMessage={(event) => void onMessage(event)}
       onShouldStartLoadWithRequest={({ url, isTopFrame }) => {
+        const job = onOpenJob && isTopFrame ? jobDetailPathOf(url) : null;
+        if (job) {
+          onOpenJob?.(job);
+          return false;
+        }
         if (webViewNavigation(url) === 'load') return true;
         if (isTopFrame) openOutside(url);
         return false;

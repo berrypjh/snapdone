@@ -15,12 +15,6 @@ export const REVIEW_EMPTY = '현재 확인이 필요한 처리가 없습니다.'
 export const NEEDS_CHECK = '확인이 필요한 정보가 있습니다';
 export const OPEN_JOB_HINT = '처리 결과를 엽니다';
 
-/** 처리 결과(web 기록 화면)를 여는 WebView 제목. web 화면의 제목과 같다. */
-export const JOB_PAGE_TITLE = '처리 결과';
-
-export const PREFERENCES_TITLE = '기본 처리 설정';
-export const PREFERENCES_EDIT = '설정 변경';
-export const PREFERENCES_FAILED = '기본 처리 설정을 불러오지 못했습니다.';
-
-/** 처리 설정 화면(web)을 여는 WebView 경로와 제목. web 화면의 제목과 같다. */
-export const PREFERENCES_PAGE = { path: '/settings/processing', title: '사진 종류별 기본 처리' };
+/** 처리한 사진이 없을 때 처리 방식을 바꿀 곳을 알려 준다. web 홈과 같은 문장이다. */
+export const PREFERENCES_HINT = '사진마다 처리하는 방식은 내 정보에서 바꿀 수 있습니다.';
+export const SEE_ALL = '전체 보기';

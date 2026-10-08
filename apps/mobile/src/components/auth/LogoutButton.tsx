@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Alert } from 'react-native';
 
-import { Button } from '@berrypjh/react-native-ui';
+import { Button, getColor, useTheme } from '@berrypjh/react-native-ui';
+import { LogOut } from 'lucide-react-native';
 
 import type { AuthController } from '../../auth/controller';
 
@@ -12,6 +13,7 @@ import { LOGOUT_FAILED, LOGOUT_NOT_REVOKED } from './authCopy';
  * 기기 삭제 실패와 서버 취소 미완료는 Alert로 구분해 알린다.
  */
 export const LogoutButton = ({ controller }: { controller: AuthController }) => {
+  const theme = useTheme();
   const [pending, setPending] = useState(false);
 
   const onPress = async () => {
@@ -26,7 +28,14 @@ export const LogoutButton = ({ controller }: { controller: AuthController }) => 
   };
 
   return (
-    <Button variant="text" size="sm" loading={pending} disabled={pending} onPress={onPress}>
+    <Button
+      variant="text"
+      size="sm"
+      loading={pending}
+      disabled={pending}
+      startIcon={<LogOut size={16} color={getColor(theme, 'text.primary')} />}
+      onPress={onPress}
+    >
       로그아웃
     </Button>
   );
