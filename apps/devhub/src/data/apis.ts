@@ -118,6 +118,22 @@ export const apis: ApiRef[] = [
     exposure: 'always',
   },
   {
+    id: 'delete-processing-job',
+    method: 'DELETE',
+    path: '/v1/processing-jobs/{jobId}',
+    handler: { path: PROCESSING, symbol: 'handlers.deleteProcessingJob' },
+    alsoHead: false,
+    exposure: 'always',
+  },
+  {
+    id: 'delete-processing-jobs',
+    method: 'POST',
+    path: '/v1/processing-jobs/delete',
+    handler: { path: PROCESSING, symbol: 'handlers.deleteProcessingJobs' },
+    alsoHead: false,
+    exposure: 'always',
+  },
+  {
     id: 'patch-receipt-field',
     method: 'PATCH',
     path: '/v1/processing-jobs/{jobId}/receipt-fields/{field}',

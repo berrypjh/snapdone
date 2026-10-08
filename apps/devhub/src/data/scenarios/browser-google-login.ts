@@ -116,7 +116,7 @@ export const browserGoogleLogin: Scenario = {
       id: 'return',
       intent: '로그인 전에 가려던 화면으로 복귀',
       behavior:
-        '허용 목록(/ · /history · /onboarding)과 정확히 같은 경로만 복귀하고 그 외는 홈으로 보냄',
+        '허용 목록(/ · /history · /me · /onboarding · /process · /settings/processing)과 정확히 같은 경로나 처리 결과 하나(/history/{소문자 uuid})만 복귀하고 그 외는 홈으로 보냄',
       runtime: 'next-server',
       owner: 'web',
       status: 'implemented',

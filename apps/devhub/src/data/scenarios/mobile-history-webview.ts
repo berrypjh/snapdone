@@ -21,22 +21,20 @@ export const mobileHistoryWebView: Scenario = {
       kind: 'runtime-unverified',
       note: '앱 쪽은 단위 테스트까지. web 쪽은 E2E가 앱 User-Agent를 흉내 내 검증',
     },
-    {
-      kind: 'code-not-found',
-      note: '앱에는 기록 목록(/history)으로 가는 진입점이 없음. 홈의 최근 처리 항목으로 결과 하나씩만 엶. /history는 WebView 허용 경로에 남아 있음',
-    },
   ],
   steps: [
     step({
       id: 'tap-recent',
-      intent: '홈의 최근 처리 또는 확인이 필요한 처리 항목 누르기',
+      intent: '홈의 최근 처리 또는 확인이 필요한 처리 항목 누르기(전체는 전체 보기)',
       behavior:
-        '항목마다 적용한 유형과 처리 방식 · 요약을 보이고, 누르면 그 작업의 결과 경로(/history/{소문자 uuid})로 WebContent를 엶. 규칙에 맞지 않는 id는 링크를 만들지 않음',
+        '항목마다 적용한 유형과 처리 방식 · 요약을 보이고, 누르면 그 작업의 결과 경로(/history/{소문자 uuid})로 WebContent를 엶. 규칙에 맞지 않는 id는 링크를 만들지 않음. 홈에는 최근 3개만 있고 전체 보기는 기록 탭으로 감. 기록 탭은 web 기록 목록(/history)을 WebView로 열고, 그 안의 결과 링크는 탭 위 새 화면으로 엶',
       runtime: 'mobile-app',
       owner: 'mobile',
       status: 'implemented',
       source: [
         { path: 'apps/mobile/src/screens/HomeScreen.tsx', symbol: 'HomeScreen' },
+        { path: 'apps/mobile/src/app/MainTabs.tsx', symbol: 'MainTabs' },
+        { path: 'apps/mobile/src/lib/web.ts', symbol: 'jobDetailPathOf' },
         { path: 'apps/mobile/src/components/home/RecentJobList.tsx', symbol: 'RecentJobList' },
         { path: 'libs/processing/src/lib/summary.ts', symbol: 'summarizeJob' },
         { path: 'libs/webview-bridge/src/lib/paths.ts', symbol: 'jobDetailPath' },

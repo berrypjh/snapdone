@@ -46,7 +46,7 @@ export const applications: ApplicationRef[] = [
     packageName: '@snapdone/web-e2e',
     nxTags: ['type:e2e'],
     stack: 'Playwright',
-    summary: '가짜 인증 API로 web을 띄워 검증하는 E2E',
+    summary: '가짜 API(인증 · 온보딩 · 사진 처리 · 기록)로 web을 띄워 검증하는 E2E',
     docs: [{ document: 'quality-gates', heading: 'E2E 범위' }],
   },
 ];

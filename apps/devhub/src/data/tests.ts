@@ -1035,6 +1035,10 @@ export const tests: TestRef[] = [
   ),
   goTest('go-recent-origins', `${PROCESSING}/store_test.go`, 'TestRecentFiltersAndOrders', DB),
   goTest('go-http-recent', `${HTTP}/processing_test.go`, 'TestProcessingJobs', []),
+  goTest('go-http-delete', `${HTTP}/processing_test.go`, 'TestDeleteProcessingJob', []),
+  goTest('go-delete-job', `${PROCESSING}/store_test.go`, 'TestDeleteJob', DB),
+  goTest('go-http-delete-many', `${HTTP}/processing_test.go`, 'TestDeleteProcessingJobs', []),
+  goTest('go-delete-many', `${PROCESSING}/store_test.go`, 'TestDeleteManyJobs', DB),
   goTest('go-http-recent-origins', `${HTTP}/processing_test.go`, 'TestProcessingJobsOrigins', []),
   goTest('go-http-recent-outcome', `${HTTP}/processing_test.go`, 'TestProcessingJobsOutcome', []),
   goTest('go-http-reprocess', `${HTTP}/processing_test.go`, 'TestReprocessProcessingJob', []),
@@ -1501,6 +1505,16 @@ export const tests: TestRef[] = [
     'applies a saved default to the next photo, and an unsaved choice to none',
   ),
   playwright(
+    'e2e-result-fold',
+    'processing-result.spec.ts',
+    'folds a long original under the summary and opens it in place',
+  ),
+  playwright(
+    'e2e-result-copy',
+    'processing-result.spec.ts',
+    'copies one result text with its own button',
+  ),
+  playwright(
     'e2e-result-confirm-field',
     'processing-result.spec.ts',
     'a finished receipt job',
@@ -1539,6 +1553,33 @@ export const tests: TestRef[] = [
     'e2e-home-flow-active',
     'home-flow.spec.ts',
     'turns the empty home active with the processed photo, flags its check, and opens its result',
+  ),
+  playwright(
+    'e2e-me-preferences',
+    'home.spec.ts',
+    'shows on the profile page the preferences this user saved, not the defaults',
+  ),
+  playwright('e2e-shell-desktop', 'app-shell.spec.ts', 'keeps the sidebar on desktop widths'),
+  playwright('e2e-shell-tabs', 'app-shell.spec.ts', 'drops the sidebar below the md breakpoint'),
+  playwright(
+    'e2e-shell-fixed',
+    'app-shell.spec.ts',
+    'keeps the header and the sidebar on screen while the page scrolls',
+  ),
+  playwright(
+    'e2e-home-limit',
+    'home-flow.spec.ts',
+    'shows only the three newest jobs on the home and leads to the whole history',
+  ),
+  playwright(
+    'e2e-history-delete-many',
+    'home-flow.spec.ts',
+    'deletes several chosen jobs at once after a confirmation',
+  ),
+  playwright(
+    'e2e-history-delete',
+    'home-flow.spec.ts',
+    'deletes a job from its result after a confirmation and returns to the history',
   ),
   playwright(
     'e2e-history-list',

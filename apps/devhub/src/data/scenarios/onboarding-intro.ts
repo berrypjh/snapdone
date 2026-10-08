@@ -77,7 +77,7 @@ export const onboardingIntro: Scenario = {
       id: 'intro-app',
       intent: '앱에서 서비스 소개 보기',
       behavior:
-        '예시 3장(입력 → 끝난 일) · "시작하기" · 로그아웃 표시. 시작하기는 첫 사진 → 사진 확인으로 이어짐',
+        '예시 2장(영수증 · 외국어 안내문, 입력 → 끝난 일. 지금 처리하는 사진만) · "시작하기" · 로그아웃 표시. 시작하기는 첫 사진 → 사진 확인으로 이어짐',
       runtime: 'mobile-app',
       owner: 'mobile',
       status: 'implemented',
@@ -120,12 +120,6 @@ export const onboardingIntro: Scenario = {
         'e2e-web-onboarding-flow',
         'e2e-web-onboarding-resume',
       ],
-      gaps: [
-        {
-          kind: 'code-not-found',
-          note: '예시는 고정 문구, 해당 기능 코드 없음 — finish-task-from-image 참고',
-        },
-      ],
       next: ['finish'],
       via: ['onboarding-first-photo'],
     }),
@@ -133,7 +127,7 @@ export const onboardingIntro: Scenario = {
       id: 'finish',
       intent: '온보딩을 끝내고 홈으로 이동',
       behavior:
-        'POST /v1/onboarding/complete가 first-image에서 complete로 확정(이미 마쳤으면 그대로 성공, 그 전 단계는 409). web은 결과 화면의 완료 버튼이 Server Action으로 부르고 홈(/)으로 보냄. 앱은 완료 뒤 세션을 다시 받아 onboardingStep이 complete가 되면 root stack이 홈으로 바뀜',
+        'POST /v1/onboarding/complete가 first-image에서 complete로 확정(이미 마쳤으면 그대로 성공, 그 전 단계는 409). web은 결과 화면의 완료 버튼이 Server Action으로 부르고 홈(/)으로 보냄. 앱은 완료 뒤 세션을 다시 받아 onboardingStep이 complete가 되면 root stack이 하단 탭(홈)으로 바뀜',
       runtime: 'go-api',
       owner: 'api',
       status: 'implemented',
