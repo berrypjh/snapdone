@@ -98,6 +98,19 @@ export const parseRecentJobs = (value: unknown): RecentJob[] | null => {
 export type Loaded<T> = { ok: true; value: T } | { ok: false };
 
 /**
+ * 서버 읽기 하나를 `Loaded`로 바꾼다. 읽었으면 그 값, 실패(서버 · 네트워크 · 기기 저장소)는 읽지 못함,
+ * 세션이 끝났으면(요청이 `null`) `null`이다 — 화면은 로그인으로 보낸다. web 홈 · 내 정보와 앱 홈 · 내 정보가 쓴다.
+ */
+export const toLoaded = async <T>(request: Promise<T | null>): Promise<Loaded<T> | null> => {
+  try {
+    const value = await request;
+    return value === null ? null : { ok: true, value };
+  } catch {
+    return { ok: false };
+  }
+};
+
+/**
  * 최근 처리 기록의 상태. 온보딩 뒤 처리한 사진이 없으면 `empty`, 있으면 `active`다.
  * 기록을 읽지 못했으면 `unknown` — 비어 있다고 추측하지 않는다.
  */
@@ -107,6 +120,9 @@ export const recentState = (recent: Loaded<readonly RecentJob[]>): RecentState =
   if (!recent.ok) return 'unknown';
   return recent.value.length === 0 ? 'empty' : 'active';
 };
+
+/** 홈의 한 목록(최근 처리 · 확인이 필요한 처리)에 보이는 최대 개수. 나머지는 기록에서 본다. */
+export const HOME_LIST_LIMIT = 3;
 
 /**
  * 지금 제품이 다루는 사진 종류의 이름. 그 밖의 category(place · event 등)는

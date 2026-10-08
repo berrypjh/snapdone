@@ -76,14 +76,15 @@ export const presentExpense = (expense: Expense): FieldView[] =>
     };
   });
 
+/** 결과 글. 사용자가 원한 일(요약 · 번역)을 먼저, 그 바탕인 원문을 마지막에 둔다. */
 const textBlocks = (outcome: ProcessedOutcome): TextBlock[] => {
   const { output } = outcome;
   const blocks: TextBlock[] = [];
-  if ('original' in output) blocks.push({ kind: 'original', text: output.original });
+  if ('summary' in output) blocks.push({ kind: 'summary', text: output.summary });
   if ('translation' in output && output.translation.needed) {
     blocks.push({ kind: 'translation', text: output.translation.text });
   }
-  if ('summary' in output) blocks.push({ kind: 'summary', text: output.summary });
+  if ('original' in output) blocks.push({ kind: 'original', text: output.original });
   return blocks;
 };
 

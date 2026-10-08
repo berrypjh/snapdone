@@ -8,6 +8,7 @@ import {
   readJobDetail,
   type RecentJob,
   recentState,
+  toLoaded,
 } from './recent-jobs';
 
 const completed = {
@@ -276,5 +277,19 @@ describe('the Go wire contract', () => {
       { jobId: 'job-2', selection: null, outcome: 'ambiguous', sourceJobId: null },
       { jobId: 'job-1', selection: 'record_expense', outcome: 'processed', sourceJobId: null },
     ]);
+  });
+});
+
+describe('toLoaded', () => {
+  it('keeps what was read', async () => {
+    await expect(toLoaded(Promise.resolve([1]))).resolves.toEqual({ ok: true, value: [1] });
+  });
+
+  it('says it could not read on any failure, without guessing a value', async () => {
+    await expect(toLoaded(Promise.reject(new Error('500')))).resolves.toEqual({ ok: false });
+  });
+
+  it('is signed out when the request found no session', async () => {
+    await expect(toLoaded(Promise.resolve(null))).resolves.toBeNull();
   });
 });

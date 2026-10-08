@@ -49,9 +49,10 @@ const TEXT_CASES: { outcome: ProcessedOutcome; texts: TextBlock[] }[] = [
       appliedAction: 'extract_and_translate',
       output: { original: 'Exit only', translation: { needed: true, text: '출구 전용' } },
     },
+    // What the user asked for comes first; the original it came from comes last.
     texts: [
-      { kind: 'original', text: 'Exit only' },
       { kind: 'translation', text: '출구 전용' },
+      { kind: 'original', text: 'Exit only' },
     ],
   },
   {
@@ -80,8 +81,8 @@ const TEXT_CASES: { outcome: ProcessedOutcome; texts: TextBlock[] }[] = [
       output: { original: 'Exit only', summary: '출구 안내' },
     },
     texts: [
-      { kind: 'original', text: 'Exit only' },
       { kind: 'summary', text: '출구 안내' },
+      { kind: 'original', text: 'Exit only' },
     ],
   },
   {

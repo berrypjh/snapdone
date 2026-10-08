@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatKoreanDateTime } from './datetime';
+import { formatKoreanDateTime, formatKoreanDay, formatKoreanTime } from './datetime';
 
 describe('formatKoreanDateTime', () => {
   it.each([
@@ -22,5 +22,13 @@ describe('formatKoreanDateTime', () => {
     for (const iso of ['2026-10-06T09:00:00Z', '2026-01-01T00:00:00Z', '2026-06-30T14:59:00Z']) {
       expect(formatKoreanDateTime(iso)).toBe(intl.format(new Date(iso)));
     }
+  });
+});
+
+describe('formatKoreanDay and formatKoreanTime', () => {
+  it('split the Korean date and time, crossing midnight in Korea', () => {
+    expect(formatKoreanDay('2026-10-06T15:30:00Z')).toBe('2026. 10. 7.');
+    expect(formatKoreanTime('2026-10-06T15:30:00Z')).toBe('오전 12:30');
+    expect(formatKoreanTime('2026-10-06T05:07:00Z')).toBe('오후 2:07');
   });
 });

@@ -55,6 +55,7 @@ describe('summarizeJob', () => {
       preview: '출구 안내',
       facts: [],
       needsCheck: false,
+      done: true,
     });
   });
 
@@ -102,6 +103,7 @@ describe('summarizeJob', () => {
       preview: null,
       facts: result.facts,
       needsCheck: false,
+      done: true,
     });
   });
 
@@ -110,10 +112,12 @@ describe('summarizeJob', () => {
     expect(summarizeJob({ ...base, status: 'running' })).toMatchObject({
       headline: null,
       status: '처리 중',
+      done: false,
     });
     expect(summarizeJob({ ...base, status: 'failed' })).toMatchObject({
       headline: null,
       status: '처리하지 못함',
+      done: false,
     });
   });
 });

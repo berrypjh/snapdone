@@ -14,6 +14,8 @@ export type JobSummary = {
   facts: readonly { label: string; value: string }[];
   /** 영수증에 확인이 필요한 값이 있다. 기록 화면에서 그 필드를 확정할 수 있다. */
   needsCheck: boolean;
+  /** 처리를 마쳤다. 목록은 마치지 못한 것(처리 중 · 실패 · 처리하지 않음)만 상태를 보인다. */
+  done: boolean;
 };
 
 const STATUS = {
@@ -25,7 +27,7 @@ const STATUS = {
 
 export const summarizeJob = (job: RecentJob): JobSummary => {
   const screen = presentJob(job);
-  const empty = { preview: null, facts: [], needsCheck: false };
+  const empty = { preview: null, facts: [], needsCheck: false, done: false };
   switch (screen.kind) {
     case 'running':
       return { headline: null, status: STATUS.running, ...empty };
@@ -36,7 +38,13 @@ export const summarizeJob = (job: RecentJob): JobSummary => {
     case 'ambiguous':
       return { headline: '유형을 정하지 못한 사진', status: STATUS.skipped, ...empty };
     case 'without-outcome':
-      return { ...empty, headline: kindLabel(job), status: STATUS.done, facts: screen.facts };
+      return {
+        ...empty,
+        headline: kindLabel(job),
+        status: STATUS.done,
+        facts: screen.facts,
+        done: true,
+      };
     case 'processed': {
       const { imageType, appliedAction } = screen.applied;
       const text =
@@ -53,6 +61,7 @@ export const summarizeJob = (job: RecentJob): JobSummary => {
         preview: text?.text ?? (expense || null),
         facts: [],
         needsCheck: needsReview(screen),
+        done: true,
       };
     }
   }
