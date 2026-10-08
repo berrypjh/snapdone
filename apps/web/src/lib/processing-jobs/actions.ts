@@ -1,11 +1,24 @@
 'use server';
 
+import { redirect } from 'next/navigation';
+
 import { ProcessingApiError } from '@snapdone/onboarding';
 import { IMAGE_TYPES, type ImageType, type JobDetail } from '@snapdone/processing';
 
+import { loginPage } from '../auth/redirect';
 import { fromAllowedOrigin, readCredential } from '../auth/session';
 
-import { fetchJob, reprocessJob, resolveReceiptField, startJob } from './api';
+import {
+  DELETE_LIMIT,
+  deleteJob,
+  deleteJobs,
+  fetchJob,
+  reprocessJob,
+  resolveReceiptField,
+  startJob,
+} from './api';
+
+const HISTORY = '/history';
 
 /**
  * 처리 작업 Action의 결과. 오류는 던지지 않고 값으로 돌려준다 — production에서 Action 오류 내용은 가려진다.
@@ -82,4 +95,46 @@ export async function confirmReceiptField(
   value: string,
 ): Promise<DetailResponse> {
   return respond((credential) => resolveReceiptField(credential, { jobId, field, value }));
+}
+
+/** 삭제 Action이 돌아왔다면 실패다. 성공 · 로그인 만료는 redirect로 끝난다. */
+export type DeleteResponse = { type: 'error' };
+
+/**
+ * 기록 하나를 지우고 기록 목록으로 보낸다. 되돌릴 수 없어서 화면이 먼저 확인을 받는다.
+ * 세션이 끝났으면 로그인으로, 서버에 닿지 못하면 값으로 돌려줘 그 자리에서 다시 시도한다.
+ */
+export async function deleteRecord(jobId: string): Promise<DeleteResponse> {
+  if (!(await fromAllowedOrigin())) throw new Error('허용되지 않은 origin의 처리 요청입니다.');
+  const credential = await readCredential();
+  if (!credential) redirect(loginPage(HISTORY));
+  let deleted: boolean | null;
+  try {
+    deleted = await deleteJob(credential, jobId);
+  } catch {
+    return { type: 'error' };
+  }
+  redirect(deleted ? HISTORY : loginPage(HISTORY));
+}
+
+/** 여러 개 삭제의 결과. 로그인 만료는 redirect로 끝난다. */
+export type DeleteManyResponse = { type: 'deleted'; count: number } | { type: 'error' };
+
+/**
+ * 기록 여러 개를 한 번에 지운다. 되돌릴 수 없어서 화면이 먼저 확인을 받는다. 지운 개수를 돌려주고,
+ * 목록은 화면이 다시 읽는다. 비었거나 한도(`DELETE_LIMIT`)를 넘는 선택은 서버에 보내지 않는다.
+ */
+export async function deleteRecords(jobIds: string[]): Promise<DeleteManyResponse> {
+  if (!(await fromAllowedOrigin())) throw new Error('허용되지 않은 origin의 처리 요청입니다.');
+  if (jobIds.length === 0 || jobIds.length > DELETE_LIMIT) return { type: 'error' };
+  const credential = await readCredential();
+  if (!credential) redirect(loginPage(HISTORY));
+  let deleted: number | null;
+  try {
+    deleted = await deleteJobs(credential, jobIds);
+  } catch {
+    return { type: 'error' };
+  }
+  if (deleted === null) redirect(loginPage(HISTORY));
+  return { type: 'deleted', count: deleted };
 }

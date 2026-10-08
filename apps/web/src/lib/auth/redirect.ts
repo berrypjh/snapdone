@@ -2,7 +2,14 @@ import type { AuthErrorCode } from '@snapdone/auth-contracts';
 import { isJobDetailPath } from '@snapdone/webview-bridge';
 
 /** 로그인 후 돌아갈 수 있는 page. 그 외는 홈으로 간다. */
-const RETURN_PATHS = new Set(['/', '/history', '/onboarding', '/process', '/settings/processing']);
+const RETURN_PATHS = new Set([
+  '/',
+  '/history',
+  '/me',
+  '/onboarding',
+  '/process',
+  '/settings/processing',
+]);
 
 export const DEFAULT_RETURN_PATH = '/';
 

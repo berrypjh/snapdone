@@ -16,6 +16,7 @@ import { needsReview, presentJob, type ResultScreen } from '@snapdone/processing
 import { loginPage } from '@/lib/auth/redirect';
 import { findJob } from '@/lib/processing-jobs/actions';
 
+import { CopyButton } from './copy-button';
 import { ExpenseFields } from './expense-fields';
 import {
   AMBIGUOUS_NOTE,
@@ -46,6 +47,7 @@ import {
   WITHOUT_OUTCOME_NOTE,
   WITHOUT_OUTCOME_TITLE,
 } from './result-copy';
+import { ResultText } from './result-text';
 import { SelectedImage } from './selected-image';
 import { TypeChoice } from './type-choice';
 
@@ -176,11 +178,7 @@ export function ProcessingResult({
         )}
       </div>
 
-      {image ? (
-        <SelectedImage url={image.url} compact />
-      ) : (
-        <p className="text-center typo-caption-default text-text-light">{NO_PHOTO}</p>
-      )}
+      {image && <SelectedImage url={image.url} compact />}
 
       {/* 항상 있는 live region 하나에 문장만 바꿔야 스크린 리더가 놓치지 않는다. */}
       <p role="status" className="sr-only">
@@ -252,18 +250,23 @@ export function ProcessingResult({
               aria-labelledby={`result-${block.kind}`}
               className="flex min-w-0 flex-col gap-3"
             >
-              <h2 id={`result-${block.kind}`} className="typo-body-medium-strong">
-                {TEXT_TITLE[block.kind]}
-              </h2>
+              <div className="flex items-center justify-between gap-3">
+                <h2 id={`result-${block.kind}`} className="typo-body-medium-strong">
+                  {TEXT_TITLE[block.kind]}
+                </h2>
+                <CopyButton text={block.text} label={TEXT_TITLE[block.kind]} />
+              </div>
               <Box
                 p="lg"
                 bg="background.surface"
                 radius="lg"
                 className="border border-stroke-light"
               >
-                <p className="typo-paragraph-default break-words whitespace-pre-wrap">
-                  {block.text}
-                </p>
+                <ResultText
+                  text={block.text}
+                  label={TEXT_TITLE[block.kind]}
+                  foldable={block.kind === 'original' && screen.texts.length > 1}
+                />
               </Box>
             </section>
           ))}
@@ -298,6 +301,9 @@ export function ProcessingResult({
           )}
         </>
       )}
+
+      {/* 결과를 읽는 데 필요 없는 안내라 맨 아래에 둔다. */}
+      {!image && <p className="typo-caption-default text-text-light">{NO_PHOTO}</p>}
 
       {loadFailed && (
         <div className="flex flex-col gap-2">

@@ -7,6 +7,7 @@ import { jobDetailPath } from '@snapdone/webview-bridge';
 import type { Metadata } from 'next';
 
 import { InAppReady } from '@/components/in-app-ready';
+import { DeleteRecord } from '@/components/processing/delete-record';
 import { ProcessingResult } from '@/components/processing/processing-result';
 import { LOAD_FAILED, NOT_FOUND, PAGE_TITLE } from '@/components/processing/result-copy';
 import { loginPage } from '@/lib/auth/redirect';
@@ -50,7 +51,13 @@ export default async function JobResultPage({ params }: { params: Promise<{ jobI
   return (
     <Stack gap="xl">
       {loaded.type === 'job' ? (
-        <ProcessingResult initial={loaded.job} image={null} returnTo={returnTo} />
+        <>
+          <ProcessingResult initial={loaded.job} image={null} returnTo={returnTo} />
+          {/* 다 읽은 뒤에 고르는 일이라 결과 맨 아래, 구분선 밑에 둔다. */}
+          <div className="border-t border-stroke-light pt-6">
+            <DeleteRecord jobId={loaded.job.jobId} />
+          </div>
+        </>
       ) : (
         <div className="flex flex-col gap-3">
           <h1 className="typo-heading-h4">{PAGE_TITLE}</h1>

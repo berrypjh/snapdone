@@ -21,6 +21,19 @@ export const RECEIPT_DONE: Record<ReceiptAction, string> = {
 export const TRANSLATION_SKIPPED_TITLE = TEXT_DONE.extract_text;
 export const TRANSLATION_SKIPPED = '이미 한국어로 쓰여 있어 번역하지 않았습니다.';
 
+export const DELETE = '기록 삭제';
+export const DELETE_CONFIRM = '이 기록을 삭제할까요? 삭제하면 되돌릴 수 없습니다.';
+export const DELETE_YES = '삭제';
+export const DELETE_CANCEL = '취소';
+export const DELETE_FAILED = '삭제하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.';
+
+export const expand = (label: string) => `${label} 전체 보기`;
+export const collapse = (label: string) => `${label} 접기`;
+
+export const COPY = '복사';
+export const COPIED = '복사했습니다';
+export const COPY_FAILED = '복사하지 못했습니다. 글을 길게 눌러 직접 복사해 주세요.';
+
 export const APPLIED_PREFIX = '적용한 처리 방식';
 
 export const TEXT_TITLE: Record<TextBlock['kind'], string> = {

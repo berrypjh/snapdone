@@ -1,4 +1,5 @@
 import { Button } from '@berrypjh/react-ui';
+import { LogOut } from 'lucide-react';
 
 import { logout } from '@/lib/auth/actions';
 
@@ -6,7 +7,7 @@ import { logout } from '@/lib/auth/actions';
 export function LogoutButton({ className }: { className?: string }) {
   return (
     <form action={logout} className={className}>
-      <Button type="submit" variant="text" size="sm">
+      <Button type="submit" variant="text" size="sm" startIcon={<LogOut aria-hidden size={16} />}>
         로그아웃
       </Button>
     </form>

@@ -5,13 +5,12 @@ export const HOME_DESCRIPTION =
 export const ADD_PHOTO = '사진 추가하기';
 
 export const RECENT_TITLE = '최근 처리';
+export const SEE_ALL = '전체 보기';
 export const RECENT_EMPTY = '새로 추가한 사진의 처리 기록이 아직 없습니다.';
 export const RECENT_FAILED = '처리 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.';
 
 export const REVIEW_TITLE = '확인이 필요한 처리';
 export const REVIEW_EMPTY = '현재 확인이 필요한 처리가 없습니다.';
-export const NEEDS_CHECK = '확인이 필요한 정보가 있습니다';
 
-export const PREFERENCES_TITLE = '기본 처리 설정';
-export const PREFERENCES_EDIT = '설정 변경';
-export const PREFERENCES_FAILED = '기본 처리 설정을 불러오지 못했습니다.';
+/** 처리한 사진이 없을 때 처리 방식을 바꿀 곳을 알려 준다. */
+export const PREFERENCES_HINT = '사진마다 처리하는 방식은 내 정보에서 바꿀 수 있습니다.';

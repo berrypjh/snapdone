@@ -107,3 +107,16 @@ body {
     display: none;
   }
 }
+
+/*
+ * 고정 헤더(h-14)와 폰 폭의 하단 탭(min-h-14) 아래로 포커스 · 앵커가 숨지 않게 그 높이만큼 비워 둔다.
+ */
+html {
+  scroll-padding-top: calc(var(--spacing) * 14);
+}
+
+@media (width < 48rem) {
+  html {
+    scroll-padding-bottom: calc(var(--spacing) * 14);
+  }
+}

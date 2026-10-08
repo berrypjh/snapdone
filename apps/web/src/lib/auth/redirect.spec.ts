@@ -6,6 +6,7 @@ describe('safeReturnPath', () => {
   it.each([
     '/',
     '/history',
+    '/me',
     '/onboarding',
     '/process',
     '/settings/processing',

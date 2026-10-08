@@ -15,8 +15,21 @@ vi.mock('next/headers', () => ({
   }),
 }));
 
-const { chooseImageType, confirmReceiptField, findJob, reprocessWithAction, startPhotoJob } =
-  await import('./actions');
+vi.mock('next/navigation', () => ({
+  redirect: (location: string) => {
+    throw new Error(`REDIRECT ${location}`);
+  },
+}));
+
+const {
+  chooseImageType,
+  confirmReceiptField,
+  deleteRecord,
+  deleteRecords,
+  findJob,
+  reprocessWithAction,
+  startPhotoJob,
+} = await import('./actions');
 
 const ORIGIN = 'http://localhost:3000';
 const BASE_URL = 'http://localhost:8080';
@@ -156,5 +169,83 @@ describe('processing job actions', () => {
       });
     }
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('deleteRecord', () => {
+  it('deletes the job with the session and goes back to the history', async () => {
+    const fetchMock = stubFetch(() => new Response(null, { status: 204 }));
+
+    await expect(deleteRecord('job-1')).rejects.toThrow(/^REDIRECT \/history$/);
+    const [url, init] = fetchMock.mock.calls[0] ?? [];
+    expect(url).toBe(`${BASE_URL}/v1/processing-jobs/job-1`);
+    expect(init?.method).toBe('DELETE');
+    expect(init?.headers).toEqual({ Authorization: 'Bearer c' });
+  });
+
+  it('treats a job already gone as deleted', async () => {
+    stubFetch(() => json({ error: 'job_not_found' }, 404));
+
+    await expect(deleteRecord('job-1')).rejects.toThrow(/^REDIRECT \/history$/);
+  });
+
+  it('goes to login when the session ended', async () => {
+    stubFetch(() => json({ error: 'session_expired' }, 401));
+
+    await expect(deleteRecord('job-1')).rejects.toThrow('REDIRECT /login?next=%2Fhistory');
+  });
+
+  it.each([
+    ['a server error', () => json({ error: 'provider_unavailable' }, 500)],
+    ['an unreachable server', () => Promise.reject(new TypeError('fetch failed'))],
+  ])('returns an error to retry on %s', async (_name, response) => {
+    stubFetch(response);
+
+    await expect(deleteRecord('job-1')).resolves.toEqual({ type: 'error' });
+  });
+
+  it('refuses a request from another origin before calling Go', async () => {
+    request.origin = 'https://evil.example';
+    const fetchMock = stubFetch(() => new Response(null, { status: 204 }));
+
+    await expect(deleteRecord('job-1')).rejects.toThrow('허용되지 않은 origin');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('deleteRecords', () => {
+  it('deletes the chosen jobs at once and says how many went', async () => {
+    const fetchMock = stubFetch(() => json({ deleted: 2 }));
+
+    await expect(deleteRecords(['job-1', 'job-2'])).resolves.toEqual({ type: 'deleted', count: 2 });
+    const [url, init] = fetchMock.mock.calls[0] ?? [];
+    expect(url).toBe(`${BASE_URL}/v1/processing-jobs/delete`);
+    expect(init?.method).toBe('POST');
+    expect(init?.body).toBe('{"jobIds":["job-1","job-2"]}');
+  });
+
+  it('sends nothing for an empty or oversized choice', async () => {
+    const fetchMock = stubFetch(() => json({ deleted: 0 }));
+
+    await expect(deleteRecords([])).resolves.toEqual({ type: 'error' });
+    const many = Array.from({ length: 21 }, (_, index) => `job-${index}`);
+    await expect(deleteRecords(many)).resolves.toEqual({ type: 'error' });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('goes to login when the session ended', async () => {
+    stubFetch(() => json({ error: 'session_expired' }, 401));
+
+    await expect(deleteRecords(['job-1'])).rejects.toThrow('REDIRECT /login?next=%2Fhistory');
+  });
+
+  it.each([
+    ['a server error', () => json({ error: 'provider_unavailable' }, 500)],
+    ['a body outside the contract', () => json({ removed: 2 })],
+    ['an unreachable server', () => Promise.reject(new TypeError('fetch failed'))],
+  ])('returns an error to retry on %s', async (_name, response) => {
+    stubFetch(response);
+
+    await expect(deleteRecords(['job-1'])).resolves.toEqual({ type: 'error' });
   });
 });

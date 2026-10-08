@@ -10,7 +10,7 @@ import {
 
 import { PATH } from '../settings/processing-preference-copy';
 
-import { PREFERENCES_EDIT, PREFERENCES_FAILED } from './home-copy';
+import { PREFERENCES_EDIT, PREFERENCES_FAILED } from './me-copy';
 
 /** 서버에 저장된 처리 방식을 처리 설정 화면과 같은 이름으로 보인다. 읽지 못했으면 기본값을 대신 보이지 않는다. */
 export function PreferenceSummary({ preferences }: { preferences: Loaded<ProcessingPreferences> }) {

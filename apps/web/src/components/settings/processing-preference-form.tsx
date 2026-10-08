@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { type FormEvent, startTransition, useActionState, useState } from 'react';
 import Link from 'next/link';
 
 import { Box, Button, Radio, RadioGroup } from '@berrypjh/react-ui';
@@ -48,8 +48,16 @@ export function ProcessingPreferenceForm<T extends ImageType>({
   const status = saveStatus(selected, confirmed, result);
   const entries = Object.entries(options) as [ProcessingPreferences[T], OptionCopy][];
 
+  // `<form action={함수}>`는 성공한 뒤 React가 폼을 reset해, 라디오가 처음 받은 값으로 돌아간다.
+  // 고른 값은 state가 가지므로 제출만 직접 넘겨 reset을 피한다.
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    startTransition(() => action(form));
+  };
+
   return (
-    <form action={action} aria-label={legend}>
+    <form onSubmit={submit} aria-label={legend}>
       <Box
         p="xl"
         bg="background.surface"

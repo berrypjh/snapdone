@@ -6,7 +6,7 @@ import {
   type RecentJob,
 } from '@snapdone/processing';
 
-import { apiFetch, bearer } from '../api';
+import { apiFetch, bearer, isRecord } from '../api';
 
 /** 최근 처리 작업. 온보딩 첫 사진은 온보딩을 마친 뒤에 들어간다. 세션이 끝났으면 `null`이다. */
 export const fetchRecentJobs = async (credential: string): Promise<RecentJob[] | null> => {
@@ -28,6 +28,39 @@ export const fetchJob = async (credential: string, jobId: string): Promise<JobDe
       headers: bearer(credential),
     }),
   );
+
+/**
+ * 작업 하나를 지운다. 지웠으면 `true`, 세션이 끝났으면 `null`이다. 없거나 다른 사용자의 작업(404)도
+ * 이 사용자에게는 이미 없는 기록이라 `true`다(다른 탭에서 먼저 지운 경우). 그 밖의 실패는 던진다.
+ */
+export const deleteJob = async (credential: string, jobId: string): Promise<boolean | null> => {
+  const response = await apiFetch(`/v1/processing-jobs/${encodeURIComponent(jobId)}`, {
+    method: 'DELETE',
+    headers: bearer(credential),
+  });
+  if (response.status === 401) return null;
+  if (response.status === 204 || response.status === 404) return true;
+  throw new Error(`기록 삭제가 ${response.status}로 실패했습니다.`);
+};
+
+/** 한 번에 지울 수 있는 기록 수. Go `DeleteJobsRequest`와 같다. */
+export const DELETE_LIMIT = 20;
+
+/**
+ * 작업 여러 개를 한 번에 지우고 실제로 지운 개수를 돌려준다. 세션이 끝났으면 `null`이다.
+ * 이미 없는 작업은 서버가 건너뛰어 세지 않는다. 그 밖의 실패는 던진다.
+ */
+export const deleteJobs = async (credential: string, jobIds: string[]): Promise<number | null> => {
+  const response = await apiFetch('/v1/processing-jobs/delete', {
+    method: 'POST',
+    headers: { ...bearer(credential), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jobIds }),
+  });
+  if (response.status === 401) return null;
+  const body: unknown = await response.json().catch(() => null);
+  if (response.ok && isRecord(body) && typeof body.deleted === 'number') return body.deleted;
+  throw new Error(`기록 삭제가 ${response.status}로 실패했습니다.`);
+};
 
 /** 사진 한 장의 처리를 시작한다. 사진은 multipart 필드 `image` 하나다. 출처(온보딩 · 일반)는 서버가 정한다. */
 export const startJob = async (credential: string, image: Blob): Promise<JobDetail | null> => {
