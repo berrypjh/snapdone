@@ -6,6 +6,7 @@ import {
   initialWebContent,
   openExchange,
   receiveMessage,
+  reopenStart,
   retryAfterFailure,
   retryHandoff,
 } from './webHandoff';
@@ -58,9 +59,16 @@ describe('receiveMessage', () => {
     expect(receiveMessage(first.next, handoffReady, READY_URL).effect).toEqual({ type: 'none' });
   });
 
+  it('accepts handoff-ready when Android reports only the origin', () => {
+    expect(receiveMessage(waiting(), handoffReady, BASE_URL).effect).toEqual({
+      type: 'start-handoff',
+      challenge: CHALLENGE,
+    });
+  });
+
   it.each([
     ['another origin', 'https://evil.example/auth/handoff/ready', handoffReady],
-    ['another page', `${BASE_URL}/history`, handoffReady],
+    ['another origin reported as origin only', 'https://evil.example', handoffReady],
     ['another next', READY_URL, { ...handoffReady, next: '/' }],
   ] as const)('ignores handoff-ready from %s', (_, url, message) => {
     expect(receiveMessage(waiting(), message, url).effect).toEqual({ type: 'none' });
@@ -123,5 +131,21 @@ describe('retries', () => {
     const failed = retryHandoff(retryHandoff(initialWebContent('/history', true)));
 
     expect(retryAfterFailure(failed)).toMatchObject({ failure: null, handoffs: 1 });
+  });
+});
+
+describe('reopenStart', () => {
+  it('reopens the first page after the handoff finished', () => {
+    const shown = initialWebContent('/history', false);
+
+    expect(reopenStart(shown)).toMatchObject({ uri: `${BASE_URL}/history`, attempt: 1 });
+  });
+
+  it('keeps a handoff in progress or a failure screen as it is', () => {
+    const waiting = initialWebContent('/history', true);
+    const failed = retryHandoff(retryHandoff(waiting));
+
+    expect(reopenStart(waiting)).toBe(waiting);
+    expect(reopenStart(failed)).toBe(failed);
   });
 });

@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 import { getColor, useTheme } from '@berrypjh/react-native-ui';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -30,6 +32,8 @@ export const MainTabs = ({ navigation, controller, handoffMemory }: MainTabsProp
   const theme = useTheme();
   const active = getColor(theme, 'text.primary');
   const inactive = getColor(theme, 'text.light');
+  // 기록 탭을 보고 있을 때 다시 누르면 기록 첫 화면으로 돌아간다.
+  const [historyReopen, setHistoryReopen] = useState(0);
 
   return (
     <Tab.Navigator
@@ -51,6 +55,11 @@ export const MainTabs = ({ navigation, controller, handoffMemory }: MainTabsProp
       </Tab.Screen>
       <Tab.Screen
         name="History"
+        listeners={({ navigation: tab }) => ({
+          tabPress: () => {
+            if (tab.isFocused()) setHistoryReopen((count) => count + 1);
+          },
+        })}
         options={{
           title: WEB_PAGES.history.title,
           tabBarLabel: '기록',
@@ -64,6 +73,7 @@ export const MainTabs = ({ navigation, controller, handoffMemory }: MainTabsProp
             onOpenJob={(path) => navigation.navigate('WebContent', { path, title: JOB_PAGE_TITLE })}
             controller={controller}
             handoffMemory={handoffMemory}
+            reopenSignal={historyReopen}
           />
         )}
       </Tab.Screen>

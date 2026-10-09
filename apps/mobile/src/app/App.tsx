@@ -98,6 +98,7 @@ const AppNavigator = () => {
                   onTitle={(title) => navigation.setOptions({ title })}
                   controller={controller}
                   handoffMemory={handoffMemory}
+                  insetBottom
                 />
               )}
             </Stack.Screen>

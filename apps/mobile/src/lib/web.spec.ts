@@ -4,6 +4,7 @@ import {
   getWebBaseUrl,
   handoffExchangeUrl,
   handoffStartUrl,
+  isTopFrameRequest,
   isWebPage,
   jobDetailPathOf,
   parseHttpUrl,
@@ -136,5 +137,13 @@ describe('with a web base URL', () => {
     expect(isWebPage(`${BASE_URL}/login`, '/auth/handoff/ready')).toBe(false);
     expect(isWebPage('https://evil.example/auth/handoff/ready', '/auth/handoff/ready')).toBe(false);
     expect(isWebPage(`${BASE_URL}/login`)).toBe(true);
+  });
+});
+
+describe('isTopFrameRequest', () => {
+  it('treats a missing isTopFrame as the top frame, as Android sends none', () => {
+    expect(isTopFrameRequest(undefined)).toBe(true);
+    expect(isTopFrameRequest(true)).toBe(true);
+    expect(isTopFrameRequest(false)).toBe(false);
   });
 });

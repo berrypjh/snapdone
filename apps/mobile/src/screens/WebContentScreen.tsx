@@ -1,8 +1,10 @@
-import { useRef, useState } from 'react';
-import { ActivityIndicator, Linking, StyleSheet, Text } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, BackHandler, Linking, StyleSheet, Text } from 'react-native';
 
 import { Box, Button, getColor, Stack, useTheme } from '@berrypjh/react-native-ui';
+import { useFocusEffect } from '@react-navigation/native';
 import { decodeWebToAppMessage, inAppUserAgentName } from '@snapdone/webview-bridge';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 
 import { type AuthController, useAuthSnapshot } from '../auth/controller';
@@ -12,11 +14,12 @@ import {
   initialWebContent,
   openExchange,
   receiveMessage,
+  reopenStart,
   retryAfterFailure,
   retryHandoff,
   type WebContent,
 } from '../auth/webHandoff';
-import { jobDetailPathOf, webViewNavigation } from '../lib/web';
+import { isTopFrameRequest, jobDetailPathOf, webViewNavigation } from '../lib/web';
 import { textStyle } from '../theme/text';
 
 type WebContentScreenProps = {
@@ -31,6 +34,10 @@ type WebContentScreenProps = {
   onOpenJob?: (path: string) => void;
   controller: AuthController;
   handoffMemory: HandoffMemory;
+  /** 하단 탭이 없는 화면이면 true. 시스템 내비게이션 바만큼 아래를 띄운다(edge-to-edge). */
+  insetBottom?: boolean;
+  /** 값이 오르면 처음 page로 돌아간다(탭 다시 누르기). */
+  reopenSignal?: number;
 };
 
 const FAILURE_COPY = {
@@ -71,6 +78,8 @@ export const WebContentScreen = ({
   onOpenJob,
   controller,
   handoffMemory,
+  insetBottom = false,
+  reopenSignal = 0,
 }: WebContentScreenProps) => {
   const theme = useTheme();
   const { auth } = useAuthSnapshot(controller);
@@ -85,6 +94,24 @@ export const WebContentScreen = ({
     contentRef.current = next;
     setContentState(next);
   };
+
+  // Android 뒤로 가기는 WebView 안 이전 page가 먼저. 핸드오프마다 WebView를 새로 만들어(key) ready page는 기록에 없다.
+  const webViewRef = useRef<WebView>(null);
+  const canGoBack = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (!canGoBack.current) return false;
+        webViewRef.current?.goBack();
+        return true;
+      });
+      return () => subscription.remove();
+    }, []),
+  );
+
+  useEffect(() => {
+    if (reopenSignal > 0) setContent(reopenStart(contentRef.current));
+  }, [reopenSignal]);
 
   const { typography } = theme.tokens;
   const background = { backgroundColor: getColor(theme, 'background.surface') };
@@ -157,28 +184,36 @@ export const WebContentScreen = ({
   }
 
   return (
-    <WebView
-      key={content.attempt}
-      style={background}
-      source={{ uri: content.uri }}
-      applicationNameForUserAgent={inAppUserAgentName()}
-      startInLoadingState
-      renderLoading={renderLoading}
-      onError={() => setContent({ ...contentRef.current, failure: 'load' })}
-      onHttpError={() => setContent({ ...contentRef.current, failure: 'load' })}
-      onMessage={(event) => void onMessage(event)}
-      onShouldStartLoadWithRequest={({ url, isTopFrame }) => {
-        const job = onOpenJob && isTopFrame ? jobDetailPathOf(url) : null;
-        if (job) {
-          onOpenJob?.(job);
+    <SafeAreaView edges={insetBottom ? ['bottom'] : []} style={[styles.fill, background]}>
+      <WebView
+        ref={webViewRef}
+        key={content.attempt}
+        style={background}
+        source={{ uri: content.uri }}
+        applicationNameForUserAgent={inAppUserAgentName()}
+        webviewDebuggingEnabled={process.env.EXPO_PUBLIC_WEBVIEW_DEBUG === 'true'}
+        startInLoadingState
+        renderLoading={renderLoading}
+        onError={() => setContent({ ...contentRef.current, failure: 'load' })}
+        onHttpError={() => setContent({ ...contentRef.current, failure: 'load' })}
+        onMessage={(event) => void onMessage(event)}
+        onShouldStartLoadWithRequest={({ url, isTopFrame }) => {
+          const topFrame = isTopFrameRequest(isTopFrame);
+          const job = onOpenJob && topFrame ? jobDetailPathOf(url) : null;
+          if (job) {
+            onOpenJob?.(job);
+            return false;
+          }
+          if (webViewNavigation(url) === 'load') return true;
+          if (topFrame) openOutside(url);
           return false;
-        }
-        if (webViewNavigation(url) === 'load') return true;
-        if (isTopFrame) openOutside(url);
-        return false;
-      }}
-      onOpenWindow={({ nativeEvent }) => openOutside(nativeEvent.targetUrl)}
-    />
+        }}
+        onNavigationStateChange={({ canGoBack: back }) => {
+          canGoBack.current = back;
+        }}
+        onOpenWindow={({ nativeEvent }) => openOutside(nativeEvent.targetUrl)}
+      />
+    </SafeAreaView>
   );
 };
 

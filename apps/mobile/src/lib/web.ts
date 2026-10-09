@@ -66,6 +66,9 @@ export const isWebPage = (url: string, path?: string): boolean => {
   return !!target && !!web && target.origin === web.origin && (!path || target.path === path);
 };
 
+/** 최상위 문서 이동인지. Android는 `isTopFrame`을 주지 않아 값이 없으면 최상위로 본다. */
+export const isTopFrameRequest = (isTopFrame: boolean | undefined) => isTopFrame !== false;
+
 export type WebNavigation = 'load' | 'external' | 'block';
 
 /**

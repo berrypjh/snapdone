@@ -5,15 +5,13 @@ import { handoffExchangeUrl, handoffStartUrl, isWebPage, webUrl } from '../lib/w
 /** 한 WebView 화면이 시작할 수 있는 핸드오프 수: 처음 한 번 + `auth-required` 뒤 재시도 한 번. */
 export const MAX_HANDOFFS = 2;
 
-const READY_PATH = '/auth/handoff/ready';
-
 export type WebContent = {
   /** 사용자가 열려는 web 경로. */
   path: string;
   uri: string;
   /** 같은 uri를 다시 불러오려고 올린다. */
   attempt: number;
-  /** 지금 연 ready page의 `handoff-ready`만 받는다. */
+  /** 핸드오프를 시작한 뒤 첫 `handoff-ready`만 받는다. */
   awaitingReady: boolean;
   handoffs: number;
   failure: 'load' | 'handoff' | null;
@@ -66,7 +64,7 @@ export const initialWebContent = (path: string, needsHandoff: boolean): WebConte
   return needsHandoff ? { ...startHandoff(idle), attempt: 0 } : idle;
 };
 
-/** 메시지를 보낸 page(`pageUrl`)와 현재 대기 상태로 메시지를 받을지 정한다. */
+/** 보낸 page의 origin과 대기 상태로 메시지를 받을지 정한다. Android는 `pageUrl`로 origin만 줘 경로는 보지 않는다. */
 export const receiveMessage = (
   state: WebContent,
   message: WebToAppMessage,
@@ -79,7 +77,7 @@ export const receiveMessage = (
     case 'ready':
       return { next: state, effect: { type: 'title', title: message.title } };
     case 'handoff-ready':
-      if (!state.awaitingReady || !isWebPage(pageUrl, READY_PATH) || message.next !== state.path) {
+      if (!state.awaitingReady || message.next !== state.path) {
         return ignore;
       }
       return {
@@ -106,3 +104,9 @@ export const retryAfterFailure = (state: WebContent): WebContent =>
   state.failure === 'handoff'
     ? startHandoff({ ...state, handoffs: 0 })
     : { ...state, failure: null, attempt: state.attempt + 1 };
+
+/** 보고 있는 탭을 다시 누르면 처음 page로. 핸드오프 중 · 실패 화면이면 그대로. */
+export const reopenStart = (state: WebContent): WebContent =>
+  state.awaitingReady || state.failure
+    ? state
+    : { ...state, uri: webUrl(state.path), attempt: state.attempt + 1 };

@@ -9,5 +9,7 @@ declare const process: {
     EXPO_PUBLIC_TERMS_URL?: string;
     EXPO_PUBLIC_PRIVACY_URL?: string;
     EXPO_PUBLIC_AUTH_REDIRECT_URI?: string;
+    /** `true`면 WebView를 Chrome `chrome://inspect`로 볼 수 있다. 진단용 내부 빌드에만 둔다. */
+    EXPO_PUBLIC_WEBVIEW_DEBUG?: string;
   };
 };
