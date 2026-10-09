@@ -192,7 +192,7 @@ func TestRecoveryHidesPanicValue(t *testing.T) {
 	var logs bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&logs, nil))
 	router := gin.New()
-	router.Use(requestID, requestLogger(logger), recovery(logger))
+	router.Use(requestID(""), requestLogger(logger), recovery(logger))
 	router.GET("/boom", func(c *gin.Context) { panic("panic-secret " + c.GetHeader("Authorization")) })
 
 	r := send(router, http.MethodGet, "/boom", "", bearer...)
@@ -207,6 +207,27 @@ func TestRecoveryHidesPanicValue(t *testing.T) {
 		if strings.Contains(output, secret) {
 			t.Errorf("log contains %q", secret)
 		}
+	}
+}
+
+// Cloud Run traceparent가 있으면 요청 로그에 Cloud Logging trace 이름이 붙는다.
+func TestRequestLogCarriesCloudTrace(t *testing.T) {
+	var logs bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&logs, nil))
+	router := gin.New()
+	router.Use(requestID("p1"), requestLogger(logger))
+	router.GET("/ok", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+
+	send(router, http.MethodGet, "/ok", "", "traceparent", "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01")
+	want := `"logging.googleapis.com/trace":"projects/p1/traces/0af7651916cd43dd8448eb211c80319c"`
+	if !strings.Contains(logs.String(), want) {
+		t.Errorf("trace missing from request log:\n%s", logs.String())
+	}
+
+	logs.Reset()
+	send(router, http.MethodGet, "/ok", "")
+	if strings.Contains(logs.String(), "logging.googleapis.com/trace") {
+		t.Errorf("trace logged without traceparent:\n%s", logs.String())
 	}
 }
 

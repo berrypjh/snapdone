@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	"snapdone/api/internal/logging"
 )
 
 const (
@@ -19,14 +21,29 @@ const (
 	maxJSONBody = 4 << 10
 )
 
-// 요청마다 새 ID를 만들어 응답 헤더와 로그에 쓴다. 클라이언트가 보낸 값은 믿지 않는다.
-func requestID(c *gin.Context) {
-	b := make([]byte, 8)
-	_, _ = rand.Read(b)
-	id := hex.EncodeToString(b)
-	c.Set(requestIDKey, id)
-	c.Header(requestIDHeader, id)
-	c.Next()
+// 요청마다 새 ID를 만들어 응답 헤더와 로그에 쓴다. 클라이언트가 보낸 ID는 믿지 않는다.
+// Cloud Run의 traceparent로 Cloud Logging trace 이름도 남긴다(project가 없으면 생략).
+func requestID(traceProject string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		b := make([]byte, 8)
+		_, _ = rand.Read(b)
+		id := hex.EncodeToString(b)
+		c.Set(requestIDKey, id)
+		c.Header(requestIDHeader, id)
+		if trace := logging.TraceName(traceProject, c.GetHeader("traceparent")); trace != "" {
+			c.Set(logging.TraceKey, trace)
+		}
+		c.Next()
+	}
+}
+
+// 요청 단위 로그에 붙이는 request ID와 trace.
+func requestAttrs(c *gin.Context) []any {
+	attrs := []any{requestIDKey, c.GetString(requestIDKey)}
+	if trace := c.GetString(logging.TraceKey); trace != "" {
+		attrs = append(attrs, logging.TraceKey, trace)
+	}
+	return attrs
 }
 
 // 요청 한 줄 로그. 원문 URL · query · 헤더 · 본문은 남기지 않고 매칭된 route template만 쓴다.
@@ -34,13 +51,12 @@ func requestLogger(log *slog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		c.Next()
-		log.Info("http request",
-			requestIDKey, c.GetString(requestIDKey),
+		log.Info("http request", append(requestAttrs(c),
 			"method", c.Request.Method,
 			"route", c.FullPath(),
 			"status", c.Writer.Status(),
 			"latency", time.Since(start),
-		)
+		)...)
 	}
 }
 
@@ -55,12 +71,11 @@ func recovery(log *slog.Logger) gin.HandlerFunc {
 			if v == http.ErrAbortHandler {
 				panic(v)
 			}
-			log.Error("http panic",
-				requestIDKey, c.GetString(requestIDKey),
+			log.Error("http panic", append(requestAttrs(c),
 				"route", c.FullPath(),
 				"panic_type", fmt.Sprintf("%T", v),
 				"stack", string(debug.Stack()),
-			)
+			)...)
 			writeError(c, http.StatusInternalServerError, errProviderUnavailable)
 		}()
 		c.Next()

@@ -53,3 +53,20 @@ func TestNewAddsReleaseOnlyWhenSet(t *testing.T) {
 		t.Fatal("release must be absent when empty")
 	}
 }
+
+func TestTraceName(t *testing.T) {
+	const header = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+	if got := TraceName("p1", header); got != "projects/p1/traces/0af7651916cd43dd8448eb211c80319c" {
+		t.Fatalf("TraceName = %q", got)
+	}
+	for _, tc := range []struct{ project, header string }{
+		{"", header},
+		{"p1", ""},
+		{"p1", "00-short-b7ad6b7169203331-01"},
+		{"p1", "0af7651916cd43dd8448eb211c80319c"},
+	} {
+		if got := TraceName(tc.project, tc.header); got != "" {
+			t.Fatalf("TraceName(%q, %q) = %q, want empty", tc.project, tc.header, got)
+		}
+	}
+}

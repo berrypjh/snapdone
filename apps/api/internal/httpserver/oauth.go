@@ -78,7 +78,7 @@ func (h *handlers) oauthCallback(c *gin.Context) {
 	location, err := h.oauth.Callback(c.Request.Context(), c.Request.URL.Query())
 	if err != nil {
 		h.log.Log(c.Request.Context(), callbackLogLevel(err), "auth oauth callback failed",
-			requestIDKey, c.GetString(requestIDKey), "err", err)
+			append(requestAttrs(c), "err", err)...)
 	}
 	if location == "" {
 		writeError(c, http.StatusBadRequest, errInvalidCallback)

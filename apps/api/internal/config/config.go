@@ -10,6 +10,8 @@ type Config struct {
 	Port        string
 	Environment string
 	DatabaseURL string
+	// Cloud Logging trace 이름의 GCP 프로젝트(GOOGLE_CLOUD_PROJECT). 비면 trace를 남기지 않는다.
+	TraceProject string
 
 	Auth   *Auth
 	Google *Google
@@ -21,10 +23,11 @@ type Config struct {
 // 인증 · 사진 처리 설정이 일부만 있거나 잘못됐으면 오류를 반환한다.
 func Load() (Config, error) {
 	cfg := Config{
-		Host:        env("API_HOST", "127.0.0.1"),
-		Port:        env("API_PORT", "8080"),
-		Environment: env("API_ENV", "development"),
-		DatabaseURL: os.Getenv("DATABASE_URL"),
+		Host:         env("API_HOST", "127.0.0.1"),
+		Port:         env("API_PORT", "8080"),
+		Environment:  env("API_ENV", "development"),
+		DatabaseURL:  os.Getenv("DATABASE_URL"),
+		TraceProject: os.Getenv("GOOGLE_CLOUD_PROJECT"),
 	}
 	auth, err := loadAuth(cfg.Environment == "production")
 	if err != nil {

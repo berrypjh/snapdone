@@ -101,7 +101,11 @@ func fatal(logger *slog.Logger, msg string, err error) {
 // 사진 처리는 로그인 세션이 필요하므로 인증과 PROCESSING_*가 모두 있을 때만 켠다.
 // Swagger UI는 production이 아닐 때만 연다.
 func newDeps(logger *slog.Logger, cfg config.Config, pool *pgxpool.Pool) (httpserver.Deps, error) {
-	deps := httpserver.Deps{Logger: logger, Swagger: cfg.Environment != "production"}
+	deps := httpserver.Deps{
+		Logger:       logger,
+		Swagger:      cfg.Environment != "production",
+		TraceProject: cfg.TraceProject,
+	}
 	if cfg.Auth == nil {
 		logger.Info("api auth is disabled: AUTH_* is not set")
 		return deps, nil

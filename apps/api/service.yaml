@@ -19,6 +19,8 @@ spec:
           env:
             - name: APP_RELEASE
               value: "${RELEASE}"
+            - name: GOOGLE_CLOUD_PROJECT
+              value: ${PROJECT_ID}
             - name: AUTH_PUBLIC_BASE_URL
               value: https://api-${PROJECT_NUMBER}.${REGION}.run.app
             - name: AUTH_WEB_ORIGIN

@@ -4,6 +4,8 @@ package logging
 import (
 	"io"
 	"log/slog"
+	"regexp"
+	"strings"
 )
 
 // Cloud Logging은 `severity` · `message` 키를 읽는다. slog 기본 키(`level` · `msg`)로는 심각도를 알지 못한다.
@@ -37,3 +39,18 @@ func cloudKeys(groups []string, attr slog.Attr) slog.Attr {
 	}
 	return attr
 }
+
+// TraceKey는 Cloud Logging이 같은 요청의 로그를 묶는 필드다.
+const TraceKey = "logging.googleapis.com/trace"
+
+// TraceName은 W3C traceparent(`00-<trace>-<span>-<flags>`)에서 Cloud Logging trace 이름을 만든다.
+// project가 비었거나 헤더 모양이 틀리면 빈 문자열이다. 로그를 묶는 데만 쓰므로 클라이언트 값이어도 된다.
+func TraceName(project, traceparent string) string {
+	parts := strings.Split(traceparent, "-")
+	if project == "" || len(parts) != 4 || !traceID.MatchString(parts[1]) {
+		return ""
+	}
+	return "projects/" + project + "/traces/" + parts[1]
+}
+
+var traceID = regexp.MustCompile(`^[0-9a-f]{32}$`)

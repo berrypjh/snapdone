@@ -46,6 +46,8 @@ type Deps struct {
 	Preferences PreferenceStore
 	// Swagger UI(/swagger/*)를 연다. production에서는 끈다.
 	Swagger bool
+	// Cloud Logging trace 이름의 GCP 프로젝트. 비면 trace를 남기지 않는다.
+	TraceProject string
 }
 
 // Gin은 이 패키지 안의 HTTP 경계에만 쓴다. 핸들러 밖으로 gin.Context를 넘기지 않는다.
@@ -81,7 +83,7 @@ func NewRouter(deps Deps) *gin.Engine {
 	router.RedirectFixedPath = false
 	// 프록시 헤더로 client IP를 바꾸지 않는다. 지금 ClientIP를 쓰는 곳은 없다.
 	_ = router.SetTrustedProxies(nil)
-	router.Use(requestID, requestLogger(deps.Logger), recovery(deps.Logger))
+	router.Use(requestID(deps.TraceProject), requestLogger(deps.Logger), recovery(deps.Logger))
 
 	get(&router.RouterGroup, "/health", health)
 
@@ -148,7 +150,7 @@ func writeError(c *gin.Context, status int, code string) {
 
 // 내부 오류 원인을 요청 ID와 함께 남긴다. 요청 값은 넣지 않는다.
 func (h *handlers) logFailure(c *gin.Context, msg string, err error) {
-	h.log.Error(msg, requestIDKey, c.GetString(requestIDKey), "err", err)
+	h.log.Error(msg, append(requestAttrs(c), "err", err)...)
 }
 
 // 내부 오류를 남기고 원인을 숨긴 500을 돌려준다.
