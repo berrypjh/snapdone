@@ -42,8 +42,10 @@ export default async function ProcessingPreferencesPage() {
   return (
     <Stack gap="xl">
       <div>
-        <h1 className="typo-heading-h4">{PAGE_TITLE}</h1>
-        <p className="mt-3 typo-paragraph-default text-text-light">{PAGE_DESCRIPTION}</p>
+        <h1 className="typo-heading-h4 in-app:sr-only">{PAGE_TITLE}</h1>
+        <p className="mt-3 typo-paragraph-default text-text-light in-app:mt-0">
+          {PAGE_DESCRIPTION}
+        </p>
       </div>
 
       {preferences ? (

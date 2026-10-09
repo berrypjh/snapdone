@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 import {
   formatKoreanDateTime,
   formatKoreanTime,
@@ -25,12 +23,13 @@ function RecentJobItem({ job, timeOnly }: { job: RecentJob; timeOnly: boolean })
       <div className="flex items-center justify-between gap-3">
         {href ? (
           // 항목 전체가 누르는 자리다. 링크 이름은 제목만이다.
-          <Link
+          // <a>여야 앱 WebView가 이동을 가로채 결과를 새 화면으로 연다(next/link는 못 가로챔).
+          <a
             href={href}
             className="min-w-0 typo-body-medium-strong text-text-default underline-offset-4 after:absolute after:inset-0 hover:underline"
           >
             {title}
-          </Link>
+          </a>
         ) : (
           <p className="min-w-0 typo-body-medium-strong">{title}</p>
         )}

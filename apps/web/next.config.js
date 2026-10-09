@@ -1,7 +1,11 @@
 //@ts-check
+const path = require('node:path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  /** Container image runs .next/standalone; tracing starts at the repo root so workspace libs are included. */
+  output: 'standalone',
+  outputFileTracingRoot: path.join(__dirname, '../..'),
   /** Workspace libs ship TypeScript source; Next compiles them like app code. */
   transpilePackages: [
     '@snapdone/auth-contracts',

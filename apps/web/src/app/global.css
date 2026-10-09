@@ -1,6 +1,9 @@
 @import 'tailwindcss';
 @config '../../tailwind.config.mjs';
 
+/* 앱 WebView 안(AppShell의 data-in-app). 제목처럼 네이티브 헤더가 대신 보이는 것을 숨긴다. */
+@custom-variant in-app (&:where([data-in-app] *));
+
 @theme {
   --color-*: initial;
   --text-*: initial;

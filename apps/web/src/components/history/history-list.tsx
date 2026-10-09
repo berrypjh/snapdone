@@ -81,8 +81,8 @@ export function HistoryList({ title, groups }: { title: string; groups: DayGroup
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex min-h-11 items-center gap-3">
-        <h1 className="mr-auto typo-heading-h4">{title}</h1>
+      <div className="flex min-h-11 items-center justify-end gap-3">
+        <h1 className="mr-auto typo-heading-h4 in-app:sr-only">{title}</h1>
         {selecting && (
           <span className="typo-caption-default text-text-light">
             {selectedCount(selected.size)}

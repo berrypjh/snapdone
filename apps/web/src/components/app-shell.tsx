@@ -27,7 +27,7 @@ type AppShellProps = {
 export function AppShell({ inApp, signedIn, children }: AppShellProps) {
   if (inApp) {
     return (
-      <main id={MAIN_CONTENT_ID} className="min-h-dvh px-4 py-6">
+      <main id={MAIN_CONTENT_ID} data-in-app="" className="min-h-dvh px-4 py-6">
         <div className="mx-auto w-full max-w-(--container-3xl) pb-5xl">{children}</div>
       </main>
     );

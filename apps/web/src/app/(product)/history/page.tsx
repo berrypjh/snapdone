@@ -44,7 +44,7 @@ export default async function HistoryPage() {
   return (
     <Stack gap="xl">
       {/* 기록이 있으면 목록이 제목 줄에 "선택"을 함께 둔다. */}
-      {jobs?.length ? null : <h1 className="typo-heading-h4">{TITLE}</h1>}
+      {jobs?.length ? null : <h1 className="typo-heading-h4 in-app:sr-only">{TITLE}</h1>}
 
       {jobs === null ? (
         <p role="alert" className="typo-paragraph-default text-text-error">

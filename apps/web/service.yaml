@@ -1,0 +1,23 @@
+# Cloud Run service for the Next.js web. Applied by tools/scripts/deploy.sh, which fills ${...}.
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: web
+  annotations:
+    run.googleapis.com/invoker-iam-disabled: "true"
+spec:
+  template:
+    spec:
+      containers:
+        - image: ${IMAGE}
+          ports:
+            - containerPort: 8080
+          env:
+            - name: API_BASE_URL
+              value: https://api-${PROJECT_NUMBER}.${REGION}.run.app
+            - name: WEB_ORIGIN
+              value: https://web-${PROJECT_NUMBER}.${REGION}.run.app
+            - name: TERMS_URL
+              value: https://web-${PROJECT_NUMBER}.${REGION}.run.app/terms
+            - name: PRIVACY_URL
+              value: https://web-${PROJECT_NUMBER}.${REGION}.run.app/privacy
