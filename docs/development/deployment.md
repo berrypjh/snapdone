@@ -29,6 +29,7 @@ api · web을 GCP에 배포하는 구성과 절차. mobile 스토어 배포는 �
 
 - **`${...}` 자리** — `PROJECT_ID` · `PROJECT_NUMBER` · `REGION` · `IMAGE` · `RELEASE`를 `deploy.sh`가 `gcloud config`와 이미지 태그로 채움
 - **이미지 태그** — `<날짜시각>-<커밋 해시>`. api에 `APP_RELEASE`로 들어가 로그의 `release`가 됨
+- **`GOOGLE_CLOUD_PROJECT`** — api 요청 로그에 trace를 붙여 Cloud Logging에서 같은 요청끼리 묶임
 - **`REPLACE_ME`** — 남아 있으면 `deploy.sh`가 중단
 
 ## 최초 인프라
