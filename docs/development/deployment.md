@@ -115,6 +115,6 @@ npx eas-cli@latest env:create --environment preview --visibility secret --name G
 
 ## 아직 없는 것
 
-- **자동 배포** — GitHub Actions 없음
+- **자동 배포** — CI는 검사만. 배포는 `deploy.sh`로 수동
 - **커스텀 도메인** — 붙이면 `AUTH_PUBLIC_BASE_URL` · `AUTH_WEB_ORIGIN` · `WEB_ORIGIN` · 약관 URL · OAuth 리디렉션 URI를 함께 변경
 - **회원 탈퇴 기능** — 이메일 요청을 받아 DB에서 사용자 행 삭제(관련 행은 `ON DELETE CASCADE`)

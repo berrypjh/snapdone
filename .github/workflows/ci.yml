@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read # nx-set-shas가 마지막 성공한 main 실행을 찾는다
+  packages: read # @berrypjh 패키지(GitHub Packages)
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # .npmrc가 읽는다
+  NX_DAEMON: false
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: snapdone
+          POSTGRES_PASSWORD: snapdone
+          POSTGRES_DB: snapdone
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U snapdone -d snapdone"
+          --health-interval 2s --health-timeout 3s --health-retries 15
+    env:
+      TEST_DATABASE_URL: postgres://snapdone:snapdone@127.0.0.1:5432/snapdone?sslmode=disable
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
+      - run: pnpm install --frozen-lockfile
+      - uses: nrwl/nx-set-shas@v4
+
+      - run: pnpm format:check
+      - run: pnpm exec nx affected -t lint vet fmt typecheck test swagger-check
+      - run: pnpm exec nx affected -t build --exclude=mobile
+      - run: pnpm devhub:check
+      - run: pnpm test:hooks
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: nrwl/nx-set-shas@v4
+      - run: pnpm exec playwright install --with-deps chromium firefox webkit
+      # web-e2e는 고정 포트(3000 · 4010)라 파일 단위 병렬(e2e-ci)을 쓰지 않는다.
+      - run: pnpm exec nx affected -t e2e --parallel=1
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            dist/.playwright
+            apps/*/test-output/playwright
+          retention-days: 7
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: nrwl/nx-set-shas@v4
+      - name: Find affected apps
+        id: affected
+        run: echo "projects=$(pnpm exec nx show projects --affected --json)" >> "$GITHUB_OUTPUT"
+      # push 없이 빌드만 한다. 배포 이미지와 같은 Dockerfile이 깨지지 않았는지 본다.
+      - if: contains(fromJSON(steps.affected.outputs.projects), 'api')
+        run: docker build -t snapdone-api apps/api
+      - if: contains(fromJSON(steps.affected.outputs.projects), 'web')
+        run: docker build -f apps/web/Dockerfile --secret id=github_token,env=GITHUB_TOKEN -t snapdone-web .

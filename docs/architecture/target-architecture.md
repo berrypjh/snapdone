@@ -50,7 +50,7 @@ Nx Workspace (repository root)
 - 캘린더
 - 영수증 지출 정보의 외부 저장(지출 앱 · 가계부 연동)
 - 자동화
-- 자동 배포(CI) · 커스텀 도메인 · 회원 탈퇴 기능
+- 자동 배포(CD) · 커스텀 도메인 · 회원 탈퇴 기능
 
 **이 목록은 "예정"이 아니라 "없음"이다.** 관련 코드는 저장소에 없다. 테스트 범위는 [quality-gates.md](../engineering/quality-gates.md).
 

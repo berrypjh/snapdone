@@ -63,7 +63,20 @@ lint · format · tsconfig는 `@berrypjh/*` 공유 패키지 상속. GitHub Pack
 
 브라우저 바이너리와 dev 서버가 필요해 매번 돌리기엔 무거움. CI에서는 별도 잡. 브라우저 설치 · 실행 주의점은 [local-development.md](../development/local-development.md)의 검사
 
-- **`e2e-ci`** — `@nx/playwright/plugin`이 spec 파일마다 `e2e-ci--src/<file>` target을 생성해 CI에서 파일 단위 병렬화 가능
+- **`e2e-ci`** — `@nx/playwright/plugin`이 spec 파일마다 `e2e-ci--src/<file>` target을 생성. web-e2e는 고정 포트라 CI에서 쓰지 않음
+
+### CI (`.github/workflows/ci.yml`)
+
+PR과 main push마다 바뀐 프로젝트만(`nx affected`). 잡 세 개가 병렬
+
+| 잡       | 내용                                                                                                                                                           |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `checks` | `format:check` · `lint` `vet` `fmt` `typecheck` `test` `swagger-check` · `build`(mobile 제외) · `devhub:check` · `test:hooks`. Postgres 서비스로 DB 테스트까지 |
+| `e2e`    | Playwright 세 브라우저. 실패하면 리포트를 artifact로                                                                                                           |
+| `docker` | 바뀐 api · web 이미지를 push 없이 빌드                                                                                                                         |
+
+- **비공개 패키지** — `GITHUB_TOKEN`(`packages: read`)으로 `@berrypjh` 설치. 패키지 설정에서 이 저장소에 읽기 권한 필요
+- **로컬과 차이** — DB 테스트와 e2e는 AI 세션에서 돌지 않지만 CI에서는 돔
 
 ### `build`가 mobile을 빼는 이유
 
