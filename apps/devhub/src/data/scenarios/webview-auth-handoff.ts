@@ -58,7 +58,7 @@ export const webViewAuthHandoff: Scenario = {
       id: 'request-code',
       intent: '(자동) 앱이 코드 요청',
       behavior:
-        '자기가 연 ready page에서 온 메시지만 받음. 저장된 credential과 challenge로 Go에 코드를 요청하고, 받은 코드로 교환 주소를 엶',
+        '핸드오프를 시작한 뒤 web origin에서 온 첫 handoff-ready만 받음(Android는 보낸 page로 origin만 줌). 저장된 credential과 challenge로 Go에 코드를 요청하고, 받은 코드로 교환 주소를 엶',
       runtime: 'mobile-app',
       owner: 'mobile',
       status: 'implemented',
@@ -72,6 +72,7 @@ export const webViewAuthHandoff: Scenario = {
       contracts: ['bridge-handoff-ready'],
       tests: [
         'mobile-webcontent-handoff-once',
+        'mobile-webcontent-handoff-origin-only',
         'mobile-webcontent-foreign-origin',
         'mobile-start-handoff',
         'mobile-webcontent-exchange-url',

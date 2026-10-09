@@ -6,6 +6,126 @@ import type { RecordRef } from '../domain/model';
  */
 export const records: RecordRef[] = [
   {
+    id: 'android-webview-top-frame',
+    path: 'docs/records/2026-10-09-android-webview-top-frame.md',
+    title: 'Android가 isTopFrame을 주지 않아 처리 결과 링크를 가로채지 못함',
+    kind: 'fix',
+    date: '2026-10-09',
+    summary:
+      'Android 이동 가로채기 이벤트에는 `isTopFrame`이 없음. 없으면 최상위로 보고, 보고 있는 탭을 다시 누르면 처음 page로',
+    sources: [
+      { path: 'apps/mobile/src/lib/web.ts', symbol: 'isTopFrameRequest' },
+      { path: 'apps/mobile/src/auth/webHandoff.ts', symbol: 'reopenStart' },
+      { path: 'apps/mobile/src/app/MainTabs.tsx', symbol: 'MainTabs' },
+    ],
+    docs: [{ document: 'target-architecture', heading: '제품 구성 — 네이티브 셸 + 웹 콘텐츠' }],
+    tests: [
+      'mobile-webview-top-frame',
+      'mobile-webcontent-reopen-start',
+      'mobile-webcontent-reopen-keeps',
+    ],
+  },
+  {
+    id: 'api-cloud-logging-format',
+    path: 'docs/records/2026-10-09-api-cloud-logging-format.md',
+    title: 'api 로그를 Cloud Logging 형식(severity · message · release)으로 변경',
+    kind: 'implementation',
+    date: '2026-10-09',
+    summary:
+      'slog 키를 Cloud Logging 이름으로 바꿔 심각도 필터 · Error Reporting이 동작. 배포 이미지 태그를 모든 줄에 남김',
+    sources: [
+      { path: 'apps/api/internal/logging/logging.go', symbol: 'New' },
+      { path: 'apps/api/cmd/server/main.go' },
+      { path: 'tools/scripts/deploy.sh' },
+    ],
+    docs: [{ document: 'deployment', heading: '저장소 파일' }],
+    tests: ['go-logging-cloud-keys', 'go-logging-release'],
+  },
+  {
+    id: 'app-webview-title-inset-back',
+    path: 'docs/records/2026-10-09-app-webview-title-inset-back.md',
+    title: '앱 WebView의 제목 중복 · 하단 가림 · 결과 화면에서 돌아갈 수 없음 수정',
+    kind: 'fix',
+    date: '2026-10-09',
+    summary:
+      '제목은 네이티브 헤더(web `in-app:sr-only`), 하단 탭 없는 화면은 시스템 바만큼 띄움, 결과 링크는 앱이 가로챌 수 있게 `<a>`',
+    sources: [
+      { path: 'apps/web/src/components/recent-jobs.tsx', symbol: 'RecentJobItem' },
+      { path: 'apps/web/src/components/app-shell.tsx', symbol: 'AppShell' },
+      { path: 'apps/web/src/app/global.css' },
+      { path: 'apps/mobile/src/screens/WebContentScreen.tsx', symbol: 'WebContentScreen' },
+    ],
+    docs: [{ document: 'target-architecture', heading: '제품 구성 — 네이티브 셸 + 웹 콘텐츠' }],
+    tests: [],
+  },
+  {
+    id: 'android-handoff-origin-only',
+    path: 'docs/records/2026-10-09-android-handoff-origin-only.md',
+    title: 'Android WebView가 메시지 보낸 page로 origin만 줘 핸드오프가 멈춤',
+    kind: 'fix',
+    date: '2026-10-09',
+    summary:
+      'react-native-webview Android는 `nativeEvent.url`에 origin만 넣음. ready page 경로 검사를 빼고 origin · 대기 상태 · `next`로 판단',
+    sources: [
+      { path: 'apps/mobile/src/auth/webHandoff.ts', symbol: 'receiveMessage' },
+      { path: 'apps/mobile/src/screens/WebContentScreen.tsx', symbol: 'WebContentScreen' },
+    ],
+    docs: [{ document: 'data-access' }],
+    tests: ['mobile-webcontent-handoff-origin-only', 'mobile-webcontent-foreign-origin'],
+  },
+  {
+    id: 'legal-pages-in-web',
+    path: 'docs/records/2026-10-09-legal-pages-in-web.md',
+    title: '이용약관 · 개인정보처리방침을 web 페이지로 제공',
+    kind: 'decision',
+    date: '2026-10-09',
+    summary:
+      'production 로그인에 필요한 약관 주소를 web `/terms` · `/privacy`로 제공. 수집 항목은 코드에서 확인한 사실만, 탈퇴는 이메일 요청',
+    sources: [
+      { path: 'apps/web/src/app/(auth)/terms/page.tsx', symbol: 'TermsPage' },
+      { path: 'apps/web/src/app/(auth)/privacy/page.tsx', symbol: 'PrivacyPage' },
+      { path: 'apps/web/src/lib/auth/config.ts', symbol: 'isSignUpAllowed' },
+    ],
+    docs: [{ document: 'deployment', heading: '설정 변경' }],
+    tests: [],
+  },
+  {
+    id: 'lockfile-missing-bottom-tabs',
+    path: 'docs/records/2026-10-09-lockfile-missing-bottom-tabs.md',
+    title: 'lockfile에 `@react-navigation/bottom-tabs`가 빠져 web 이미지 빌드 실패',
+    kind: 'fix',
+    date: '2026-10-09',
+    summary:
+      'package.json에만 추가되고 설치된 적 없는 의존성. `--frozen-lockfile`을 우회하지 않고 lockfile을 다시 만듦',
+    sources: [
+      { path: 'package.json' },
+      { path: 'pnpm-lock.yaml' },
+      { path: 'apps/web/Dockerfile' },
+    ],
+    docs: [{ document: 'deployment', heading: '배포' }],
+    tests: [],
+  },
+  {
+    id: 'cloud-run-deployment',
+    path: 'docs/records/2026-10-09-cloud-run-deployment.md',
+    title: 'api · web을 Cloud Run에, DB를 Cloud SQL에 배포',
+    kind: 'decision',
+    date: '2026-10-09',
+    summary:
+      '서비스 설정은 저장소 yaml, 비밀 값은 Secret Manager, 반복 배포는 스크립트 한 줄. web만 저장소 루트에서 빌드',
+    sources: [
+      { path: 'apps/api/Dockerfile' },
+      { path: 'apps/web/Dockerfile' },
+      { path: 'apps/api/service.yaml' },
+      { path: 'apps/api/migrate-job.yaml' },
+      { path: 'apps/web/service.yaml' },
+      { path: 'tools/scripts/deploy.sh' },
+      { path: 'apps/web/next.config.js' },
+    ],
+    docs: [{ document: 'deployment', heading: '구성' }, { document: 'target-architecture' }],
+    tests: [],
+  },
+  {
     id: 'remove-onboarding-purpose',
     path: 'docs/records/2026-10-08-remove-onboarding-purpose.md',
     title: '온보딩 사용 목적 단계 제거',

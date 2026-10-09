@@ -492,10 +492,34 @@ export const tests: TestRef[] = [
     'starts the handoff once for the ready page it opened',
   ),
   vitest(
+    'mobile-webcontent-handoff-origin-only',
+    `${MOBILE}/webHandoff.spec.ts`,
+    'receiveMessage',
+    'accepts handoff-ready when Android reports only the origin',
+  ),
+  vitest(
     'mobile-webcontent-title',
     `${MOBILE}/webHandoff.spec.ts`,
     'receiveMessage',
     'passes the title of a web page',
+  ),
+  vitest(
+    'mobile-webview-top-frame',
+    'apps/mobile/src/lib/web.spec.ts',
+    'isTopFrameRequest',
+    'treats a missing isTopFrame as the top frame, as Android sends none',
+  ),
+  vitest(
+    'mobile-webcontent-reopen-start',
+    `${MOBILE}/webHandoff.spec.ts`,
+    'reopenStart',
+    'reopens the first page after the handoff finished',
+  ),
+  vitest(
+    'mobile-webcontent-reopen-keeps',
+    `${MOBILE}/webHandoff.spec.ts`,
+    'reopenStart',
+    'keeps a handoff in progress or a failure screen as it is',
   ),
   vitest(
     'mobile-webcontent-foreign-origin',
@@ -866,6 +890,18 @@ export const tests: TestRef[] = [
   goTest('go-onboarding-progress', `${HTTP}/onboarding_test.go`, 'TestOnboardingProgress', []),
   goTest('go-onboarding-store', ONBOARDING, 'TestStoreSavesProgress', DB),
   goTest('go-onboarding-store-rejects', ONBOARDING, 'TestStoreRejects', DB),
+  goTest(
+    'go-logging-cloud-keys',
+    'apps/api/internal/logging/logging_test.go',
+    'TestNewWritesCloudLoggingKeys',
+    [],
+  ),
+  goTest(
+    'go-logging-release',
+    'apps/api/internal/logging/logging_test.go',
+    'TestNewAddsReleaseOnlyWhenSet',
+    [],
+  ),
   goTest('go-onboarding-validate', ONBOARDING, 'TestValidate', []),
   goTest('go-onboarding-can-move', ONBOARDING, 'TestCanMove', []),
   goTest('go-onboarding-rejects', `${HTTP}/onboarding_test.go`, 'TestOnboardingRejects', []),

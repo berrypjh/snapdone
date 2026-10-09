@@ -41,6 +41,12 @@ export const documents: DocumentRef[] = [
     topic: 'development',
   },
   {
+    id: 'deployment',
+    path: 'docs/development/deployment.md',
+    title: 'Deployment',
+    topic: 'development',
+  },
+  {
     id: 'quality-gates',
     path: 'docs/engineering/quality-gates.md',
     title: 'Quality Gates',
