@@ -78,6 +78,47 @@ curl https://api-<PROJECT_NUMBER>.asia-northeast3.run.app/health
 - **마이그레이션 실패** — 서비스 적용 전에 중단. 이전 revision 유지
 - **`/health` 200** — api는 미적용 마이그레이션이 있으면 기동 거부. DB까지 정상이라는 뜻
 
+## 자동 배포
+
+main에 머지되면 CI(`.github/workflows/ci.yml`)의 `deploy` 잡이 실행. `checks` · `e2e` · `docker`가 모두 통과한 뒤, 바뀐 api · web만 `deploy.sh`로 배포
+
+- **인증** — Workload Identity Federation. 키 파일 없음. 이 저장소의 main 실행만 허용
+- **배포 계정** — `github-deploy`. `run.admin` · `artifactregistry.writer` · `browser`(프로젝트 번호 조회), 런타임 계정(compute)의 `serviceAccountUser`
+- **GitHub Variables** — `GCP_PROJECT_ID` · `GCP_WIF_PROVIDER` · `GCP_DEPLOY_SA`. 저장소 코드에 프로젝트 값을 두지 않음
+- **배포 실패** — 그 실행이 실패로 남아 다음 main 실행의 affected 범위에 다시 포함
+- **수동 배포** — `deploy.sh`는 그대로 사용 가능
+
+최초 설정 (한 번만)
+
+```bash
+PROJECT_ID=$(gcloud config get-value project)
+PROJECT_NUMBER=$(gcloud projects describe "${PROJECT_ID}" --format='value(projectNumber)')
+REPO=<owner>/<repo>
+gcloud services enable iamcredentials.googleapis.com sts.googleapis.com
+
+gcloud iam workload-identity-pools create github --location=global
+gcloud iam workload-identity-pools providers create-oidc snapdone \
+  --location=global --workload-identity-pool=github \
+  --issuer-uri="https://token.actions.githubusercontent.com" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.ref=assertion.ref" \
+  --attribute-condition="assertion.repository=='${REPO}' && assertion.ref=='refs/heads/main'"
+
+gcloud iam service-accounts create github-deploy
+DEPLOY_SA=github-deploy@${PROJECT_ID}.iam.gserviceaccount.com
+for role in roles/run.admin roles/artifactregistry.writer roles/browser; do
+  gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+    --member="serviceAccount:${DEPLOY_SA}" --role="${role}" --condition=None
+done
+gcloud iam service-accounts add-iam-policy-binding \
+  "${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+  --member="serviceAccount:${DEPLOY_SA}" --role=roles/iam.serviceAccountUser
+gcloud iam service-accounts add-iam-policy-binding "${DEPLOY_SA}" \
+  --role=roles/iam.workloadIdentityUser \
+  --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github/attribute.repository/${REPO}"
+```
+
+`GCP_WIF_PROVIDER` 값은 `gcloud iam workload-identity-pools providers describe snapdone --location=global --workload-identity-pool=github --format='value(name)'`
+
 ## 설정 변경
 
 | 대상                            | 방법                                                             |
@@ -115,6 +156,5 @@ npx eas-cli@latest env:create --environment preview --visibility secret --name G
 
 ## 아직 없는 것
 
-- **자동 배포** — CI는 검사만. 배포는 `deploy.sh`로 수동
 - **커스텀 도메인** — 붙이면 `AUTH_PUBLIC_BASE_URL` · `AUTH_WEB_ORIGIN` · `WEB_ORIGIN` · 약관 URL · OAuth 리디렉션 URI를 함께 변경
 - **회원 탈퇴 기능** — 이메일 요청을 받아 DB에서 사용자 행 삭제(관련 행은 `ON DELETE CASCADE`)
