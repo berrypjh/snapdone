@@ -256,6 +256,41 @@ pnpm swagger:check  # 최신인지 검사만 한다
 - **같은 Wi-Fi** — 폰과 PC가 같은 네트워크여야 함. 회사 · 카페 네트워크는 기기 간 통신을 막는 경우가 많음
 - **Android 에뮬레이터** — `10.0.2.2`가 호스트. 소스에 넣지 않고 `.env`에서 지정
 
+## 실기기 앱 디버깅
+
+내부 APK(release 빌드)에서 문제가 날 때. 서버 → web → WebView → 앱 순서로 좁힘
+
+- **WebView 콘솔 없음** — release에서는 WebView `console.*`가 버려짐. logcat이 비어도 오류가 없다는 뜻이 아님
+- **원격 디버깅** — EAS 환경 변수 `EXPO_PUBLIC_WEBVIEW_DEBUG=true`로 빌드하면 `chrome://inspect` 사용 가능
+- **앱 JS 로그** — `console.warn`은 logcat `ReactNativeJS`에 남음. 임시 진단 로그는 원인을 찾으면 지움
+- **Expo Go** — 로그인 복귀 주소(`mobile://`)를 받지 못해 로그인 불가. 로그인 이후는 APK로 확인
+
+### 서버 로그
+
+```bash
+gcloud logging read \
+  'resource.type="cloud_run_revision" AND timestamp>="<재현 시각 UTC>" AND ((resource.labels.service_name="api" AND jsonPayload.route=~"/v1/auth/") OR (resource.labels.service_name="web" AND logName:"run.googleapis.com%2Frequests" AND httpRequest.userAgent:"SnapdoneApp"))' \
+  --limit=50 --order=asc \
+  --format='value(timestamp,resource.labels.service_name,jsonPayload.route,jsonPayload.status,httpRequest.status,httpRequest.requestUrl)'
+```
+
+- **시각은 `timestamp>=`로 고정** — `--freshness`와 `--order=asc`를 함께 쓰면 방금 기록이 잘림
+- **앱 요청 구분** — web 요청 로그의 User-Agent에 `SnapdoneApp/`
+
+### 기기 로그 (USB)
+
+1. 폰 — 개발자 옵션 → USB 디버깅
+2. Mac — `brew install --cask android-platform-tools`, `adb devices`로 연결 확인
+3. 재현 전 `adb logcat -c`, 재현 후 `adb logcat -d -v time | grep -E "ReactNativeJS|RNCWebView|AndroidRuntime"`
+
+### WebView 내부
+
+Mac Chrome `chrome://inspect/#devices` → 해당 page의 inspect
+
+- **JS 실행** — `window.next`가 객체
+- **앱 연결** — `typeof window.ReactNativeWebView`가 `'object'`
+- **앱 수신** — `window.ReactNativeWebView.postMessage(JSON.stringify({type:'ready',title:'테스트'}))` → 네이티브 헤더 제목이 바뀌면 수신
+
 ## 자주 겪는 환경 차이
 
 **pnpm store 불일치** — 다른 셸 · 환경에서 설치해 `node_modules`의 store와 pnpm이 쓰려는 store가 다를 때

@@ -38,6 +38,7 @@ Nx Workspace (repository root)
 - Google 로그인과 세션 — mobile 네이티브 흐름, web HttpOnly 세션 cookie, WebView 로그인 핸드오프. **실계정 · 실기기 인수는 남아 있다**
 - 온보딩 소개 → 첫 사진 → 처리 — mobile과 web이 같은 순서다. 진행은 서버(`/v1/onboarding`)에 있어 어느 쪽에서든 이어 간다. 첫 결과 화면에서 완료를 눌러야 온보딩을 마친다(`POST /v1/onboarding/complete`)
 - 사진 한 장의 처리 — web `/process`(파일 선택 · 끌어 놓기), mobile 네이티브 화면(사진 선택 · 카메라)에서 확인 → 처리 → 결과. 서버가 유형(text · receipt · unsupported · ambiguous)을 판단하고 요청 시점의 처리 방식을 실행해 결과를 작업에 남긴다. 같은 사진을 다른 방식으로 다시 처리하고(`sourceJobId`), 영수증의 확인이 필요한 값은 필드 하나씩 확정한다. **사진은 저장하지 않고 SHA-256만 남기므로** 다시 처리는 사진을 들고 있는 화면에서만 된다
+- GCP 배포 — api · web은 Cloud Run, DB는 Cloud SQL(PostgreSQL 17), 비밀 값은 Secret Manager. 이용약관 · 개인정보처리방침은 web `/terms` · `/privacy`([deployment.md](../development/deployment.md))
 - 검증 명령과 문서
 
 아직 구현하지 않은 것:
@@ -49,8 +50,7 @@ Nx Workspace (repository root)
 - 캘린더
 - 영수증 지출 정보의 외부 저장(지출 앱 · 가계부 연동)
 - 자동화
-- production DB (Cloud SQL 미생성)
-- production 배포
+- 자동 배포(CI) · 커스텀 도메인 · 회원 탈퇴 기능
 
 **이 목록은 "예정"이 아니라 "없음"이다.** 관련 코드는 저장소에 없다. 테스트 범위는 [quality-gates.md](../engineering/quality-gates.md).
 

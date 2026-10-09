@@ -16,6 +16,7 @@ cmd/eval/main.go                 평가 harness CLI bootstrap (nx run api:eval).
 internal/evalcli/                평가 CLI 명령 · flag · 출력 · 종료 코드. 데이터 계약은 evaluation이 가짐. 서버 · DB 없이 분류기를 부르고, 실제 provider 호출은 --allow-api가 있을 때만
 docs/swagger/                    swag가 생성한 Swagger 2.0 (docs.go · swagger.json · swagger.yaml). 손으로 고치지 않는다
 internal/config/                 환경변수 로딩 · 인증 설정 검증
+internal/logging/                Cloud Logging 형식(severity · message · release) slog logger
 internal/httpserver/             http.Server · Gin router(router.go) · middleware · DTO(dto.go) · 핸들러와 Swagger 주석
 internal/database/               pgx pool · 마이그레이션 (migrations/*.sql을 embed)
 internal/database/databasetest/  테스트용 격리 schema
@@ -81,6 +82,7 @@ internal/evaluation/processingadapter/  core ↔ production 분류기 다리. ev
 
 - **오류 응답에 내부 정보를 담지 않는다.** 스택 · 파일 경로 · SQL · 내부 식별자를 밖으로 내보내지 않는다. 오류 응답은 `writeError`가 만드는 `{"error": "<code>"}` 하나뿐이다
 - **로그에 토큰 · 개인정보 · 이미지 내용을 남기지 않는다.** 이 제품의 입력은 스크린샷이고 이름 · 전화번호 · 계좌번호가 흔히 들어 있다. 로그는 `log/slog`(main이 만든 `*slog.Logger`를 `Deps.Logger`로 주입)이고, 수명주기 이벤트 · 요청 한 줄(request_id · method · route template · status · latency) · 인증 저장소 오류 · panic(타입 · stack만)뿐이다. 원문 URL · query · 헤더 · 본문 · panic 값은 남기지 않는다. Gin 기본 Logger · Recovery는 쓰지 않는다
+- **로그 형식은 Cloud Logging이 읽는 JSON이다** — `internal/logging`이 `level` → `severity`(WARN → `WARNING`), `msg` → `message`로 바꾸고, `APP_RELEASE`(배포 이미지 태그)가 있으면 모든 줄에 `release`를 남긴다. `slog.NewJSONHandler`를 직접 만들지 않는다
 - **레벨은 원인으로 고른다.** Error는 운영자가 볼 장애(저장소 · provider · 복호화)만이다. OAuth callback의 사용자 취소(`auth.ErrCancelled`)는 Info, 맞지 않는 · 이미 쓴 state(`auth.ErrInvalidCallback`)는 Warn이다(`callbackLogLevel`)
 - CORS는 **브라우저가 이 API를 직접 부르게 될 때** 넣는다. 지금은 cross-origin 주체가 없어 코드가 아예 없다. 넣게 되면 허용 origin을 설정으로 받고 dev/production을 분리하며 **production에서 `*`를 쓰지 않는다**. 판단 근거는 [data-access.md](../../docs/architecture/data-access.md)
 

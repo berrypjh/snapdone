@@ -40,9 +40,10 @@ mobile이 주 제품이다. 네비게이션 · 로그인 · 권한 · 푸시와 
 - WebView User-Agent 뒤에 `SnapdoneApp/<bridge 계약 버전>`을 붙인다(`applicationNameForUserAgent={inAppUserAgentName()}`)
 - 로그인은 일회용 코드 핸드오프다 ([data-access.md](../../docs/architecture/data-access.md#webview-로그인-핸드오프)). 토큰을 `injectJavaScript` · URL로 넘기지 않는다
 - `webViewNavigation`이 web origin의 허용 경로만 WebView 안에서 열고, 외부 https는 `Linking.openURL`, 그 외 scheme · 모르는 경로는 막는다. 경로를 추가하면 `WEB_VIEW_PATHS`에 넣는다. 동적 경로는 처리 결과 하나(`/history/{소문자 uuid}`, `@snapdone/webview-bridge`의 `isJobDetailPath`)뿐이고, Go 핸드오프 `allowedNext`와 web `safeReturnPath`가 같은 규칙이다. 홈의 기록 항목이 이 경로를 연다. 뒤로 가기 · 닫기는 네이티브가 처리한다
-- 핸드오프 · `auth-required` 처리는 `WebContentScreen` + `src/auth/webHandoff.ts`(순수 상태)다. 메시지는 보낸 page의 origin · path와 대기 상태를 확인한 뒤에만 받는다
+- 핸드오프 · `auth-required` 처리는 `WebContentScreen` + `src/auth/webHandoff.ts`(순수 상태)다. 메시지는 보낸 page의 origin과 대기 상태를 확인한 뒤에만 받는다
 - 메시지 타입은 `libs/`의 계약만 쓴다
-- WebView 화면은 `src/screens/WebContentScreen.tsx` 하나를 재사용한다 — `navigate('WebContent', { path, title })`. 로딩 · 오류(다시 시도) · 외부 링크 · 로그인 핸드오프가 이미 들어 있다
+- WebView 화면은 `src/screens/WebContentScreen.tsx` 하나를 재사용한다 — `navigate('WebContent', { path, title })`. 로딩 · 오류(다시 시도) · 외부 링크 · 로그인 핸드오프 · 하단 inset(`insetBottom`) · Android 뒤로 가기 · 탭 다시 누르기(`reopenSignal`)가 들어 있다
+- **Android WebView는 iOS와 다르다** — 메시지의 보낸 page 주소는 origin만(경로로 판단하지 않는다), `onShouldStartLoadWithRequest`에 `isTopFrame` 없음(`isTopFrameRequest`)
 - web 주소는 `EXPO_PUBLIC_WEB_BASE_URL` 하나이고 `src/lib/web.ts`만 읽는다. 링크를 WebView에 둘지 시스템으로 보낼지는 `webViewNavigation`이 정한다
 
 ## UI

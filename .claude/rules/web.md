@@ -23,6 +23,8 @@ Next.js App Router. 소스는 `src/`, alias는 `@/*` → `./src/*`.
 - **폰 폭(320–767px)을 기본으로 설계한다.** WebView는 항상 이 폭이다
 - in-app 판별은 User-Agent의 `SnapdoneApp/` 하나로, `src/lib/in-app.ts`의 `isInAppRequest()`(서버)에서만 한다. 컴포넌트가 User-Agent를 직접 읽지 않는다. `(product)` layout이 읽어 `AppShell inApp`으로 넘긴다
 - in-app 모드에서는 셸(헤더 · 사이드바)만 숨긴다. 화면 내용을 환경별로 따로 만들지 않는다
+- **제목은 네이티브 헤더가 가진다.** 페이지 `<h1>`에 `in-app:sr-only`를 붙인다 — 앱 안에서는 보이지 않고 읽히기만 한다. `in-app` variant는 `global.css`의 `@custom-variant`(AppShell의 `data-in-app`)
+- **앱이 가로챌 링크는 `next/link`가 아니라 `<a>`다.** `next/link`는 문서를 다시 불러오지 않아 앱의 `onShouldStartLoadWithRequest`가 호출되지 않는다. 처리 결과 링크(`components/recent-jobs.tsx`)가 그렇다
 - 카메라 · 사진 · 공유 시트를 web에서 구현하지 않는다. in-app 모드에서는 앱에 메시지로 요청한다
 - 앱과 주고받는 메시지는 `libs/`의 계약 타입만 쓴다. 문자열 메시지를 흩어 쓰지 않는다
 - 로그인 토큰을 URL · JS 전역으로 받지 않는다. 핸드오프는 [data-access.md](../../docs/architecture/data-access.md#webview-로그인-핸드오프)
