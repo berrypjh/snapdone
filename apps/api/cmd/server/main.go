@@ -27,6 +27,7 @@ import (
 	"snapdone/api/internal/database"
 	"snapdone/api/internal/google"
 	"snapdone/api/internal/httpserver"
+	"snapdone/api/internal/logging"
 	"snapdone/api/internal/onboarding"
 	"snapdone/api/internal/preference"
 	"snapdone/api/internal/processing"
@@ -36,7 +37,8 @@ import (
 const shutdownTimeout = 10 * time.Second
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
+	// config보다 먼저 만들어 설정 오류도 같은 형식으로 남긴다. APP_RELEASE는 배포 이미지 태그.
+	logger := logging.New(os.Stderr, os.Getenv("APP_RELEASE"))
 	httpserver.UseReleaseMode()
 
 	cfg, err := config.Load()

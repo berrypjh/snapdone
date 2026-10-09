@@ -1,0 +1,51 @@
+# Cloud Run service for the Go API. Applied by tools/scripts/deploy.sh, which fills ${...}.
+# Secrets are referenced by name only; their values live in Secret Manager.
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: api
+  annotations:
+    run.googleapis.com/invoker-iam-disabled: "true"
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/cloudsql-instances: ${PROJECT_ID}:${REGION}:snapdone-pg
+    spec:
+      containers:
+        - image: ${IMAGE}
+          ports:
+            - containerPort: 8080
+          env:
+            - name: APP_RELEASE
+              value: "${RELEASE}"
+            - name: AUTH_PUBLIC_BASE_URL
+              value: https://api-${PROJECT_NUMBER}.${REGION}.run.app
+            - name: AUTH_WEB_ORIGIN
+              value: https://web-${PROJECT_NUMBER}.${REGION}.run.app
+            - name: AUTH_MOBILE_REDIRECT_URI
+              value: mobile://auth/callback
+            - name: AUTH_ENCRYPTION_KEY_ID
+              value: k1
+            - name: AUTH_TERMS_VERSION
+              value: "2026-10-09"
+            - name: AUTH_PRIVACY_VERSION
+              value: "2026-10-09"
+            - name: GOOGLE_CLIENT_ID
+              value: 1017137419808-to01ect1t6kj9bfd1vvhkcn7ga9fhq4o.apps.googleusercontent.com
+            - name: PROCESSING_PROVIDER
+              value: anthropic
+            - name: PROCESSING_MODEL
+              value: claude-haiku-5-5
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef: { name: DATABASE_URL, key: latest }
+            - name: AUTH_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef: { name: AUTH_ENCRYPTION_KEY, key: latest }
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef: { name: GOOGLE_CLIENT_SECRET, key: latest }
+            - name: PROCESSING_API_KEY
+              valueFrom:
+                secretKeyRef: { name: PROCESSING_API_KEY, key: latest }

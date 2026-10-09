@@ -1,0 +1,21 @@
+# Cloud Run job that applies database migrations. Applied and executed by tools/scripts/deploy.sh before the API.
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  name: api-migrate
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/cloudsql-instances: ${PROJECT_ID}:${REGION}:snapdone-pg
+    spec:
+      template:
+        spec:
+          maxRetries: 0
+          containers:
+            - image: ${IMAGE}
+              command: [/migrate]
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef: { name: DATABASE_URL, key: latest }
