@@ -8,7 +8,8 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # main은 배포(마이그레이션) 도중 끊기지 않게 취소하지 않는다
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -84,6 +85,8 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.affected.outputs.projects }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -103,3 +106,28 @@ jobs:
         run: docker build -t snapdone-api apps/api
       - if: contains(fromJSON(steps.affected.outputs.projects), 'web')
         run: docker build -f apps/web/Dockerfile --secret id=github_token,env=GITHUB_TOKEN -t snapdone-web .
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [checks, e2e, docker]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      id-token: write # Workload Identity Federation
+    env:
+      # deploy.sh가 gcloud config로 읽는 값
+      CLOUDSDK_CORE_PROJECT: ${{ vars.GCP_PROJECT_ID }}
+      CLOUDSDK_RUN_REGION: asia-northeast3
+    steps:
+      - uses: actions/checkout@v6
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - run: gcloud auth configure-docker asia-northeast3-docker.pkg.dev --quiet
+      - if: contains(fromJSON(needs.docker.outputs.projects), 'api')
+        run: tools/scripts/deploy.sh api
+      - if: contains(fromJSON(needs.docker.outputs.projects), 'web')
+        run: tools/scripts/deploy.sh web

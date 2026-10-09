@@ -74,6 +74,7 @@ PR과 main push마다 바뀐 프로젝트만(`nx affected`). 잡 세 개가 병�
 | `checks` | `format:check` · `lint` `vet` `fmt` `typecheck` `test` `swagger-check` · `build`(mobile 제외) · `devhub:check` · `test:hooks`. Postgres 서비스로 DB 테스트까지 |
 | `e2e`    | Playwright 세 브라우저. 실패하면 리포트를 artifact로                                                                                                           |
 | `docker` | 바뀐 api · web 이미지를 push 없이 빌드                                                                                                                         |
+| `deploy` | main push에서만. 세 잡이 모두 통과하면 바뀐 api · web을 `deploy.sh`로 배포([deployment.md](../development/deployment.md#자동-배포))                            |
 
 - **비공개 패키지** — `GITHUB_TOKEN`(`packages: read`)으로 `@berrypjh` 설치. 패키지 설정에서 이 저장소에 읽기 권한 필요
 - **로컬과 차이** — DB 테스트와 e2e는 AI 세션에서 돌지 않지만 CI에서는 돔
