@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -148,9 +149,10 @@ func writeError(c *gin.Context, status int, code string) {
 	c.AbortWithStatusJSON(status, ErrorResponse{Error: code})
 }
 
-// 내부 오류 원인을 요청 ID와 함께 남긴다. 요청 값은 넣지 않는다.
+// 내부 오류 원인을 요청 ID와 함께 남기고 Sentry로 보낸다. 요청 값은 넣지 않는다.
 func (h *handlers) logFailure(c *gin.Context, msg string, err error) {
 	h.log.Error(msg, append(requestAttrs(c), "err", err)...)
+	report(c, fmt.Errorf("%s: %w", msg, err))
 }
 
 // 내부 오류를 남기고 원인을 숨긴 500을 돌려준다.
