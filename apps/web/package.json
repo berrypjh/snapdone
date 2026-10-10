@@ -12,11 +12,18 @@
       "typecheck": {
         "executor": "nx:run-commands",
         "cache": true,
+        "dependsOn": [
+          "^typecheck"
+        ],
         "inputs": [
           "{projectRoot}/**/*.ts",
           "{projectRoot}/**/*.tsx",
           "{projectRoot}/tsconfig.json",
-          "{workspaceRoot}/tsconfig.base.json"
+          "{workspaceRoot}/tsconfig.base.json",
+          {
+            "dependentTasksOutputFiles": "**/*.d.ts",
+            "transitive": true
+          }
         ],
         "options": {
           "cwd": "apps/web",
