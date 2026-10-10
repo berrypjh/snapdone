@@ -143,6 +143,7 @@ results/comparisons/<comparisonId>/   비교 산출물
 - **채점 자격** — `annotation.review: reviewed` · `provenance.privacyReview: reviewed` · `ambiguity`가 `high`가 아님 · dev가 아닌 split은 `method: human`. 검토 사실은 값을 적은 사람의 책임이다
 - **selection hash** — 고른 split의 case를 id 순으로 `id · JSONL 원문 · 사진 byte`를 이은 sha256. 같은 hash끼리만 비교한다
 - 여러 case가 필요한 Go 테스트는 `apps/api/internal/evaluation/testdata/datasets/`의 fixture(합성 `pilot-v1` 포함)를 쓴다
+- **커밋은 `sample-*`만** — 다른 dataset은 git이 무시함
 
 ### dataset 채우기
 
