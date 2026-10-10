@@ -191,13 +191,16 @@ export const processFirstPhoto = async (page: Page) => {
   await page.getByRole('button', { name: '처리하기' }).click();
 };
 
-/** Answers the provider consent screen: a new user, a returning user, or the user closing it. */
+/**
+ * Answers the provider consent screen: a new user, a returning user, or the user closing it.
+ * Like Google's, the screen is a page that sends the browser on to Go's callback with the answer.
+ * It stays on an https address because the web only follows an https `authorizeUrl`.
+ */
 export const answerGoogle = (page: Page, decision: 'new' | 'returning' | 'access_denied') =>
   page.route(FAKE_AUTHORIZE, (route) => {
     const state = new URL(route.request().url()).searchParams.get('state') ?? '';
     const query = new URLSearchParams({ state });
     query.set(decision === 'access_denied' ? 'error' : 'code', decision);
-    // WebKit cannot fulfill a route with a redirect status, so the consent page redirects itself.
     const callback = `${FAKE_API_URL}/v1/auth/oauth/callback?${query}`;
     return route.fulfill({
       contentType: 'text/html',
