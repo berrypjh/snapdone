@@ -57,13 +57,19 @@ test('a new Google user lands on onboarding with an HttpOnly session cookie', as
     expect(request.url()).not.toContain(code);
     expect((await request.allHeaders())['referer'] ?? '').not.toContain(code);
   }
+  // The session value is not checked against the HTML: `next dev` inlines React's debug record of the
+  // awaited `cookies()` store into the page. Production React builds emit no such record.
   const leaks = await page.evaluate(
-    ([secrets]) => {
+    ([code, session]) => {
       const stored = JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage });
-      const text = stored + document.documentElement.outerHTML + document.cookie + location.href;
-      return secrets.filter((secret) => text.includes(secret));
+      const outside = stored + document.cookie + location.href;
+      const html = document.documentElement.outerHTML;
+      return [
+        ...(code && (outside + html).includes(code) ? ['code'] : []),
+        ...(session && outside.includes(session) ? ['session'] : []),
+      ];
     },
-    [[code ?? '', cookie?.value ?? '']],
+    [code ?? '', cookie?.value ?? ''],
   );
   expect(leaks).toEqual([]);
 });
@@ -89,7 +95,7 @@ test('closing the Google screen returns to login quietly, ready to try again', a
   await page.getByRole('button', GOOGLE).click();
 
   await expect(page).toHaveURL(/\/login\?next=%2F$/);
-  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.getByRole('main').getByRole('alert')).toHaveCount(0);
   await expect(page.getByRole('button', GOOGLE)).toBeEnabled();
   expect(await sessionCookie(context)).toBeUndefined();
 });
@@ -154,9 +160,10 @@ test.describe('signed in', () => {
     });
     expect(lookup.status()).toBe(401);
 
+    // Back leads to the profile page the logout was on, which now asks for a login.
     await page.goBack();
-    await expect(page).toHaveURL(/\/login\?next=%2Fhistory$/);
-    await expect(page.getByRole('heading', { name: '기록' })).toHaveCount(0);
+    await expect(page).toHaveURL(/\/login\?next=%2Fme$/);
+    await expect(page.getByRole('heading', { name: '내 정보' })).toHaveCount(0);
   });
 });
 

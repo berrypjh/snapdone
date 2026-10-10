@@ -6,6 +6,14 @@ export const FAKE_API_URL = 'http://127.0.0.1:4010';
 /** Where the fake API sends the browser to "Google". Never resolves; tests answer it with `page.route`. */
 const FAKE_AUTHORIZE = 'https://oauth.fake.test/**';
 
+/** React tags hydrated DOM nodes with a `__reactFiber$` key; its presence means hydration ran. */
+export const isHydrated = (page: Page) =>
+  page.evaluate(() =>
+    Object.keys(document.getElementById('main-content') ?? {}).some((key) =>
+      key.startsWith('__reactFiber$'),
+    ),
+  );
+
 /** The Google login button on `/login`. */
 export const GOOGLE = { name: 'Google로 계속하기' } as const;
 
@@ -20,7 +28,7 @@ export const IN_APP_USER_AGENT =
 export const overflowsSideways = (page: Page) =>
   page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
 
-/** WebKit on macOS skips links on plain Tab, so link focus needs Alt+Tab there. */
+/** WebKit on macOS skips links and buttons on plain Tab, so focusing them needs Alt+Tab there. */
 export const linkTabKey = (browserName: string) => (browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
 
 /** `next dev` cookie name (`authCookies()` outside production). */
@@ -189,9 +197,11 @@ export const answerGoogle = (page: Page, decision: 'new' | 'returning' | 'access
     const state = new URL(route.request().url()).searchParams.get('state') ?? '';
     const query = new URLSearchParams({ state });
     query.set(decision === 'access_denied' ? 'error' : 'code', decision);
+    // WebKit cannot fulfill a route with a redirect status, so the consent page redirects itself.
+    const callback = `${FAKE_API_URL}/v1/auth/oauth/callback?${query}`;
     return route.fulfill({
-      status: 302,
-      headers: { location: `${FAKE_API_URL}/v1/auth/oauth/callback?${query}` },
+      contentType: 'text/html',
+      body: `<meta http-equiv="refresh" content="0;url=${callback.replaceAll('&', '&amp;')}">`,
     });
   });
 

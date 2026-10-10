@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 
-import { linkTabKey, overflowsSideways, signIn } from './support/fixture';
+import { isHydrated, linkTabKey, overflowsSideways, signIn } from './support/fixture';
 
 /** The home is a protected product page, so it is checked signed in. */
 test.beforeEach(async ({ context, baseURL }) => {
@@ -23,14 +23,6 @@ function collectErrors(page: Page) {
   page.on('pageerror', (error) => errors.push(error.message));
   return errors;
 }
-
-/** React tags hydrated DOM nodes with a `__reactFiber$` key; its presence means hydration ran. */
-const isHydrated = (page: Page) =>
-  page.evaluate(() =>
-    Object.keys(document.getElementById('main-content') ?? {}).some((key) =>
-      key.startsWith('__reactFiber$'),
-    ),
-  );
 
 /** Reads the shared surface token as declared, as resolved, and as painted on <body>. */
 const readSurface = (page: Page) =>
