@@ -69,6 +69,13 @@ Tailwind v4 + `@berrypjh/react-ui`. 색 · 타입 스케일 · radius · shadow�
 - 환경변수는 `API_BASE_URL`이다. `NEXT_PUBLIC_` 접두사가 없는 것은 의도적이다 — 서버 전용 값이라 Client Component에서 읽으면 `undefined`
 - 응답은 좁은 타입 가드로 확인한다. `any`를 쓰지 않는다
 
+## 오류 보고
+
+- Sentry 설정은 `src/lib/sentry/options.ts` 하나다. 브라우저는 `instrumentation-client.ts`, 서버는 `instrumentation.ts`(`onRequestError`)가 같은 설정으로 켠다
+- 보내기 전에 `scrub.ts`가 요청 헤더 · 쿠키 · 본문을 지우고 URL의 query를 뗀다(콜백 · handoff의 일회용 code). console 기록은 버린다
+- Session Replay · 스크린샷 · 피드백 위젯을 켜지 않는다. 화면에 사진 처리 결과(개인정보)가 보인다
+- `NEXT_PUBLIC_SENTRY_DSN`은 브라우저에 노출돼도 되는 공개 값이라 예외로 `NEXT_PUBLIC_`이다. 비면 꺼진다
+
 ## Test
 
 `vitest.config.ts`는 `environment: 'node'`, `include: ['src/**/*.spec.ts']`다. spec 파일도 `nx typecheck web`이 검사한다. React 컴포넌트를 테스트하게 되면 `jsdom`과 `@testing-library/react`를 그때 함께 추가한다.

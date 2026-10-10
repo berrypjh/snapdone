@@ -236,6 +236,18 @@ export const tests: TestRef[] = [
     'createProcessingPort',
     'stops and tells the page when the session is gone',
   ),
+  vitest(
+    'web-sentry-scrub-event',
+    'apps/web/src/lib/sentry/scrub.spec.ts',
+    'scrubEvent',
+    'keeps only method and query-free url',
+  ),
+  vitest(
+    'web-sentry-scrub-breadcrumb',
+    'apps/web/src/lib/sentry/scrub.spec.ts',
+    'scrubBreadcrumb',
+    'strips query from navigation and fetch urls',
+  ),
   // web — Vitest, 사진 처리
   vitest(
     'web-job-start',
@@ -630,6 +642,24 @@ export const tests: TestRef[] = [
     'start',
     'reports network when the request never completes',
   ),
+  vitest(
+    'mobile-photo-form-file',
+    'apps/mobile/src/lib/photoForm.spec.ts',
+    'photoForm',
+    'puts the photo as a file object, not a uri descriptor, in the image field',
+  ),
+  vitest(
+    'mobile-sentry-scrub-event',
+    'apps/mobile/src/lib/sentryScrub.spec.ts',
+    'scrubEvent',
+    'keeps only method and query-free url',
+  ),
+  vitest(
+    'mobile-sentry-scrub-breadcrumb',
+    'apps/mobile/src/lib/sentryScrub.spec.ts',
+    'scrubBreadcrumb',
+    'drops console and touch breadcrumbs',
+  ),
   // mobile — Vitest, 사진 처리
   vitest(
     'mobile-job-upload',
@@ -900,6 +930,12 @@ export const tests: TestRef[] = [
     'go-logging-release',
     'apps/api/internal/logging/logging_test.go',
     'TestNewAddsReleaseOnlyWhenSet',
+    [],
+  ),
+  goTest(
+    'go-sentry-panic-report',
+    `${HTTP}/router_test.go`,
+    'TestPanicReportCarriesNoRequestData',
     [],
   ),
   goTest('go-onboarding-validate', ONBOARDING, 'TestValidate', []),

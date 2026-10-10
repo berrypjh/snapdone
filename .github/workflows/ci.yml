@@ -60,6 +60,9 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    env:
+      # PR은 chromium만, main은 세 브라우저
+      E2E_CHROMIUM_ONLY: ${{ github.event_name == 'pull_request' && '1' || '' }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -71,7 +74,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - uses: nrwl/nx-set-shas@v4
-      - run: pnpm exec playwright install --with-deps chromium firefox webkit
+      - run: pnpm exec playwright install --with-deps ${{ env.E2E_CHROMIUM_ONLY && 'chromium' || 'chromium firefox webkit' }}
       # web-e2e는 고정 포트(3000 · 4010)라 파일 단위 병렬(e2e-ci)을 쓰지 않는다.
       - run: pnpm exec nx affected -t e2e --parallel=1
       - if: failure()

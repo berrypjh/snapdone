@@ -50,7 +50,9 @@ test('turns the empty home active with the processed photo, flags its check, and
   );
   await expect(section(page, '확인이 필요한 처리')).toHaveCount(0);
 
+  // A plain link loads a new document: wait for it to load so the file input is hydrated.
   await page.getByRole('link', { name: '사진 추가하기' }).click();
+  await page.waitForURL(/\/process$/);
   await page.locator('input[type="file"]').setInputFiles(PHOTO);
   await page.getByRole('button', { name: '처리하기' }).click();
   await expect(
@@ -125,6 +127,7 @@ test('deletes a job from its result after a confirmation and returns to the hist
   ]);
   await page.goto('/history');
   await page.getByRole('link', { name: '텍스트 / 외국어 · 텍스트만 추출' }).click();
+  await page.waitForURL(`/history/${textJob}`);
 
   // Deleting cannot be undone, so the first press only asks.
   const remove = page.getByRole('button', { name: '기록 삭제' });
@@ -141,7 +144,7 @@ test('deletes a job from its result after a confirmation and returns to the hist
   await expect(items).toContainText('12,000원');
   // The deleted job is gone for good, not just hidden from the list.
   await page.goto(`/history/${textJob}`);
-  await expect(page.getByRole('alert')).toContainText('찾을 수 없');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('찾을 수 없');
 });
 
 test('deletes several chosen jobs at once after a confirmation', async ({
@@ -210,7 +213,9 @@ test('does not open another user’s job from the history path', async ({
   await signInWithJobs(context, baseURL ?? '', []);
 
   await page.goto(`/history/${othersJob}`);
-  await expect(page.getByRole('alert')).toHaveText('처리 기록을 찾을 수 없습니다.');
+  await expect(page.getByRole('main').getByRole('alert')).toHaveText(
+    '처리 기록을 찾을 수 없습니다.',
+  );
 });
 
 test('says the history could not be read instead of showing it empty', async ({
@@ -221,7 +226,7 @@ test('says the history could not be read instead of showing it empty', async ({
   await signIn(context, baseURL ?? '', 'complete', 'receipt', { recentJobsFail: true });
   await page.goto('/history');
 
-  await expect(page.getByRole('alert')).toHaveText(
+  await expect(page.getByRole('main').getByRole('alert')).toHaveText(
     '처리 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.',
   );
   await expect(page.getByText('아직 기록이 없습니다.')).toHaveCount(0);

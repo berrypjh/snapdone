@@ -105,6 +105,10 @@ vitest.config.*.timestamp*
 # 평가 실행 산출물
 /tools/evals/results/
 
+# 평가 dataset — 형식 예시 sample-*만 커밋
+/tools/evals/datasets/*
+!/tools/evals/datasets/sample-*/
+
 # Python research lab (tools/evals/lab); out/ is disposable notebook output
 .venv/
 __pycache__/

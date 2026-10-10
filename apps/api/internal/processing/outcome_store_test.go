@@ -141,7 +141,9 @@ func TestStoredOutcomeOutsideContractFailsToRead(t *testing.T) {
 	store, pool, userID := setupPool(t)
 	job := createFrom(t, store, userID, processing.OriginGeneral)
 	complete(t, store, job.ID, nil)
-	if _, err := pool.Exec(context.Background(), "UPDATE processing_jobs SET outcome = $2 WHERE id = $1::uuid", job.ID,
+	// 고른 유형 · 처리 방식은 결과와 같게 두어 DB CHECK를 지나고, 결과 필드만 계약 밖이다.
+	if _, err := pool.Exec(context.Background(),
+		"UPDATE processing_jobs SET image_type = 'text', applied_action = 'extract_text', outcome = $2 WHERE id = $1::uuid", job.ID,
 		`{"kind":"processed","imageType":"text","appliedAction":"extract_text","output":{}}`); err != nil {
 		t.Fatal(err)
 	}
@@ -293,7 +295,7 @@ func TestSelectionCheck(t *testing.T) {
 	}
 }
 
-// scriptedModel은 정해진 유형으로 판단하고 고른 처리 방식에 맞는 원문을 돌려준다.
+// scriptedModel은 정해진 유형으로 판단하고, 고른 텍스트 처리 방식의 결과 계약(outputFields)이 요구하는 필드를 채워 돌려준다.
 type scriptedModel struct{ typing processing.Typing }
 
 func (m scriptedModel) Classify(context.Context, []byte, string) (processing.Result, error) {
@@ -305,7 +307,16 @@ func (m scriptedModel) TypeImage(context.Context, []byte, string) (processing.Ty
 }
 
 func (m scriptedModel) Act(_ context.Context, _ []byte, _ string, s processing.Selection) (processing.Output, error) {
-	return processing.Output{Original: text("Open daily " + s.Action)}, nil
+	original := text("Open daily " + s.Action)
+	switch s.Action {
+	case "extract_and_translate":
+		return processing.Output{Original: original, Translation: &processing.Translation{Needed: true, Text: text("매일 영업")}}, nil
+	case "summarize":
+		return processing.Output{Summary: text("매일 영업")}, nil
+	case "extract_and_summarize":
+		return processing.Output{Original: original, Summary: text("매일 영업")}, nil
+	}
+	return processing.Output{Original: original}, nil
 }
 
 type storedPreferences struct{ prefs preference.Preferences }

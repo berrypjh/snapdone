@@ -2,6 +2,8 @@ import { type BrowserContext, expect, type Page, test } from '@playwright/test';
 
 import {
   IN_APP_USER_AGENT,
+  isHydrated,
+  linkTabKey,
   listJobs,
   overflowsSideways,
   PHOTO,
@@ -47,6 +49,8 @@ const openFlow = async (
   const credential = await signIn(context, baseURL, 'complete', 'receipt', options);
   await page.goto('/process');
   await expect(page.getByRole('heading', { level: 1, name: CHOOSE_TITLE })).toBeVisible();
+  // The picker buttons and the file input only work once React has hydrated the page.
+  await expect.poll(() => isHydrated(page)).toBe(true);
   return credential;
 };
 
@@ -131,13 +135,13 @@ test('treats a cancelled picker as nothing chosen', async ({ page, context, base
   await pick(page, []);
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(CHOOSE_TITLE);
-  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.getByRole('main').getByRole('alert')).toHaveCount(0);
 });
 
 test('takes one dropped photo and refuses several', async ({ page, context, baseURL }) => {
   await openFlow(page, context, baseURL ?? '');
   await drop(page, ['a.png', 'b.png']);
-  await expect(page.getByRole('alert')).toHaveText(
+  await expect(page.getByRole('main').getByRole('alert')).toHaveText(
     '사진은 한 장만 올릴 수 있습니다. 한 장을 골라 주세요.',
   );
 
@@ -152,13 +156,13 @@ test('refuses another format or a photo over 7.5MB before uploading, keeping the
 }) => {
   const credential = await openFlow(page, context, baseURL ?? '');
   await pick(page, { name: 'note.pdf', mimeType: 'application/pdf', buffer: Buffer.from('pdf') });
-  await expect(page.getByRole('alert')).toHaveText(
+  await expect(page.getByRole('main').getByRole('alert')).toHaveText(
     'JPEG · PNG · GIF · WebP 사진만 올릴 수 있습니다.',
   );
 
   await preview(page);
   await pick(page, { ...PHOTO, buffer: Buffer.alloc(7_500_001) });
-  await expect(page.getByRole('alert')).toHaveText(
+  await expect(page.getByRole('main').getByRole('alert')).toHaveText(
     '7.5MB보다 큰 사진은 올릴 수 없습니다. 다른 사진을 골라 주세요.',
   );
   await expect(page.getByRole('heading', { level: 1, name: PREVIEW_TITLE })).toBeVisible();
@@ -271,7 +275,7 @@ test('keeps the photo after a failed upload and retries it', async ({ page, cont
   await preview(page);
   await process(page);
 
-  await expect(page.getByRole('alert')).toHaveText(
+  await expect(page.getByRole('main').getByRole('alert')).toHaveText(
     '사진을 처리하지 못했습니다. 다시 시도하거나 다른 사진을 선택해 주세요.',
   );
   await expect(page.getByRole('img', { name: '선택한 사진' })).toBeVisible();
@@ -292,7 +296,7 @@ test('offers only another photo when the server refuses the format', async ({
   await preview(page);
   await process(page);
 
-  await expect(page.getByRole('alert')).toHaveText(
+  await expect(page.getByRole('main').getByRole('alert')).toHaveText(
     '이 사진 형식은 처리할 수 없습니다. 다른 사진을 선택해 주세요.',
   );
   await expect(page.getByRole('button', { name: '다시 시도' })).toHaveCount(0);
@@ -312,7 +316,9 @@ test('retries after the connection drops', async ({ page, context, baseURL }) =>
   });
   await process(page);
 
-  await expect(page.getByRole('alert')).toHaveText('인터넷 연결을 확인한 뒤 다시 시도해 주세요.');
+  await expect(page.getByRole('main').getByRole('alert')).toHaveText(
+    '인터넷 연결을 확인한 뒤 다시 시도해 주세요.',
+  );
   await page.getByRole('button', { name: '다시 시도' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('텍스트를 추출했습니다');
 });
@@ -331,9 +337,10 @@ test('sends an expired session to login with the photo flow as the return path',
 });
 
 test('runs the whole flow by keyboard', async ({ page, context, baseURL, browserName }) => {
+  const tab = linkTabKey(browserName);
   await openFlow(page, context, baseURL ?? '', { uploads: [textJob] });
   await enterMain(page, browserName);
-  await page.keyboard.press('Tab');
+  await page.keyboard.press(tab);
   await expect(page.getByRole('button', { name: '사진 선택' })).toBeFocused();
 
   const chooser = page.waitForEvent('filechooser');
@@ -341,7 +348,7 @@ test('runs the whole flow by keyboard', async ({ page, context, baseURL, browser
   await (await chooser).setFiles(PHOTO);
   await expect(page.getByRole('heading', { level: 1, name: PREVIEW_TITLE })).toBeFocused();
 
-  await page.keyboard.press('Tab');
+  await page.keyboard.press(tab);
   await expect(page.getByRole('button', { name: '처리하기' })).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(

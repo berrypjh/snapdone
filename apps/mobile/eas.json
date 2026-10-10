@@ -1,6 +1,7 @@
 {
   "build": {
     "production": {
+      "channel": "production",
       "android": {
         "buildType": "app-bundle"
       }
@@ -12,6 +13,7 @@
     "preview": {
       "distribution": "internal",
       "environment": "preview",
+      "channel": "preview",
       "ios": {
         "simulator": true
       },

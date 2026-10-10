@@ -51,3 +51,6 @@ spec:
             - name: PROCESSING_API_KEY
               valueFrom:
                 secretKeyRef: { name: PROCESSING_API_KEY, key: latest }
+            - name: SENTRY_DSN
+              valueFrom:
+                secretKeyRef: { name: SENTRY_DSN, key: latest }

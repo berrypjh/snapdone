@@ -3,6 +3,7 @@ import { type BrowserContext, expect, type Page, test } from '@playwright/test';
 import {
   IN_APP_USER_AGENT,
   type JobResult,
+  linkTabKey,
   overflowsSideways,
   processedJob,
   type ReceiptField,
@@ -99,7 +100,7 @@ test.describe('a finished text job', () => {
         await expect(page.getByRole('region', { name })).toContainText(tc.texts[index] ?? '');
       }
       // No photo is stored, so none is shown — not even a placeholder image.
-      await expect(page.getByRole('img')).toHaveCount(0);
+      await expect(page.getByRole('main').getByRole('img')).toHaveCount(0);
       await expect(
         page.getByText('사진은 저장하지 않아 이 화면에는 보이지 않습니다.'),
       ).toBeVisible();
@@ -312,16 +313,17 @@ test.describe('a finished receipt job', () => {
     baseURL,
     browserName,
   }) => {
+    const tab = linkTabKey(browserName);
     await openJob(page, context, baseURL ?? '', expenseJob);
     const total = page.getByRole('group', { name: '금액 확인' });
     await expect(total).toBeVisible();
 
     await enterMain(page, browserName);
-    await page.keyboard.press('Tab');
+    await page.keyboard.press(tab);
     await expect(total.getByRole('button', { name: '12,000원' })).toBeFocused();
-    await page.keyboard.press('Tab');
+    await page.keyboard.press(tab);
     await expect(total.getByRole('button', { name: '13,000원' })).toBeFocused();
-    await page.keyboard.press('Tab');
+    await page.keyboard.press(tab);
     await expect(total.getByRole('textbox', { name: '직접 입력' })).toBeFocused();
   });
 });
@@ -350,8 +352,8 @@ test.describe('a job that is not a finished result', () => {
     await expect(
       page.getByText('텍스트 사진인지 영수증 사진인지 정하지 못했습니다.'),
     ).toBeVisible();
-    // Choosing reprocesses the same photo, which this page does not hold.
-    await expect(page.getByRole('main').getByRole('button')).toHaveCount(0);
+    // Choosing reprocesses the same photo, which this page does not hold. Only deleting the record is left.
+    await expect(page.getByRole('main').getByRole('button')).toHaveText(['기록 삭제']);
     await expect(
       page.getByText(
         '이 화면에는 사진이 없어 종류를 고를 수 없습니다. 사진을 다시 올려 처리해 주세요.',
@@ -388,7 +390,9 @@ test.describe('a job that is not a finished result', () => {
     await signInWithJobs(context, baseURL ?? '', []);
     await page.goto('/history/job-unknown');
     await expect(heading(page)).toHaveText('처리 결과');
-    await expect(page.getByRole('alert')).toHaveText('처리 기록을 찾을 수 없습니다.');
+    await expect(page.getByRole('main').getByRole('alert')).toHaveText(
+      '처리 기록을 찾을 수 없습니다.',
+    );
   });
 
   test('sends a signed-out browser to the login page, back to this result after it', async ({

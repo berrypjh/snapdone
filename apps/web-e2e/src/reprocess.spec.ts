@@ -1,6 +1,7 @@
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
 
 import {
+  linkTabKey,
   listJobs,
   PHOTO,
   processedJob,
@@ -177,18 +178,24 @@ test('keeps the new result when only saving the default fails, and retries only 
   expect(await readPreferences(page.request, credential)).toEqual(DEFAULTS);
 });
 
-test('chooses, checks and reprocesses by keyboard', async ({ page, context, baseURL }) => {
+test('chooses, checks and reprocesses by keyboard', async ({
+  page,
+  context,
+  baseURL,
+  browserName,
+}) => {
+  const tab = linkTabKey(browserName);
   const credential = await processPhoto(page, context, baseURL ?? '', [textFirst, textSummary]);
 
   await panel(page).getByRole('radio', { name: '추출 및 번역(현재 적용)' }).focus();
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('ArrowDown');
   await expect(panel(page).getByRole('radio', { name: '요약', exact: true })).toBeChecked();
-  await page.keyboard.press('Tab');
+  await page.keyboard.press(tab);
   await expect(remember(page)).toBeFocused();
   await page.keyboard.press('Space');
   await expect(remember(page)).toBeChecked();
-  await page.keyboard.press('Tab');
+  await page.keyboard.press(tab);
   await expect(panel(page).getByRole('button', { name: '이 방식으로 다시 처리' })).toBeFocused();
   await page.keyboard.press('Enter');
 

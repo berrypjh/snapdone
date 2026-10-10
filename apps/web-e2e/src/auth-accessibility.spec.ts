@@ -4,6 +4,7 @@ import {
   answerGoogle,
   GOOGLE,
   IN_APP_USER_AGENT,
+  linkTabKey,
   overflowsSideways,
   processFirstPhoto,
   signIn,
@@ -66,7 +67,9 @@ test('the first result at 320px takes focus on its heading and completes with th
   page,
   context,
   baseURL,
+  browserName,
 }) => {
+  const tab = linkTabKey(browserName);
   await signIn(context, baseURL ?? '', 'first-image');
   await page.setViewportSize({ width: 320, height: 800 });
   await page.goto('/onboarding/first-image');
@@ -75,18 +78,19 @@ test('the first result at 320px takes focus on its heading and completes with th
   await expect(page.getByRole('heading', { level: 1, name: '사진을 확인했습니다' })).toBeFocused();
   expect(await overflowsSideways(page)).toBe(false);
 
-  await page.keyboard.press('Tab');
+  await page.keyboard.press(tab);
   await expect(page.getByRole('button', { name: '완료' })).toBeFocused();
   await page.keyboard.press('Enter');
 
   await expect(page).toHaveURL(/\/$/);
 });
 
-test('signs in with the keyboard alone', async ({ page }) => {
+test('signs in with the keyboard alone', async ({ page, browserName }) => {
+  const tab = linkTabKey(browserName);
   await answerGoogle(page, 'returning');
   await page.goto('/login');
 
-  await page.keyboard.press('Tab');
+  await page.keyboard.press(tab);
   const button = page.getByRole('button', GOOGLE);
   await expect(button).toBeFocused();
   await expect(button).toHaveCSS('outline-style', 'solid');
@@ -98,15 +102,17 @@ test('signs in with the keyboard alone', async ({ page }) => {
 test('reads a callback error once, as an alert', async ({ page }) => {
   await page.goto('/login?error=network');
 
-  await expect(page.getByRole('alert')).toHaveCount(1);
-  await expect(page.getByRole('alert')).toHaveText('인터넷 연결을 확인한 뒤 다시 시도해 주세요.');
+  await expect(page.getByRole('main').getByRole('alert')).toHaveCount(1);
+  await expect(page.getByRole('main').getByRole('alert')).toHaveText(
+    '인터넷 연결을 확인한 뒤 다시 시도해 주세요.',
+  );
   await expect(page.getByRole('status')).toHaveCount(0);
 });
 
 test('shows no error for a cancelled login', async ({ page }) => {
   await page.goto('/login?error=cancelled');
 
-  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.getByRole('main').getByRole('alert')).toHaveCount(0);
   await expect(page.getByRole('button', GOOGLE)).toBeEnabled();
 });
 
@@ -129,7 +135,7 @@ test('the handoff page announces one status while it waits', async ({ page }) =>
 
   await expect(page.getByRole('status')).toHaveCount(1);
   await expect(page.getByRole('status')).toHaveText('로그인 정보를 확인하는 중입니다.');
-  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.getByRole('main').getByRole('alert')).toHaveCount(0);
 });
 
 test.describe('the app WebView shows the same content without the menu', () => {

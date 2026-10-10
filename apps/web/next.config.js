@@ -1,5 +1,6 @@
 //@ts-check
 const path = require('node:path');
+const { withSentryConfig } = require('@sentry/nextjs/config');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -29,4 +30,9 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+/** Source maps are not uploaded yet; Sentry only reports errors. */
+module.exports = withSentryConfig(nextConfig, {
+  sourcemaps: { disable: true },
+  telemetry: false,
+  silent: true,
+});

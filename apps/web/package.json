@@ -12,11 +12,18 @@
       "typecheck": {
         "executor": "nx:run-commands",
         "cache": true,
+        "dependsOn": [
+          "^typecheck"
+        ],
         "inputs": [
           "{projectRoot}/**/*.ts",
           "{projectRoot}/**/*.tsx",
           "{projectRoot}/tsconfig.json",
-          "{workspaceRoot}/tsconfig.base.json"
+          "{workspaceRoot}/tsconfig.base.json",
+          {
+            "dependentTasksOutputFiles": "**/*.d.ts",
+            "transitive": true
+          }
         ],
         "options": {
           "cwd": "apps/web",
@@ -27,6 +34,7 @@
   },
   "dependencies": {
     "@berrypjh/react-ui": "^1.2.0",
+    "@sentry/nextjs": "^11.6.0",
     "@snapdone/auth-contracts": "workspace:*",
     "@snapdone/onboarding": "workspace:*",
     "@snapdone/processing": "workspace:*",

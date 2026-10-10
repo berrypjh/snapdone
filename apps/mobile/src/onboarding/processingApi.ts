@@ -2,6 +2,7 @@ import { ProcessingApiError } from '@snapdone/onboarding';
 import { type JobDetail, readJobDetail } from '@snapdone/processing';
 
 import { bearer, getApiBaseUrl } from '../lib/api';
+import { photoForm } from '../lib/photoForm';
 
 import type { SelectedImage } from './capture';
 
@@ -23,13 +24,10 @@ const request = async (path: string, init: RequestInit): Promise<JobDetail | nul
 
 export const processingApi: ProcessingApi = {
   start: (credential, image) => {
-    const form = new FormData();
-    // 형식은 서버가 내용으로 판별한다. 여기서는 파일 주소만 넘긴다.
-    form.append('image', { uri: image.uri, name: 'photo', type: 'application/octet-stream' });
     return request('/v1/processing-jobs', {
       method: 'POST',
       headers: bearer(credential),
-      body: form,
+      body: photoForm(image.uri),
     });
   },
 

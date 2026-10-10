@@ -20,6 +20,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"snapdone/api/internal/auth"
@@ -33,8 +34,12 @@ import (
 	"snapdone/api/internal/processing"
 )
 
-// 종료 신호를 받은 뒤 진행 중인 요청을 기다리는 최대 시간.
-const shutdownTimeout = 10 * time.Second
+const (
+	// 종료 신호를 받은 뒤 진행 중인 요청을 기다리는 최대 시간.
+	shutdownTimeout = 10 * time.Second
+	// 종료 직전 남은 Sentry 이벤트를 보내는 최대 시간.
+	sentryFlushTimeout = 2 * time.Second
+)
 
 func main() {
 	// config보다 먼저 만들어 설정 오류도 같은 형식으로 남긴다. APP_RELEASE는 배포 이미지 태그.
@@ -48,6 +53,11 @@ func main() {
 	if cfg.DatabaseURL == "" {
 		fatal(logger, "api config", errors.New("DATABASE_URL is not set; see apps/api/.env.example"))
 	}
+	if err := initSentry(cfg.SentryDSN, os.Getenv("APP_RELEASE"), cfg.Environment); err != nil {
+		fatal(logger, "api sentry setup", err)
+	}
+	defer sentry.Flush(sentryFlushTimeout)
+	logger.Info("api sentry", "enabled", cfg.SentryDSN != "")
 
 	// SIGINT(Ctrl+C) 또는 SIGTERM을 받으면 서버 종료 절차를 시작한다.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -90,6 +100,19 @@ func main() {
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		logger.Error("api shutdown failed", "err", err)
 	}
+}
+
+// DSN이 있을 때만 Sentry를 켠다. 요청 데이터(헤더 · 본문 · IP)는 보내지 않는다.
+func initSentry(dsn, release, environment string) error {
+	if dsn == "" {
+		return nil
+	}
+	return sentry.Init(sentry.ClientOptions{
+		Dsn:            dsn,
+		Release:        release,
+		Environment:    environment,
+		SendDefaultPII: false,
+	})
 }
 
 func fatal(logger *slog.Logger, msg string, err error) {

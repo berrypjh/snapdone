@@ -9,6 +9,7 @@ import (
 	"runtime/debug"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
 
 	"snapdone/api/internal/logging"
@@ -76,10 +77,20 @@ func recovery(log *slog.Logger) gin.HandlerFunc {
 				"panic_type", fmt.Sprintf("%T", v),
 				"stack", string(debug.Stack()),
 			)...)
+			report(c, fmt.Errorf("http panic: %T", v))
 			writeError(c, http.StatusInternalServerError, errProviderUnavailable)
 		}()
 		c.Next()
 	}
+}
+
+// 내부 오류를 Sentry로 보낸다. 요청 데이터 대신 route와 request ID만 붙인다.
+// Sentry가 꺼져 있으면(SENTRY_DSN 없음) 아무 일도 하지 않는다.
+func report(c *gin.Context, err error) {
+	hub := sentry.CurrentHub().Clone()
+	hub.Scope().SetTag("route", c.FullPath())
+	hub.Scope().SetTag(requestIDKey, c.GetString(requestIDKey))
+	hub.CaptureException(err)
 }
 
 // 세션 · 개인 데이터가 담긴 응답은 캐시 · Referer로 새지 않게 한다.
