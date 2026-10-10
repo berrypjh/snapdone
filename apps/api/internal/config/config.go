@@ -12,6 +12,8 @@ type Config struct {
 	DatabaseURL string
 	// Cloud Logging trace 이름의 GCP 프로젝트(GOOGLE_CLOUD_PROJECT). 비면 trace를 남기지 않는다.
 	TraceProject string
+	// 내부 오류를 보낼 Sentry DSN(SENTRY_DSN). 비면 Sentry를 켜지 않는다.
+	SentryDSN string
 
 	Auth   *Auth
 	Google *Google
@@ -28,6 +30,7 @@ func Load() (Config, error) {
 		Environment:  env("API_ENV", "development"),
 		DatabaseURL:  os.Getenv("DATABASE_URL"),
 		TraceProject: os.Getenv("GOOGLE_CLOUD_PROJECT"),
+		SentryDSN:    os.Getenv("SENTRY_DSN"),
 	}
 	auth, err := loadAuth(cfg.Environment == "production")
 	if err != nil {

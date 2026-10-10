@@ -8,6 +8,8 @@ COPY . .
 ENV HUSKY=0 NX_DAEMON=false NEXT_TELEMETRY_DISABLED=1
 RUN --mount=type=secret,id=github_token,env=GITHUB_TOKEN \
     pnpm install --frozen-lockfile --filter @snapdone/source --filter "@snapdone/web..."
+# Public values inlined into the bundles at build time (deploy.sh passes them).
+ARG NEXT_PUBLIC_SENTRY_DSN NEXT_PUBLIC_APP_RELEASE
 RUN cd apps/web && pnpm exec next build
 
 FROM node:24-slim

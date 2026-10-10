@@ -56,6 +56,8 @@ printf '%s' "postgres://snapdone:${DB_PASS}@/snapdone?host=/cloudsql/<PROJECT_ID
 printf '%s' "$(openssl rand -base64 32)" | gcloud secrets create AUTH_ENCRYPTION_KEY --data-file=-
 printf '%s' '<OAuth 클라이언트 보안 비밀번호>' | gcloud secrets create GOOGLE_CLIENT_SECRET --data-file=-
 printf '%s' '<Anthropic API 키>' | gcloud secrets create PROCESSING_API_KEY --data-file=-
+printf '%s' '<Sentry DSN>' | gcloud secrets create SENTRY_DSN --data-file=-
+printf '%s' '<web Sentry DSN>' | gcloud secrets create WEB_SENTRY_DSN --data-file=-
 
 SA=<PROJECT_NUMBER>-compute@developer.gserviceaccount.com
 gcloud projects add-iam-policy-binding <PROJECT_ID> --member=serviceAccount:${SA} --role=roles/secretmanager.secretAccessor
@@ -64,6 +66,7 @@ gcloud projects add-iam-policy-binding <PROJECT_ID> --member=serviceAccount:${SA
 
 - **zsh** — `$VAR:a`는 경로 수식어로 해석됨. 변수는 `${VAR}`로 감싸거나 값을 그대로 적음
 - **`AUTH_ENCRYPTION_KEY`** — 바꾸면 이미 암호화한 값을 읽지 못함
+- **`WEB_SENTRY_DSN`** — 브라우저 번들에 들어가는 공개 값. `deploy.sh web`이 빌드 때 읽음
 - **OAuth 클라이언트** — 웹 애플리케이션, 리디렉션 URI `https://api-<PROJECT_NUMBER>.asia-northeast3.run.app/v1/auth/oauth/callback`
 
 ## 배포
@@ -83,7 +86,7 @@ curl https://api-<PROJECT_NUMBER>.asia-northeast3.run.app/health
 main에 머지되면 CI(`.github/workflows/ci.yml`)의 `deploy` 잡이 실행. `checks` · `e2e` · `docker`가 모두 통과한 뒤, 바뀐 api · web만 `deploy.sh`로 배포
 
 - **인증** — Workload Identity Federation. 키 파일 없음. 이 저장소의 main 실행만 허용
-- **배포 계정** — `github-deploy`. `run.admin` · `artifactregistry.writer` · `browser`(프로젝트 번호 조회), 런타임 계정(compute)의 `serviceAccountUser`
+- **배포 계정** — `github-deploy`. `run.admin` · `artifactregistry.writer` · `browser`(프로젝트 번호 조회), 런타임 계정(compute)의 `serviceAccountUser`, secret `WEB_SENTRY_DSN`의 `secretAccessor`(web 빌드에 넣음)
 - **GitHub Variables** — `GCP_PROJECT_ID` · `GCP_WIF_PROVIDER` · `GCP_DEPLOY_SA`. 저장소 코드에 프로젝트 값을 두지 않음
 - **배포 실패** — 그 실행이 실패로 남아 다음 main 실행의 affected 범위에 다시 포함
 - **수동 배포** — `deploy.sh`는 그대로 사용 가능
@@ -112,12 +115,28 @@ done
 gcloud iam service-accounts add-iam-policy-binding \
   "${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
   --member="serviceAccount:${DEPLOY_SA}" --role=roles/iam.serviceAccountUser
+gcloud secrets add-iam-policy-binding WEB_SENTRY_DSN \
+  --member="serviceAccount:${DEPLOY_SA}" --role=roles/secretmanager.secretAccessor
 gcloud iam service-accounts add-iam-policy-binding "${DEPLOY_SA}" \
   --role=roles/iam.workloadIdentityUser \
   --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github/attribute.repository/${REPO}"
 ```
 
 `GCP_WIF_PROVIDER` 값은 `gcloud iam workload-identity-pools providers describe snapdone --location=global --workload-identity-pool=github --format='value(name)'`
+
+## 되돌리기
+
+배포 뒤 문제가 생기면 이전 revision으로 트래픽을 돌림. 이미지를 다시 빌드하지 않음
+
+```bash
+gcloud run revisions list --service=api
+gcloud run services update-traffic api --to-revisions=<이전 revision>=100
+```
+
+- **복귀** — 고친 코드를 머지하면 새 revision이 다시 트래픽 100%
+- **어느 배포인지** — 로그 · Sentry 이벤트의 `release`가 이미지 태그
+- **DB 마이그레이션** — 자동으로 되돌리지 않음. 이전 코드와도 동작하게(추가 위주로) 작성
+- **mobile(EAS Update)** — `npx eas-cli@latest update:republish`로 이전 업데이트를 다시 보냄
 
 ## 설정 변경
 
@@ -145,6 +164,7 @@ npx eas-cli@latest env:create --environment preview --visibility plaintext --nam
 npx eas-cli@latest env:create --environment preview --visibility plaintext --name EXPO_PUBLIC_AUTH_REDIRECT_URI --value mobile://auth/callback
 npx eas-cli@latest env:create --environment preview --visibility plaintext --name EXPO_PUBLIC_TERMS_URL --value https://web-<PROJECT_NUMBER>.asia-northeast3.run.app/terms
 npx eas-cli@latest env:create --environment preview --visibility plaintext --name EXPO_PUBLIC_PRIVACY_URL --value https://web-<PROJECT_NUMBER>.asia-northeast3.run.app/privacy
+npx eas-cli@latest env:create --environment preview --visibility plaintext --name EXPO_PUBLIC_SENTRY_DSN --value <mobile Sentry DSN>
 npx eas-cli@latest env:create --environment preview --visibility secret --name GITHUB_TOKEN --value <read:packages 토큰>
 ```
 
@@ -153,6 +173,20 @@ npx eas-cli@latest env:create --environment preview --visibility secret --name G
 
 - **iPhone** — 유료 Apple Developer Program 필요. 범위 밖
 - **디버깅** — [실기기 앱 디버깅](./local-development.md#실기기-앱-디버깅)
+
+### JS만 바꿨을 때 — EAS Update
+
+설치된 APK에 JS 번들만 보냄. `apps/mobile`에서
+
+```bash
+npx eas-cli@latest update --channel preview --environment preview --message "<변경 내용>"
+```
+
+- **반영 시점** — 앱이 켜질 때 받아 두고 다음 실행부터 적용
+- **`--environment preview`** — EAS의 `EXPO_PUBLIC_*`를 번들에 넣음. 빠뜨리면 API 주소 등이 비어 앱이 동작하지 않음
+- **채널** — `eas.json`의 빌드 프로필 `channel`. preview APK는 `preview` 채널만 받음
+- **runtimeVersion** — `app.json`의 `version`(정책 `appVersion`). 같은 값끼리만 업데이트가 적용됨
+- **네이티브가 바뀌면 다시 빌드** — 패키지 추가 · `app.json` 네이티브 설정 · Expo SDK 변경은 업데이트로 못 보냄. `version`을 올리고 APK를 새로 빌드
 
 ## 아직 없는 것
 

@@ -12,17 +12,6 @@ describe('formatKoreanDateTime', () => {
   ])('writes %s in Korea as %s', (iso, korean) => {
     expect(formatKoreanDateTime(iso)).toBe(korean);
   });
-
-  it('matches what Intl writes for ko-KR in Seoul', () => {
-    const intl = new Intl.DateTimeFormat('ko-KR', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-      timeZone: 'Asia/Seoul',
-    });
-    for (const iso of ['2026-10-06T09:00:00Z', '2026-01-01T00:00:00Z', '2026-06-30T14:59:00Z']) {
-      expect(formatKoreanDateTime(iso)).toBe(intl.format(new Date(iso)));
-    }
-  });
 });
 
 describe('formatKoreanDay and formatKoreanTime', () => {

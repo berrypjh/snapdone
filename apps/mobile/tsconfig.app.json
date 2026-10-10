@@ -13,6 +13,7 @@
     "out-tsc",
     "dist",
     "vitest.config.ts",
+    "vitest.setup.ts",
     "eslint.config.js",
     "eslint.config.cjs",
     "eslint.config.mjs"

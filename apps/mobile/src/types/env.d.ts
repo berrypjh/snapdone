@@ -11,5 +11,7 @@ declare const process: {
     EXPO_PUBLIC_AUTH_REDIRECT_URI?: string;
     /** `true`면 WebView를 Chrome `chrome://inspect`로 볼 수 있다. 진단용 내부 빌드에만 둔다. */
     EXPO_PUBLIC_WEBVIEW_DEBUG?: string;
+    /** JS 오류 · 네이티브 크래시를 보낼 Sentry DSN. 비면 Sentry를 켜지 않는다. */
+    EXPO_PUBLIC_SENTRY_DSN?: string;
   };
 };

@@ -38,9 +38,10 @@ export function FirstImageFlow() {
   const title = useRef<HTMLHeadingElement>(null);
 
   // 사진을 고르면 누른 버튼이 사라지므로 포커스를 확인 화면의 제목으로 옮긴다.
+  // 확인 화면은 blob 주소가 생긴 뒤에 그려지므로 주소를 기준으로 한다.
   useEffect(() => {
-    if (step === 'preview') title.current?.focus();
-  }, [step, image]);
+    if (step === 'preview' && url) title.current?.focus();
+  }, [step, url]);
 
   const choose = () => input.current?.click();
 

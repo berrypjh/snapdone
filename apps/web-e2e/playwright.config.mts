@@ -38,11 +38,13 @@ const webDev = {
 
 /** auth-faults.spec.ts flips global fake API switches, so it runs alone after the other projects. */
 const FAULTS = /auth-faults\.spec\.ts/;
-const BROWSERS = [
+const ALL_BROWSERS = [
   ['chromium', devices['Desktop Chrome']],
   ['firefox', devices['Desktop Firefox']],
   ['webkit', devices['Desktop Safari']],
 ] as const;
+/** `E2E_CHROMIUM_ONLY` (set by CI on pull requests) runs chromium only; main runs all three. */
+const BROWSERS = process.env['E2E_CHROMIUM_ONLY'] ? ALL_BROWSERS.slice(0, 1) : ALL_BROWSERS;
 
 /**
  * See https://playwright.dev/docs/test-configuration.

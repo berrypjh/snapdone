@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
 
 	"snapdone/api/internal/auth"
@@ -206,6 +207,42 @@ func TestRecoveryHidesPanicValue(t *testing.T) {
 	for _, secret := range []string{"panic-secret", validToken} {
 		if strings.Contains(output, secret) {
 			t.Errorf("log contains %q", secret)
+		}
+	}
+}
+
+// panic은 Sentry에 타입 · route · request ID만 보낸다. panic 값 · 요청 헤더는 보내지 않는다.
+func TestPanicReportCarriesNoRequestData(t *testing.T) {
+	var events []*sentry.Event
+	client, err := sentry.NewClient(sentry.ClientOptions{
+		BeforeSend: func(e *sentry.Event, _ *sentry.EventHint) *sentry.Event {
+			events = append(events, e)
+			return nil
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sentry.CurrentHub().BindClient(client)
+	t.Cleanup(func() { sentry.CurrentHub().BindClient(nil) })
+
+	router := gin.New()
+	logger := slog.New(slog.NewJSONHandler(&bytes.Buffer{}, nil))
+	router.Use(requestID(""), recovery(logger))
+	router.GET("/boom", func(c *gin.Context) { panic("panic-secret " + c.GetHeader("Authorization")) })
+	send(router, http.MethodGet, "/boom", "", bearer...)
+
+	if len(events) != 1 {
+		t.Fatalf("sent %d events, want 1", len(events))
+	}
+	e := events[0]
+	if e.Tags["route"] != "/boom" || e.Tags[requestIDKey] == "" || e.Request != nil {
+		t.Errorf("tags %v, request %v", e.Tags, e.Request)
+	}
+	raw, _ := json.Marshal(e)
+	for _, secret := range []string{"panic-secret", validToken} {
+		if strings.Contains(string(raw), secret) {
+			t.Errorf("event contains %q", secret)
 		}
 	}
 }

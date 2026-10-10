@@ -6,6 +6,89 @@ import type { RecordRef } from '../domain/model';
  */
 export const records: RecordRef[] = [
   {
+    id: 'open-model-classification-eval',
+    path: 'docs/records/2026-10-10-open-model-classification-eval.md',
+    title: '사진 분류를 오픈소스 모델로 평가 시작 — 한국 영수증 dataset과 Ollama 첫 결과',
+    kind: 'implementation',
+    date: '2026-10-10',
+    summary:
+      '실사진 dataset `snap-v1`(영수증 19장, EXIF 제거)을 만들고 Ollama `qwen3-vl:8b`로 평가. 영수증 실패 11건 중 10건은 Ollama 기본 context 4096에서 답이 잘린 것',
+    sources: [
+      { path: 'apps/api/internal/processing/openai.go', symbol: 'NewOpenAIClassifier' },
+      { path: 'apps/api/internal/evaluation/facts.go', symbol: 'factMatches' },
+    ],
+    docs: [{ document: 'agent-evaluation', heading: '채점 자격과 readiness' }],
+    tests: [],
+  },
+  {
+    id: 'expo-fetch-photo-upload',
+    path: 'docs/records/2026-10-09-expo-fetch-photo-upload.md',
+    title: 'Expo fetch가 RN식 파일 항목을 받지 않아 앱 사진 업로드가 실패하던 문제 수정',
+    kind: 'fix',
+    date: '2026-10-09',
+    summary:
+      'Expo SDK 56은 전역 fetch를 `expo/fetch`로 바꾸고, 이 구현은 `{ uri }` 파일 항목을 받지 않음. `expo-file-system`의 `File`로 담음. 원인은 EAS Update로 보낸 진단 로그로 확인',
+    sources: [
+      { path: 'apps/mobile/src/lib/photoForm.ts', symbol: 'photoForm' },
+      { path: 'apps/mobile/src/processing/jobApi.ts', symbol: 'jobApi' },
+      { path: 'apps/mobile/src/onboarding/processingApi.ts', symbol: 'processingApi' },
+      { path: 'apps/mobile/vitest.setup.ts' },
+    ],
+    docs: [{ document: 'deployment', heading: 'JS만 바꿨을 때 — EAS Update' }],
+    tests: ['mobile-photo-form-file'],
+  },
+  {
+    id: 'eas-update',
+    path: 'docs/records/2026-10-09-eas-update.md',
+    title: 'mobile에 EAS Update 추가 — runtimeVersion은 appVersion',
+    kind: 'decision',
+    date: '2026-10-09',
+    summary:
+      'JS만 바뀐 변경은 설치된 APK로 보냄. 네이티브가 바뀌면 `version`을 올리고 다시 빌드. fingerprint는 모노레포에서 어긋날 수 있어 미사용',
+    sources: [{ path: 'apps/mobile/app.json' }, { path: 'apps/mobile/eas.json' }],
+    docs: [{ document: 'deployment', heading: 'JS만 바꿨을 때 — EAS Update' }],
+    tests: [],
+  },
+  {
+    id: 'sentry-error-reporting',
+    path: 'docs/records/2026-10-09-sentry-error-reporting.md',
+    title: 'api · web · mobile에 Sentry 오류 보고 추가',
+    kind: 'implementation',
+    date: '2026-10-09',
+    summary:
+      'DSN이 있을 때만 켜짐. 요청 헤더 · 본문 · URL query · 화면 수집 없이 오류 메시지 · stack · route만. 소스맵 업로드는 보류',
+    sources: [
+      { path: 'apps/api/internal/httpserver/middleware.go', symbol: 'report' },
+      { path: 'apps/api/cmd/server/main.go', symbol: 'initSentry' },
+      { path: 'apps/web/src/lib/sentry/scrub.ts', symbol: 'scrubEvent' },
+      { path: 'apps/web/src/instrumentation.ts', symbol: 'onRequestError' },
+      { path: 'apps/mobile/src/lib/sentry.ts', symbol: 'initSentry' },
+    ],
+    docs: [{ document: 'quality-gates', heading: '로깅' }],
+    tests: [
+      'go-sentry-panic-report',
+      'web-sentry-scrub-event',
+      'web-sentry-scrub-breadcrumb',
+      'mobile-sentry-scrub-event',
+      'mobile-sentry-scrub-breadcrumb',
+    ],
+  },
+  {
+    id: 'ci-cd-github-actions',
+    path: 'docs/records/2026-10-09-ci-cd-github-actions.md',
+    title: 'GitHub Actions CI와 main 머지 자동 배포 추가',
+    kind: 'implementation',
+    date: '2026-10-09',
+    summary:
+      'PR마다 바뀐 프로젝트만 검사(DB 테스트 · e2e · 이미지 빌드 포함). main 머지 후 통과하면 `deploy.sh`로 배포, 인증은 WIF',
+    sources: [{ path: '.github/workflows/ci.yml' }, { path: 'tools/scripts/deploy.sh' }],
+    docs: [
+      { document: 'quality-gates', heading: 'CI (`.github/workflows/ci.yml`)' },
+      { document: 'deployment', heading: '자동 배포' },
+    ],
+    tests: [],
+  },
+  {
     id: 'android-webview-top-frame',
     path: 'docs/records/2026-10-09-android-webview-top-frame.md',
     title: 'Android가 isTopFrame을 주지 않아 처리 결과 링크를 가로채지 못함',
