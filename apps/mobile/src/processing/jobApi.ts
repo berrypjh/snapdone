@@ -2,6 +2,7 @@ import { ProcessingApiError } from '@snapdone/onboarding';
 import { type ImageType, type JobDetail, readJobDetail } from '@snapdone/processing';
 
 import { bearer, getApiBaseUrl } from '../lib/api';
+import { photoForm } from '../lib/photoForm';
 import type { SelectedImage } from '../onboarding/capture';
 
 /** 재처리 요청. 원래 작업과, 고른 유형(ambiguous) 또는 처리 방식(다른 방식으로 처리)이다. */
@@ -37,13 +38,6 @@ const request = async (path: string, init: RequestInit): Promise<JobDetail | nul
   return readJobDetail(response, await response.json().catch(() => null));
 };
 
-/** 사진은 기기 안의 파일 주소만 넘긴다. 형식은 서버가 내용으로 판별한다. */
-const photoForm = (image: SelectedImage) => {
-  const form = new FormData();
-  form.append('image', { uri: image.uri, name: 'photo', type: 'application/octet-stream' });
-  return form;
-};
-
 const jobPath = (jobId: string) => `/v1/processing-jobs/${encodeURIComponent(jobId)}`;
 
 export const jobApi: JobApi = {
@@ -51,13 +45,13 @@ export const jobApi: JobApi = {
     request('/v1/processing-jobs', {
       method: 'POST',
       headers: bearer(credential),
-      body: photoForm(image),
+      body: photoForm(image.uri),
     }),
 
   find: (credential, jobId) => request(jobPath(jobId), { headers: bearer(credential) }),
 
   reprocess: (credential, image, { sourceJobId, imageType, action }) => {
-    const form = photoForm(image);
+    const form = photoForm(image.uri);
     form.append('sourceJobId', sourceJobId);
     if (imageType) form.append('imageType', imageType);
     if (action) form.append('action', action);
