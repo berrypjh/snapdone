@@ -5,10 +5,10 @@ on:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
-  # main은 배포(마이그레이션) 도중 끊기지 않게 취소하지 않는다
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -75,8 +75,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - uses: nrwl/nx-set-shas@v4
       - run: pnpm exec playwright install --with-deps ${{ env.E2E_CHROMIUM_ONLY && 'chromium' || 'chromium firefox webkit' }}
-      # web-e2e는 고정 포트(3000 · 4010)라 파일 단위 병렬(e2e-ci)을 쓰지 않는다.
-      - run: pnpm exec nx affected -t e2e --parallel=1
+      - run: pnpm exec nx ${{ github.event_name == 'workflow_dispatch' && 'run-many' || 'affected' }} -t e2e --parallel=1
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
@@ -84,6 +83,7 @@ jobs:
           path: |
             dist/.playwright
             apps/*/test-output/playwright
+          include-hidden-files: true
           retention-days: 7
 
   docker:
