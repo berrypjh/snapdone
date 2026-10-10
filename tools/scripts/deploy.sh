@@ -37,8 +37,12 @@ case $app in
     ;;
   web)
     render apps/web/service.yaml "$out/service.yaml"
+    # 브라우저 번들에 들어가는 공개 값. DSN은 Secret Manager 한 곳에서 관리한다.
+    SENTRY_DSN=$(gcloud secrets versions access latest --secret=WEB_SENTRY_DSN)
     docker build --platform linux/amd64 -f apps/web/Dockerfile \
-      --secret id=github_token,env=GITHUB_TOKEN -t "$IMAGE" .
+      --secret id=github_token,env=GITHUB_TOKEN \
+      --build-arg NEXT_PUBLIC_SENTRY_DSN="$SENTRY_DSN" --build-arg NEXT_PUBLIC_APP_RELEASE="$RELEASE" \
+      -t "$IMAGE" .
     docker push "$IMAGE"
     ;;
   *)
