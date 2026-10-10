@@ -221,6 +221,10 @@ pnpm health
 - 토큰 · 비밀번호 · 개인정보 · **이미지 내용**을 로그에 남기지 않음
 - 입력 스크린샷에 이름 · 전화번호 · 계좌번호가 흔함. 이미지와 분석 결과 원문 로그 금지
 - 요청 로그는 request_id · method · route template · status · latency까지. 원문 URL · query · 헤더 · 본문 미기록
+- **Sentry(api)** — 내부 오류 · panic만. 오류 메시지 · stack · route · request ID까지. 요청 데이터 미전송, panic 값 미전송
+- **Sentry(web)** — 브라우저 · 서버 오류. 요청 헤더 · 쿠키 · 본문 삭제, URL query 삭제, console 기록 미전송. Replay · 스크린샷 미사용
+- **Sentry(mobile)** — JS 오류 · 네이티브 크래시. web과 같은 삭제 기준에 터치 기록 미전송. 스크린샷 · 화면 구조 · Replay 미사용
+- **소스맵** — 세 곳 모두 아직 업로드하지 않음. 오류 위치가 압축된 코드 기준
 
 ### 앱 코드의 `console`
 

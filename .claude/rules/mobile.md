@@ -12,10 +12,12 @@ Expo managed + React Native. 진입점은 `index.js` → `src/app/App.tsx`.
 이 앱에는 런타임 검증 수단이 없다(시뮬레이터 · Detox · Maestro 모두 없음). 아래는 lint와 typecheck에 걸리지 않고 실제 기기에서만 드러나는 것들이다.
 
 - **Expo는 SDK 56에 고정한다.** `@nx/expo`가 57을 생성 · 마이그레이션하지 못한다 (nrwl/nx#36443)
+- **파일 업로드는 `src/lib/photoForm.ts`로만 만든다.** 파일은 `expo-file-system`의 `File`로 담는다 — `expo/fetch`는 RN식 `{ uri }` 항목을 받지 않는다. Node 테스트는 `vitest.setup.ts`가 이 모듈을 빈 Blob으로 바꾼다
 - **`process.env.EXPO_PUBLIC_*`는 직접 프로퍼티 접근으로만 쓴다.** Expo가 빌드 시 이 표현식을 그대로 치환하므로 `process.env[key]` 같은 동적 접근은 실제 빌드에서 `undefined`가 된다
 - **패키지를 추가할 때 루트 `package.json`에 실제 버전을, `apps/mobile/package.json`에는 `"*"`를 적는다.** 루트에 빠뜨리면 `"*"`가 레지스트리 최신 버전으로 풀려 SDK와 어긋난다. 버전은 `node -e "console.log(require('expo/bundledNativeModules.json')['패키지명'])"`로 확인한다
 - **사본이 갈리면 안 되는 패키지는 `pnpm-workspace.yaml`의 `overrides`로 못박는다** — `react` · `react-dom` · `react-native` · `react-native-svg` · `@berrypjh/react-native-ui`. 두 벌이 섞이면 `Cannot read property 'default' of undefined` 런타임 오류가 난다. 앱 코드가 import하는 공용 패키지는 앱에 직접 선언한다
 - `build` target은 로컬 빌드가 아니라 **EAS 클라우드 빌드**다. 로컬 번들은 `nx export mobile`
+- **JS만 바뀐 변경은 EAS Update로 보낼 수 있지만, 네이티브가 바뀌면 `app.json`의 `version`을 올리고 다시 빌드한다.** 네이티브 변경 — 네이티브 모듈이 있는 패키지 추가 · 업그레이드, `app.json`의 네이티브 설정 · plugin, Expo SDK. 절차는 [deployment.md](../../docs/development/deployment.md#js만-바꿨을-때--eas-update)
 - `nx run-android` · `nx run-ios`가 만드는 `apps/mobile/android/` · `ios/`는 `app.json`에서 생성되는 산출물이라 git에서 제외했다. 네이티브 설정은 이 폴더가 아니라 `app.json` · config plugin에서 바꾼다(다시 생성하면 직접 고친 내용이 사라진다)
 - **`apps/mobile/package.json`의 `nx.targets.start.continuous: false`를 지우지 않는다.** 지우면 Nx가 단일 continuous 태스크에 PTY를 주지 않아 `expo start`가 QR · 키 입력 없이 뜬다 ([local-development.md](../../docs/development/local-development.md))
 
@@ -45,6 +47,13 @@ mobile이 주 제품이다. 네비게이션 · 로그인 · 권한 · 푸시와 
 - WebView 화면은 `src/screens/WebContentScreen.tsx` 하나를 재사용한다 — `navigate('WebContent', { path, title })`. 로딩 · 오류(다시 시도) · 외부 링크 · 로그인 핸드오프 · 하단 inset(`insetBottom`) · Android 뒤로 가기 · 탭 다시 누르기(`reopenSignal`)가 들어 있다
 - **Android WebView는 iOS와 다르다** — 메시지의 보낸 page 주소는 origin만(경로로 판단하지 않는다), `onShouldStartLoadWithRequest`에 `isTopFrame` 없음(`isTopFrameRequest`)
 - web 주소는 `EXPO_PUBLIC_WEB_BASE_URL` 하나이고 `src/lib/web.ts`만 읽는다. 링크를 WebView에 둘지 시스템으로 보낼지는 `webViewNavigation`이 정한다
+
+## 오류 보고
+
+- Sentry는 `src/lib/sentry.ts`의 `initSentry()` 하나로 켠다(`index.js`). `EXPO_PUBLIC_SENTRY_DSN`이 없으면(로컬 · Expo Go) 꺼진다
+- 보내기 전에 `sentryScrub.ts`가 요청 헤더 · 본문을 지우고 URL의 query를 뗀다(인증 복귀 주소의 일회용 code). console · 터치 기록은 버린다
+- 스크린샷 · 화면 구조 · Replay를 켜지 않는다. 화면에 사진 처리 결과(개인정보)가 보인다. `Sentry.wrap`도 쓰지 않는다(터치 기록)
+- Expo config plugin(`@sentry/react-native/expo`)은 넣지 않는다 — 소스맵 · 심볼 업로드용
 
 ## UI
 
