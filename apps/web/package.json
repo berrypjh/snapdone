@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@berrypjh/react-ui": "^1.2.0",
+    "@sentry/nextjs": "^11.6.0",
     "@snapdone/auth-contracts": "workspace:*",
     "@snapdone/onboarding": "workspace:*",
     "@snapdone/processing": "workspace:*",
