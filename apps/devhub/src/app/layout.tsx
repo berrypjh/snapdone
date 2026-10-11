@@ -3,6 +3,7 @@ import { SkipLink } from '@berrypjh/react-ui';
 import type { Metadata } from 'next';
 
 import { DevHubRoot } from '@/components/shell/devhub-root';
+import { HydrationMarker } from '@/components/shell/hydration-marker';
 import { NavigationFocus } from '@/components/shell/navigation-focus';
 
 import '@berrypjh/react-ui/styles.css';
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       {/* 건너뛰기 링크는 문서의 것이다. 라우트 밖에 두어야 이동할 때 포커스가 가지 않는다. */}
       <body>
+        <HydrationMarker />
         <NavigationFocus />
         <SkipLink targetId={MAIN_CONTENT_ID}>본문으로 건너뛰기</SkipLink>
         <SkipLink targetId={INSPECTOR_ID}>상세 정보로 건너뛰기</SkipLink>
