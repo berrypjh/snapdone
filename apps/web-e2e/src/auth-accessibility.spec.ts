@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test';
+import { type Page } from '@playwright/test';
 
 import {
   answerGoogle,
@@ -9,6 +9,7 @@ import {
   processFirstPhoto,
   signIn,
 } from './support/fixture';
+import { expect, test } from './support/test';
 
 /**
  * Login screens by width, color scheme, keyboard, and assistive-technology semantics.

@@ -1,6 +1,7 @@
-import { expect, type Page, test } from '@playwright/test';
+import { type Page } from '@playwright/test';
 
-import { isHydrated, linkTabKey, overflowsSideways, signIn } from './support/fixture';
+import { linkTabKey, overflowsSideways, signIn } from './support/fixture';
+import { expect, test } from './support/test';
 
 /** The home is a protected product page, so it is checked signed in. */
 test.beforeEach(async ({ context, baseURL }) => {
@@ -60,7 +61,7 @@ test('hydrates without console errors or page errors', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/');
 
-  await expect.poll(() => isHydrated(page)).toBe(true);
+  await expect(page.locator('html')).toHaveAttribute('data-hydrated', 'true');
   expect(errors).toEqual([]);
 });
 
@@ -76,7 +77,6 @@ test('follows the system color scheme until the user chooses', async ({ page }) 
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect.poll(() => isHydrated(page)).toBe(true);
   const dark = await readSurface(page);
   expect(dark.body).toBe(dark.resolved);
 
@@ -91,7 +91,6 @@ test('remembers the dark mode switch across reloads', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   // The switch lives on the profile page.
   await page.goto('/me');
-  await expect.poll(() => isHydrated(page)).toBe(true);
 
   const darkMode = page.getByRole('switch', { name: '다크 모드' });
   await expect(darkMode).not.toBeChecked();

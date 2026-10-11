@@ -1,4 +1,4 @@
-import { type BrowserContext, expect, type Page, type Request, test } from '@playwright/test';
+import { type BrowserContext, type Page, type Request } from '@playwright/test';
 
 import {
   answerGoogle,
@@ -9,6 +9,7 @@ import {
   SESSION_COOKIE,
   signIn,
 } from './support/fixture';
+import { expect, test } from './support/test';
 
 /**
  * Browser login against the fake auth API (support/fake-api.mts). Google itself is never

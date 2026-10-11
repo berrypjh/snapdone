@@ -1,4 +1,4 @@
-import { type BrowserContext, expect, type Page, test } from '@playwright/test';
+import { type BrowserContext, type Page } from '@playwright/test';
 
 import {
   IN_APP_USER_AGENT,
@@ -12,6 +12,7 @@ import {
   signInWithJobs,
 } from './support/fixture';
 import { enterMain } from './support/keyboard';
+import { expect, test } from './support/test';
 
 /**
  * The result of one processing job (`/history/{jobId}`) against the fake API. The screen shows only what the

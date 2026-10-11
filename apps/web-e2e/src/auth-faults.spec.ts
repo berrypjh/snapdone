@@ -1,6 +1,5 @@
-import { expect, test } from '@playwright/test';
-
 import { answerGoogle, GOOGLE, linkTabKey, setFaults, startCalls } from './support/fixture';
+import { expect, test } from './support/test';
 
 /**
  * Faults are global in the fake API, so this file runs in its own serial `faults-*` projects

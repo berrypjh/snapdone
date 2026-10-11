@@ -1,4 +1,4 @@
-import { type BrowserContext, expect, type Page, test } from '@playwright/test';
+import { type BrowserContext, type Page } from '@playwright/test';
 
 import {
   linkTabKey,
@@ -10,6 +10,7 @@ import {
   signIn,
   type UserOptions,
 } from './support/fixture';
+import { expect, test } from './support/test';
 
 /**
  * Reprocessing the photo on the result with another action, and keeping that action for later photos.

@@ -1,6 +1,5 @@
-import { expect, test } from '@playwright/test';
-
 import { GOOGLE, overflowsSideways } from './support/fixture';
+import { expect, test } from './support/test';
 
 test.describe('login screen', () => {
   test.use({ viewport: { width: 390, height: 844 } });

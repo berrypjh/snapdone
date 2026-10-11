@@ -1,4 +1,4 @@
-import { type BrowserContext, expect, type Page, test } from '@playwright/test';
+import { type BrowserContext, type Page } from '@playwright/test';
 
 import {
   linkTabKey,
@@ -11,6 +11,7 @@ import {
   type UserOptions,
 } from './support/fixture';
 import { enterMain } from './support/keyboard';
+import { expect, test } from './support/test';
 
 /**
  * The home against the fake API, which keeps processing jobs and preferences per user like Go.

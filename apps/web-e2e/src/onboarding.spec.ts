@@ -1,6 +1,7 @@
-import { expect, type Page, test } from '@playwright/test';
+import { type Page } from '@playwright/test';
 
 import { processedJob, processFirstPhoto, type ReceiptField, signIn } from './support/fixture';
+import { expect, test } from './support/test';
 
 /** Words that would claim work was done. A job without a product result has done nothing. */
 const DONE =

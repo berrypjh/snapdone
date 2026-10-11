@@ -1,6 +1,7 @@
-import { expect, type Page, test } from '@playwright/test';
+import { type Page } from '@playwright/test';
 
 import { IN_APP_USER_AGENT, signIn } from './support/fixture';
+import { expect, test } from './support/test';
 
 type AppMessages = { __appMessages: string[] };
 

@@ -6,14 +6,6 @@ export const FAKE_API_URL = 'http://127.0.0.1:4010';
 /** Where the fake API sends the browser to "Google". Never resolves; tests answer it with `page.route`. */
 const FAKE_AUTHORIZE = 'https://oauth.fake.test/**';
 
-/** React tags hydrated DOM nodes with a `__reactFiber$` key; its presence means hydration ran. */
-export const isHydrated = (page: Page) =>
-  page.evaluate(() =>
-    Object.keys(document.getElementById('main-content') ?? {}).some((key) =>
-      key.startsWith('__reactFiber$'),
-    ),
-  );
-
 /** The Google login button on `/login`. */
 export const GOOGLE = { name: 'Google로 계속하기' } as const;
 
