@@ -11,6 +11,7 @@ import { entityHref, type Section, sectionHref, SECTIONS, VIEWS } from '@/lib/ca
 import { TASKS } from '@/lib/evaluations/contract';
 import { evalTaskHref } from '@/lib/evaluations/overview';
 import { TASK_LABELS } from '@/lib/evaluations/presentation';
+import { evalsVisible } from '@/lib/evaluations/visibility';
 
 import { SnapshotSummary } from '../overview/snapshot-summary';
 import { SECTION_ICON, VIEW_ICON } from '../ui/view-icons';
@@ -67,7 +68,7 @@ const EVALS_SECTION: ExplorerSection = {
 };
 
 const EXPLORER_SECTIONS: ExplorerSection[] = [
-  EVALS_SECTION,
+  ...(evalsVisible() ? [EVALS_SECTION] : []),
   ...SECTIONS.map((section) => ({
     id: section.id,
     title: section.title,
