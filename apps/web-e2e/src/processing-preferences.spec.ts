@@ -1,7 +1,8 @@
-import { expect, type Page, test } from '@playwright/test';
+import { type Page } from '@playwright/test';
 
 import { linkTabKey, overflowsSideways, signIn } from './support/fixture';
 import { enterMain } from './support/keyboard';
+import { expect, test } from './support/test';
 
 /**
  * The per-image-type default processing page against the fake API, which keeps the preferences

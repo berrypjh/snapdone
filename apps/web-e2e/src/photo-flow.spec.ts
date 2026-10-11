@@ -1,8 +1,7 @@
-import { type BrowserContext, expect, type Page, test } from '@playwright/test';
+import { type BrowserContext, type Page } from '@playwright/test';
 
 import {
   IN_APP_USER_AGENT,
-  isHydrated,
   linkTabKey,
   listJobs,
   overflowsSideways,
@@ -15,6 +14,7 @@ import {
   type UserOptions,
 } from './support/fixture';
 import { enterMain } from './support/keyboard';
+import { expect, test } from './support/test';
 
 /**
  * Adding one photo from the home and processing it (`/process`) against the fake API, which keeps each
@@ -49,8 +49,6 @@ const openFlow = async (
   const credential = await signIn(context, baseURL, 'complete', 'receipt', options);
   await page.goto('/process');
   await expect(page.getByRole('heading', { level: 1, name: CHOOSE_TITLE })).toBeVisible();
-  // The picker buttons and the file input only work once React has hydrated the page.
-  await expect.poll(() => isHydrated(page)).toBe(true);
   return credential;
 };
 

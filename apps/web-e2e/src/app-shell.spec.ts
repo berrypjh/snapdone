@@ -1,6 +1,5 @@
-import { expect, test } from '@playwright/test';
-
 import { linkTabKey, overflowsSideways, signIn } from './support/fixture';
+import { expect, test } from './support/test';
 
 /**
  * The shell swaps at the md breakpoint: the sidebar is desktop-only, and below

@@ -203,12 +203,23 @@ func TestServerAcceptsPhotoUploadSlowerThanDefaultTimeouts(t *testing.T) {
 		t.Errorf("status %d, body %s", resp.StatusCode, answer)
 	}
 
-	// 다른 route는 기본 기한 그대로라 같은 속도의 본문이면 연결이 끊긴다.
+	// 다른 route는 기본 기한 그대로라 같은 속도의 본문을 끝까지 기다리지 않는다.
+	// 기한에 걸리면 연결이 끊기거나, 쓰기 기한이 남았으면 본문을 못 읽은 400이 나간다.
+	// 읽기 기한은 헤더 전에, 쓰기 기한은 헤더 뒤에 걸려 둘 중 무엇일지는 정해지지 않는다.
+	// 어느 쪽이든 본문(400ms)을 다 보내기 전에 끝나야 기한이 적용된 것이다.
 	slow, _ := slowUpload([]byte(`{"challenge":"`+strings.Repeat("a", 64)+`","next":"/"}`), 400*time.Millisecond)
 	other, _ := http.NewRequest(http.MethodPost, "http://api/v1/auth/handoff/start", slow)
 	other.Header.Set("Authorization", "Bearer "+validToken)
-	if resp, err := client.Do(other); err == nil {
+	started := time.Now()
+	resp, err = client.Do(other)
+	took := time.Since(started)
+	if err == nil {
 		resp.Body.Close()
-		t.Errorf("slow body to another route: status %d, want the connection cut", resp.StatusCode)
+		if resp.StatusCode != http.StatusBadRequest {
+			t.Errorf("slow body to another route: status %d, want the connection cut or 400", resp.StatusCode)
+		}
+	}
+	if took >= 400*time.Millisecond {
+		t.Errorf("slow body to another route ended after %v, want before the body finished (400ms)", took)
 	}
 }

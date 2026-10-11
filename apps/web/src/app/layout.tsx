@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 
+import { HydrationMarker } from '@/components/hydration-marker';
 import { themeInitScript } from '@/lib/theme';
 
 import '@berrypjh/react-ui/styles.css';
@@ -25,7 +26,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
         <link rel="stylesheet" href={PRETENDARD_CSS} crossOrigin="anonymous" />
       </head>
-      <body>{children}</body>
+      <body>
+        <HydrationMarker />
+        {children}
+      </body>
     </html>
   );
 }

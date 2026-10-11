@@ -1,6 +1,7 @@
-import { expect, type Page, test } from '@playwright/test';
+import { type Page } from '@playwright/test';
 
 import { tabTo } from './support/keyboard';
+import { expect, test } from './support/test';
 
 const theme = (page: Page) => page.locator('html');
 const option = (page: Page, name: '라이트' | '다크') =>

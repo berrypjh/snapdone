@@ -18,6 +18,13 @@ Playwright 두 벌이다. `web-e2e`는 제품(web)을 가짜 인증 API와 함�
 - `devhub-e2e` — `next dev --port 3100` 하나. 재사용을 허용한다
 - `BASE_URL`을 주면 이미 떠 있는 서버를 본다. loopback 호스트만 받는다 — 공개 사이트를 상대로 도는 일이 없게
 
+## hydration을 기다린다
+
+- **spec은 `test` · `expect`를 `./support/test`에서 가져온다.** `@playwright/test`의 것을 쓰지 않는다(타입만 가져온다)
+- 이 `test`의 `page`는 `goto` · `reload` · `waitForURL` 뒤에 `<html data-hydrated>`를 기다린다. 앱(web · devhub)의 `HydrationMarker`가 hydration 뒤에 붙인다. 서버 HTML은 hydration 전에도 같아 보이지만 버튼 · 입력창은 아직 동작하지 않는다
+- 링크 클릭으로 문서를 새로 불러온 뒤 버튼 · 입력창을 쓰면 먼저 `page.waitForURL`로 그 문서를 기다린다
+- 시간 대기(`waitForTimeout`) · `networkidle` · React 내부 값으로 준비를 판단하지 않는다
+
 ## 두 가지 함정
 
 - **`e2e-ci--*` target을 직접 돌리지 않는다.** spec마다 Playwright를 따로 띄워 같은 포트를 두고 충돌한다. `pnpm e2e` 또는 `playwright test <spec>`으로 돌린다

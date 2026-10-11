@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test';
+import { type Page } from '@playwright/test';
 
 import {
   PHOTO,
@@ -8,6 +8,7 @@ import {
   signIn,
   signInWithJobs,
 } from './support/fixture';
+import { expect, test } from './support/test';
 
 /**
  * The whole general flow against the fake API: the home is empty until a photo is processed after the
@@ -50,7 +51,7 @@ test('turns the empty home active with the processed photo, flags its check, and
   );
   await expect(section(page, '확인이 필요한 처리')).toHaveCount(0);
 
-  // A plain link loads a new document: wait for it to load so the file input is hydrated.
+  // A plain link loads a new document; waitForURL waits for it to hydrate before the file goes in.
   await page.getByRole('link', { name: '사진 추가하기' }).click();
   await page.waitForURL(/\/process$/);
   await page.locator('input[type="file"]').setInputFiles(PHOTO);

@@ -1,6 +1,5 @@
-import { expect, test } from '@playwright/test';
-
 import { tabTo } from './support/keyboard';
+import { expect, test } from './support/test';
 
 const DOCUMENT = '/documents/quality-gates';
 
