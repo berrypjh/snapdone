@@ -1,6 +1,5 @@
-import { expect, test } from '@playwright/test';
-
 import { SCENARIO, tabTo } from './support/keyboard';
+import { expect, test } from './support/test';
 
 test.describe('shell', () => {
   test('exposes one banner and main, and names every navigation and side pane', async ({

@@ -1,6 +1,5 @@
-import { expect, test } from '@playwright/test';
-
 import { enterMain, SCENARIO, tabTo } from './support/keyboard';
+import { expect, test } from './support/test';
 
 const flowName = `${SCENARIO.title} 흐름 그림`;
 

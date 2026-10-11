@@ -1,6 +1,7 @@
-import { expect, type Page, test } from '@playwright/test';
+import { type Page } from '@playwright/test';
 
 import { SCENARIO } from './support/keyboard';
+import { expect, test } from './support/test';
 
 const searchBox = (page: Page) => page.getByRole('combobox', { name: '저장소 검색' });
 const resultStatus = (page: Page) => page.getByRole('status').filter({ hasText: /^결과 \d+개/ });

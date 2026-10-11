@@ -1,6 +1,7 @@
-import { expect, type Page, test } from '@playwright/test';
+import { type Page } from '@playwright/test';
 
 import { enterMain, SCENARIO, tabTo } from './support/keyboard';
+import { expect, test } from './support/test';
 
 const READY = { id: 'ready', intent: '(자동) web이 앱에 challenge 알림' };
 const LAST = { id: 'open-page', order: 6, intent: '요청했던 화면을 로그인된 상태로 보기' };
