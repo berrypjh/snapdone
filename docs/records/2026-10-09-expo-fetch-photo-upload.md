@@ -10,9 +10,25 @@
 
 ## 원인
 
-- **Expo SDK 56의 전역 fetch** — 앱 시작 때 전역 `fetch`를 `expo/fetch`로 교체(`expo/src/winter/runtime.native.ts`)
-- **RN식 항목 미지원** — `expo/fetch`의 FormData 변환은 문자열 · Blob · `bytes()`를 가진 객체만 받음. `{ uri, name, type }`은 `Unsupported FormDataPart implementation`
-- **증거** — 임시 진단 로그를 EAS Update로 보내 logcat에서 원래 오류와 stack(`fetch` → `normalizeBodyInitAsync` → `convertFormDataAsync`) 확인
+앱이 전제한 fetch와 실제로 실행된 fetch가 달랐음. 파일로 인식하는 객체 모양의 차이.
+
+```
+앱이 FormData에 { uri, name, type } 담음   (RN 전용 형식)
+ → 전역 fetch                              (SDK 56부터 expo/fetch)
+ → body 변환에서 { uri } 거부               (Unsupported FormDataPart implementation)
+ → 요청 전송 전에 실패, 앱은 "network"로 표시
+```
+
+- **RN 기본 fetch** — `{ uri, name, type }`의 `uri`를 보고 네이티브에서 파일을 직접 읽어 전송. 앱은 이 동작을 전제로 사진을 담음
+- **expo/fetch** — SDK 56이 앱 시작 때 전역 `fetch`를 교체(`expo/src/winter/runtime.native.ts`). 표준 형태(문자열 · Blob · `bytes()`를 가진 객체)만 파일로 인식하고 `{ uri }`는 거부
+- **조용한 실패** — 거부가 body 변환 단계에서 일어나 서버에 요청이 가지 않음. 앱이 예외를 `network`로 바꾸며 원문을 버려 화면에는 연결 문제로만 보임
+
+**증거** — 원문이 버려져 단서가 없어, 임시 진단 로그로 원래 예외를 드러내 확인
+
+1. 원래 예외와 stack을 남기는 임시 진단 로그 추가
+2. JS만 바뀌어 재빌드 없이 EAS Update로 기기에 전달
+3. 기기에서 재현해 logcat에서 stack 확인 — `fetch` → `normalizeBodyInitAsync` → `convertFormDataAsync`
+4. FormData 변환 단계에서 터진 것으로 확정
 
 ## 반영
 
