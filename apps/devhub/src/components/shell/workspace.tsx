@@ -48,18 +48,3 @@ export function Workspace({ children, ...header }: HeaderProps & { children: Rea
     </WorkspaceFrame>
   );
 }
-
-/** 관계 그림 자리. 아직 그리지 않았고, 옆의 목록이 정본이다. */
-export function DiagramPlaceholder({ listId }: { listId: string }) {
-  return (
-    <figure className="flex h-48 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-stroke-default bg-background-default devhub-grid">
-      <p className="typo-body-small-strong">관계 그림 — 아직 그리지 않음</p>
-      <figcaption className="typo-caption-small text-text-light">
-        같은 내용의 정본은{' '}
-        <a href={`#${listId}`} className="text-text-link underline">
-          아래 목록
-        </a>
-      </figcaption>
-    </figure>
-  );
-}

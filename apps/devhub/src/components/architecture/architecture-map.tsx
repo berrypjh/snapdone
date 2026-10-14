@@ -34,6 +34,8 @@ type ArchitectureMapProps = {
   kind?: string;
   /** 현재 필터 쿼리. 구성 요소 링크에 붙여 두어 선택해도 필터가 유지된다. */
   query?: string;
+  /** URL 대신 이 구성 요소를 선택으로 그린다. 한 프로젝트의 이웃 그림이 쓴다. */
+  focus?: string;
 };
 
 /** 필터 결과가 비었을 때 그림과 목록이 함께 쓰는 빈 상태. */
@@ -49,8 +51,9 @@ export function NoNodes() {
 }
 
 /** 공용 캔버스에 그리는 현재 아키텍처. URL의 구성 요소가 선택이다. */
-export function ArchitectureMap({ model, kind, query = '' }: ArchitectureMapProps) {
-  const selected = useSelectedLayoutSegment();
+export function ArchitectureMap({ model, kind, query = '', focus }: ArchitectureMapProps) {
+  const segment = useSelectedLayoutSegment();
+  const selected = focus ?? segment;
   const { nodes, edges: kept } = filterModel(model, kind);
   const edges = kept.map((edge) => ({
     id: edge.id,
@@ -68,7 +71,7 @@ export function ArchitectureMap({ model, kind, query = '' }: ArchitectureMapProp
 
   return (
     <CanvasViewport
-      label="현재 아키텍처 그림"
+      label={focus && current ? `${current.label}의 관계 그림` : '현재 아키텍처 그림'}
       content={{ width: model.width, height: model.height }}
       legend={LEGEND}
       summary={summary}

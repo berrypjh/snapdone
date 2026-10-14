@@ -576,7 +576,7 @@ ANTHROPIC_API_KEY=... pnpm eval run --dataset <name|path> --variant anthropic:<m
 `pnpm devhub:check`가 카탈로그를 대조하므로 harness 변경 시 함께 수정.
 
 - **script · target** — `eval` · `eval:check` script와 `eval` · `eval-check` target이 `commands.ts`에 등록
-- **시나리오 · 기록** — `evaluate-model-variants` 시나리오와 `agent-evaluation-harness` 기록이 소스 · 테스트를 인용. 테스트 함수 이름을 바꾸면 `tests.ts`도 수정
+- **시나리오 · 기록** — `evaluate-model-variants` 시나리오가 소스 · 테스트를 인용. 테스트 함수 이름을 바꾸면 `tests.ts`도 수정
 - **문서** — 이 문서는 `documents.ts`에 `agent-evaluation`으로 등록. 링크 · heading 실재를 freshness 검사가 확인
 - **대상 아님** — `.gitignore` · `tools/evals`
 

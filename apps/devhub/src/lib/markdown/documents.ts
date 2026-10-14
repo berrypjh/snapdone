@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
@@ -29,11 +29,14 @@ export type ResolvedLink =
   | { kind: 'external'; href: string }
   | { kind: 'none' };
 
+/** 문서 그림 하나의 주소. 다크 판은 옆에 `<이름>.dark.<확장자>`가 있을 때만 있다. */
+export type ResolvedImage = { light: string; dark?: string };
+
 export type DocumentView = {
   blocks: Block[];
   outline: OutlineItem[];
   links: Record<string, ResolvedLink>;
-  images: Record<string, string>;
+  images: Record<string, ResolvedImage>;
 };
 
 const parsed = new Map<string, Block[]>();
@@ -91,6 +94,17 @@ const resolveLink = (from: string, href: string): ResolvedLink => {
   }
 };
 
+/** 저장소 안 그림 경로의 주소. 같은 이름의 `.dark` 판이 있으면 함께 돌려준다. */
+const resolveImage = (path: string): ResolvedImage => {
+  const darkPath = path.replace(/\.(svg|png)$/, '.dark.$1');
+  const hasDark =
+    darkPath !== path && REPOSITORY_ROOT && existsSync(join(REPOSITORY_ROOT, darkPath));
+  return {
+    light: `/doc-image/${path}`,
+    ...(hasDark ? { dark: `/doc-image/${darkPath}` } : {}),
+  };
+};
+
 /** 문서 한 편을 그리는 데 필요한 값 전부. 링크 · 그림 주소는 서버에서 미리 푼다. */
 export const documentView = (doc: ReadableDoc): DocumentView => {
   const blocks = documentBlocks(doc);
@@ -102,7 +116,7 @@ export const documentView = (doc: ReadableDoc): DocumentView => {
     images: Object.fromEntries(
       images.flatMap((src) => {
         const link = resolveDocLink(doc.path, src);
-        return link.kind === 'file' ? [[src, `/doc-image/${link.path}`]] : [];
+        return link.kind === 'file' ? [[src, resolveImage(link.path)]] : [];
       }),
     ),
   };

@@ -4,21 +4,18 @@
 
 ## 구조
 
-| 위치          | 스택                       |
-| ------------- | -------------------------- |
-| `apps/web`    | Next.js 16 (App Router)    |
-| `apps/mobile` | Expo SDK 56 + React Native |
-| `apps/api`    | Go                         |
-| `libs/`       | web · mobile 공유 계약     |
-| `tools/`      | 개발 도구                  |
-
-Nx가 작업 orchestration을 담당한다.
+| 앱            | 스택                       | 로컬 주소               |
+| ------------- | -------------------------- | ----------------------- |
+| `apps/web`    | Next.js 16 (App Router)    | `http://localhost:3000` |
+| `apps/mobile` | Expo SDK 56 + React Native | Expo (Metro)            |
+| `apps/api`    | Go                         | `http://127.0.0.1:8080` |
+| `apps/devhub` | Next.js 16 — 내부 도구     | `http://localhost:3100` |
 
 ## 시작하기
 
 필요한 것: Node 24.14.0 (`.nvmrc`), pnpm 10.30.3, Go 1.26.6
 
-lint · format · tsconfig 설정은 GitHub Packages의 `@berrypjh/*` 패키지에서 온다. **토큰이 없으면 `pnpm install`이 401로 실패한다.**
+lint · format · tsconfig 설정은 GitHub Packages의 `@berrypjh/*` 패키지에서 가져옴. **토큰이 없으면 `pnpm install`이 401로 실패함**
 
 ```bash
 export GITHUB_TOKEN=<read:packages 권한이 있는 PAT>
@@ -30,7 +27,7 @@ cp apps/web/.env.example apps/web/.env.local
 cp apps/mobile/.env.example apps/mobile/.env
 ```
 
-각 앱은 별도 터미널에서 띄운다.
+각 앱은 별도 터미널에서 실행
 
 ```bash
 pnpm dev:web      # http://localhost:3000
@@ -39,9 +36,7 @@ pnpm dev:mobile   # Expo (Metro)
 pnpm dev:devhub    # DevHub (내부 도구) http://localhost:3100
 ```
 
-`pnpm dev`는 web · api · devhub를 함께 띄운다. mobile은 대화형 프로세스라 따로 실행한다.
-
-api는 Postgres(`DATABASE_URL`)와 마이그레이션이 있어야 기동한다. 순서는 [local-development.md](docs/development/local-development.md#로컬-postgres).
+`pnpm dev`는 web · api · devhub를 함께 실행. mobile은 대화형 프로세스라 따로 실행
 
 ## 검증
 
@@ -54,10 +49,9 @@ pnpm verify   # format:check -> lint -> typecheck -> test -> test:hooks -> build
 ```bash
 pnpm e2e      # Playwright (브라우저 필요, verify에 미포함)
 pnpm health   # API 연결 확인 (개발자용)
-pnpm graph    # Nx project graph
 ```
 
-E2E를 처음 돌리기 전에 브라우저를 한 번 받아야 한다.
+E2E 첫 실행 전에 브라우저를 한 번 설치
 
 ```bash
 pnpm exec playwright install chromium firefox webkit
@@ -65,7 +59,7 @@ pnpm exec playwright install chromium firefox webkit
 
 ## 모델 평가
 
-notebook에서 실험한 지시문 · 모델을 Go가 채점하고, gate를 통과하면 사람이 PR로 production에 반영한다.
+notebook에서 실험한 지시문 · 모델을 Go가 채점하고, gate를 통과하면 사람이 PR로 production에 반영
 
 ```mermaid
 flowchart LR
@@ -81,4 +75,6 @@ flowchart LR
   D -->|통과| E["production 반영"]
 ```
 
-명령과 순서는 [tools/evals/README.md](tools/evals/README.md), 설계는 [agent-evaluation.md](docs/architecture/agent-evaluation.md).
+## 라이선스
+
+MIT

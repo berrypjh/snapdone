@@ -191,3 +191,39 @@ export const filterModel = (model: ArchitectureModel, kind?: string): Architectu
   const edges = model.edges.filter((edge) => visible.has(edge.from) && visible.has(edge.to));
   return { ...model, nodes, edges };
 };
+
+/** `M x y Q cx cy ex ey`의 좌표를 옮긴다. 숫자가 x, y 순서로 번갈아 나온다. */
+const shiftPath = (path: string, dx: number, dy: number) => {
+  let index = 0;
+  return path.replace(/-?\d+(?:\.\d+)?/g, (value) =>
+    String(Number(value) + (index++ % 2 === 0 ? dx : dy)),
+  );
+};
+
+/**
+ * 한 노드와 그 노드에 닿는 선, 선 반대쪽 노드만 남기고 그림 크기를 그만큼으로 줄인다.
+ * 위치는 전체 그림의 격자 그대로여서, 남긴 노드들의 왼쪽 위가 여백만 남도록 옮긴다.
+ */
+export const neighborhoodModel = (model: ArchitectureModel, id: string): ArchitectureModel => {
+  const edges = model.edges.filter((edge) => edge.from === id || edge.to === id);
+  const ids = new Set([id, ...edges.flatMap((edge) => [edge.from, edge.to])]);
+  const nodes = model.nodes.filter((node) => ids.has(node.id));
+  if (nodes.length === 0) return { width: 0, height: 0, nodes: [], edges: [] };
+
+  const left = Math.min(...nodes.map((node) => node.x));
+  const top = Math.min(...nodes.map((node) => node.y));
+  const right = Math.max(...nodes.map((node) => node.x));
+  const bottom = Math.max(...nodes.map((node) => node.y));
+  const dx = MARGIN - left;
+  const dy = MARGIN - top;
+  return {
+    width: right - left + ARCH_NODE.width + MARGIN * 2,
+    height: bottom - top + ARCH_NODE.height + MARGIN * 2,
+    nodes: nodes.map((node) => ({ ...node, x: node.x + dx, y: node.y + dy })),
+    edges: edges.map((edge) => ({
+      ...edge,
+      path: shiftPath(edge.path, dx, dy),
+      label: { x: edge.label.x + dx, y: edge.label.y + dy },
+    })),
+  };
+};

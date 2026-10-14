@@ -63,6 +63,23 @@ describe('links between documents', () => {
   });
 });
 
+describe('document images', () => {
+  const record = {
+    path: 'docs/records/2026-09-19-onboarding-intro-accessibility.md',
+    title: 'onboarding-intro-accessibility',
+  };
+
+  it('pairs the dark version that sits beside a figure', () => {
+    const { images } = documentView(record);
+    expect(Object.values(images)).toEqual([
+      {
+        light: '/doc-image/docs/records/images/onboarding-intro-linebreak.svg',
+        dark: '/doc-image/docs/records/images/onboarding-intro-linebreak.dark.svg',
+      },
+    ]);
+  });
+});
+
 describe('"이 페이지에서"', () => {
   const entity = findEntity('documents', 'quality-gates');
   if (!entity || entity.section !== 'documents') throw new Error('no quality-gates');

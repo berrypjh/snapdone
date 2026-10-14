@@ -1,6 +1,6 @@
 # Deployment
 
-api · web을 GCP에 배포하는 구성과 절차. mobile 스토어 배포는 범위 밖. 구성을 고른 이유는 [기록](../records/2026-10-09-cloud-run-deployment.md)
+api · web을 GCP에 배포하는 구성과 절차. mobile 스토어 배포는 범위 밖
 
 ## 구성
 
