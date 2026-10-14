@@ -236,18 +236,6 @@ export const tests: TestRef[] = [
     'createProcessingPort',
     'stops and tells the page when the session is gone',
   ),
-  vitest(
-    'web-sentry-scrub-event',
-    'apps/web/src/lib/sentry/scrub.spec.ts',
-    'scrubEvent',
-    'keeps only method and query-free url',
-  ),
-  vitest(
-    'web-sentry-scrub-breadcrumb',
-    'apps/web/src/lib/sentry/scrub.spec.ts',
-    'scrubBreadcrumb',
-    'strips query from navigation and fetch urls',
-  ),
   // web — Vitest, 사진 처리
   vitest(
     'web-job-start',
@@ -648,18 +636,6 @@ export const tests: TestRef[] = [
     'photoForm',
     'puts the photo as a file object, not a uri descriptor, in the image field',
   ),
-  vitest(
-    'mobile-sentry-scrub-event',
-    'apps/mobile/src/lib/sentryScrub.spec.ts',
-    'scrubEvent',
-    'keeps only method and query-free url',
-  ),
-  vitest(
-    'mobile-sentry-scrub-breadcrumb',
-    'apps/mobile/src/lib/sentryScrub.spec.ts',
-    'scrubBreadcrumb',
-    'drops console and touch breadcrumbs',
-  ),
   // mobile — Vitest, 사진 처리
   vitest(
     'mobile-job-upload',
@@ -920,24 +896,6 @@ export const tests: TestRef[] = [
   goTest('go-onboarding-progress', `${HTTP}/onboarding_test.go`, 'TestOnboardingProgress', []),
   goTest('go-onboarding-store', ONBOARDING, 'TestStoreSavesProgress', DB),
   goTest('go-onboarding-store-rejects', ONBOARDING, 'TestStoreRejects', DB),
-  goTest(
-    'go-logging-cloud-keys',
-    'apps/api/internal/logging/logging_test.go',
-    'TestNewWritesCloudLoggingKeys',
-    [],
-  ),
-  goTest(
-    'go-logging-release',
-    'apps/api/internal/logging/logging_test.go',
-    'TestNewAddsReleaseOnlyWhenSet',
-    [],
-  ),
-  goTest(
-    'go-sentry-panic-report',
-    `${HTTP}/router_test.go`,
-    'TestPanicReportCarriesNoRequestData',
-    [],
-  ),
   goTest('go-onboarding-validate', ONBOARDING, 'TestValidate', []),
   goTest('go-onboarding-can-move', ONBOARDING, 'TestCanMove', []),
   goTest('go-onboarding-rejects', `${HTTP}/onboarding_test.go`, 'TestOnboardingRejects', []),
@@ -1298,12 +1256,6 @@ export const tests: TestRef[] = [
     'reopening onboarding resumes the saved step',
   ),
   goTest(
-    'go-eval-descriptor-matches-providers',
-    'apps/api/internal/processing/contract_test.go',
-    'TestDescribeContractMatchesProviderRequests',
-    [],
-  ),
-  goTest(
     'go-eval-preflight-no-calls',
     `${EVAL}/runner_test.go`,
     'TestPreflightBlocksWithoutCalls',
@@ -1456,24 +1408,6 @@ export const tests: TestRef[] = [
     [],
   ),
   goTest('go-eval-cli-usage', 'apps/api/internal/evalcli/app_test.go', 'TestUsageErrors', []),
-  goTest(
-    'go-eval-retry-carry',
-    `${EVAL}/carry_test.go`,
-    'TestRetryCarriesCompletedAndCallsOnlyFailed',
-    [],
-  ),
-  goTest(
-    'go-eval-retry-refuse',
-    `${EVAL}/carry_test.go`,
-    'TestRetryRefusesWhenConditionsDiffer',
-    [],
-  ),
-  goTest(
-    'go-eval-cli-retry',
-    'apps/api/internal/evalcli/retry_test.go',
-    'TestRetryCallsOnlyWhatDidNotComplete',
-    [],
-  ),
   goTest('go-eval-variant-rejects', `${EVAL}/variant_test.go`, 'TestDecodeVariantRejects', []),
   goTest(
     'go-eval-observer-budget-gate',

@@ -3,13 +3,14 @@ import Link from 'next/link';
 import { DocumentColumn, DocumentHead, RecordMeta, WorkspaceSection } from '@berrypjh/devhub-ui';
 
 import { catalog } from '@/data';
+import { architectureModel, neighborhoodModel } from '@/lib/catalog/architecture-layout';
 import { type Entity, entityHref } from '@/lib/catalog/entities';
 import { flowModel } from '@/lib/catalog/flow';
 import { RECORD_KIND, RELATION } from '@/lib/catalog/labels';
 
+import { ArchitectureMap } from '../architecture/architecture-map';
 import { DocumentLayout } from '../doc/document-layout';
 import { ScenarioViews } from '../flow/scenario-views';
-import { DiagramPlaceholder } from '../shell/workspace';
 import { SourceActions } from '../source/source-actions';
 
 const LIST_ID = 'entity-list';
@@ -38,6 +39,13 @@ function ProjectRelations({ id }: { id: string }) {
   );
 }
 
+/** 이 프로젝트와 선으로 이어진 구성 요소만 그린 그림. 이어진 것이 없으면 그리지 않는다. */
+function RelationMap({ id }: { id: string }) {
+  const model = neighborhoodModel(architectureModel(), id);
+  if (model.edges.length === 0) return null;
+  return <ArchitectureMap model={model} focus={id} />;
+}
+
 function CitingScenarios({ documentId }: { documentId: string }) {
   const citing = catalog.scenarios.filter((scenario) =>
     [...scenario.docs, ...scenario.steps.flatMap((step) => step.docs)].some(
@@ -64,8 +72,8 @@ function CitingScenarios({ documentId }: { documentId: string }) {
 }
 
 /**
- * 개체 하나의 가운데 요약. 시나리오는 흐름 그림이나 목록으로 읽고, 나머지 개체는 목록만 있으며
- * 그림 자리는 아직 비어 있다.
+ * 개체 하나의 가운데 요약. 시나리오는 흐름 그림이나 목록으로 읽고, 프로젝트는 이웃 관계 그림과
+ * 목록으로 읽는다. 목록이 정본이고 그림은 같은 내용을 보조로 보인다.
  */
 export function EntitySummary({ entity }: { entity: Entity }) {
   switch (entity.section) {
@@ -83,7 +91,7 @@ export function EntitySummary({ entity }: { entity: Entity }) {
       return (
         <>
           <p className="typo-body-small">{entity.record.summary}</p>
-          <DiagramPlaceholder listId={LIST_ID} />
+          <RelationMap id={entity.id} />
           <WorkspaceSection id={LIST_ID} title="관계">
             <ProjectRelations id={entity.id} />
           </WorkspaceSection>

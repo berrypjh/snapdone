@@ -3,7 +3,11 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
-import { architectureModel, filterModel } from '../../lib/catalog/architecture-layout';
+import {
+  architectureModel,
+  filterModel,
+  neighborhoodModel,
+} from '../../lib/catalog/architecture-layout';
 
 import { ArchitectureMap } from './architecture-map';
 import { ArchitectureOutline } from './architecture-outline';
@@ -61,6 +65,41 @@ describe('ArchitectureMap summary and selection', () => {
     expect(html).toContain('· 선택됨');
     expect(html).toContain('aria-current="page"');
     expect(html).toContain('href="#devhub-inspector"');
+  });
+});
+
+describe('ArchitectureMap neighborhood', () => {
+  const ID = 'api';
+  const near = neighborhoodModel(model, ID);
+  const touching = model.edges.filter((edge) => edge.from === ID || edge.to === ID);
+  const renderFocus = () =>
+    renderToStaticMarkup(createElement(ArchitectureMap, { model: near, focus: ID }));
+
+  it('keeps only the lines that touch the node and the nodes on their ends', () => {
+    const ends = new Set([ID, ...touching.flatMap((edge) => [edge.from, edge.to])]);
+    expect(touching.length).toBeGreaterThan(0);
+    expect(near.edges.map((edge) => edge.id)).toEqual(touching.map((edge) => edge.id));
+    expect(near.nodes.map((node) => node.id).sort()).toEqual([...ends].sort());
+  });
+
+  it('shrinks the picture and keeps every node inside it', () => {
+    expect(near.width).toBeLessThan(model.width);
+    for (const node of near.nodes) {
+      expect(node.x).toBeGreaterThanOrEqual(0);
+      expect(node.y).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('marks the focused node as selected, whatever the URL says', () => {
+    nav.selected = null;
+    const html = renderFocus();
+    expect(html).toContain('aria-current="page"');
+    expect(html).toContain('· 선택됨');
+    expect(edgePaths(html)).toHaveLength(touching.length);
+  });
+
+  it('is empty for an unknown node', () => {
+    expect(neighborhoodModel(model, 'nope').nodes).toEqual([]);
   });
 });
 

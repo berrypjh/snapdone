@@ -1,20 +1,24 @@
 'use client';
 
+import { type ReactNode, useSyncExternalStore } from 'react';
+
 import {
   type Block,
+  currentTheme,
   DocContent,
   Icon,
+  subscribeTheme,
   useDevHubLink,
   useDevHubLocation,
 } from '@berrypjh/devhub-ui';
 import { VisuallyHidden } from '@berrypjh/react-ui';
-import type { ReactNode } from 'react';
 
-import type { ResolvedLink } from '@/lib/markdown/documents';
+import type { ResolvedImage, ResolvedLink } from '@/lib/markdown/documents';
 
 /**
  * 저장소 문서를 공용 `DocContent`로 그린다. 링크 · 그림이 어디로 가는지는 서버가 미리 푼 값(`links` ·
- * `images`)이고, 여기서는 그 값을 모양으로만 바꾼다 — 앱 안 페이지는 앱 링크, 밖은 새 창.
+ * `images`)이고, 여기서는 그 값을 모양으로만 바꾼다 — 앱 안 페이지는 앱 링크, 밖은 새 창,
+ * 그림은 다크 모드에서 다크 판이 있으면 그것.
  */
 export function RepositoryDocContent({
   blocks,
@@ -25,10 +29,15 @@ export function RepositoryDocContent({
   blocks: Block[];
   title: string;
   links: Record<string, ResolvedLink>;
-  images: Record<string, string>;
+  images: Record<string, ResolvedImage>;
 }) {
   const Link = useDevHubLink();
   const { hash } = useDevHubLocation();
+  const mode = useSyncExternalStore(
+    subscribeTheme,
+    () => currentTheme(),
+    () => 'light' as const,
+  );
 
   const renderLink = (href: string, children: ReactNode) => {
     const link = links[href] ?? { kind: 'none' };
@@ -55,7 +64,10 @@ export function RepositoryDocContent({
       blocks={blocks}
       title={title}
       renderLink={renderLink}
-      resolveImage={(src) => images[src]}
+      resolveImage={(src) => {
+        const image = images[src];
+        return mode === 'dark' ? (image?.dark ?? image?.light) : image?.light;
+      }}
       hash={hash}
     />
   );
