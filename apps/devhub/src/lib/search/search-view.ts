@@ -13,6 +13,16 @@ export const isSearchShortcut = (event: ShortcutEvent) =>
   !event.shiftKey &&
   event.key.toLowerCase() === 'k';
 
+/**
+ * 검색이 보는 범위. 색인은 `search-index.ts`가 카탈로그에서 만들고, 종류 이름은 그 `KIND_LABEL`에서 그대로
+ * 가져오므로 종류가 늘면 이 문장도 따라온다. 문서 본문 · 소스 코드 내용은 색인에 없다.
+ */
+export const SEARCH_SCOPE = `${Object.values(KIND_LABEL).join(' · ')}의 이름 · 경로 · 요약만 찾음. 코드 · 문서 본문은 검색하지 않음`;
+
+/** 맞는 것이 없을 때. 왜 없는지와 다음에 갈 곳을 한 줄에 둔다. 첫 구절은 E2E가 찾는 글자다. */
+export const NO_MATCH =
+  '일치하는 항목 없음 — 항목 이름 · 경로 · symbol · 요약만 찾음. 코드 · 문서 본문은 GitHub 또는 에디터에서 검색';
+
 /** 결과마다 선택지 하나. 종류는 색이 아니라 설명 속 글자로 알린다. */
 export const toSuggestion = (result: SearchResult) => ({
   id: result.key,

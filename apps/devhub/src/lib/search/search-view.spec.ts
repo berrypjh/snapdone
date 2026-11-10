@@ -7,7 +7,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { GlobalSearch } from '../../components/shell/global-search';
 
 import { buildSearchIndex, KIND_LABEL } from './search-index';
-import { isSearchShortcut, resultStatus, toSuggestion } from './search-view';
+import {
+  isSearchShortcut,
+  NO_MATCH,
+  resultStatus,
+  SEARCH_SCOPE,
+  toSuggestion,
+} from './search-view';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
@@ -56,6 +62,19 @@ describe('resultStatus', () => {
   });
 });
 
+describe('search scope wording', () => {
+  it('names every indexed kind and nothing the index does not hold', () => {
+    for (const label of Object.values(KIND_LABEL)) expect(SEARCH_SCOPE).toContain(label);
+    expect(SEARCH_SCOPE).toContain('코드 · 문서 본문은 검색하지 않음');
+    expect(SEARCH_SCOPE).not.toMatch(/전체|본문 검색 가능/);
+  });
+
+  it('starts the empty state with the words the E2E looks for and says where to go next', () => {
+    expect(NO_MATCH.startsWith('일치하는 항목 없음')).toBe(true);
+    expect(NO_MATCH).toContain('GitHub 또는 에디터');
+  });
+});
+
 describe('GlobalSearch markup', () => {
   it('is a labelled, collapsed combobox from the start, with the shortcut and a status region', () => {
     const html = renderToStaticMarkup(createElement(GlobalSearch));
@@ -65,5 +84,12 @@ describe('GlobalSearch markup', () => {
     expect(html).toContain('aria-label="저장소 검색"');
     expect(html).toContain('aria-keyshortcuts="Meta+K Control+K"');
     expect(html).toContain('role="status"');
+  });
+
+  it('describes the search scope to the input without showing a full-text promise', () => {
+    const html = renderToStaticMarkup(createElement(GlobalSearch));
+    expect(html).toContain('aria-describedby="global-search-scope"');
+    expect(html).toContain(`id="global-search-scope">${SEARCH_SCOPE}<`);
+    expect(html).toContain('placeholder="항목 이름 · 경로 · symbol 검색 (⌘K)"');
   });
 });

@@ -4,6 +4,7 @@ import { DocumentColumn, DocumentHead, RecordMeta, WorkspaceSection } from '@ber
 
 import { catalog } from '@/data';
 import { architectureModel, neighborhoodModel } from '@/lib/catalog/architecture-layout';
+import { endpointsOf } from '@/lib/catalog/endpoints';
 import { type Entity, entityHref } from '@/lib/catalog/entities';
 import { flowModel } from '@/lib/catalog/flow';
 import { RECORD_KIND, RELATION } from '@/lib/catalog/labels';
@@ -12,6 +13,9 @@ import { ArchitectureMap } from '../architecture/architecture-map';
 import { DocumentLayout } from '../doc/document-layout';
 import { ScenarioViews } from '../flow/scenario-views';
 import { SourceActions } from '../source/source-actions';
+
+import { EndpointList } from './endpoint-list';
+import { VerificationSection } from './verification-note';
 
 const LIST_ID = 'entity-list';
 
@@ -84,10 +88,13 @@ export function EntitySummary({ entity }: { entity: Entity }) {
           <WorkspaceSection id={LIST_ID} title={`단계 ${entity.record.steps.length}개`}>
             <ScenarioViews scenario={entity.record} model={flowModel(entity.record)} />
           </WorkspaceSection>
+          <VerificationSection scenario={entity.record} />
         </>
       );
     case 'applications':
-    case 'libraries':
+    case 'libraries': {
+      // route를 가진 프로젝트(api)만. 다른 프로젝트에는 해당 없는 절이라 두지 않는다.
+      const endpoints = endpointsOf(entity.id);
       return (
         <>
           <p className="typo-body-small">{entity.record.summary}</p>
@@ -95,8 +102,10 @@ export function EntitySummary({ entity }: { entity: Entity }) {
           <WorkspaceSection id={LIST_ID} title="관계">
             <ProjectRelations id={entity.id} />
           </WorkspaceSection>
+          {endpoints.length > 0 && <EndpointList endpoints={endpoints} />}
         </>
       );
+    }
     case 'documents':
       return (
         <DocumentColumn>

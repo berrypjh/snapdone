@@ -32,6 +32,8 @@ import {
   groupTests,
   type ProjectGroup,
 } from '@/lib/catalog/reference-groups';
+import { documentHref } from '@/lib/catalog/start-path';
+import { TEST_RUNS } from '@/lib/catalog/verification';
 
 import { NodePager } from '../architecture/node-pager';
 import { detailsHref } from '../shell/workspace';
@@ -113,27 +115,38 @@ function DocumentList({ docs }: { docs: ResolvedDocument[] }) {
 
 function TestList({ tests }: { tests: TestRef[] }) {
   return (
-    <ByProject
-      groups={groupTests(tests)}
-      row={(file) => (
-        <FileRow key={file.path} file={file}>
-          <p className="flex flex-wrap items-center gap-x-2 typo-caption-small text-text-light">
-            {file.runner}
-            {file.requires.length > 0 && (
-              <span className="inline-flex items-center gap-1 text-text-warning">
-                <Icon name="warning" />
-                {file.requires.map((constraint) => CONSTRAINT[constraint]).join(' · ')}
-              </span>
-            )}
-          </p>
-          <ul className="flex flex-col gap-1 typo-body-small">
-            {file.titles.map((title) => (
-              <li key={title}>{title}</li>
-            ))}
-          </ul>
-        </FileRow>
-      )}
-    />
+    <>
+      <p className="typo-caption-small text-text-light">
+        인용한 근거이고 이 커밋의 통과 결과가 아님. 실행은{' '}
+        <Link
+          href={documentHref(TEST_RUNS.vitest.doc)}
+          className="text-text-link underline-offset-2 hover:underline"
+        >
+          품질 gate
+        </Link>
+      </p>
+      <ByProject
+        groups={groupTests(tests)}
+        row={(file) => (
+          <FileRow key={file.path} file={file}>
+            <p className="flex flex-wrap items-center gap-x-2 typo-caption-small text-text-light">
+              {file.runner}
+              {file.requires.length > 0 && (
+                <span className="inline-flex items-center gap-1 text-text-warning">
+                  <Icon name="warning" />
+                  {file.requires.map((constraint) => CONSTRAINT[constraint]).join(' · ')}
+                </span>
+              )}
+            </p>
+            <ul className="flex flex-col gap-1 typo-body-small">
+              {file.titles.map((title) => (
+                <li key={title}>{title}</li>
+              ))}
+            </ul>
+          </FileRow>
+        )}
+      />
+    </>
   );
 }
 

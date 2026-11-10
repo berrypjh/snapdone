@@ -7,9 +7,16 @@ import { Icon, search, topResults } from '@berrypjh/devhub-ui';
 import { IconButton, SearchField, VisuallyHidden } from '@berrypjh/react-ui';
 
 import { buildSearchIndex } from '@/lib/search/search-index';
-import { isSearchShortcut, resultStatus, toSuggestion } from '@/lib/search/search-view';
+import {
+  isSearchShortcut,
+  NO_MATCH,
+  resultStatus,
+  SEARCH_SCOPE,
+  toSuggestion,
+} from '@/lib/search/search-view';
 
 const FIELD_ID = 'global-search';
+const SCOPE_ID = 'global-search-scope';
 
 /** 번들된 카탈로그에서 페이지 로드마다 한 번 만든다. */
 const index = buildSearchIndex();
@@ -78,13 +85,17 @@ export function GlobalSearch() {
           fullWidth
           value={query}
           onValueChange={setQuery}
-          placeholder="시나리오 · 소스 · 문서 · 테스트 검색 (⌘K)"
+          placeholder="항목 이름 · 경로 · symbol 검색 (⌘K)"
           inputRef={inputRef}
-          inputProps={{ 'aria-label': '저장소 검색', 'aria-keyshortcuts': 'Meta+K Control+K' }}
+          inputProps={{
+            'aria-label': '저장소 검색',
+            'aria-keyshortcuts': 'Meta+K Control+K',
+            'aria-describedby': SCOPE_ID,
+          }}
           clearable
           clearAriaLabel="검색어 지우기"
           suggestions={suggestions}
-          noSuggestionsText={query.trim() ? '일치하는 항목 없음' : undefined}
+          noSuggestionsText={query.trim() ? NO_MATCH : undefined}
           onSuggestionSelect={(suggestion) => {
             const result = byKey.get(suggestion.id);
             if (!result) return;
@@ -94,6 +105,7 @@ export function GlobalSearch() {
           }}
         />
         <VisuallyHidden>
+          <span id={SCOPE_ID}>{SEARCH_SCOPE}</span>
           <span role="status">{status}</span>
         </VisuallyHidden>
       </div>
