@@ -5,9 +5,12 @@ const MOBILE_LOGIN = { id: 'mobile-google-login', title: '앱 Google 로그인' 
 test.describe('implementation status and verification limits', () => {
   test('show the limits as text beside the status in the scenario list', async ({ page }) => {
     await page.goto('/scenarios');
-    const row = page.getByRole('listitem').filter({
-      has: page.getByRole('link', { name: MOBILE_LOGIN.title, exact: true }),
-    });
+    const row = page
+      .getByRole('main')
+      .getByRole('listitem')
+      .filter({
+        has: page.getByRole('link', { name: MOBILE_LOGIN.title, exact: true }),
+      });
     await expect(row).toContainText('구현됨');
     await expect(row).toContainText('미검증: 외부 연동 미검증 · 런타임 미검증 외 1');
   });
