@@ -13,7 +13,7 @@ import (
 	"snapdone/api/internal/processing"
 )
 
-// 총액만 후보 둘 중 확인이 필요하고, 결제 수단은 읽지 못한 영수증 작업을 만든다.
+// 총액만 후보 둘 중 확인이 필요하고, 결제 수단은 읽지 못한 영수증 작업 생성.
 func expenseJob(t *testing.T, store *processing.Store, userID string) processing.Job {
 	t.Helper()
 	job := createJob(t, store, userID, processing.NewJob{Origin: processing.OriginGeneral, ImageSHA256: digestA})
@@ -23,7 +23,7 @@ func expenseJob(t *testing.T, store *processing.Store, userID string) processing
 	return job
 }
 
-// 필드 하나를 확정하면 그 필드만 바뀌고, 이후 조회에서도 그대로다.
+// 필드 하나를 확정하면 그 필드만 바뀌고, 이후 조회에서도 그대로.
 func TestResolveReceiptFieldPersists(t *testing.T) {
 	store, userID := setup(t)
 	job := expenseJob(t, store, userID)
@@ -44,7 +44,7 @@ func TestResolveReceiptFieldPersists(t *testing.T) {
 		}
 	}
 
-	// 읽지 못한 필드는 형식에 맞는 직접 입력으로 확정한다.
+	// 읽지 못한 필드는 형식에 맞는 직접 입력으로 확정.
 	if _, err := store.ResolveReceiptField(context.Background(), userID, job.ID, "paymentMethod", "신한카드"); err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func TestResolveReceiptFieldPersists(t *testing.T) {
 	}
 }
 
-// 같은 값을 다시 보내도 바뀌지 않고, 다른 값은 거절한다.
+// 같은 값을 다시 보내도 바뀌지 않고, 다른 값은 거절.
 func TestResolveReceiptFieldIsIdempotent(t *testing.T) {
 	store, userID := setup(t)
 	job := expenseJob(t, store, userID)
@@ -74,7 +74,7 @@ func TestResolveReceiptFieldIsIdempotent(t *testing.T) {
 	}
 }
 
-// 같은 필드를 동시에 다른 값으로 확정하면 하나만 바뀌고 나머지는 ErrFieldResolved다.
+// 같은 필드를 동시에 다른 값으로 확정하면 하나만 바뀌고 나머지는 ErrFieldResolved.
 func TestResolveReceiptFieldConcurrently(t *testing.T) {
 	store, userID := setup(t)
 	job := expenseJob(t, store, userID)
@@ -99,7 +99,7 @@ func TestResolveReceiptFieldConcurrently(t *testing.T) {
 	}
 }
 
-// 다른 사용자의 작업 · 없는 작업 · 지출 정보가 없는 작업 · 형식이 틀린 값은 바꾸지 않는다.
+// 다른 사용자의 작업 · 없는 작업 · 지출 정보가 없는 작업 · 형식이 틀린 값은 바꾸지 않음.
 func TestResolveReceiptFieldRejects(t *testing.T) {
 	store, pool, userID := setupPool(t)
 	other := newUser(t, pool, "g-2")
@@ -130,7 +130,7 @@ func TestResolveReceiptFieldRejects(t *testing.T) {
 	}
 }
 
-// 재처리는 같은 사진으로 원래 작업과 이어진 새 작업을 남긴다. 원래 작업과 저장된 처리 방식은 그대로다.
+// 재처리는 같은 사진으로 원래 작업과 이어진 새 작업을 기록. 원래 작업과 저장된 처리 방식은 그대로.
 func TestProcessorReprocessStoresALinkedJob(t *testing.T) {
 	store, pool, userID := setupPool(t)
 	prefs := storedPreferences{preference.Defaults()}

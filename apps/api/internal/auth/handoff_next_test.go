@@ -2,7 +2,7 @@ package auth
 
 import "testing"
 
-// 핸드오프 뒤 경로는 정해진 경로이거나, 소문자 uuid 하나로 된 처리 결과 경로뿐이다. wildcard가 아니다.
+// 핸드오프 뒤 경로는 정해진 경로이거나, 소문자 uuid 하나로 된 처리 결과 경로뿐. wildcard 아님.
 func TestAllowedNext(t *testing.T) {
 	for _, next := range []string{
 		"/", "/history", "/settings/processing",

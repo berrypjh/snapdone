@@ -15,21 +15,21 @@ func translated(text, language string) *TextOutput {
 	return &TextOutput{Text: text, TargetLanguage: language}
 }
 
-// 승인된 reference 중 어느 것과든 같으면 exact match이고, 어느 것과 같았는지 남는다.
+// 승인된 reference 중 어느 것과든 같으면 exact match이고, 어느 것과 같았는지 남음.
 func TestTranslationMultipleReferences(t *testing.T) {
 	refs := []string{"기다려 주셔서 감사합니다.", "기다려 주셔서 고맙습니다."}
 	o := EvaluateTranslation(expectTranslation(refs), "ko", translated("기다려 주셔서 고맙습니다.", "ko"))
 	if value(t, o.RawExactMatch) != 1 || o.RawMatchedReference != 1 || value(t, o.NormalizedExactMatch) != 1 || o.NormalizedMatchedReference != 1 || o.References != 2 {
 		t.Errorf("outcome = %+v", o)
 	}
-	// 공백만 다르면 raw는 아니고 normalized만 맞는다.
+	// 공백만 다르면 raw는 아니고 normalized만 맞음.
 	o = EvaluateTranslation(expectTranslation(refs), "ko", translated("기다려  주셔서 감사합니다.\n", "ko"))
 	if value(t, o.RawExactMatch) != 0 || o.RawMatchedReference != -1 || value(t, o.NormalizedExactMatch) != 1 || o.NormalizedMatchedReference != 0 {
 		t.Errorf("whitespace: %+v", o)
 	}
 }
 
-// 적절한 의역은 EM에 실패하지만 의미 실패로 단정하지 않는다 — 기본 policy는 unscored이고 semantic은 unsupported다.
+// 적절한 의역은 EM에 실패하지만 의미 실패로 단정하지 않음 — 기본 policy는 unscored이고 semantic은 unsupported.
 func TestTranslationParaphraseIsNotASemanticFailure(t *testing.T) {
 	c := translationFixtureCase("p", "The elevator is out of service on September 25.", "en", "ko",
 		[]string{"9월 25일에는 엘리베이터를 운행하지 않습니다."}, CriticalSpan{ID: "date", Kind: SpanDate, Accepted: []string{"9월 25일"}})
@@ -58,7 +58,7 @@ func translationFixtureCase(id, src, sl, tl string, refs []string, spans ...Crit
 	return c
 }
 
-// 구두점은 보존되고, 한 · 영 · 일 reference가 각각 비교된다.
+// 구두점은 보존되고, 한 · 영 · 일 reference가 각각 비교됨.
 func TestTranslationPunctuationAndScripts(t *testing.T) {
 	for _, tc := range []struct {
 		ref, hyp string
@@ -76,7 +76,7 @@ func TestTranslationPunctuationAndScripts(t *testing.T) {
 	}
 }
 
-// 선언한 목표 언어와의 비교는 metadata 일치일 뿐이고, 선언이 없으면 unavailable이다.
+// 선언한 목표 언어와의 비교는 metadata 일치일 뿐이고, 선언이 없으면 unavailable.
 func TestTranslationLanguageMetadata(t *testing.T) {
 	refs := []string{"x"}
 	if o := EvaluateTranslation(expectTranslation(refs), "ko", translated("x", "KO")); value(t, o.LanguageMetadataMatch) != 1 {
@@ -94,7 +94,7 @@ func TestTranslationLanguageMetadata(t *testing.T) {
 	}
 }
 
-// 구간 경계 — 12는 120 안에서 일치하지 않고, 잘못된 날짜는 보존이 아니다. 한글 조사는 붙어도 일치한다.
+// 구간 경계 — 12는 120 안에서 일치하지 않고, 잘못된 날짜는 보존이 아님. 한글 조사는 붙어도 일치.
 func TestTranslationCriticalSpanBoundaries(t *testing.T) {
 	spans := []CriticalSpan{
 		{ID: "amount", Kind: SpanNumber, Accepted: []string{"12"}},
@@ -131,7 +131,7 @@ func TestTranslationCriticalSpanBoundaries(t *testing.T) {
 	}
 }
 
-// 빈 번역문은 EM 실패이고 empty로 표시된다. 예측이 없으면 전부 unavailable이다.
+// 빈 번역문은 EM 실패이고 empty로 표시됨. 예측이 없으면 전부 unavailable.
 func TestTranslationEmptyAndMissing(t *testing.T) {
 	o := EvaluateTranslation(expectTranslation([]string{"x"}), "ko", translated("  \n", "ko"))
 	if !o.Empty || value(t, o.NormalizedExactMatch) != 0 || o.TranslatedChars != 0 {
@@ -186,7 +186,7 @@ func TestTranslationSummary(t *testing.T) {
 	}
 }
 
-// live 모드의 번역 variant는 adapter를 만들지 않고 호출 0회로 skipped다. gold 원문만 adapter 입력이 된다.
+// live 모드의 번역 variant는 adapter를 만들지 않고 호출 0회로 skipped. gold 원문만 adapter 입력이 됨.
 func TestTranslationLiveIsUnsupported(t *testing.T) {
 	ds, err := LoadDataset("testdata/datasets/translation-fixture", contract)
 	if err != nil {
@@ -213,7 +213,7 @@ func TestTranslationLiveIsUnsupported(t *testing.T) {
 	}
 }
 
-// replay 산출물 — summary에 translation 표만 있고 case 줄은 계약을 지킨다. 비교는 reference 축을 낸다.
+// replay 산출물 — summary에 translation 표만 있고 case 줄은 계약을 지킴. 비교는 reference 축을 냄.
 func TestTranslationRunArtifactsAndCompare(t *testing.T) {
 	root := t.TempDir()
 	ds, err := LoadDataset("testdata/datasets/translation-fixture", contract)

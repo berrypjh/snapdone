@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// 모델 없이 실험 설정만 담은 파일(tools/evals/experiments/*.json). 모델은 실행할 때 고르므로 파일에 적지 않는다.
+// 모델 없이 실험 설정만 담은 파일(tools/evals/experiments/*.json). 모델은 실행할 때 고르므로 파일에 적지 않음.
 type ExperimentSetting struct {
 	SchemaVersion int           `json:"schemaVersion"`
 	ID            string        `json:"id"`
@@ -16,7 +16,7 @@ type ExperimentSetting struct {
 	Config        VariantConfig `json:"config"`
 }
 
-// 실험 설정 파일을 읽고 모양을 검사한다. 모델 없이도 되는 검사만 하고 나머지는 WithExperiment가 한다.
+// 실험 설정 파일을 읽고 모양을 검사. 모델 없이도 되는 검사만 하고 나머지는 WithExperiment가 담당.
 func LoadExperiment(path string) (ExperimentSetting, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -46,7 +46,7 @@ func LoadExperiment(path string) (ExperimentSetting, error) {
 	return s, nil
 }
 
-// 실행할 때 쓰는 모양. 계단식은 다시 물을 모델까지 둘이다.
+// 실행할 때 쓰는 모양. 계단식은 다시 물을 모델까지 두 개.
 func (s ExperimentSetting) Usage() string {
 	if s.Config.Cascade != nil {
 		return s.ID + "@<provider>:<model>,<escalate>"
@@ -54,8 +54,8 @@ func (s ExperimentSetting) Usage() string {
 	return s.ID + "@<provider>:<model>"
 }
 
-// base(공급자 · 모델)에 path의 실험 설정을 얹는다. 계단식이면 escalate가 다시 물을 모델이다.
-// id는 `<설정>-<모델 id>`(계단식은 뒤에 `-<escalate>`)이다.
+// base(공급자 · 모델)에 path의 실험 설정을 얹음. 계단식이면 escalate가 다시 물을 모델.
+// id는 `<설정>-<모델 id>`(계단식은 뒤에 `-<escalate>`).
 func WithExperiment(base VariantManifest, path, escalate string, contract ClassificationContract) (VariantManifest, error) {
 	s, err := LoadExperiment(path)
 	if err != nil {

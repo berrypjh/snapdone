@@ -8,7 +8,7 @@ import (
 	"snapdone/api/internal/evaluation"
 )
 
-// git 상태. 값은 metadata에만 쓰고 출력하지 않는다.
+// git 상태. 값은 metadata에만 쓰고 출력하지 않음.
 func collectGit(root string) (evaluation.GitInfo, error) {
 	out := func(args ...string) (string, error) {
 		cmd := exec.Command("git", args...)

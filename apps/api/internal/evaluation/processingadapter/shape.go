@@ -9,7 +9,7 @@ import (
 	"snapdone/api/internal/evaluation"
 )
 
-// 모델 원문의 JSON 문법과, production descriptor schema에 대한 모양을 따로 판정한다.
+// 모델 원문의 JSON 문법과, production descriptor schema에 대한 모양을 따로 판정.
 func judgeRaw(text string, schema map[string]any) (syntax, shape evaluation.Judgement) {
 	var value any
 	if err := json.Unmarshal([]byte(text), &value); err != nil {
@@ -19,8 +19,8 @@ func judgeRaw(text string, schema map[string]any) (syntax, shape evaluation.Judg
 	return judged(true, nil), judged(len(problems) == 0, problems)
 }
 
-// descriptor schema가 실제로 쓰는 것만 본다 — object(properties · required · additionalProperties) · array(items) ·
-// string · enum. 범용 JSON Schema 엔진이 아니다.
+// descriptor schema가 실제로 쓰는 것만 확인 — object(properties · required · additionalProperties) · array(items) ·
+// string · enum. 범용 JSON Schema 엔진 아님.
 func checkShape(path string, schema map[string]any, value any) []string {
 	var problems []string
 	switch schema["type"] {

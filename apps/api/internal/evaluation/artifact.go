@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-// run 디렉터리의 파일 이름. metadata · cases가 정본이고 summary 둘은 파생물이다.
+// run 디렉터리의 파일 이름. metadata · cases가 정본이고 summary 둘은 파생물.
 const (
 	metadataFile = "metadata.json"
 	casesFile    = "cases.jsonl"
@@ -22,8 +22,8 @@ const (
 	markdownFile = "summary.md"
 )
 
-// run 산출물을 순서대로 쓴다 — metadata(running) → case 한 줄씩 → flush · close → summary(원자적) → metadata(종료).
-// 어느 단계의 쓰기 실패도 성공으로 보고하지 않는다.
+// run 산출물을 순서대로 기록 — metadata(running) → case 한 줄씩 → flush · close → summary(원자적) → metadata(종료).
+// 어느 단계의 쓰기 실패도 성공으로 보고하지 않음.
 type RunWriter struct {
 	root     string
 	contract ClassificationContract
@@ -37,7 +37,7 @@ type RunWriter struct {
 	err      error
 }
 
-// root는 이미 있는 디렉터리여야 하고 dataset 디렉터리(manifest.json이 있는 곳)면 안 된다.
+// root는 이미 있는 디렉터리여야 하고 dataset 디렉터리(manifest.json이 있는 곳)면 안 됨.
 func NewRunWriter(root string, contract ClassificationContract, now func() time.Time) (*RunWriter, error) {
 	abs, err := filepath.Abs(root)
 	if err != nil {
@@ -56,7 +56,7 @@ func NewRunWriter(root string, contract ClassificationContract, now func() time.
 	return &RunWriter{root: abs, contract: contract, now: now}, nil
 }
 
-// run 디렉터리를 만들고 metadata를 running으로 쓴다. 같은 runId가 있으면 오류다 — 덮어쓰지 않는다.
+// run 디렉터리를 생성하고 metadata를 running으로 기록. 같은 runId가 있으면 오류 — 덮어쓰지 않음.
 func (w *RunWriter) Begin(meta RunMetadata) error {
 	if err := identifier("runId", meta.RunID); err != nil {
 		return err
@@ -84,7 +84,7 @@ func (w *RunWriter) Begin(meta RunMetadata) error {
 	return nil
 }
 
-// 채점을 마친 case result를 한 줄로 더한다. 이 run · 고른 case의 것이고 wire 계약을 지켜야 쓴다.
+// 채점을 마친 case result를 한 줄로 추가. 이 run · 고른 case의 것이고 wire 계약을 지켜야 기록.
 func (w *RunWriter) Result(result CaseResult) error {
 	if w.err != nil {
 		return w.err
@@ -110,7 +110,7 @@ func (w *RunWriter) fail(err error) error {
 	return err
 }
 
-// case 파일을 닫고 summary와 종료 metadata를 쓴다. summary는 방금 쓴 raw 파일에서 다시 읽어 만든다.
+// case 파일을 닫고 summary와 종료 metadata 기록. summary는 방금 쓴 raw 파일에서 다시 읽어 생성.
 func (w *RunWriter) Finish(report RunReport) (RunSummary, error) {
 	if w.err != nil {
 		return RunSummary{}, w.err
@@ -135,10 +135,10 @@ func (w *RunWriter) Finish(report RunReport) (RunSummary, error) {
 	return summary, nil
 }
 
-// Dir은 run 디렉터리다. Begin 뒤에만 뜻이 있다.
+// Dir은 run 디렉터리. Begin 뒤에만 의미 있음.
 func (w *RunWriter) Dir() string { return w.dir }
 
-// raw 파일에서 summary.json · summary.md를 다시 만든다. 모델 API를 부르지 않고 같은 입력이면 같은 byte다.
+// raw 파일에서 summary.json · summary.md를 다시 생성. 모델 API를 부르지 않고 같은 입력이면 같은 byte.
 func RegenerateSummary(dir string, contract ClassificationContract) (RunSummary, error) {
 	summary, err := Summarize(dir, contract)
 	if err != nil {
@@ -153,7 +153,7 @@ func RegenerateSummary(dir string, contract ClassificationContract) (RunSummary,
 	return summary, nil
 }
 
-// metadata.json과 cases.jsonl을 엄격하게 읽어 요약한다. 잘린 줄 · 깨진 줄은 오류다.
+// metadata.json과 cases.jsonl을 엄격하게 읽어 요약. 잘린 줄 · 깨진 줄은 오류.
 func Summarize(dir string, contract ClassificationContract) (RunSummary, error) {
 	f, err := os.Open(filepath.Join(dir, metadataFile))
 	if err != nil {
@@ -201,7 +201,7 @@ func writeJSONAtomic(path string, v any) error {
 	return writeAtomic(path, append(encoded, '\n'))
 }
 
-// 임시 파일에 쓰고 fsync한 뒤 이름을 바꾼다. 실패하면 원래 파일은 그대로다.
+// 임시 파일에 쓰고 fsync한 뒤 이름 변경. 실패하면 원래 파일은 그대로 유지.
 func writeAtomic(path string, data []byte) error {
 	tmp := path + ".tmp"
 	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
@@ -222,7 +222,7 @@ func writeAtomic(path string, data []byte) error {
 	return nil
 }
 
-// summary의 Markdown. 숫자는 locale과 무관하고, 문자열 칸은 표를 깨지 않게 escape한다.
+// summary의 Markdown. 숫자는 locale과 무관하고, 문자열 칸은 표를 깨지 않게 escape.
 func RenderMarkdown(s RunSummary) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "# run %s\n\n", escape(s.RunID))
@@ -316,7 +316,7 @@ func renderQuality(b *strings.Builder, q TrialQuality) {
 		c.RawSyntax.Valid, c.RawSyntax.Invalid, c.RawSyntax.Unobserved, c.RawShape.Valid, c.RawShape.Invalid, c.RawShape.Unobserved, c.Parser.Valid, c.Parser.Invalid, c.Parser.Unobserved)
 }
 
-// 이 variant의 답을 누가 냈는지. 기준선과 replay의 지표는 모델 성능이 아니다.
+// 이 variant의 답을 누가 냈는지. 기준선과 replay의 지표는 모델 성능 아님.
 func answerSource(mode Mode, v Variant) string {
 	switch {
 	case v.Adapter == AdapterBaseline:
@@ -339,7 +339,7 @@ func answeredList(answered map[string]int) string {
 	return strings.Join(parts, ", ")
 }
 
-// 추출값 · 자동 실행 · 비슷한 사례 · 계단식 줄. 옛 산출물처럼 값이 없으면 줄을 쓰지 않는다.
+// 추출값 · 자동 실행 · 비슷한 사례 · 계단식 줄. 옛 산출물처럼 값이 없으면 줄을 쓰지 않음.
 func renderExperimentRows(b *strings.Builder, c *ClassificationSummary) {
 	if f := c.Facts; f != nil {
 		fmt.Fprintf(b, "| facts recall | %s | %d expected facts in %d cases |\n", measure(f.Recall), f.Expected, f.Annotated)
@@ -359,7 +359,7 @@ func renderExperimentRows(b *strings.Builder, c *ClassificationSummary) {
 	}
 }
 
-// 텍스트 과제의 표. corpus 비율(합의 비율)과 case 평균을 따로 적고 category · action 열은 없다.
+// 텍스트 과제의 표. corpus 비율(합의 비율)과 case 평균을 따로 적고 category · action 열은 없음.
 func renderTextQuality(b *strings.Builder, trial int, s TextSummary) {
 	fmt.Fprintf(b, "### quality — trial %d (%s · normalization %s · unicode %s)\n\n", trial, escape(s.Policy.Version), escape(s.Normalization), escape(s.Unicode))
 	if !s.Complete {
@@ -385,7 +385,7 @@ func renderTextQuality(b *strings.Builder, trial int, s TextSummary) {
 	}
 }
 
-// 번역 표. reference 일치는 같은 문자열인지의 진단값이고 의미 품질이 아니다.
+// 번역 표. reference 일치는 같은 문자열인지의 진단값이고 의미 품질 아님.
 func renderTranslationQuality(b *strings.Builder, trial int, s TranslationSummary) {
 	fmt.Fprintf(b, "### quality — trial %d (%s · normalization %s · unicode %s)\n\n", trial, escape(s.Policy.Version), escape(s.Normalization), escape(s.Unicode))
 	if !s.Complete {
@@ -425,7 +425,7 @@ func sortedKeys[K ~string, V any](m map[K]V) []K {
 	return keys
 }
 
-// Measure를 표 칸으로. 값이 없으면 이유를 적고 0이나 100%로 바꾸지 않는다.
+// Measure를 표 칸으로. 값이 없으면 이유를 적고 0이나 100%로 바꾸지 않음.
 func measure(m Measure) string {
 	switch m.Availability {
 	case Measured:
@@ -436,7 +436,7 @@ func measure(m Measure) string {
 	return string(m.Availability) + " (" + escape(m.Reason) + ")"
 }
 
-// 표를 깨는 문자를 escape한다.
+// 표를 깨는 문자를 escape.
 func escape(s string) string {
 	s = strings.NewReplacer("\\", "\\\\", "|", "\\|", "`", "\\`", "\r", " ", "\n", " ").Replace(s)
 	return s

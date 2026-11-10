@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// 이름은 tools/evals 아래로, 경로는 root 기준으로(절대 경로는 그대로) 푼다. 기본 --out은 tools/evals/results다.
+// 이름은 tools/evals 아래로, 경로는 root 기준으로(절대 경로는 그대로) 해석. 기본 --out은 tools/evals/results.
 func TestPathsResolveNamesAndPaths(t *testing.T) {
 	p := paths{root: repoRoot, out: "tools/evals/results"}
 	if err := p.resolve(); err != nil {

@@ -15,16 +15,16 @@ import (
 )
 
 const (
-	// Claude 요청 하나의 상한. 재시도를 포함하지 않는다. 처리 전체 상한은 processTimeout이다.
+	// Claude 요청 하나의 상한. 재시도를 포함하지 않음. 처리 전체 상한은 processTimeout.
 	requestTimeout = 90 * time.Second
-	// 분류 결과는 작다. 이보다 큰 응답은 읽지 않는다.
+	// 분류 결과는 작음. 이보다 큰 응답은 읽지 않음.
 	maxResponseBody = 1 << 20
 )
 
 // 거절 시 서버가 다른 모델로 이어 처리하는 기능을 문서가 권하는 모델.
 var refusalFallbackModels = map[string]bool{"claude-opus-5": true, "claude-fable-5-1": true}
 
-// 사진을 읽어 결과로 바꾼다. 사진은 호출이 끝나면 버린다.
+// 사진을 읽어 결과로 변환. 사진은 호출이 끝나면 폐기.
 type Classifier interface {
 	Classify(ctx context.Context, image []byte, mediaType string) (Result, error)
 }
@@ -35,7 +35,7 @@ type ClaudeClassifier struct {
 	instructions string
 }
 
-// Claude API 분류기. timeout · 응답 크기 제한 · redirect 미추적은 httpClient가 가진다.
+// Claude API 분류기. timeout · 응답 크기 제한 · redirect 미추적은 httpClient가 담당.
 func NewClaudeClassifier(apiKey, model string, httpClient *http.Client) *ClaudeClassifier {
 	return &ClaudeClassifier{
 		client: anthropic.NewClient(
@@ -48,14 +48,14 @@ func NewClaudeClassifier(apiKey, model string, httpClient *http.Client) *ClaudeC
 	}
 }
 
-// 평가 실험용 복사본. 지시만 text로 바꾸고 요청 · 결과 schema · 검증은 그대로다. 서버는 부르지 않는다.
+// 평가 실험용 복사본. 지시만 text로 바꾸고 요청 · 결과 schema · 검증은 그대로. 서버는 부르지 않음.
 func (c *ClaudeClassifier) WithInstructions(text string) *ClaudeClassifier {
 	clone := *c
 	clone.instructions = text
 	return &clone
 }
 
-// 모델 API에 쓸 HTTP client. 처리 전체 상한을 넘기지 않고 redirect를 따라가지 않는다.
+// 모델 API에 쓸 HTTP client. 처리 전체 상한을 넘기지 않고 redirect를 따라가지 않음.
 func NewHTTPClient() *http.Client {
 	return &http.Client{
 		Timeout:   processTimeout,
@@ -74,7 +74,7 @@ func (c *ClaudeClassifier) Classify(ctx context.Context, image []byte, mediaType
 	return parseResult(text)
 }
 
-// 제품 유형 판단. 분류와 같은 client · 모델을 쓰고 지시 · schema만 다르다.
+// 제품 유형 판단. 분류와 같은 client · 모델, 지시 · schema만 다름.
 func (c *ClaudeClassifier) TypeImage(ctx context.Context, image []byte, mediaType string) (Typing, error) {
 	text, err := c.ask(ctx, image, mediaType, typingInstructions, typingRequest, typingSchema())
 	if err != nil {
@@ -83,7 +83,7 @@ func (c *ClaudeClassifier) TypeImage(ctx context.Context, image []byte, mediaTyp
 	return parseTyping(text)
 }
 
-// 고른 처리 방식을 실행한다. 처리 방식마다 지시 · schema · 해석이 다르다(actionSpec).
+// 고른 처리 방식 실행. 처리 방식마다 지시 · schema · 해석이 다름(actionSpec).
 func (c *ClaudeClassifier) Act(ctx context.Context, image []byte, mediaType string, s Selection) (Output, error) {
 	spec, err := specFor(s)
 	if err != nil {
@@ -96,7 +96,7 @@ func (c *ClaudeClassifier) Act(ctx context.Context, image []byte, mediaType stri
 	return spec.parse(text)
 }
 
-// 사진 한 장과 지시 · 요청 · 결과 schema로 묻고 JSON 본문을 돌려준다. 결과가 온전하지 않으면 오류다.
+// 사진 한 장과 지시 · 요청 · 결과 schema로 묻고 JSON 본문 반환. 결과가 온전하지 않으면 오류.
 func (c *ClaudeClassifier) ask(ctx context.Context, image []byte, mediaType, system, prompt string, schema map[string]any) (string, error) {
 	params := anthropic.BetaMessageNewParams{
 		Model:     anthropic.Model(c.model),
@@ -121,7 +121,7 @@ func (c *ClaudeClassifier) ask(ctx context.Context, image []byte, mediaType, sys
 	if err != nil {
 		return "", err
 	}
-	// refusal · max_tokens 등은 결과가 온전하지 않다.
+	// refusal · max_tokens 등은 결과가 온전하지 않음.
 	if message.StopReason != anthropic.BetaStopReasonEndTurn {
 		return "", fmt.Errorf("processing: stop reason %s", message.StopReason)
 	}
@@ -133,7 +133,7 @@ func (c *ClaudeClassifier) ask(ctx context.Context, image []byte, mediaType, sys
 	return "", errors.New("processing: no text block")
 }
 
-// 응답 본문을 maxResponseBody까지만 읽게 한다.
+// 응답 본문을 maxResponseBody까지만 읽게 함.
 type limitedTransport struct{ base http.RoundTripper }
 
 func (t limitedTransport) RoundTrip(req *http.Request) (*http.Response, error) {

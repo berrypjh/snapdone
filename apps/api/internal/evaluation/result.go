@@ -9,34 +9,34 @@ import (
 
 const CaseResultSchemaVersion = 1
 
-// 호출이 어떻게 끝났는지. 채점과 별개다.
+// 호출이 어떻게 끝났는지. 채점과 별개.
 type ExecutionStatus string
 
 const (
 	Completed ExecutionStatus = "completed"
 	Failed    ExecutionStatus = "failed"
 	TimedOut  ExecutionStatus = "timed-out"
-	// adapter가 지원하지 않아 부르지 않았다.
+	// adapter가 지원하지 않아 부르지 않음.
 	Skipped ExecutionStatus = "skipped"
-	// run이 중단(취소 · 예산 소진)되어 부르지 못했다. 이유는 error.message다.
+	// run이 중단(취소 · 예산 소진)되어 부르지 못함. 이유는 error.message.
 	NotRun ExecutionStatus = "not-run"
 )
 
 var executionStatuses = []ExecutionStatus{Completed, Failed, TimedOut, Skipped, NotRun}
 
-// 채점 결과. 호출이 끝나지 않았으면 not-evaluated이지 failed가 아니다.
+// 채점 결과. 호출이 끝나지 않았으면 not-evaluated이지 failed가 아님.
 type QualityOutcome string
 
 const (
 	Passed        QualityOutcome = "passed"
 	QualityFailed QualityOutcome = "failed"
-	// 호출이 끝나지 않아 채점하지 못했다.
+	// 호출이 끝나지 않아 채점하지 못함.
 	NotEvaluated QualityOutcome = "not-evaluated"
-	// 호출은 끝났지만 policy가 pass · fail을 정하지 않는다(번역 reference 비교처럼 진단만 하는 과제).
+	// 호출은 끝났지만 policy가 pass · fail을 정하지 않음(번역 reference 비교처럼 진단만 하는 과제).
 	Unscored QualityOutcome = "unscored"
 )
 
-// 오류의 종류. 원문은 비밀 · 사진 없이 짧게만 남긴다.
+// 오류의 종류. 원문은 비밀 · 사진 없이 짧게만 기록.
 type ErrorClass string
 
 const (
@@ -49,7 +49,7 @@ const (
 
 const maxErrorMessage = 512
 
-// case × variant × trial 한 번의 결과. 실행(Execution)과 채점(Quality)을 따로 둔다.
+// case × variant × trial 한 번의 결과. 실행(Execution)과 채점(Quality)을 따로 둠.
 type CaseResult struct {
 	SchemaVersion int         `json:"schemaVersion"`
 	RunID         string      `json:"runId"`
@@ -63,7 +63,7 @@ type CaseResult struct {
 	Execution     Execution   `json:"execution"`
 	Quality       Quality     `json:"quality"`
 	Prediction    *Prediction `json:"prediction"`
-	// 번역처럼 채점에 입력(목표 언어)이 필요한 과제를 위해 case 입력을 함께 둔다. 사진 byte는 없다.
+	// 번역처럼 채점에 입력(목표 언어)이 필요한 과제를 위해 case 입력을 함께 둠. 사진 byte는 없음.
 	Input    Input              `json:"input"`
 	Expected Expected           `json:"expected"`
 	Metrics  map[string]Measure `json:"metrics"`
@@ -71,21 +71,21 @@ type CaseResult struct {
 	DurationMs Measure `json:"durationMs"`
 	Usage      Usage   `json:"usage"`
 	Cost       Cost    `json:"cost"`
-	// 모델 원문 판정. 호출이 없었으면 null. 원문 텍스트는 개인정보 검토를 마친 case에서만 남긴다.
+	// 모델 원문 판정. 호출이 없었으면 null. 원문 텍스트는 개인정보 검토를 마친 case에서만 기록.
 	Raw *RawObservation `json:"raw"`
-	// 붙인 예시와 계단식 경로. 쓰지 않은 variant에는 없다.
+	// 붙인 예시와 계단식 경로. 쓰지 않은 variant에는 없음.
 	Retrieval *RetrievalTrace `json:"retrieval,omitempty"`
 	Cascade   *CascadeTrace   `json:"cascade,omitempty"`
-	// 이 호출의 모델. 모델을 부르지 않은 결과(미실행 · 미지원 · 모델 이름 없는 replay 기록)에는 없다.
+	// 이 호출의 모델. 모델을 부르지 않은 결과(미실행 · 미지원 · 모델 이름 없는 replay 기록)에는 없음.
 	Model *ModelTrace `json:"model,omitempty"`
-	// 실패한 것만 다시 실행한 run에서, 호출 없이 옮겨 온 결과의 원래 run id. 이 run에서 부른 결과에는 없다.
+	// 실패한 것만 다시 실행한 run에서, 호출 없이 옮겨 온 결과의 원래 run id. 이 run에서 부른 결과에는 없음.
 	CarriedFrom string `json:"carriedFrom,omitempty"`
 }
 
-// 요청한 모델과 공급자가 답에 적은 모델. 계단식으로 다시 물었으면 두 번째 모델이다.
+// 요청한 모델과 공급자가 답에 적은 모델. 계단식으로 다시 물었으면 두 번째 모델.
 type ModelTrace struct {
 	Requested string `json:"requested"`
-	// 응답 봉투의 model 값. 날짜 붙은 판이거나, 거절 뒤 대체 모델이면 요청과 다르다.
+	// 응답 봉투의 model 값. 날짜 붙은 판이거나, 거절 뒤 대체 모델이면 요청과 다름.
 	Answered Text `json:"answered"`
 }
 
@@ -94,14 +94,14 @@ func sameModel(requested, answered string) bool {
 	return answered == requested || strings.HasPrefix(answered, requested+"-")
 }
 
-// Attempts는 실제 HTTP 왕복 수(SDK 재시도 포함)다.
+// Attempts는 실제 HTTP 왕복 수(SDK 재시도 포함).
 type Execution struct {
 	Status   ExecutionStatus `json:"status"`
 	Attempts int             `json:"attempts"`
 	Error    *SanitizedError `json:"error"`
 }
 
-// 전체 판정과 evaluator별 판정. image-classification은 category · routing 두 check다.
+// 전체 판정과 evaluator별 판정. image-classification은 category · routing 두 check.
 type Quality struct {
 	Outcome QualityOutcome `json:"outcome"`
 	Checks  []Check        `json:"checks"`
@@ -112,16 +112,16 @@ type Check struct {
 	Outcome QualityOutcome `json:"outcome"`
 }
 
-// 모델이 돌려준 것. 분류는 production Result 그대로, 텍스트 과제는 전체 텍스트와(있다면) field 값이다.
+// 모델이 돌려준 것. 분류는 production Result 그대로, 텍스트 과제는 전체 텍스트와(있다면) field 값.
 type Prediction struct {
 	Classification *ClassificationPrediction `json:"classification,omitempty"`
 	Text           *string                   `json:"text,omitempty"`
 	Fields         map[string]string         `json:"fields,omitempty"`
-	// 번역 출력이 선언한 목표 언어. 실제 언어 감지가 아니라 metadata다.
+	// 번역 출력이 선언한 목표 언어. 실제 언어 감지가 아니라 metadata.
 	TargetLanguage string `json:"targetLanguage,omitempty"`
 }
 
-// 안전한 오류 — class · kind · 고정 문구. 헤더 · 본문 · 오류 원문은 없다.
+// 안전한 오류 — class · kind · 고정 문구. 헤더 · 본문 · 오류 원문은 없음.
 type SanitizedError struct {
 	Class   ErrorClass  `json:"class"`
 	Kind    FailureKind `json:"kind,omitempty"`
@@ -138,8 +138,8 @@ type Cost struct {
 	Amount   Measure `json:"amount"`
 }
 
-// invocation 하나를 채점해 wire 계약의 CaseResult로 만든다. 판정 · metric은 task의 score(task.go)가 내고, 개인정보
-// 검토가 끝나지 않은 case의 모델 원문은 여기서 뺀다. 산출물 writer는 이 결과를 검증해 쓰기만 한다.
+// invocation 하나를 채점해 wire 계약의 CaseResult로 생성. 판정 · metric은 task의 score(task.go)가 내고, 개인정보
+// 검토가 끝나지 않은 case의 모델 원문은 여기서 제외. 산출물 writer는 이 결과를 검증해 쓰기만 함.
 func NewCaseResult(meta RunMetadata, r InvocationResult, c Case, contract ClassificationContract) CaseResult {
 	obs := Observation{}
 	if r.Observation != nil {
@@ -177,7 +177,7 @@ func NewCaseResult(meta RunMetadata, r InvocationResult, c Case, contract Classi
 		}
 		result.Model = &ModelTrace{Requested: obs.RequestedModel, Answered: answered}
 	}
-	// 기록에 usage가 아예 없으면(replay) 값이 없는 것이지 0이 아니다.
+	// 기록에 usage가 아예 없으면(replay) 값이 없는 것이지 0이 아님.
 	for _, m := range []*Measure{&result.Usage.InputTokens, &result.Usage.OutputTokens} {
 		if m.Availability == "" {
 			*m = Missing(Unavailable, "not recorded")
@@ -190,7 +190,7 @@ func NewCaseResult(meta RunMetadata, r InvocationResult, c Case, contract Classi
 		text := obs.TextOutput.Text
 		result.Prediction = &Prediction{Text: &text, Fields: obs.TextOutput.Fields, TargetLanguage: obs.TextOutput.TargetLanguage}
 	}
-	// raw 판정은 production adapter의 관측에만 있다. replay 기록 등에 없으면 null로 둔다.
+	// raw 판정은 production adapter의 관측에만 있음. replay 기록 등에 없으면 null로 둠.
 	if obs.Raw.Syntax.Availability == "" {
 		return result
 	}
@@ -260,7 +260,7 @@ func (j Judgement) validate() error {
 	return oneOf("raw judgement availability", j.Availability, availabilities)
 }
 
-// replay는 기록된 attempts를 그대로 옮기고 baseline은 모델을 부르지 않으므로, 완료됐어도 0일 수 있다.
+// replay는 기록된 attempts를 그대로 옮기고 baseline은 모델을 부르지 않으므로, 완료됐어도 0일 수 있음.
 func (e Execution) validate() error {
 	if err := oneOf("execution.status", e.Status, executionStatuses); err != nil {
 		return err
@@ -291,7 +291,7 @@ func (e SanitizedError) validate() error {
 	return nil
 }
 
-// 채점은 호출이 끝났을 때만 있다. 전체 판정은 check가 하나라도 틀리면 failed다.
+// 채점은 호출이 끝났을 때만 있음. 전체 판정은 check가 하나라도 틀리면 failed.
 func (q Quality) validate(status ExecutionStatus) error {
 	outcomes := []QualityOutcome{Passed, QualityFailed, NotEvaluated, Unscored}
 	if err := oneOf("quality.outcome", q.Outcome, outcomes); err != nil {
@@ -327,7 +327,7 @@ func (q Quality) validate(status ExecutionStatus) error {
 	return nil
 }
 
-// 예측은 호출이 끝났을 때만 있고 task와 모양이 맞아야 한다.
+// 예측은 호출이 끝났을 때만 있고 task와 모양이 맞아야 함.
 func (p *Prediction) validate(task Task, status ExecutionStatus, contract ClassificationContract) error {
 	if status != Completed {
 		if p != nil {

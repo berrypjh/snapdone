@@ -12,7 +12,7 @@ var (
 	thousandComma = regexp.MustCompile(`([0-9]),([0-9]{3})`)
 )
 
-// 비교할 모양으로 바꾼 값. 비면 비교할 것이 없다.
+// 비교할 모양으로 바꾼 값. 비면 비교할 것이 없음.
 func normalizeFact(kind FactKind, value string) string {
 	if kind == FactText {
 		return foldText(value)
@@ -30,7 +30,7 @@ func foldText(value string) string {
 	}, value)
 }
 
-// 값 속의 수들. 금액은 천 단위 쉼표를 먼저 없앤다. 앞의 0은 뺀다(09 → 9).
+// 값 속의 수들. 금액은 천 단위 쉼표를 먼저 제거. 앞의 0은 제거(09 → 9).
 func numberGroups(kind FactKind, value string) []string {
 	if kind == FactAmount {
 		for thousandComma.MatchString(value) {

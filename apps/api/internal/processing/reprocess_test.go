@@ -9,7 +9,7 @@ import (
 	"snapdone/api/internal/preference"
 )
 
-// sha256("photo"). 재처리 원래 작업이 기록한 사진 digest다.
+// sha256("photo"). 재처리 원래 작업이 기록한 사진 digest.
 var photoDigest = imageDigest([]byte("photo"))
 
 var sourceResult = Result{Category: "foreign_text", Facts: []Fact{}, SuggestedAction: "translate", Confidence: "high"}
@@ -31,7 +31,7 @@ func ambiguousSource() Job {
 	}
 }
 
-// failingModel은 분류 · 유형 판단이 불리면 실패한다. 재처리가 다시 분류하지 않는지 본다.
+// failingModel은 분류 · 유형 판단이 불리면 실패. 재처리가 다시 분류하지 않는지 확인.
 type failingModel struct{ fakeModel }
 
 func (failingModel) Classify(context.Context, []byte, string) (Result, error) {
@@ -54,7 +54,7 @@ func reprocess(t *testing.T, source Job, prefs *fakePreferences, r Reprocess) (*
 	return jobs, wait(t, jobs), acted
 }
 
-// 같은 사진을 다른 처리 방식으로 다시 처리한다. 분류는 다시 하지 않고 원래 작업의 분류 결과를 쓰며, 원래 작업과 이어진다.
+// 같은 사진을 다른 처리 방식으로 다시 처리. 분류는 다시 하지 않고 원래 작업의 분류 결과를 쓰며, 원래 작업과 이어짐.
 func TestReprocessWithAnotherAction(t *testing.T) {
 	prefs := defaults()
 	jobs, finished, acted := reprocess(t, processedSource(), prefs, Reprocess{Action: "summarize"})
@@ -74,13 +74,13 @@ func TestReprocessWithAnotherAction(t *testing.T) {
 	if created.SourceJobID != "source-1" || created.ImageSHA256 != photoDigest {
 		t.Errorf("created %+v, want the source and the same digest", created)
 	}
-	// 일회성 재처리는 저장된 처리 방식을 읽지도 바꾸지도 않는다.
+	// 일회성 재처리는 저장된 처리 방식을 읽지도 바꾸지도 않음.
 	if prefs.calls != 0 || prefs.users["user-1"] != preference.Defaults() {
 		t.Errorf("preference calls %d, stored %+v, want untouched", prefs.calls, prefs.users["user-1"])
 	}
 }
 
-// ambiguous 작업에서 고른 유형은 그 유형에 저장된 처리 방식으로 이어서 처리한다.
+// ambiguous 작업에서 고른 유형은 그 유형에 저장된 처리 방식으로 이어서 처리.
 func TestAmbiguousTypeChoiceUsesTheStoredAction(t *testing.T) {
 	stored := preference.Preferences{Text: preference.TextExtractOnly, Receipt: preference.ReceiptSummarize}
 	for imageType, want := range map[ImageType]Selection{
@@ -96,7 +96,7 @@ func TestAmbiguousTypeChoiceUsesTheStoredAction(t *testing.T) {
 	}
 }
 
-// ambiguous에서 유형과 처리 방식을 함께 고르면 저장된 처리 방식을 읽지 않는다.
+// ambiguous에서 유형과 처리 방식을 함께 고르면 저장된 처리 방식을 읽지 않음.
 func TestAmbiguousTypeChoiceWithAnAction(t *testing.T) {
 	prefs := defaults()
 	_, finished, _ := reprocess(t, ambiguousSource(), prefs, Reprocess{ImageType: ImageReceipt, Action: "extract_text"})
@@ -105,7 +105,7 @@ func TestAmbiguousTypeChoiceWithAnAction(t *testing.T) {
 	}
 }
 
-// 원래 작업과 요청이 맞지 않으면 작업을 만들지 않는다.
+// 원래 작업과 요청이 맞지 않으면 작업을 만들지 않음.
 func TestReprocessRejects(t *testing.T) {
 	unsupported := Job{ID: "source-1", Status: StatusCompleted, Result: &sourceResult, ImageSHA256: &photoDigest,
 		Outcome: &Outcome{Kind: OutcomeUnsupported}}
@@ -139,7 +139,7 @@ func TestReprocessRejects(t *testing.T) {
 	}
 }
 
-// 다른 사용자의 작업은 없는 작업과 같다.
+// 다른 사용자의 작업은 없는 작업과 같음.
 func TestReprocessHidesOtherUsersJobs(t *testing.T) {
 	jobs := &fakeJobs{stored: map[string]Job{"source-1": processedSource()}}
 	_, err := newTestProcessor(jobs, fakeModel{}, defaults()).
@@ -149,7 +149,7 @@ func TestReprocessHidesOtherUsersJobs(t *testing.T) {
 	}
 }
 
-// 재처리 실행이 실패하면 재처리 작업은 실패로 끝난다. 원래 작업은 그대로다.
+// 재처리 실행이 실패하면 재처리 작업은 실패로 끝남. 원래 작업은 그대로.
 func TestReprocessFailureFailsOnlyTheNewJob(t *testing.T) {
 	source := processedSource()
 	jobs := &fakeJobs{finished: make(chan Job, 1), stored: map[string]Job{source.ID: source}}
@@ -166,7 +166,7 @@ func TestReprocessFailureFailsOnlyTheNewJob(t *testing.T) {
 	}
 }
 
-// 영수증 필드 확정 규칙: 확정하지 않은 필드만, 형식에 맞는 값으로, 그 필드만 바꾼다.
+// 영수증 필드 확정 규칙: 확정하지 않은 필드만, 형식에 맞는 값으로, 그 필드만 변경.
 func TestResolveField(t *testing.T) {
 	expense := func() *Job {
 		e := Expense{

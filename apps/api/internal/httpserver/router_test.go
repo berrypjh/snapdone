@@ -15,7 +15,7 @@ import (
 	"snapdone/api/internal/auth"
 )
 
-// dbFreeRouter는 DB 없이 입력 검사까지 도는 router다. 저장소에 닿는 요청은 쓰지 않는다.
+// dbFreeRouter는 DB 없이 입력 검사까지 도는 router. 저장소에 닿는 요청은 쓰지 않음.
 func dbFreeRouter() http.Handler {
 	return NewRouter(Deps{
 		Sessions: &fakeSessions{},
@@ -24,8 +24,8 @@ func dbFreeRouter() http.Handler {
 	})
 }
 
-// ServeMux 시절 동작: GET route는 HEAD도 받고, 다른 메서드는 Allow와 함께 405, 없는 경로는 404다.
-// trailing slash · 대소문자 · 중복 slash · ".."는 교정 redirect 없이 404다(ServeMux는 뒤의 둘을 307로 교정했다).
+// ServeMux 시절 동작: GET route는 HEAD도 받고, 다른 메서드는 Allow와 함께 405, 없는 경로는 404.
+// trailing slash · 대소문자 · 중복 slash · ".."는 교정 redirect 없이 404(ServeMux는 뒤의 둘을 307로 교정).
 func TestRouterMethodAndPathHandling(t *testing.T) {
 	handler := NewRouter(Deps{Sessions: &fakeSessions{}})
 	cases := []struct {
@@ -58,7 +58,7 @@ func TestRouterMethodAndPathHandling(t *testing.T) {
 	}
 }
 
-// 인증 기반이 없어도 route는 그대로 있고 503이다(404가 아니다). 일부만 설정되면 빠진 쪽만 503이다.
+// 인증 기반이 없어도 route는 그대로 있고 503(404 아님). 일부만 설정되면 빠진 쪽만 503.
 func TestAuthRoutesAnswer503WhenNotConfigured(t *testing.T) {
 	oauthRoutes := [][2]string{
 		{http.MethodPost, "/v1/auth/oauth/start"},
@@ -96,7 +96,7 @@ func TestAuthRoutesAnswer503WhenNotConfigured(t *testing.T) {
 	}
 }
 
-// 본문 모양이 틀리면 저장소에 닿기 전에 endpoint별 기존 오류 코드로 400이다. cancel은 언제나 204다.
+// 본문 모양이 틀리면 저장소에 닿기 전에 endpoint별 기존 오류 코드로 400. cancel은 언제나 204.
 func TestAuthRequestBodyValidation(t *testing.T) {
 	handler := dbFreeRouter()
 	oversized := `{"code":"` + strings.Repeat("a", maxJSONBody) + `"}`
@@ -131,7 +131,7 @@ func TestAuthRequestBodyValidation(t *testing.T) {
 	}
 }
 
-// Bearer 확인이 본문 검사보다 먼저다.
+// Bearer 확인이 본문 검사보다 먼저.
 func TestHandoffStartChecksBearerBeforeBody(t *testing.T) {
 	r := send(dbFreeRouter(), http.MethodPost, "/v1/auth/handoff/start", "not json")
 	if r.Code != http.StatusUnauthorized || errorCode(t, r) != "session_expired" {
@@ -139,7 +139,7 @@ func TestHandoffStartChecksBearerBeforeBody(t *testing.T) {
 	}
 }
 
-// 인증 group 전체가 no-store · no-referrer다. health에는 붙이지 않는다.
+// 인증 group 전체가 no-store · no-referrer. health에는 붙이지 않음.
 func TestAuthResponsesAreNotCached(t *testing.T) {
 	handler := NewRouter(Deps{Sessions: &fakeSessions{}})
 	for _, path := range []string{"/v1/auth/capabilities", "/v1/auth/session"} {
@@ -150,7 +150,7 @@ func TestAuthResponsesAreNotCached(t *testing.T) {
 	}
 }
 
-// 요청 ID는 서버가 매번 새로 만든다. 클라이언트가 보낸 값은 쓰지 않는다.
+// 요청 ID는 서버가 매번 새로 생성. 클라이언트가 보낸 값은 쓰지 않음.
 func TestRequestIDIsGeneratedPerRequest(t *testing.T) {
 	handler := NewRouter(Deps{})
 	first := send(handler, http.MethodGet, "/health", "", requestIDHeader, "client-chosen").Header().Get(requestIDHeader)
@@ -162,7 +162,7 @@ func TestRequestIDIsGeneratedPerRequest(t *testing.T) {
 	}
 }
 
-// 요청 로그는 route template만 남긴다. 원문 경로 · query · 헤더는 매칭되지 않은 요청에서도 남지 않는다.
+// 요청 로그는 route template만 기록. 원문 경로 · query · 헤더는 매칭되지 않은 요청에서도 남지 않음.
 func TestRequestLogCarriesRouteTemplateOnly(t *testing.T) {
 	var logs bytes.Buffer
 	handler := NewRouter(Deps{Logger: slog.New(slog.NewJSONHandler(&logs, nil)), Sessions: &fakeSessions{}})
@@ -188,7 +188,7 @@ func TestRequestLogCarriesRouteTemplateOnly(t *testing.T) {
 	}
 }
 
-// panic은 정리된 500으로 바뀌고, panic 값 · 요청 헤더는 로그에 남지 않는다.
+// panic은 정리된 500으로 바뀌고, panic 값 · 요청 헤더는 로그에 남지 않음.
 func TestRecoveryHidesPanicValue(t *testing.T) {
 	var logs bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&logs, nil))
@@ -211,7 +211,7 @@ func TestRecoveryHidesPanicValue(t *testing.T) {
 	}
 }
 
-// panic은 Sentry에 타입 · route · request ID만 보낸다. panic 값 · 요청 헤더는 보내지 않는다.
+// panic은 Sentry에 타입 · route · request ID만 전송. panic 값 · 요청 헤더는 보내지 않음.
 func TestPanicReportCarriesNoRequestData(t *testing.T) {
 	var events []*sentry.Event
 	client, err := sentry.NewClient(sentry.ClientOptions{
@@ -247,7 +247,7 @@ func TestPanicReportCarriesNoRequestData(t *testing.T) {
 	}
 }
 
-// Cloud Run traceparent가 있으면 요청 로그에 Cloud Logging trace 이름이 붙는다.
+// Cloud Run traceparent가 있으면 요청 로그에 Cloud Logging trace 이름 추가.
 func TestRequestLogCarriesCloudTrace(t *testing.T) {
 	var logs bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&logs, nil))

@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-// 종료 코드. go run은 자식의 코드를 그대로 돌려주지 않을 수 있으므로 gate에는 빌드한 바이너리를 쓴다.
+// 종료 코드. go run은 자식의 코드를 그대로 돌려주지 않을 수 있으므로 gate에는 빌드한 바이너리 사용.
 const (
 	ExitOK         = 0
 	ExitUsage      = 2
@@ -17,7 +17,7 @@ const (
 	ExitGate       = 4
 )
 
-// 테스트가 바꿔 끼우는 것. 운영에서는 production Transport와 실제 git이다.
+// 테스트가 바꿔 끼우는 것. 운영에서는 production Transport와 실제 git.
 var (
 	transport http.RoundTripper
 	gitInfo   = collectGit

@@ -27,7 +27,7 @@ func createJob(t *testing.T, store *processing.Store, userID string, job process
 	return created
 }
 
-// complete는 작업을 결과와 함께 끝낸다. processed 결과에는 같은 유형 · 처리 방식을 고른 것으로 남긴다.
+// complete는 작업을 결과와 함께 종료. processed 결과에는 같은 유형 · 처리 방식을 고른 것으로 기록.
 func complete(t *testing.T, store *processing.Store, id string, o *processing.Outcome) {
 	t.Helper()
 	if err := store.Complete(context.Background(), id, completion(o)); err != nil {
@@ -48,7 +48,7 @@ func isCheckViolation(err error) bool {
 	return errors.As(err, &pgErr) && pgErr.Code == "23514"
 }
 
-// 제품 결과는 종류마다 저장한 그대로 읽힌다. 단건 조회와 목록이 같다.
+// 제품 결과는 종류마다 저장한 그대로 읽힘. 단건 조회와 목록이 같음.
 func TestCompleteStoresOutcome(t *testing.T) {
 	store, userID := setup(t)
 	receipt := createFrom(t, store, userID, processing.OriginGeneral)
@@ -79,7 +79,7 @@ func TestCompleteStoresOutcome(t *testing.T) {
 	}
 }
 
-// 이 migration 전의 작업 · 제품 결과 없이 끝난 작업은 outcome이 없다. 기본값으로 채우지 않는다.
+// 이 migration 전의 작업 · 제품 결과 없이 끝난 작업은 outcome이 없음. 기본값으로 채우지 않음.
 func TestLegacyJobHasNoOutcome(t *testing.T) {
 	store, pool, userID := setupPool(t)
 	ctx := context.Background()
@@ -101,7 +101,7 @@ func TestLegacyJobHasNoOutcome(t *testing.T) {
 	}
 }
 
-// 계약 밖의 제품 결과는 저장하지 않는다. 작업은 처리 중 그대로다.
+// 계약 밖의 제품 결과는 저장하지 않음. 작업은 처리 중 그대로.
 func TestCompleteRejectsInvalidOutcome(t *testing.T) {
 	store, userID := setup(t)
 	job := createFrom(t, store, userID, processing.OriginGeneral)
@@ -115,7 +115,7 @@ func TestCompleteRejectsInvalidOutcome(t *testing.T) {
 	}
 }
 
-// DB도 유형과 처리 방식의 짝, 끝난 작업에만 있는 outcome을 강제한다.
+// DB도 유형과 처리 방식의 짝, 끝난 작업에만 있는 outcome을 강제.
 func TestOutcomeCheck(t *testing.T) {
 	store, pool, userID := setupPool(t)
 	ctx := context.Background()
@@ -136,12 +136,12 @@ func TestOutcomeCheck(t *testing.T) {
 	}
 }
 
-// DB CHECK를 지나도 결과 모양이 계약 밖이면 고쳐 읽지 않고 실패한다.
+// DB CHECK를 지나도 결과 모양이 계약 밖이면 고쳐 읽지 않고 실패.
 func TestStoredOutcomeOutsideContractFailsToRead(t *testing.T) {
 	store, pool, userID := setupPool(t)
 	job := createFrom(t, store, userID, processing.OriginGeneral)
 	complete(t, store, job.ID, nil)
-	// 고른 유형 · 처리 방식은 결과와 같게 두어 DB CHECK를 지나고, 결과 필드만 계약 밖이다.
+	// 고른 유형 · 처리 방식은 결과와 같게 두어 DB CHECK를 지나고, 결과 필드만 계약 밖.
 	if _, err := pool.Exec(context.Background(),
 		"UPDATE processing_jobs SET image_type = 'text', applied_action = 'extract_text', outcome = $2 WHERE id = $1::uuid", job.ID,
 		`{"kind":"processed","imageType":"text","appliedAction":"extract_text","output":{}}`); err != nil {
@@ -154,7 +154,7 @@ func TestStoredOutcomeOutsideContractFailsToRead(t *testing.T) {
 	}
 }
 
-// 유형을 정하지 못한 작업은 끝난 작업이라 오래돼도 실패로 바뀌지 않는다.
+// 유형을 정하지 못한 작업은 끝난 작업이라 오래돼도 실패로 바뀌지 않음.
 func TestAmbiguousJobDoesNotGoStale(t *testing.T) {
 	store, userID := setup(t)
 	job := createFrom(t, store, userID, processing.OriginGeneral)
@@ -169,7 +169,7 @@ func TestAmbiguousJobDoesNotGoStale(t *testing.T) {
 	}
 }
 
-// 재처리는 이 사용자의 같은 사진 작업만 원래 작업으로 가리킨다.
+// 재처리는 이 사용자의 같은 사진 작업만 원래 작업으로 가리킴.
 func TestCreateLinksSourceJob(t *testing.T) {
 	store, pool, userID := setupPool(t)
 	other := newUser(t, pool, "g-2")
@@ -200,7 +200,7 @@ func TestCreateLinksSourceJob(t *testing.T) {
 	}
 }
 
-// 원래 작업이 지워지면 재처리 작업은 남고 관계만 사라진다.
+// 원래 작업이 지워지면 재처리 작업은 남고 관계만 사라짐.
 func TestDeletedSourceLeavesReprocess(t *testing.T) {
 	store, pool, userID := setupPool(t)
 	ctx := context.Background()
@@ -215,7 +215,7 @@ func TestDeletedSourceLeavesReprocess(t *testing.T) {
 	}
 }
 
-// DB는 다른 사용자의 원래 작업 · 자기 자신 · hex SHA-256이 아닌 digest를 거절한다.
+// DB는 다른 사용자의 원래 작업 · 자기 자신 · hex SHA-256이 아닌 digest를 거절.
 func TestSourceAndDigestConstraints(t *testing.T) {
 	store, pool, userID := setupPool(t)
 	ctx := context.Background()
@@ -237,7 +237,7 @@ func TestSourceAndDigestConstraints(t *testing.T) {
 	}
 }
 
-// 고른 유형 · 처리 방식은 결과 없이도 작업에 남고, 단건 조회와 목록이 같은 값을 읽는다.
+// 고른 유형 · 처리 방식은 결과 없이도 작업에 남고, 단건 조회와 목록이 같은 값을 읽음.
 func TestCompleteStoresSelection(t *testing.T) {
 	store, userID := setup(t)
 	job := createFrom(t, store, userID, processing.OriginGeneral)
@@ -255,7 +255,7 @@ func TestCompleteStoresSelection(t *testing.T) {
 	}
 }
 
-// 고른 것과 다른 결과 · 고른 처리 방식이 있는 unsupported · 유형에 없는 처리 방식은 저장하지 않는다.
+// 고른 것과 다른 결과 · 고른 처리 방식이 있는 unsupported · 유형에 없는 처리 방식은 저장하지 않음.
 func TestCompleteRejectsMismatchedSelection(t *testing.T) {
 	store, userID := setup(t)
 	text := outcome(processing.ImageText, "extract_text", processed[processing.ImageText]["extract_text"])
@@ -272,7 +272,7 @@ func TestCompleteRejectsMismatchedSelection(t *testing.T) {
 	}
 }
 
-// DB도 유형 · 처리 방식의 짝과, 결과와 고른 것의 일치를 강제한다.
+// DB도 유형 · 처리 방식의 짝과, 결과와 고른 것의 일치를 강제.
 func TestSelectionCheck(t *testing.T) {
 	store, pool, userID := setupPool(t)
 	ctx := context.Background()
@@ -295,7 +295,7 @@ func TestSelectionCheck(t *testing.T) {
 	}
 }
 
-// scriptedModel은 정해진 유형으로 판단하고, 고른 텍스트 처리 방식의 결과 계약(outputFields)이 요구하는 필드를 채워 돌려준다.
+// scriptedModel은 정해진 유형으로 판단하고, 고른 텍스트 처리 방식의 결과 계약(outputFields)이 요구하는 필드를 채워 반환.
 type scriptedModel struct{ typing processing.Typing }
 
 func (m scriptedModel) Classify(context.Context, []byte, string) (processing.Result, error) {
@@ -325,7 +325,7 @@ func (p storedPreferences) Find(context.Context, string) (preference.Preferences
 	return p.prefs, nil
 }
 
-// 처리가 끝나면 적용한 처리 방식과 그 결과를 단건 조회 · 목록(GET API가 읽는 것)으로 다시 읽는다.
+// 처리가 끝나면 적용한 처리 방식과 그 결과를 단건 조회 · 목록(GET API가 읽는 것)으로 다시 읽음.
 func TestProcessorStoresTheActionResult(t *testing.T) {
 	store, userID := setup(t)
 	prefs := storedPreferences{preference.Preferences{Text: preference.TextExtractOnly, Receipt: preference.ReceiptExtractText}}

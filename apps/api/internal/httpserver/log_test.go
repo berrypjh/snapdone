@@ -13,7 +13,7 @@ import (
 	"snapdone/api/internal/auth"
 )
 
-// 로그를 남기는 인증 실패 경로(Google 오류 · DB 장애)를 지나도 query · code · state · verifier · credential 원문이 남지 않는다.
+// 로그를 남기는 인증 실패 경로(Google 오류 · DB 장애)를 지나도 query · code · state · verifier · credential 원문이 남지 않음.
 func TestAuthLogsCarryNoSecrets(t *testing.T) {
 	f := newOAuthFixture(t)
 	var secrets []string
@@ -70,7 +70,7 @@ func TestAuthLogsCarryNoSecrets(t *testing.T) {
 	}
 }
 
-// 사용자 취소는 오류 로그에 섞이지 않고, 맞지 않는 state는 경고, 장애는 오류로 남는다.
+// 사용자 취소는 오류 로그에 섞이지 않고, 맞지 않는 state는 경고, 장애는 오류로 기록.
 func TestCallbackLogLevel(t *testing.T) {
 	cases := []struct {
 		err  error

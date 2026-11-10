@@ -11,29 +11,29 @@ import (
 
 const RunSchemaVersion = 1
 
-// run 하나가 무엇을 어떤 조건으로 돌렸는지. 산출물이 서로 비교 가능한지 판단하는 근거다.
+// run 하나가 무엇을 어떤 조건으로 돌렸는지. 산출물이 서로 비교 가능한지 판단하는 근거.
 type RunMetadata struct {
 	SchemaVersion int       `json:"schemaVersion"`
 	RunID         string    `json:"runId"`
 	StartedAt     time.Time `json:"startedAt"`
-	// running → completed(전부 돌았음) · partial(중단 · not-run 있음). 산출물의 마지막 쓰기다.
+	// running → completed(전부 돌았음) · partial(중단 · not-run 있음). 산출물의 마지막 쓰기.
 	Status     RunStatus        `json:"status"`
 	FinishedAt *time.Time       `json:"finishedAt"`
 	Abort      string           `json:"abort,omitempty"`
 	Mode       Mode             `json:"mode"`
 	Source     Source           `json:"source"`
 	Dataset    DatasetSelection `json:"dataset"`
-	// 고른 case id. 순서가 곧 실행 순서다.
+	// 고른 case id. 순서가 곧 실행 순서.
 	SelectedCaseIDs []string  `json:"selectedCaseIds"`
 	Variants        []Variant `json:"variants"`
-	// 채점 규칙(evaluator)과 그 hash. 규칙이 바뀌면 점수를 비교하지 않는다.
+	// 채점 규칙(evaluator)과 그 hash. 규칙이 바뀌면 점수를 비교하지 않음.
 	Policy              ScoringPolicy `json:"policy"`
 	EvaluatorPolicyHash string        `json:"evaluatorPolicyHash"`
-	// production category · action · confidence 목록의 hash. 지시가 바뀌어도 같지만, 목록이 바뀌면 점수를 비교하지 않는다.
+	// production category · action · confidence 목록의 hash. 지시가 바뀌어도 같지만, 목록이 바뀌면 점수를 비교하지 않음.
 	LabelContractHash string   `json:"labelContractHash"`
 	Sampling          Sampling `json:"sampling"`
 	Controls          Controls `json:"controls"`
-	// 실패한 것만 다시 실행했다면 원래 run id. 원래 run에서 끝난 결과는 호출 없이 옮겨 왔다(case의 carriedFrom).
+	// 실패한 것만 다시 실행했다면 원래 run id. 원래 run에서 끝난 결과는 호출 없이 옮겨 옴(case의 carriedFrom).
 	RetriedFrom string `json:"retriedFrom,omitempty"`
 }
 
@@ -45,7 +45,7 @@ const (
 	RunPartial   RunStatus = "partial"
 )
 
-// live는 provider를 실제로 불렀고, replay는 기록된 관측을 다시 채점했다.
+// live는 provider를 실제로 불렀고, replay는 기록된 관측을 다시 채점.
 type Mode string
 
 const (
@@ -53,22 +53,22 @@ const (
 	Replay Mode = "replay"
 )
 
-// 무엇을 돌렸는지 — git 상태와, 평가에 관여한 소스 · module 파일의 hash. secret 파일은 hash 대상이 아니다.
+// 무엇을 돌렸는지 — git 상태와, 평가에 관여한 소스 · module 파일의 hash. secret 파일은 hash 대상이 아님.
 type Source struct {
 	Commit string `json:"commit"`
 	Branch string `json:"branch,omitempty"`
 	Dirty  bool   `json:"dirty"`
-	// internal/processing · internal/evaluation · processingadapter · internal/evalcli · cmd/eval의 .go 파일 hash. dirty일 때 무엇을 돌렸는지 남긴다.
-	// production 지시가 바뀌어도 달라지므로 실험 변수다.
+	// internal/processing · internal/evaluation · processingadapter · internal/evalcli · cmd/eval의 .go 파일 hash. dirty일 때 무엇을 돌렸는지 기록.
+	// production 지시가 바뀌어도 달라지므로 실험 변수.
 	SourceHash string `json:"sourceHash"`
-	// internal/evaluation의 .go 파일만의 hash. 채점기가 같은지 본다 — 다르면 같은 채점기로 raw를 다시 요약한 뒤 비교한다.
+	// internal/evaluation의 .go 파일만의 hash. 채점기가 같은지 확인 — 다르면 같은 채점기로 raw를 다시 요약한 뒤 비교.
 	EvaluatorHash string `json:"evaluatorHash"`
 	// go.mod · go.sum의 hash.
 	ModuleHash string `json:"moduleHash"`
 	GoVersion  string `json:"goVersion"`
 }
 
-// 어떤 case를 골랐는지. SelectionHash는 고른 case 파일과 사진 byte의 hash다.
+// 어떤 case를 골랐는지. SelectionHash는 고른 case 파일과 사진 byte의 hash.
 type DatasetSelection struct {
 	Name          string `json:"name"`
 	Version       int    `json:"version"`
@@ -79,7 +79,7 @@ type DatasetSelection struct {
 }
 
 // 비교 대상 — adapter · 공급자 · 모델 · 계약. manifest에서 비밀값 없이 그대로 옮긴 것이고 ContractHash는
-// ClassificationContract.Hash다.
+// ClassificationContract.Hash.
 type Variant struct {
 	ID           string `json:"id"`
 	Version      int    `json:"version"`
@@ -90,22 +90,22 @@ type Variant struct {
 	BaseHost     string `json:"baseHost,omitempty"`
 	APIKeyEnv    string `json:"apiKeyEnv,omitempty"`
 	ContractHash string `json:"contractHash"`
-	// 파일 없이 `[설정@]공급자:모델`로 만든 variant면 그 참조. retry가 같은 variant를 다시 만드는 근거다.
+	// 파일 없이 `[설정@]공급자:모델`로 만든 variant면 그 참조. retry가 같은 variant를 다시 만드는 근거.
 	Ref string `json:"ref,omitempty"`
-	// 실험 설정. 없으면 production 분류기 그대로다.
+	// 실험 설정. 없으면 production 분류기 그대로.
 	PromptHash string           `json:"promptHash,omitempty"`
 	Retrieval  *RetrievalConfig `json:"retrieval,omitempty"`
 	Cascade    *CascadeConfig   `json:"cascade,omitempty"`
 	Baseline   *BaselineConfig  `json:"baseline,omitempty"`
 }
 
-// 같은 case를 몇 번 돌렸는지. 흔들림을 보려면 Trials > 1이다.
+// 같은 case를 몇 번 돌렸는지. 흔들림을 보려면 Trials > 1.
 type Sampling struct {
 	Trials int    `json:"trials"`
 	Seed   *int64 `json:"seed"`
 }
 
-// 실행 제어. MaxAttempts는 runner의 재시도(항상 1)이고 SDK 내부 재시도는 attempts에 따로 보인다.
+// 실행 제어. MaxAttempts는 runner의 재시도(항상 1)이고 SDK 내부 재시도는 attempts에 따로 보임.
 type Controls struct {
 	TimeoutMs   int  `json:"timeoutMs"`
 	MaxAttempts int  `json:"maxAttempts"`
@@ -113,7 +113,7 @@ type Controls struct {
 	AllowAPI    bool `json:"allowApi"`
 	// 실제 HTTP 왕복(SDK 재시도 포함)의 상한.
 	CallBudget int `json:"callBudget"`
-	// 채점 자격 없는 case · held-out을 열었는지. 열었으면 공식 benchmark가 아니다.
+	// 채점 자격 없는 case · held-out을 열었는지. 열었으면 공식 benchmark가 아님.
 	AllowDrafts  bool `json:"allowDrafts"`
 	AllowHeldOut bool `json:"allowHeldOut"`
 }
@@ -183,7 +183,7 @@ func (r RunMetadata) Validate() error {
 	return errors.Join(checks...)
 }
 
-// 모델을 부르는 variant가 있는지. 기준선만 돈 live run은 opt-in · 예산이 없다.
+// 모델을 부르는 variant가 있는지. 기준선만 돈 live run은 opt-in · 예산이 없음.
 func (r RunMetadata) callsProvider() bool {
 	for _, v := range r.Variants {
 		if v.Adapter != AdapterBaseline {

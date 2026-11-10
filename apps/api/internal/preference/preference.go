@@ -1,5 +1,5 @@
-// Package preference는 사용자가 고른 이미지 유형별 처리 방식을 저장한다.
-// 유형마다 고를 수 있는 값이 달라 타입을 나눈다. 화면 문구는 여기에 두지 않는다.
+// Package preference는 사용자가 고른 이미지 유형별 처리 방식을 저장.
+// 유형마다 고를 수 있는 값이 달라 타입을 나눔. 화면 문구는 여기에 두지 않음.
 package preference
 
 import (
@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// 계약 밖의 처리 방식이다.
+// 계약 밖의 처리 방식.
 var ErrInvalid = errors.New("preference: action outside the contract")
 
 // 텍스트 · 외국어 사진의 처리 방식.
@@ -46,7 +46,7 @@ type Preferences struct {
 	Receipt ReceiptAction
 }
 
-// 고른 적이 없는 사용자의 처리 방식. migration의 컬럼 DEFAULT와 같다.
+// 고른 적이 없는 사용자의 처리 방식. migration의 컬럼 DEFAULT와 같음.
 func Defaults() Preferences {
 	return Preferences{Text: TextExtractAndTranslate, Receipt: ReceiptRecordExpense}
 }
@@ -59,13 +59,13 @@ func NewStore(pool *pgxpool.Pool) *Store {
 	return &Store{pool: pool}
 }
 
-// 사용자의 처리 방식. 고른 적이 없으면 기본값이다.
+// 사용자의 처리 방식. 고른 적이 없으면 기본값.
 func (s *Store) Find(ctx context.Context, userID string) (Preferences, error) {
 	return s.query(ctx,
 		"SELECT processing_text_action, processing_receipt_action FROM profiles WHERE user_id = $1::uuid", userID)
 }
 
-// 텍스트 · 외국어 처리 방식만 바꾸고 바뀐 뒤의 전체를 돌려준다. 영수증 값은 건드리지 않는다.
+// 텍스트 · 외국어 처리 방식만 바꾸고 바뀐 뒤의 전체 반환. 영수증 값은 건드리지 않음.
 func (s *Store) SetText(ctx context.Context, userID string, action TextAction) (Preferences, error) {
 	if !action.Valid() {
 		return Preferences{}, ErrInvalid
@@ -75,7 +75,7 @@ func (s *Store) SetText(ctx context.Context, userID string, action TextAction) (
 		 RETURNING processing_text_action, processing_receipt_action`, userID, action)
 }
 
-// 영수증 처리 방식만 바꾸고 바뀐 뒤의 전체를 돌려준다. 텍스트 · 외국어 값은 건드리지 않는다.
+// 영수증 처리 방식만 바꾸고 바뀐 뒤의 전체 반환. 텍스트 · 외국어 값은 건드리지 않음.
 func (s *Store) SetReceipt(ctx context.Context, userID string, action ReceiptAction) (Preferences, error) {
 	if !action.Valid() {
 		return Preferences{}, ErrInvalid
@@ -85,7 +85,7 @@ func (s *Store) SetReceipt(ctx context.Context, userID string, action ReceiptAct
 		 RETURNING processing_text_action, processing_receipt_action`, userID, action)
 }
 
-// 처리 방식 한 행을 읽는다. 프로필이 없으면 pgx.ErrNoRows다.
+// 처리 방식 한 행 조회. 프로필이 없으면 pgx.ErrNoRows.
 func (s *Store) query(ctx context.Context, sql string, args ...any) (Preferences, error) {
 	var p Preferences
 	err := s.pool.QueryRow(ctx, sql, args...).Scan(&p.Text, &p.Receipt)

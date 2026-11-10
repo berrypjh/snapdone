@@ -3,15 +3,15 @@ package processing
 import "errors"
 
 var (
-	// 지출 정보 결과가 있는 완료 작업이 아니다. 확정할 필드가 없다.
+	// 지출 정보 결과가 있는 완료 작업 아님. 확정할 필드가 없음.
 	ErrNotResolvable = errors.New("processing: job has no expense to resolve")
-	// 지출 정보에 없는 필드이거나, 그 필드의 형식이 아닌 값이다.
+	// 지출 정보에 없는 필드이거나, 그 필드의 형식이 아닌 값.
 	ErrInvalidReceiptField = errors.New("processing: receipt field or value outside the contract")
-	// 이미 다른 값으로 확정한 필드다.
+	// 이미 다른 값으로 확정한 필드.
 	ErrFieldResolved = errors.New("processing: receipt field already resolved")
 )
 
-// 영수증 지출 정보. 값의 형식은 Expense가 정하고, 서버가 같은 규칙(Expense.valid)으로 다시 검사한다.
+// 영수증 지출 정보. 값의 형식은 Expense가 정하고, 서버가 같은 규칙(Expense.valid)으로 다시 검사.
 var expenseSpec = actionSpec{
 	name: "record_expense",
 	instructions: actionRules + `Task: record the expense on this receipt. For each field give only what is printed:
@@ -42,7 +42,7 @@ func expenseSchema() map[string]any {
 	})
 }
 
-// 응답의 다섯 필드를 지출 정보로 옮긴다. 하나라도 없으면 errInvalidAction이다. 값 형식은 parse가 Output.valid로 본다.
+// 응답의 다섯 필드를 지출 정보로 옮김. 하나라도 없으면 errInvalidAction. 값 형식은 parse가 Output.valid로 확인.
 func buildExpense(a actionAnswer) (Output, error) {
 	if a.Original != nil || a.Summary != nil || a.Translation != nil || a.TranslationNeeded != nil ||
 		a.Merchant == nil || a.Date == nil || a.Total == nil || a.Currency == nil || a.PaymentMethod == nil {
@@ -53,7 +53,7 @@ func buildExpense(a actionAnswer) (Output, error) {
 	}}, nil
 }
 
-// 이름으로 지출 정보의 필드와 그 형식을 찾는다. 계약 밖의 이름이면 nil이다.
+// 이름으로 지출 정보의 필드와 그 형식 조회. 계약 밖의 이름이면 nil.
 func (e *Expense) field(name string) (*ReceiptField, func(string) bool) {
 	switch name {
 	case "merchant":
@@ -70,8 +70,8 @@ func (e *Expense) field(name string) (*ReceiptField, func(string) bool) {
 	return nil, nil
 }
 
-// 작업의 지출 정보에서 필드 하나를 value로 확정한다. 후보 중 하나를 고르거나, 형식에 맞는 값을 직접 넣을 수 있다.
-// 후보는 감사용으로 그대로 둔다. 바뀌었으면 true다 — 같은 값으로 이미 확정했으면 false이고 오류가 아니다.
+// 작업의 지출 정보에서 필드 하나를 value로 확정. 후보 중 하나를 고르거나, 형식에 맞는 값을 직접 입력 가능.
+// 후보는 감사용으로 그대로 둠. 바뀌었으면 true — 같은 값으로 이미 확정했으면 false이고 오류 아님.
 func resolveField(job *Job, name, value string) (bool, error) {
 	o := job.Outcome
 	if job.Status != StatusCompleted || o == nil || o.Kind != OutcomeProcessed || o.Output == nil || o.Output.Expense == nil {

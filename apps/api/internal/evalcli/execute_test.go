@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// run은 opt-in과 예산이 있을 때만 provider(여기서는 가짜)를 부르고 산출물을 쓴다. 취소되면 partial(3)이다.
+// run은 opt-in과 예산이 있을 때만 provider(여기서는 가짜)를 부르고 산출물 기록. 취소되면 partial(3).
 func TestRunWritesArtifactsAndHonoursCancellation(t *testing.T) {
 	provider := &fakeProvider{}
 	stub(t, provider)
@@ -48,7 +48,7 @@ func TestRunWritesArtifactsAndHonoursCancellation(t *testing.T) {
 	}
 }
 
-// 설정된 key 값은 어떤 출력 · 산출물에도 나오지 않는다.
+// 설정된 key 값은 어떤 출력 · 산출물에도 나오지 않음.
 func TestNoSecretInOutputs(t *testing.T) {
 	provider := &fakeProvider{body: `{"id":"msg","type":"message","role":"assistant","model":"m","stop_reason":"end_turn","content":[{"type":"text","text":"{\"category\":\"place\",\"facts\":[{\"label\":\"k\",\"value\":\"` + sentinel + `\"}],\"suggestedAction\":\"save_place\",\"confidence\":\"high\"}"}],"usage":{"input_tokens":1,"output_tokens":1}}`}
 	stub(t, provider)
@@ -78,7 +78,7 @@ func TestNoSecretInOutputs(t *testing.T) {
 	}
 }
 
-// 기준선만 도는 run은 모델을 부르지 않으므로 --allow-api 없이 돌고, 모델 variant가 섞이면 opt-in이 필요하다.
+// 기준선만 도는 run은 모델을 부르지 않으므로 --allow-api 없이 돌고, 모델 variant가 섞이면 opt-in 필요.
 func TestBaselineRunNeedsNoOptIn(t *testing.T) {
 	provider := &fakeProvider{}
 	stub(t, provider)
@@ -99,7 +99,7 @@ func TestBaselineRunNeedsNoOptIn(t *testing.T) {
 	}
 }
 
-// retrieve는 모델 없이 검색만 재고 case마다 예시를 보인다.
+// retrieve는 모델 없이 검색만 재고 case마다 예시 표시.
 func TestRetrieveProbe(t *testing.T) {
 	provider := &fakeProvider{}
 	stub(t, provider)

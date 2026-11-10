@@ -6,34 +6,34 @@ import (
 	"fmt"
 )
 
-// 값이 있는지, 없다면 왜 없는지. 없는 값을 0으로 읽는 실수를 타입으로 막는다.
+// 값이 있는지, 없다면 왜 없는지. 없는 값을 0으로 읽는 실수를 타입으로 방지.
 type Availability string
 
 const (
-	// 실제로 쟀다. 0도 값이다.
+	// 실제로 측정함. 0도 값.
 	Measured Availability = "measured"
-	// 일부만 쟀다. 값과 이유가 같이 있다.
+	// 일부만 측정함. 값과 이유가 같이 있음.
 	Partial Availability = "partial"
-	// 잴 수 있어야 하는데 이번에는 얻지 못했다(오류 · 응답 누락).
+	// 잴 수 있어야 하는데 이번에는 얻지 못함(오류 · 응답 누락).
 	Unavailable Availability = "unavailable"
-	// 이 공급자 · seam이 주지 않는다.
+	// 이 공급자 · seam이 주지 않음.
 	Unsupported Availability = "unsupported"
-	// 재지 않기로 했다(설정으로 끔).
+	// 재지 않기로 함(설정으로 끔).
 	NotMeasured Availability = "not-measured"
-	// 이 task · case에는 뜻이 없다.
+	// 이 task · case에는 뜻이 없음.
 	NotApplicable Availability = "not-applicable"
 )
 
 var availabilities = []Availability{Measured, Partial, Unavailable, Unsupported, NotMeasured, NotApplicable}
 
-// 측정값 하나. Value는 measured · partial일 때만 있고, 나머지는 Reason이 말한다.
+// 측정값 하나. Value는 measured · partial일 때만 있고, 나머지는 Reason이 말함.
 type Measure struct {
 	Availability Availability `json:"availability"`
 	Value        *float64     `json:"value"`
 	Reason       string       `json:"reason,omitempty"`
 }
 
-// 잰 값. 0도 그대로 값이다.
+// 잰 값. 0도 그대로 값.
 func MeasuredValue(value float64) Measure { return Measure{Availability: Measured, Value: &value} }
 
 // 값이 없는 측정과 그 이유.
@@ -67,7 +67,7 @@ func (m Measure) Validate() error {
 	return nil
 }
 
-// JSON에서 읽을 때 availability와 value의 짝을 바로 검사한다.
+// JSON에서 읽을 때 availability와 value의 짝을 바로 검사.
 func (m *Measure) UnmarshalJSON(data []byte) error {
 	type plain Measure
 	var decoded plain

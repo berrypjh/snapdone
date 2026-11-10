@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-// OpenAI 호환 Chat Completions API 분류기. OpenAI(GPT)와 Ollama · vLLM 같은 로컬 서버가 같은 형식을 쓴다.
+// OpenAI 호환 Chat Completions API 분류기. OpenAI · Ollama · vLLM 등 지원.
 type OpenAIClassifier struct {
 	endpoint     string
 	model        string
@@ -20,8 +20,7 @@ type OpenAIClassifier struct {
 	instructions string
 }
 
-// baseURL은 /chat/completions 앞까지다. 예: https://api.openai.com/v1, http://localhost:11434/v1
-// apiKey가 비면 Authorization 헤더를 보내지 않는다(로컬 서버).
+// baseURL은 /chat/completions 앞까지(예: http://localhost:11434/v1). apiKey가 비면 인증 헤더 생략.
 func NewOpenAIClassifier(baseURL, model, apiKey string, httpClient *http.Client) *OpenAIClassifier {
 	return &OpenAIClassifier{
 		endpoint:     strings.TrimRight(baseURL, "/") + "/chat/completions",
@@ -32,7 +31,7 @@ func NewOpenAIClassifier(baseURL, model, apiKey string, httpClient *http.Client)
 	}
 }
 
-// 평가 실험용 복사본. 지시만 text로 바꾸고 요청 · 결과 schema · 검증은 그대로다. 서버는 부르지 않는다.
+// 지시만 바꾼 평가용 복사본. 서버는 쓰지 않음.
 func (c *OpenAIClassifier) WithInstructions(text string) *OpenAIClassifier {
 	clone := *c
 	clone.instructions = text
@@ -57,7 +56,7 @@ func (c *OpenAIClassifier) Classify(ctx context.Context, image []byte, mediaType
 	return parseResult(text)
 }
 
-// 제품 유형 판단. 분류와 같은 endpoint · 모델을 쓰고 지시 · schema만 다르다.
+// 제품 유형 판단. 분류와 같은 모델, 지시 · schema만 다름.
 func (c *OpenAIClassifier) TypeImage(ctx context.Context, image []byte, mediaType string) (Typing, error) {
 	text, err := c.ask(ctx, image, mediaType, typingInstructions, typingRequest, "image_type", typingSchema())
 	if err != nil {
@@ -66,7 +65,7 @@ func (c *OpenAIClassifier) TypeImage(ctx context.Context, image []byte, mediaTyp
 	return parseTyping(text)
 }
 
-// 고른 처리 방식을 실행한다. 처리 방식마다 지시 · schema · 해석이 다르다(actionSpec).
+// 고른 처리 방식 실행. 지시 · schema · 해석은 actionSpec이 결정.
 func (c *OpenAIClassifier) Act(ctx context.Context, image []byte, mediaType string, s Selection) (Output, error) {
 	spec, err := specFor(s)
 	if err != nil {
@@ -79,7 +78,7 @@ func (c *OpenAIClassifier) Act(ctx context.Context, image []byte, mediaType stri
 	return spec.parse(text)
 }
 
-// 사진 한 장과 지시 · 요청 · 결과 schema로 묻고 JSON 본문을 돌려준다. 결과가 온전하지 않으면 오류다.
+// 사진과 지시 · schema로 묻고 JSON 본문 반환. 결과가 온전하지 않으면 오류.
 func (c *OpenAIClassifier) ask(ctx context.Context, image []byte, mediaType, system, prompt, name string, schema map[string]any) (string, error) {
 	body, err := json.Marshal(map[string]any{
 		"model": c.model,
@@ -116,7 +115,7 @@ func (c *OpenAIClassifier) ask(ctx context.Context, image []byte, mediaType, sys
 		return "", err
 	}
 	defer resp.Body.Close()
-	// 오류 본문은 읽지 않는다. 상태 코드만으로 실패를 알린다.
+	// 오류 본문은 읽지 않고 상태 코드로만 실패 처리.
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("processing: model API status %d", resp.StatusCode)
 	}
@@ -128,7 +127,7 @@ func (c *OpenAIClassifier) ask(ctx context.Context, image []byte, mediaType, sys
 		return "", errors.New("processing: no choice")
 	}
 	choice := chat.Choices[0]
-	// 거절 · 길이 초과 등은 결과가 온전하지 않다.
+	// 거절 · 길이 초과는 실패.
 	if choice.Message.Refusal != "" || choice.FinishReason != "stop" {
 		return "", fmt.Errorf("processing: finish reason %s", choice.FinishReason)
 	}

@@ -6,7 +6,7 @@ import (
 	"snapdone/api/internal/evaluation"
 )
 
-// "<runId>:<variantId>[:<trial>]". trial을 빼면 1이다.
+// "<runId>:<variantId>[:<trial>]". trial을 빼면 1.
 func TestParseRef(t *testing.T) {
 	good := map[string]evaluation.RunRef{
 		"run-a:v1":   {RunID: "run-a", VariantID: "v1", Trial: 1},

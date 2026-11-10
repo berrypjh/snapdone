@@ -117,7 +117,7 @@ func TestWriterRejectsCollisionAndBadRoots(t *testing.T) {
 	}
 }
 
-// writer는 채점하지 않는다. 이 run이 고른 case의, wire 계약을 지키는 CaseResult만 쓰고 나머지는 run을 멈춘다.
+// writer는 채점하지 않음. 이 run이 고른 case의, wire 계약을 지키는 CaseResult만 쓰고 나머지는 run을 멈춤.
 func TestWriterWritesOnlyValidSelectedResults(t *testing.T) {
 	c := resolved("case-a", "event", "add_to_calendar")
 	c.Revision = 1
@@ -156,7 +156,7 @@ func TestWriterWritesOnlyValidSelectedResults(t *testing.T) {
 	}
 }
 
-// summary를 쓸 수 없으면 Finish는 실패하고 metadata는 running으로 남는다.
+// summary를 쓸 수 없으면 Finish는 실패하고 metadata는 running으로 남음.
 func TestWriterFinishFailsWhenSummaryCannotBeWritten(t *testing.T) {
 	root := t.TempDir()
 	ds := runnerDataset(t, 1)
@@ -174,7 +174,7 @@ func TestWriterFinishFailsWhenSummaryCannotBeWritten(t *testing.T) {
 	}
 }
 
-// case 줄을 쓸 수 없으면 run이 그 자리에서 오류로 끝난다.
+// case 줄을 쓸 수 없으면 run이 그 자리에서 오류로 끝남.
 func TestWriterResultFailureStopsTheRun(t *testing.T) {
 	root := t.TempDir()
 	ds := runnerDataset(t, 2)
@@ -198,7 +198,7 @@ func (b brokenSink) Begin(m RunMetadata) error {
 	if err := b.w.Begin(m); err != nil {
 		return err
 	}
-	// 파일을 닫고 버퍼를 아주 작게 해 다음 쓰기가 바로 실패하게 한다.
+	// 파일을 닫고 버퍼를 아주 작게 해 다음 쓰기가 바로 실패하게 함.
 	_ = b.w.file.Close()
 	b.w.buf = bufio.NewWriterSize(b.w.file, 16)
 	return nil
@@ -228,7 +228,7 @@ func TestSummarizeRejectsBrokenCases(t *testing.T) {
 	}
 }
 
-// privacy 검토가 끝나지 않은 case의 모델 원문은 남기지 않는다.
+// privacy 검토가 끝나지 않은 case의 모델 원문은 기록하지 않음.
 func TestWriterWithholdsTextForUnreviewedCases(t *testing.T) {
 	root := t.TempDir()
 	d := newTestDataset(t)
@@ -264,7 +264,7 @@ func TestWriterWithholdsTextForUnreviewedCases(t *testing.T) {
 	}
 }
 
-// replay 예시를 만들거나(EVAL_UPDATE_GOLDEN=1) 저장된 golden과 byte 단위로 비교한다.
+// replay 예시를 만들거나(EVAL_UPDATE_GOLDEN=1) 저장된 golden과 byte 단위로 비교.
 func replayRun(t *testing.T, root string) *RunWriter {
 	t.Helper()
 	ds := runnerDataset(t, 3)
@@ -314,7 +314,7 @@ func TestReplayGolden(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// replay: latency는 재지 않고, case-c는 기록이 없어 not-run이며 run은 partial이다.
+	// replay: latency는 재지 않고, case-c는 기록이 없어 not-run이며 run은 partial.
 	v := summary.Variants[0]
 	if summary.Mode != Replay || summary.Status != RunPartial || v.Latency.Attempted.N != 0 || v.Execution.NotRun != 1 || v.Execution.Completed != 2 {
 		t.Errorf("golden summary = %+v", v.Execution)
@@ -324,7 +324,7 @@ func TestReplayGolden(t *testing.T) {
 	}
 }
 
-// 저장소의 results/에 replay 예시를 쓴다(EVAL_WRITE_REPLAY_EXAMPLE=1). generated 산출물이고 git이 무시한다.
+// 저장소의 results/에 replay 예시 기록(EVAL_WRITE_REPLAY_EXAMPLE=1). generated 산출물이고 git이 무시.
 func TestWriteReplayExample(t *testing.T) {
 	if os.Getenv("EVAL_WRITE_REPLAY_EXAMPLE") != "1" {
 		t.Skip("set EVAL_WRITE_REPLAY_EXAMPLE=1 to write tools/evals/results/replay-example")
@@ -342,7 +342,7 @@ func TestWriteReplayExample(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// 손으로 만든 replay 관측 — 실제 모델 응답이 아니다. dev 7건 중 6건에 기록, 1건은 not-run.
+	// 손으로 만든 replay 관측 — 실제 모델 응답 아님. dev 7건 중 6건에 기록, 1건은 not-run.
 	records := replayMap{}
 	for _, c := range ds.Cases {
 		e := c.Expected.Classification

@@ -14,9 +14,9 @@ import (
 var (
 	// 설정되지 않은 provider, 잘못된 시작 요청, 또는 provider 쪽 장애.
 	ErrProviderUnavailable = errors.New("auth: provider unavailable")
-	// state · code · verifier가 맞지 않거나 이미 쓰였거나 만료됐다.
+	// state · code · verifier 불일치, 이미 사용, 또는 만료.
 	ErrInvalidCallback = errors.New("auth: invalid callback")
-	// 사용자가 provider 동의 화면에서 로그인을 취소했다. 장애가 아니다.
+	// 사용자가 provider 동의 화면에서 로그인 취소. 장애 아님.
 	ErrCancelled = errors.New("auth: cancelled by user")
 )
 
@@ -26,10 +26,10 @@ const (
 	grantTTL = 60 * time.Second
 )
 
-// 앱이 만든 PKCE challenge · state 모양. proof 모듈은 32바이트 base64url(43자)을 만든다.
+// 앱이 만든 PKCE challenge · state 모양. proof 모듈은 32바이트 base64url(43자) 생성.
 var proofValue = regexp.MustCompile(`^[A-Za-z0-9_-]{43,128}$`)
 
-// 로그인 시작 입력. 모양 검사는 Start가 한다.
+// 로그인 시작 입력. 모양 검사는 Start가 담당.
 type StartInput struct {
 	Provider  string
 	Challenge string
@@ -37,14 +37,14 @@ type StartInput struct {
 	Platform  string
 }
 
-// 로그인 결과를 돌려보낼 곳. 서버 설정에서만 오고 요청으로 바꿀 수 없다.
+// 로그인 결과를 돌려보낼 곳. 서버 설정에서만 오고 요청으로 변경 불가.
 type ReturnURIs struct {
 	Mobile string
 	Web    string
 }
 
-// provider OAuth와 앱 result grant를 묶는다.
-// proof는 둘이다: 서버↔Google PKCE(verifier는 서버만 안다), 앱↔서버 grant(verifier는 앱만 안다).
+// provider OAuth와 앱 result grant를 묶음.
+// proof는 둘: 서버↔Google PKCE(verifier는 서버만 앎), 앱↔서버 grant(verifier는 앱만 앎).
 type OAuth struct {
 	store   *Store
 	cipher  *Cipher
@@ -53,7 +53,7 @@ type OAuth struct {
 	consent Consent
 }
 
-// googleClient가 nil이면 Google 로그인은 비활성이다.
+// googleClient가 nil이면 Google 로그인 비활성.
 func NewOAuth(store *Store, cipher *Cipher, googleClient *google.Client, returns ReturnURIs, consent Consent) *OAuth {
 	return &OAuth{store: store, cipher: cipher, google: googleClient, returns: returns, consent: consent}
 }
@@ -66,8 +66,8 @@ func (o *OAuth) Providers() []string {
 	return []string{}
 }
 
-// transaction을 저장하고 Google 동의 화면 주소를 돌려준다.
-// Google state · verifier · nonce는 앱 값과 별개로 서버가 새로 만든다.
+// transaction을 저장하고 Google 동의 화면 주소 반환.
+// Google state · verifier · nonce는 앱 값과 별개로 서버가 새로 생성.
 func (o *OAuth) Start(ctx context.Context, req StartInput) (string, error) {
 	purpose, ok := map[string]Purpose{"mobile": PurposeMobileLogin, "web": PurposeWebLogin}[req.Platform]
 	if !ok || req.Provider != "google" || o.google == nil ||
@@ -88,7 +88,7 @@ func (o *OAuth) Start(ctx context.Context, req StartInput) (string, error) {
 		KeyID:            o.cipher.KeyID(),
 	}, transactionTTL)
 	if isUniqueViolation(err) {
-		// 앱 state를 재사용한 시작은 받지 않는다.
+		// 앱 state를 재사용한 시작은 거부.
 		return "", ErrProviderUnavailable
 	}
 	if err != nil {
@@ -97,7 +97,7 @@ func (o *OAuth) Start(ctx context.Context, req StartInput) (string, error) {
 	return o.google.AuthorizeURL(state, ChallengeS256(verifier), nonce), nil
 }
 
-// 앱이 취소한 시작을 폐기한다.
+// 앱이 취소한 시작 폐기.
 func (o *OAuth) Cancel(ctx context.Context, clientState string) error {
 	if !proofValue.MatchString(clientState) {
 		return nil
@@ -105,9 +105,9 @@ func (o *OAuth) Cancel(ctx context.Context, clientState string) error {
 	return o.store.DiscardTransaction(ctx, clientState)
 }
 
-// provider 콜백을 처리하고 앱 복귀 주소를 돌려준다.
-// location이 비어 있으면 transaction을 찾지 못해 돌려보낼 곳이 없다는 뜻이다.
-// 실패여도 location이 있으면 오류 코드를 담아 돌려보내고, err는 로그용 원인이다.
+// provider 콜백을 처리하고 앱 복귀 주소 반환.
+// location이 비어 있으면 transaction을 찾지 못해 돌려보낼 곳이 없다는 뜻.
+// 실패여도 location이 있으면 오류 코드를 담아 돌려보내고, err는 로그용 원인.
 func (o *OAuth) Callback(ctx context.Context, query url.Values) (location string, err error) {
 	state := query.Get("state")
 	if state == "" {
@@ -174,7 +174,7 @@ func (o *OAuth) Callback(ctx context.Context, query url.Values) (location string
 	return withQuery(base, url.Values{"code": {result}, "state": {tx.ClientState}}), nil
 }
 
-// 앱의 result code를 verifier · state와 함께 한 번만 세션으로 바꾼다.
+// 앱의 result code를 verifier · state와 함께 한 번만 세션으로 교환.
 func (o *OAuth) Exchange(ctx context.Context, code, verifier, clientState string) (Session, string, error) {
 	if code == "" || !proofValue.MatchString(verifier) || !proofValue.MatchString(clientState) {
 		return Session{}, "", ErrInvalidCallback

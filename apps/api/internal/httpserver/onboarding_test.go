@@ -8,7 +8,7 @@ import (
 	"snapdone/api/internal/onboarding"
 )
 
-// fakeOnboarding은 user-1의 진행 하나를 가진다. 저장 규칙은 실제 Validate · CanMove를 쓴다.
+// fakeOnboarding은 user-1의 진행 하나를 보유. 저장 규칙은 실제 Validate · CanMove를 사용.
 type fakeOnboarding struct {
 	progress onboarding.Progress
 	complete bool
@@ -35,7 +35,7 @@ func (f *fakeOnboarding) Save(_ context.Context, userID string, p onboarding.Pro
 	return nil
 }
 
-// 실제 Store처럼 first-image에서 끝내고, 이미 마쳤으면 그대로 성공한다.
+// 실제 Store처럼 first-image에서 끝내고, 이미 마쳤으면 그대로 성공.
 func (f *fakeOnboarding) Complete(_ context.Context, userID string) (onboarding.Progress, error) {
 	if userID != "user-1" {
 		return onboarding.Progress{}, onboarding.ErrInvalid
@@ -100,7 +100,7 @@ func TestOnboardingRejects(t *testing.T) {
 	}
 }
 
-// 다시 누르거나 다른 곳에서 먼저 마쳐도 같은 응답이다. 마친 뒤의 진행 저장은 그대로 409다.
+// 다시 누르거나 다른 곳에서 먼저 마쳐도 같은 응답. 마친 뒤의 진행 저장은 그대로 409.
 func TestOnboardingComplete(t *testing.T) {
 	store := &fakeOnboarding{progress: onboarding.Progress{Step: "first-image"}}
 	handler := onboardingRouter(store)

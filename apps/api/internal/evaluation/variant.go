@@ -19,16 +19,16 @@ import (
 
 const VariantSchemaVersion = 1
 
-// adapter 이름. processing은 production 분류기를 그대로 부르고, baseline은 모델 없이 규칙으로 답한다.
+// adapter 이름. processing은 production 분류기를 그대로 부르고, baseline은 모델 없이 규칙으로 답함.
 const (
 	AdapterProcessing = "processing"
 	AdapterBaseline   = "baseline"
 )
 
-// baseline adapter의 provider. 네트워크 · key가 없다.
+// baseline adapter의 provider. 네트워크 · key가 없음.
 const ProviderNone = "none"
 
-// variant manifest 파일(tools/evals/variants/*.json). 비밀값은 없고 key는 환경변수 이름뿐이다.
+// variant manifest 파일(tools/evals/variants/*.json). 비밀값은 없고 key는 환경변수 이름뿐.
 type VariantManifest struct {
 	SchemaVersion int    `json:"schemaVersion"`
 	ID            string `json:"id"`
@@ -37,49 +37,49 @@ type VariantManifest struct {
 	Adapter       string `json:"adapter"`
 	Provider      string `json:"provider"`
 	Model         string `json:"model"`
-	// openai 호환 base URL. anthropic은 비운다.
+	// openai 호환 base URL. anthropic은 비움.
 	Endpoint  string `json:"endpoint,omitempty"`
 	APIKeyEnv string `json:"apiKeyEnv,omitempty"`
-	// 이 manifest를 쓸 때의 production 지시 · schema hash. 실제와 다르면 prompt가 바뀐 것이라 거절한다.
+	// 이 manifest를 쓸 때의 production 지시 · schema hash. 실제와 다르면 prompt가 바뀐 것이라 거절.
 	ExpectedContractHash string        `json:"expectedContractHash"`
 	Config               VariantConfig `json:"config"`
-	// 예시 · replay 전용 manifest. live 실행은 거절하고, 최신 모델이나 로컬 설정의 값을 대신 고르지 않는다.
+	// 예시 · replay 전용 manifest. live 실행은 거절하고, 최신 모델이나 로컬 설정의 값을 대신 고르지 않음.
 	Placeholder bool `json:"placeholder,omitempty"`
-	// PromptPath 파일의 내용. LoadVariants가 채운다.
+	// PromptPath 파일의 내용. LoadVariants가 채움.
 	Prompt string `json:"-"`
-	// 파일 없이 VariantRef로 만들었으면 그 참조. 파일에서 읽은 manifest는 비어 있다.
+	// 파일 없이 VariantRef로 만들었으면 그 참조. 파일에서 읽은 manifest는 비어 있음.
 	Ref string `json:"-"`
 }
 
-// 실험 설정. 비어 있으면 production 분류기 그대로다. temperature · seed · ensemble은 아직 지원하지 않아 preflight 오류다.
+// 실험 설정. 비어 있으면 production 분류기 그대로. temperature · seed · ensemble은 아직 지원하지 않아 preflight 오류.
 type VariantConfig struct {
 	Temperature *float64        `json:"temperature,omitempty"`
 	Seed        *int64          `json:"seed,omitempty"`
 	Ensemble    json.RawMessage `json:"ensemble,omitempty"`
-	// 실험용 지시 파일(manifest 기준 상대 경로). production 지시 대신 보내고 요청 · 결과 schema는 그대로다.
+	// 실험용 지시 파일(manifest 기준 상대 경로). production 지시 대신 보내고 요청 · 결과 schema는 그대로.
 	PromptPath string `json:"promptPath,omitempty"`
-	// 비슷한 dev 사례를 찾아 예시로 붙인다.
+	// 비슷한 dev 사례를 찾아 예시로 붙임.
 	Retrieval *RetrievalConfig `json:"retrieval,omitempty"`
-	// 싼 모델의 답이 불확실하면 비싼 모델에 다시 묻는다.
+	// 싼 모델의 답이 불확실하면 비싼 모델에 다시 물음.
 	Cascade *CascadeConfig `json:"cascade,omitempty"`
 	// 모델 없이 정한 규칙으로 답하는 기준선. adapter가 baseline일 때만.
 	Baseline *BaselineConfig `json:"baseline,omitempty"`
 }
 
-// 예시를 고르는 곳은 dataset의 dev split뿐이다. 질문 case 자신과 같은 원본 묶음(sourceGroupId)은 빼고,
-// validation · held-out은 어떤 경우에도 예시가 되지 않는다.
+// 예시를 고르는 곳은 dataset의 dev split뿐. 질문 case 자신과 같은 원본 묶음(sourceGroupId)은 빼고,
+// validation · held-out은 어떤 경우에도 예시가 되지 않음.
 type RetrievalConfig struct {
 	K int `json:"k"`
 }
 
-// 첫 모델(manifest의 model)의 confidence가 EscalateOn 중 하나이거나 답이 없으면 Model로 다시 묻는다.
-// provider · endpoint · key는 첫 모델과 같다.
+// 첫 모델(manifest의 model)의 confidence가 EscalateOn 중 하나이거나 답이 없으면 Model로 다시 물음.
+// provider · endpoint · key는 첫 모델과 같음.
 type CascadeConfig struct {
 	Model      string   `json:"model"`
 	EscalateOn []string `json:"escalateOn"`
 }
 
-// 기준선 전략. constant는 늘 같은 답, nearest는 가장 비슷한 dev 사례의 정답을 그대로 낸다(retrieval 필요).
+// 기준선 전략. constant는 늘 같은 답, nearest는 가장 비슷한 dev 사례의 정답을 그대로 반환(retrieval 필요).
 type BaselineConfig struct {
 	Strategy        string `json:"strategy"`
 	Category        string `json:"category,omitempty"`
@@ -201,7 +201,7 @@ func (v VariantManifest) Validate(contract ClassificationContract) error {
 	return errors.Join(checks...)
 }
 
-// http(s) · host 필수 · userinfo · query · fragment 금지. localhost도 실제 호출 대상이다.
+// http(s) · host 필수 · userinfo · query · fragment 금지. localhost도 실제 호출 대상.
 func validEndpoint(raw string) error {
 	u, err := url.Parse(raw)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
@@ -210,7 +210,7 @@ func validEndpoint(raw string) error {
 	return nil
 }
 
-// key가 환경변수 이름으로 지정됐는데 그 변수가 비어 있다. 값은 있는지만 보고 어디에도 두지 않는다.
+// key가 환경변수 이름으로 지정됐는데 그 변수가 비어 있음. 값은 있는지만 보고 어디에도 두지 않음.
 func (v VariantManifest) MissingCredential() bool {
 	return v.APIKeyEnv != "" && os.Getenv(v.APIKeyEnv) == ""
 }
@@ -220,7 +220,7 @@ func (v VariantManifest) Supported() bool {
 	return slices.Contains(adapterTasks[v.Adapter], v.Task)
 }
 
-// 모델 공급자를 부르는지. baseline은 부르지 않아 --allow-api · 예산이 필요 없다.
+// 모델 공급자를 부르는지. baseline은 부르지 않아 --allow-api · 예산이 필요 없음.
 func (v VariantManifest) CallsProvider() bool {
 	return v.Adapter != AdapterBaseline
 }
@@ -229,7 +229,7 @@ func (v VariantManifest) ProviderConfig() ProviderConfig {
 	return ProviderConfig{Provider: v.Provider, Model: v.Model, BaseURL: v.Endpoint, APIKeyEnv: v.APIKeyEnv}
 }
 
-// 산출물에 남길 모양. host만 남기고 비밀값은 없다.
+// 산출물에 남길 모양. host만 남기고 비밀값은 없음.
 func (v VariantManifest) Variant() Variant {
 	host := ""
 	if u, err := url.Parse(v.Endpoint); err == nil {
@@ -242,7 +242,7 @@ func (v VariantManifest) Variant() Variant {
 	}
 }
 
-// 모델 공급자를 부르는 variant가 하나라도 있는지. 기준선만이면 opt-in · 예산 없이 돈다.
+// 모델 공급자를 부르는 variant가 하나라도 있는지. 기준선만이면 opt-in · 예산 없이 실행.
 func CallsProvider(variants []VariantManifest) bool {
 	for _, v := range variants {
 		if v.CallsProvider() {
@@ -252,7 +252,7 @@ func CallsProvider(variants []VariantManifest) bool {
 	return false
 }
 
-// 실험 지시의 sha256 hex. 없으면 production 지시라 비운다.
+// 실험 지시의 sha256 hex. 없으면 production 지시라 비움.
 func promptHash(prompt string) string {
 	if prompt == "" {
 		return ""
@@ -261,7 +261,7 @@ func promptHash(prompt string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// manifest 파일들을 읽고 검증한다. id가 겹치면 거절한다.
+// manifest 파일들을 읽고 검증. id가 겹치면 거절.
 func LoadVariants(paths []string, contract ClassificationContract) ([]VariantManifest, error) {
 	var variants []VariantManifest
 	for _, path := range paths {
@@ -285,7 +285,7 @@ func LoadVariants(paths []string, contract ClassificationContract) ([]VariantMan
 	return variants, nil
 }
 
-// manifest 옆의 실험 지시 파일을 읽는다. 경로는 manifest 기준 상대 경로이고 위로 나가지 않는다.
+// manifest 옆의 실험 지시 파일을 읽음. 경로는 manifest 기준 상대 경로이고 위로 나가지 않음.
 func readPrompt(dir, rel string) (string, error) {
 	if rel == "" {
 		return "", nil
@@ -326,19 +326,19 @@ func uniqueVariantIDs(variants []VariantManifest) error {
 	return nil
 }
 
-// 모델 adapter. Invoke는 정답을 모른 채 입력만 받는다.
+// 모델 adapter. Invoke는 정답을 모른 채 입력만 받음.
 type Adapter interface {
 	Invoke(ctx context.Context, in AdapterInput) Observation
 }
 
-// adapter 이름 → 지원 task. 무엇을 live로 돌릴 수 있는지의 선언이고, 생성은 주입된 AdapterFactory가 한다.
-// processing adapter는 production 사진 분류기만 부른다 — text-extraction · translation은 production 코드가 없어 replay만.
+// adapter 이름 → 지원 task. 무엇을 live로 돌릴 수 있는지의 선언이고, 생성은 주입된 AdapterFactory가 담당.
+// processing adapter는 production 사진 분류기만 부름 — text-extraction · translation은 production 코드가 없어 replay만.
 var adapterTasks = map[string][]Task{
 	AdapterProcessing: {ImageClassification},
 	AdapterBaseline:   {ImageClassification},
 }
 
-// live 모델 adapter 생성자. Run이 preflight를 통과한 live · 지원 variant마다 한 번 부른다(baseline은 Run이 직접
-// 만든다). 생성 자체는 네트워크를 쓰지 않는다. production 구현은 processingadapter.Factory이고 평가 core는 그
-// package를 모른다.
+// live 모델 adapter 생성자. Run이 preflight를 통과한 live · 지원 variant마다 한 번 호출(baseline은 Run이 직접
+// 만듦). 생성 자체는 네트워크를 쓰지 않음. production 구현은 processingadapter.Factory이고 평가 core는 그
+// package를 모름.
 type AdapterFactory func(v VariantManifest, budget CallBudget) (Adapter, error)

@@ -4,7 +4,7 @@ import (
 	"sync"
 )
 
-// 실제 요청 하나를 보내도 되는지. 유료 호출의 상한은 이 gate가 잡는다.
+// 실제 요청 하나를 보내도 되는지. 유료 호출의 상한은 이 gate가 잡음.
 type CallBudget interface {
 	Allow() bool
 }
@@ -27,14 +27,14 @@ func (b *FixedBudget) Allow() bool {
 	return true
 }
 
-// HTTP 왕복 하나. SDK가 재시도하면 하나씩 늘어난다. 헤더 · 본문 · 오류 문자열은 담지 않는다.
+// HTTP 왕복 하나. SDK가 재시도하면 하나씩 증가. 헤더 · 본문 · 오류 문자열은 담지 않음.
 type HTTPAttempt struct {
-	// 예산이 막아 요청을 보내지 않았다.
+	// 예산이 막아 요청을 전송하지 않음.
 	Denied bool `json:"denied"`
-	// 응답이 없었다(연결 오류 · 취소).
+	// 응답 없음(연결 오류 · 취소).
 	TransportError bool `json:"transportError"`
 	Timeout        bool `json:"timeout"`
-	// 응답이 있을 때만 0이 아니다.
+	// 응답이 있을 때만 0 아님.
 	Status    int   `json:"status"`
 	ElapsedMs int64 `json:"elapsedMs"`
 }

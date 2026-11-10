@@ -11,7 +11,7 @@ import (
 	"snapdone/api/internal/auth"
 )
 
-// Bearer 세션을 확인하는 모든 endpoint가 쓰는 세션 저장소. 운영에서는 *auth.Store다.
+// Bearer 세션을 확인하는 모든 endpoint가 쓰는 세션 저장소. 운영에서는 *auth.Store.
 type SessionStore interface {
 	FindSession(ctx context.Context, tokenHash []byte) (auth.Session, error)
 	RevokeSession(ctx context.Context, tokenHash []byte) error
@@ -72,8 +72,8 @@ func (h *handlers) logout(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// Authorization 헤더가 정확히 하나이고 "Bearer <token>" 형식일 때만 토큰을 돌려준다.
-// scheme은 대소문자까지 일치해야 하고 토큰에 공백이 없어야 한다.
+// Authorization 헤더가 정확히 하나이고 "Bearer <token>" 형식일 때만 토큰 반환.
+// scheme은 대소문자까지 일치, 토큰에 공백 없음이 조건.
 func bearerToken(r *http.Request) (string, bool) {
 	values := r.Header.Values("Authorization")
 	if len(values) != 1 {
@@ -86,7 +86,7 @@ func bearerToken(r *http.Request) (string, bool) {
 	return token, true
 }
 
-// Bearer credential의 세션을 찾는다. 없거나 무효면 오류를 쓰고 false다.
+// Bearer credential의 세션 조회. 없거나 무효면 오류를 쓰고 false.
 func (h *handlers) requireSession(c *gin.Context) (auth.Session, bool) {
 	token, ok := bearerToken(c.Request)
 	if !ok {

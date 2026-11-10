@@ -22,7 +22,7 @@ const (
 	otherVerifier = "web-verifier-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 )
 
-// Bearer 확인과 입력 검사는 DB 없이 끝난다.
+// Bearer 확인과 입력 검사는 DB 없이 완료.
 func TestHandoffStartRejectsWithoutDatabase(t *testing.T) {
 	handler := NewRouter(Deps{Sessions: &fakeSessions{}, Handoff: auth.NewHandoff(nil)})
 	post := func(body string, authorization ...string) *httptest.ResponseRecorder {
@@ -64,7 +64,7 @@ func newHandoffFixture(t *testing.T) *handoffFixture {
 	return &handoffFixture{pool: pool, store: store, handler: NewRouter(Deps{Sessions: store, Handoff: auth.NewHandoff(store)}), user: user}
 }
 
-// session은 kind 세션을 만들고 credential 원문을 돌려준다.
+// session은 kind 세션을 만들고 credential 원문 반환.
 func (f *handoffFixture) session(t *testing.T, kind auth.SessionKind) string {
 	t.Helper()
 	token, hash := auth.NewToken()
@@ -127,7 +127,7 @@ func credentialOf(t *testing.T, r *httptest.ResponseRecorder) string {
 	return body.Credential
 }
 
-// 앱 root 세션 → 코드 → web child 세션. parent를 취소하면 child도 무효다.
+// 앱 root 세션 → 코드 → web child 세션. parent를 취소하면 child도 무효.
 func TestHandoffCreatesChildWebSession(t *testing.T) {
 	f := newHandoffFixture(t)
 	root := f.session(t, auth.KindMobile)
@@ -150,7 +150,7 @@ func TestHandoffCreatesChildWebSession(t *testing.T) {
 	}
 }
 
-// child · web root 세션과 모르는 토큰은 코드를 받지 못한다. child에서 다시 핸드오프할 수 없다.
+// child · web root 세션과 모르는 토큰은 코드 발급 불가. child에서 다시 핸드오프 불가.
 func TestHandoffStartOnlyFromRootMobileSession(t *testing.T) {
 	f := newHandoffFixture(t)
 	child := credentialOf(t, f.exchange(f.code(t, f.session(t, auth.KindMobile)), webVerifier, "/history"))
@@ -169,7 +169,7 @@ func TestHandoffStartOnlyFromRootMobileSession(t *testing.T) {
 	}
 }
 
-// 다른 브라우저의 verifier · 다른 next · 재사용 · 만료 코드는 교환되지 않는다.
+// 다른 브라우저의 verifier · 다른 next · 재사용 · 만료 코드는 교환 불가.
 func TestHandoffExchangeChecksProof(t *testing.T) {
 	f := newHandoffFixture(t)
 	root := f.session(t, auth.KindMobile)
@@ -199,7 +199,7 @@ func TestHandoffExchangeChecksProof(t *testing.T) {
 	}
 }
 
-// login grant는 handoff exchange로 쓸 수 없다(purpose).
+// login grant는 handoff exchange에 사용 불가(purpose).
 func TestHandoffExchangeRejectsLoginGrant(t *testing.T) {
 	f := newHandoffFixture(t)
 	code, codeHash := auth.NewToken()
@@ -215,7 +215,7 @@ func TestHandoffExchangeRejectsLoginGrant(t *testing.T) {
 	}
 }
 
-// parent가 코드 발급 뒤 취소되면 child를 만들지 않는다.
+// parent가 코드 발급 뒤 취소되면 child를 만들지 않음.
 func TestHandoffExchangeRejectsRevokedParent(t *testing.T) {
 	f := newHandoffFixture(t)
 	root := f.session(t, auth.KindMobile)
@@ -229,7 +229,7 @@ func TestHandoffExchangeRejectsRevokedParent(t *testing.T) {
 	}
 }
 
-// 같은 코드를 동시에 교환해도 한 번만 성공한다.
+// 같은 코드를 동시에 교환해도 한 번만 성공.
 func TestHandoffParallelExchangeOnce(t *testing.T) {
 	f := newHandoffFixture(t)
 	code := f.code(t, f.session(t, auth.KindMobile))
@@ -249,7 +249,7 @@ func TestHandoffParallelExchangeOnce(t *testing.T) {
 	}
 }
 
-// 허용된 next마다 start → exchange가 끝난다. 비슷하지만 다른 경로는 start에서 거절된다.
+// 허용된 next마다 start → exchange 완료. 비슷하지만 다른 경로는 start에서 거절.
 func TestHandoffNextAllowlist(t *testing.T) {
 	f := newHandoffFixture(t)
 	for _, next := range []string{"/", "/history", "/settings/processing"} {

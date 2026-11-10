@@ -1,5 +1,5 @@
-// Package google는 Google OpenID Connect authorization code 흐름의 서버 쪽 절반이다.
-// 로그인에 필요한 것은 ID token의 sub뿐이라 scope는 openid 하나이고 Google 토큰은 보관하지 않는다.
+// Package google는 Google OpenID Connect authorization code 흐름의 서버 쪽 절반.
+// 로그인에 필요한 것은 ID token의 sub뿐이라 scope는 openid 하나이고 Google 토큰은 보관하지 않음.
 package google
 
 import (
@@ -22,9 +22,9 @@ const (
 )
 
 var (
-	// Google이 code를 거절했다(4xx). 재사용 · 만료 · verifier 불일치 등.
+	// Google이 code를 거절(4xx). 재사용 · 만료 · verifier 불일치 등.
 	ErrRejected = errors.New("google: token request rejected")
-	// Google에 닿지 못했거나 5xx · 형식 오류 응답이다.
+	// Google에 닿지 못했거나 5xx · 형식 오류 응답.
 	ErrUnavailable = errors.New("google: token endpoint unavailable")
 	// ID token의 iss · aud · exp · nonce · sub 검사 실패.
 	ErrInvalidIDToken = errors.New("google: invalid id token")
@@ -34,7 +34,7 @@ type Client struct {
 	ClientID     string
 	ClientSecret string
 	RedirectURI  string
-	// 테스트가 가짜 token endpoint로 바꾼다.
+	// 테스트가 가짜 token endpoint로 교체.
 	TokenURL string
 	HTTP     *http.Client
 }
@@ -54,7 +54,7 @@ func NewClient(clientID, clientSecret, redirectURI string) *Client {
 	}
 }
 
-// 사용자를 보낼 Google 동의 화면 주소. scope · redirect_uri는 서버가 고정한다.
+// 사용자를 보낼 Google 동의 화면 주소. scope · redirect_uri는 서버가 고정.
 func (c *Client) AuthorizeURL(state, challenge, nonce string) string {
 	query := url.Values{
 		"client_id":             {c.ClientID},
@@ -69,7 +69,7 @@ func (c *Client) AuthorizeURL(state, challenge, nonce string) string {
 	return AuthorizeEndpoint + "?" + query.Encode()
 }
 
-// code를 token endpoint에서 교환하고 ID token을 검사해 Google 사용자 식별자(sub)를 돌려준다.
+// code를 token endpoint에서 교환하고 ID token을 검사해 Google 사용자 식별자(sub) 반환.
 func (c *Client) Exchange(ctx context.Context, code, verifier, nonce string) (string, error) {
 	form := url.Values{
 		"code":          {code},
@@ -115,9 +115,9 @@ type claims struct {
 	Sub   string `json:"sub"`
 }
 
-// ID token claim을 검사한다. 서명은 검증하지 않는다.
-// token endpoint에서 client secret으로 인증한 TLS 연결로 직접 받은 토큰에만 쓸 수 있다(OIDC Core 3.1.3.7).
-// 클라이언트가 보낸 토큰에는 절대 쓰지 않는다.
+// ID token claim 검사. 서명은 검증하지 않음.
+// token endpoint에서 client secret으로 인증한 TLS 연결로 직접 받은 토큰에만 사용 가능(OIDC Core 3.1.3.7).
+// 클라이언트가 보낸 토큰에는 절대 쓰지 않음.
 func (c *Client) subject(idToken, nonce string, now time.Time) (string, error) {
 	parts := strings.Split(idToken, ".")
 	if len(parts) != 3 {

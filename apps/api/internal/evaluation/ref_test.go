@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// `공급자:모델`과 `설정@공급자:모델[,다시 물을 모델]`만 참조다. 다른 모양은 파일 이름이고, 설정 뒤의 모양이 틀리면 오류다.
+// `공급자:모델`과 `설정@공급자:모델[,다시 물을 모델]`만 참조. 다른 모양은 파일 이름이고, 설정 뒤의 모양이 틀리면 오류.
 func TestParseVariantRef(t *testing.T) {
 	good := map[string]VariantRef{
 		"openai:gpt-4.1-mini":          {Provider: "openai", Model: "gpt-4.1-mini"},
@@ -32,7 +32,7 @@ func TestParseVariantRef(t *testing.T) {
 	}
 }
 
-// 참조에서 만든 variant는 production 지시 그대로이고 key는 공급자별 환경변수 이름이며 id는 ModelID다.
+// 참조에서 만든 variant는 production 지시 그대로이고 key는 공급자별 환경변수 이름이며 id는 ModelID.
 func TestVariantRefManifest(t *testing.T) {
 	v, err := VariantRef{Provider: "openai", Model: "gpt-4.1-mini"}.Manifest("", contract)
 	if err != nil || v.ID != "gpt-4-1-mini" || v.Model != "gpt-4.1-mini" || v.APIKeyEnv != "OPENAI_API_KEY" ||

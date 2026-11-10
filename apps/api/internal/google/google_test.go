@@ -18,7 +18,7 @@ const (
 	nonce    = "nonce-abc"
 )
 
-// idToken은 서명 없는 테스트용 ID token을 만든다. 서명 부분은 검사하지 않는다.
+// idToken은 서명 없는 테스트용 ID token 생성. 서명 부분은 검사하지 않음.
 func idToken(t *testing.T, overrides map[string]any) string {
 	t.Helper()
 	claim := map[string]any{
@@ -38,8 +38,8 @@ func idToken(t *testing.T, overrides map[string]any) string {
 	return "eyJhbGciOiJSUzI1NiJ9." + base64.RawURLEncoding.EncodeToString(payload) + ".sig"
 }
 
-// handlerTransport는 포트를 열지 않고 요청을 handler로 바로 보낸다.
-// 요청 context가 끝나면 handler를 기다리지 않고 오류를 돌려준다(client timeout 재현).
+// handlerTransport는 포트를 열지 않고 요청을 handler로 바로 전달.
+// 요청 context가 끝나면 handler를 기다리지 않고 오류 반환(client timeout 재현).
 type handlerTransport struct{ handler http.Handler }
 
 func (h handlerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -57,7 +57,7 @@ func (h handlerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 }
 
-// fakeGoogle은 token 요청 form을 기록하고 handler로 응답하는 가짜 token endpoint를 쓰는 client를 만든다.
+// fakeGoogle은 token 요청 form을 기록하고 handler로 응답하는 가짜 token endpoint를 쓰는 client 생성.
 func fakeGoogle(t *testing.T, handler http.HandlerFunc) (*Client, *url.Values) {
 	t.Helper()
 	var form url.Values

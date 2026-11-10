@@ -39,7 +39,7 @@ func TestLoadDatasetFromTestdata(t *testing.T) {
 	}
 }
 
-// 테스트용 pilot dataset(21건 합성 사진)이 loader를 통과하고, readiness가 실제 상태를 말한다.
+// 테스트용 pilot dataset(21건 합성 사진)이 loader를 통과하고, readiness가 실제 상태를 말함.
 func TestLoadPilotDataset(t *testing.T) {
 	ds, err := LoadDataset("testdata/datasets/pilot-v1", contract)
 	if err != nil {
@@ -203,7 +203,7 @@ func TestLoadDatasetRejectsBrokenFiles(t *testing.T) {
 	}
 }
 
-// 검토가 끝나지 않은 case는 읽히되 채점 자격이 없다. 무엇이 모자란지 Blockers가 말한다.
+// 검토가 끝나지 않은 case는 읽히되 채점 자격이 없음. 무엇이 모자란지 Blockers가 말함.
 func TestEligibility(t *testing.T) {
 	d := newTestDataset(t)
 	privacy := fixtureCase("privacy-pending", Dev, "place", d.image("1.png", pngBytes(t, 1)))
@@ -240,7 +240,7 @@ func TestEligibility(t *testing.T) {
 
 func TestSelect(t *testing.T) {
 	d := newTestDataset(t)
-	// 파일 순서는 b, a — 선택은 id 순이어야 한다.
+	// 파일 순서는 b, a — 선택은 id 순이어야 함.
 	d.add(Dev, fixtureCase("b", Dev, "place", d.image("b.png", pngBytes(t, 2))))
 	d.add(Dev, fixtureCase("a", Dev, "place", d.image("a.png", pngBytes(t, 1))))
 	draft := fixtureCase("c", Validation, "place", d.image("c.png", pngBytes(t, 3)))
@@ -279,7 +279,7 @@ func TestSelect(t *testing.T) {
 		t.Error("unknown split selected")
 	}
 
-	// 한 case의 내용이 바뀌면 hash가 바뀐다.
+	// 한 case의 내용이 바뀌면 hash가 바뀜.
 	changed := fixtureCase("a", Dev, "place", imageRef("fixtures/a.png", "image/png", sha256Hex(pngBytes(t, 1))))
 	changed["notes"] = "changed"
 	d.lines[Dev][1] = changed
@@ -305,7 +305,7 @@ func TestSelectRejectsEmptySplit(t *testing.T) {
 	}
 }
 
-// pilot의 기대 facts는 렌더한 원문에 실제로 있다. 원문 전체를 예측 값 하나로 주면 모든 facts를 찾아야 한다.
+// pilot의 기대 facts는 렌더한 원문에 실제로 있음. 원문 전체를 예측 값 하나로 주면 모든 facts를 찾아야 함.
 func TestPilotFactsAppearInTheirSource(t *testing.T) {
 	root := "testdata/datasets/pilot-v1"
 	ds, err := LoadDataset(root, contract)

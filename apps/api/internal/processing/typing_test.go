@@ -12,7 +12,7 @@ import (
 	"snapdone/api/internal/preference"
 )
 
-// tools/evals/variants의 expectedContractHash. 유형 판단을 더해도 평가가 쓰는 분류 계약은 그대로다.
+// tools/evals/variants의 expectedContractHash. 유형 판단을 더해도 평가가 쓰는 분류 계약은 그대로.
 const evaluationContractHash = "5152dd422f81459aeb6c8ed50f4aedd9e0983f4a255ea49cd0d050c1fc3edcfb"
 
 func TestTypingLeavesTheEvaluationContract(t *testing.T) {
@@ -21,7 +21,7 @@ func TestTypingLeavesTheEvaluationContract(t *testing.T) {
 	}
 }
 
-// 유형 판단 지시는 근거가 부족할 때의 정책을 밝힌다. 언어를 가리지 않고, 글자가 있는 영수증도 영수증이다.
+// 유형 판단 지시는 근거가 부족할 때의 정책을 명시. 언어를 가리지 않고, 글자가 있는 영수증도 영수증.
 func TestTypingInstructionsStateThePolicy(t *testing.T) {
 	for _, want := range []string{
 		"Korean included",
@@ -49,7 +49,7 @@ func TestParseTyping(t *testing.T) {
 	}
 }
 
-// 확정된 유형은 그 유형의 처리 방식을 모두 그대로 고른다. 다른 유형의 값을 쓰지 않는다.
+// 확정된 유형은 그 유형의 처리 방식을 모두 그대로 선택. 다른 유형의 값을 쓰지 않음.
 func TestDecideMapsEveryStoredAction(t *testing.T) {
 	for _, text := range textActions {
 		for _, receipt := range receiptActions {
@@ -64,7 +64,7 @@ func TestDecideMapsEveryStoredAction(t *testing.T) {
 	}
 }
 
-// 지원하지 않는 사진은 처리 방식을 고르지 않는다. 고를 수 없는 사진은 기본 유형으로 넘어가지 않고 두 유형을 후보로 둔다.
+// 지원하지 않는 사진은 처리 방식을 고르지 않음. 고를 수 없는 사진은 기본 유형으로 넘어가지 않고 두 유형을 후보로 둠.
 func TestDecideWithoutAType(t *testing.T) {
 	if s, o := decide(TypingUnsupported, preference.Defaults()); s != nil || !reflect.DeepEqual(*o, Outcome{Kind: OutcomeUnsupported}) {
 		t.Errorf("unsupported: %+v %+v", s, o)
@@ -98,7 +98,7 @@ func typingSchemaJSON(t *testing.T) any {
 	return want
 }
 
-// Claude 유형 판단은 분류와 같은 모델로, 유형 판단 지시 · 요청 · schema를 보낸다.
+// Claude 유형 판단은 분류와 같은 모델로, 유형 판단 지시 · 요청 · schema를 전송.
 func TestClaudeTypeImage(t *testing.T) {
 	for _, typing := range []Typing{TypingText, TypingReceipt, TypingUnsupported, TypingAmbiguous} {
 		classifier, body, _ := fakeClaude(t, "end_turn", `{"imageType":"`+string(typing)+`"}`)
@@ -120,7 +120,7 @@ func TestClaudeTypeImage(t *testing.T) {
 	}
 }
 
-// 거절 · 잘린 응답 · 계약 밖 값은 유형으로 쓰지 않는다.
+// 거절 · 잘린 응답 · 계약 밖 값은 유형으로 쓰지 않음.
 func TestClaudeTypeImageRejects(t *testing.T) {
 	for name, tc := range map[string]struct{ stop, text string }{
 		"refusal":         {"refusal", `{"imageType":"text"}`},
@@ -135,7 +135,7 @@ func TestClaudeTypeImageRejects(t *testing.T) {
 	}
 }
 
-// OpenAI 호환 유형 판단도 같은 지시 · schema를 다른 schema 이름으로 보낸다.
+// OpenAI 호환 유형 판단도 같은 지시 · schema를 다른 schema 이름으로 전송.
 func TestOpenAITypeImage(t *testing.T) {
 	classifier, _, body := fakeChat(t, "", http.StatusOK, "stop", `{"imageType":"receipt"}`)
 	got, err := classifier.TypeImage(context.Background(), []byte("x"), "image/png")
@@ -171,7 +171,7 @@ func TestOpenAITypeImageRejects(t *testing.T) {
 	}
 }
 
-// 공급자 호출이 기한을 넘기면 유형 판단은 실패다.
+// 공급자 호출이 기한을 넘기면 유형 판단은 실패.
 func TestTypeImageHonorsTheDeadline(t *testing.T) {
 	classifier, _, _ := fakeClaude(t, "end_turn", `{"imageType":"text"}`)
 	ctx, cancel := context.WithCancel(context.Background())

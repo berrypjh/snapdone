@@ -99,7 +99,7 @@ func TestDecodeVariantRejects(t *testing.T) {
 	}
 }
 
-// placeholder는 manifest의 명시 필드다. 표시 없이 템플릿 모양의 모델 이름을 쓰면 거절한다.
+// placeholder는 manifest의 명시 필드. 표시 없이 템플릿 모양의 모델 이름을 쓰면 거절.
 func TestPlaceholderIsExplicit(t *testing.T) {
 	marked := manifestDoc("p", "openai")
 	marked["model"], marked["placeholder"] = "<fill-me>", true
@@ -118,8 +118,8 @@ func TestPlaceholderIsExplicit(t *testing.T) {
 	}
 }
 
-// 저장소의 manifest는 구조적으로 유효하다. 예시 · replay 전용은 placeholder라 live에서 거절되고, 실제 모델 ·
-// 기준선 manifest는 live로 돌 수 있는 사진 분류다.
+// 저장소의 manifest는 구조적으로 유효. 예시 · replay 전용은 placeholder라 live에서 거절되고, 실제 모델 ·
+// 기준선 manifest는 live로 돌 수 있는 사진 분류.
 func TestExampleManifests(t *testing.T) {
 	dir := "../../../../tools/evals/variants"
 	paths, err := filepath.Glob(filepath.Join(dir, "*.json"))
@@ -151,7 +151,7 @@ func baselineDoc(config map[string]any) map[string]any {
 	}
 }
 
-// 기준선은 모델 · key 없이 돈다. 전략마다 필요한 값이 다르다.
+// 기준선은 모델 · key 없이 실행. 전략마다 필요한 값이 다름.
 func TestBaselineVariant(t *testing.T) {
 	constant := map[string]any{"baseline": map[string]any{"strategy": "constant", "category": "other", "suggestedAction": "none", "confidence": "low"}}
 	v, err := decodeVariant(t, baselineDoc(constant))
@@ -192,7 +192,7 @@ func TestBaselineVariant(t *testing.T) {
 	}
 }
 
-// 실험 지시는 manifest 옆 파일에서 읽고 hash만 산출물에 남는다. 위 디렉터리로 나가지 않는다.
+// 실험 지시는 manifest 옆 파일에서 읽고 hash만 산출물에 남음. 위 디렉터리로 나가지 않음.
 func TestPromptPath(t *testing.T) {
 	dir := t.TempDir()
 	write := func(name string, doc map[string]any) string {

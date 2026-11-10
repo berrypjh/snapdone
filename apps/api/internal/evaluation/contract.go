@@ -12,24 +12,24 @@ import (
 	"unicode/utf8"
 )
 
-// dataset case 파일의 schemaVersion. 모양이 바뀌면 올린다.
+// dataset case 파일의 schemaVersion. 모양이 바뀌면 올림.
 const CaseSchemaVersion = 1
 
-// 평가 과제. 한 case는 한 과제에 속한다.
+// 평가 과제. 한 case는 한 과제에 속함.
 type Task string
 
 const (
-	// 사진 한 장 → ClassificationPrediction(production 결과를 옮긴 것). category와 routing(suggestedAction)은 같은 호출의 evaluator다.
+	// 사진 한 장 → ClassificationPrediction(production 결과를 옮긴 것). category와 routing(suggestedAction)은 같은 호출의 evaluator.
 	ImageClassification Task = "image-classification"
-	// 사진 한 장 → 텍스트. production 코드는 아직 없다.
+	// 사진 한 장 → 텍스트. production 코드는 아직 없음.
 	TextExtraction Task = "text-extraction"
-	// 원문 텍스트 → 번역. production 코드는 아직 없다.
+	// 원문 텍스트 → 번역. production 코드는 아직 없음.
 	Translation Task = "translation"
 )
 
 var tasks = []Task{ImageClassification, TextExtraction, Translation}
 
-// dev는 지시를 고치며 반복해서 보는 몫, validation은 고른 뒤 확인하는 몫, held-out은 마지막에만 보는 몫이다.
+// dev는 지시를 고치며 반복해서 보는 몫, validation은 고른 뒤 확인하는 몫, held-out은 마지막에만 보는 몫.
 type Split string
 
 const (
@@ -48,7 +48,7 @@ const (
 	Hard   Difficulty = "hard"
 )
 
-// 개인정보 검토 결과. dataset에는 개인정보 없는 자료만 들어간다.
+// 개인정보 검토 결과. dataset에는 개인정보 없는 자료만 들어감.
 type Privacy string
 
 const (
@@ -65,7 +65,7 @@ const (
 	Disputed Review = "disputed"
 )
 
-// 정답을 누가 어떻게 검토했는지. agent-visual은 dev에서만 채점에 쓸 수 있고, 나머지 split은 human이어야 한다.
+// 정답을 누가 어떻게 검토했는지. agent-visual은 dev에서만 채점에 쓸 수 있고, 나머지 split은 human이어야 함.
 type ReviewMethod string
 
 const (
@@ -77,11 +77,11 @@ const (
 type Intent string
 
 const (
-	// 행동 하나가 정답이다.
+	// 행동 하나가 정답.
 	Resolved Intent = "resolved"
-	// 검토자가 여러 행동을 정답으로 인정했다.
+	// 검토자가 여러 행동을 정답으로 인정함.
 	Adjudicated Intent = "adjudicated"
-	// 사진만으로 의도를 정할 수 없다. routing은 채점하지 않고 forbiddenActions만 본다.
+	// 사진만으로 의도 결정 불가. routing은 채점하지 않고 forbiddenActions만 확인.
 	Unresolved Intent = "unresolved"
 )
 
@@ -93,7 +93,7 @@ const (
 	Ambiguous         Ambiguity = "high"
 )
 
-// dataset case 하나. Input은 모델이 받는 것, Expected · Annotation은 채점자만 본다.
+// dataset case 하나. Input은 모델이 받는 것, Expected · Annotation은 채점자만 봄.
 type Case struct {
 	SchemaVersion int        `json:"schemaVersion"`
 	ID            string     `json:"id"`
@@ -109,14 +109,14 @@ type Case struct {
 	Expected      Expected   `json:"expected"`
 }
 
-// 사진의 출처. 같은 원본의 crop · 재압축은 같은 SourceGroupID로 묶어 split 사이에 새지 않게 한다.
+// 사진의 출처. 같은 원본의 crop · 재압축은 같은 SourceGroupID로 묶어 split 사이에 새지 않게 함.
 type Provenance struct {
 	SourceGroupID string  `json:"sourceGroupId"`
 	License       string  `json:"license"`
 	Privacy       Privacy `json:"privacy"`
-	// 개인정보 검토가 끝났는지. 검토는 사람의 책임이고 코드는 값만 본다.
+	// 개인정보 검토가 끝났는지. 검토는 사람의 책임이고 코드는 값만 확인.
 	PrivacyReview Review `json:"privacyReview"`
-	// 사진을 어떻게 만들었는지(도구 · 원본). 합성 사진은 재현 방법을 적는다.
+	// 사진을 어떻게 만들었는지(도구 · 원본). 합성 사진은 재현 방법을 기록.
 	Generation string `json:"generation,omitempty"`
 }
 
@@ -128,15 +128,15 @@ type Annotation struct {
 	Guideline string `json:"guideline"`
 }
 
-// 과제별 입력. 정확히 하나만 있고 Task와 맞아야 한다.
+// 과제별 입력. 정확히 하나만 있고 Task와 맞아야 함.
 type Input struct {
 	Image *ImageRef  `json:"image,omitempty"`
 	Text  *TextInput `json:"text,omitempty"`
-	// text-extraction 사진의 원문 언어(BCP 47, 선택). adapter에 힌트로만 넘긴다.
+	// text-extraction 사진의 원문 언어(BCP 47, 선택). adapter에 힌트로만 전달.
 	Language string `json:"language,omitempty"`
 }
 
-// 사진 파일. byte는 파일에서 읽고 SHA256으로 대조한다.
+// 사진 파일. byte는 파일에서 읽고 SHA256으로 대조.
 type ImageRef struct {
 	// case 파일 기준 상대 경로.
 	Path      string `json:"path"`
@@ -144,8 +144,8 @@ type ImageRef struct {
 	SHA256    string `json:"sha256"`
 }
 
-// 번역 입력 — 사람이 확정한 원문(gold source text)과 언어. OCR 출력을 원문으로 쓰지 않는다.
-// SourceImage는 원문이 어디서 왔는지 남기는 provenance이고 모델에 보내지 않는다.
+// 번역 입력 — 사람이 확정한 원문(gold source text)과 언어. OCR 출력을 원문으로 쓰지 않음.
+// SourceImage는 원문이 어디서 왔는지 남기는 provenance이고 모델에 전송하지 않음.
 type TextInput struct {
 	SourceText     string    `json:"sourceText"`
 	SourceLanguage string    `json:"sourceLanguage"`
@@ -153,17 +153,17 @@ type TextInput struct {
 	SourceImage    *ImageRef `json:"sourceImage,omitempty"`
 }
 
-// 과제별 정답. 정확히 하나만 있고 Task와 맞아야 한다.
+// 과제별 정답. 정확히 하나만 있고 Task와 맞아야 함.
 type Expected struct {
 	Classification *ClassificationExpected `json:"classification,omitempty"`
 	TextExtraction *TextExpected           `json:"textExtraction,omitempty"`
 	Translation    *TranslationExpected    `json:"translation,omitempty"`
 }
 
-// 번역 정답 — 승인된 reference 하나 이상. 어느 것과든 같으면 exact match다. 의미 유사도 점수는 없다.
+// 번역 정답 — 승인된 reference 하나 이상. 어느 것과든 같으면 exact match. 의미 유사도 점수 없음.
 type TranslationExpected struct {
 	References []string `json:"references"`
-	// 숫자 · 날짜 · 고유명사처럼 반드시 보존돼야 하는 구간. 진단값이고 정답의 전부가 아니다.
+	// 숫자 · 날짜 · 고유명사처럼 반드시 보존돼야 하는 구간. 진단값이고 정답의 전부 아님.
 	CriticalSpans []CriticalSpan `json:"criticalSpans,omitempty"`
 }
 
@@ -176,14 +176,14 @@ const (
 	SpanOther  SpanKind = "other"
 )
 
-// 보존 구간 하나. Accepted는 번역문에 나타나야 하는 표기(하나면 충분)다.
+// 보존 구간 하나. Accepted는 번역문에 나타나야 하는 표기(하나면 충분).
 type CriticalSpan struct {
 	ID       string   `json:"id"`
 	Kind     SpanKind `json:"kind"`
 	Accepted []string `json:"accepted"`
 }
 
-// 값은 ClassificationContract의 허용 값이어야 한다.
+// 값은 ClassificationContract의 허용 값이어야 함.
 // 행동은 하나로 강제하지 않는다 — resolved는 하나, adjudicated는 여럿, unresolved는 없음.
 type ClassificationExpected struct {
 	Category          string   `json:"category"`
@@ -191,14 +191,14 @@ type ClassificationExpected struct {
 	AcceptableActions []string `json:"acceptableActions"`
 	// run 전에 정한, 절대 나오면 안 되는 행동.
 	ForbiddenActions []string `json:"forbiddenActions"`
-	// 사진에서 읽어야 하는 값(선택). 없으면 추출값 채점은 not-applicable이다.
+	// 사진에서 읽어야 하는 값(선택). 없으면 추출값 채점은 not-applicable.
 	Facts []ExpectedFact `json:"facts,omitempty"`
 }
 
-// 추출값 하나의 정답. 예측 facts 중 어느 값이든 정규화 뒤 허용 값 하나를 담고 있으면 찾은 것이다. label은 보지 않는다.
+// 추출값 하나의 정답. 예측 facts 중 어느 값이든 정규화 뒤 허용 값 하나를 담고 있으면 찾은 것. label은 보지 않음.
 type ExpectedFact struct {
 	ID string `json:"id"`
-	// 사람이 읽는 이름. 비슷한 사례의 예시로 보일 때 쓴다.
+	// 사람이 읽는 이름. 비슷한 사례의 예시로 보일 때 사용.
 	Label          string   `json:"label"`
 	Kind           FactKind `json:"kind"`
 	AcceptedValues []string `json:"acceptedValues"`
@@ -209,26 +209,26 @@ type ExpectedFact struct {
 type FactKind string
 
 const (
-	// 공백을 빼고 대소문자를 무시해 포함 여부를 본다.
+	// 공백을 빼고 대소문자를 무시해 포함 여부 확인.
 	FactText FactKind = "text"
-	// 숫자 사이 쉼표를 뺀 수 하나가 예측 값의 수 중에 있어야 한다.
+	// 숫자 사이 쉼표를 뺀 수 하나가 예측 값의 수 중에 있어야 함.
 	FactAmount FactKind = "amount"
-	// 숫자 묶음(앞의 0 제외)이 예측 값의 숫자 묶음 안에 순서대로 이어서 있어야 한다. 2026-09-20 ≈ 2026년 9월 20일.
+	// 숫자 묶음(앞의 0 제외)이 예측 값의 숫자 묶음 안에 순서대로 이어서 있어야 함. 2026-09-20 ≈ 2026년 9월 20일.
 	FactDate FactKind = "date"
 	FactTime FactKind = "time"
 )
 
 var factKinds = []FactKind{FactText, FactAmount, FactDate, FactTime}
 
-// 정답 텍스트. nil은 정답이 없는 것이고 ""는 "텍스트 없음"이 정답인 것이다. 둘을 섞지 않는다.
-// text-extraction은 읽기 순서와, 있다면 field 계약을 함께 적는다. facts 값을 이어 붙여 정답으로 삼지 않는다.
+// 정답 텍스트. nil은 정답이 없는 것이고 ""는 "텍스트 없음"이 정답인 것. 둘을 섞지 않음.
+// text-extraction은 읽기 순서와, 있다면 field 계약을 함께 기록. facts 값을 이어 붙여 정답으로 삼지 않음.
 type TextExpected struct {
 	Text *string `json:"text"`
 	// text-extraction만. 정답 텍스트를 적은 순서.
 	ReadingOrder ReadingOrder `json:"readingOrder,omitempty"`
-	// WER를 낼 때 쓴 분절 규칙. 비우면 WER는 not-applicable이다(일본어 · 중국어처럼 공백으로 나뉘지 않는 글).
+	// WER를 낼 때 쓴 분절 규칙. 비우면 WER는 not-applicable(일본어 · 중국어처럼 공백으로 나뉘지 않는 글).
 	Tokenizer Tokenizer `json:"tokenizer,omitempty"`
-	// 명시 field 계약. 없으면 field metric은 unsupported다. 한국어 label을 추정으로 잇지 않는다.
+	// 명시 field 계약. 없으면 field metric은 unsupported. 한국어 label을 추정으로 잇지 않음.
 	Fields []ExpectedField `json:"fields,omitempty"`
 }
 
@@ -242,11 +242,11 @@ const (
 type Tokenizer string
 
 const (
-	// strings.Fields — Unicode 공백으로 나눈다.
+	// strings.Fields — Unicode 공백으로 분리.
 	TokenizerWhitespace Tokenizer = "whitespace"
 )
 
-// field 하나의 정답. 예측 key는 id나 승인된 alias와 정확히 같아야 하고, 값은 acceptedValues 중 하나(공백 정규화 뒤)여야 한다.
+// field 하나의 정답. 예측 key는 id나 승인된 alias와 정확히 같아야 하고, 값은 acceptedValues 중 하나(공백 정규화 뒤)여야 함.
 type ExpectedField struct {
 	ID             string   `json:"id"`
 	Aliases        []string `json:"aliases"`
@@ -254,17 +254,17 @@ type ExpectedField struct {
 	Important      bool     `json:"important"`
 }
 
-// 모델 adapter가 받는 전부. Expected · Annotation이 없어 정답이 모델로 새지 않는다.
+// 모델 adapter가 받는 전부. Expected · Annotation이 없어 정답이 모델로 새지 않음.
 type AdapterInput struct {
 	Task      Task
 	MediaType string
 	Image     []byte
 	Text      *TextInput
-	// 비슷한 dev 사례와 그 정답. retrieval을 쓰는 variant만. 질문 case의 정답은 없다.
+	// 비슷한 dev 사례와 그 정답. retrieval을 쓰는 variant만. 질문 case의 정답은 없음.
 	Examples []Example
 }
 
-// case와 읽어 온 사진 byte로 adapter 입력을 만든다. 사진 과제는 SHA256이 맞아야 한다.
+// case와 읽어 온 사진 byte로 adapter 입력 생성. 사진 과제는 SHA256이 맞아야 함.
 func AdapterInputOf(c Case, image []byte) (AdapterInput, error) {
 	if c.Task == Translation {
 		if image != nil {
@@ -280,7 +280,7 @@ func AdapterInputOf(c Case, image []byte) (AdapterInput, error) {
 	return AdapterInput{Task: c.Task, MediaType: c.Input.Image.MediaType, Image: image}, nil
 }
 
-// case 파일 하나를 읽고 검증한다.
+// case 파일 하나를 읽고 검증.
 func DecodeCase(r io.Reader, contract ClassificationContract) (Case, error) {
 	var c Case
 	if err := decodeStrict(r, &c); err != nil {

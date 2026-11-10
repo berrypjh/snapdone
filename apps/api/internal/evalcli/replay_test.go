@@ -12,7 +12,7 @@ import (
 	"snapdone/api/internal/evaluation"
 )
 
-// replay → report → compare. 예측은 fixture 파일에서만 오고 dataset의 정답에서 만들지 않는다.
+// replay → report → compare. 예측은 fixture 파일에서만 오고 dataset의 정답에서 만들지 않음.
 func TestReplayReportCompare(t *testing.T) {
 	provider := &fakeProvider{}
 	stub(t, provider)
@@ -20,7 +20,7 @@ func TestReplayReportCompare(t *testing.T) {
 	out := filepath.Join(dir, "results")
 	v1, v2 := writeVariant(t, dir, "v1", "openai", "m1"), writeVariant(t, dir, "v2", "openai", "m2")
 	fixture := filepath.Join(dir, "predictions.jsonl")
-	// sf-dev-01의 정답은 place/save_place, sf-dev-02는 receipt/record_expense. v2는 둘째가 timeout이다.
+	// sf-dev-01의 정답은 place/save_place, sf-dev-02는 receipt/record_expense. v2는 둘째가 timeout.
 	lines := []string{
 		`{"variantId":"v1","caseId":"sf-dev-01","prediction":{"category":"place","facts":[],"suggestedAction":"save_place","confidence":"high"}}`,
 		`{"variantId":"v1","caseId":"sf-dev-02","prediction":{"category":"receipt","facts":[],"suggestedAction":"record_expense","confidence":"medium"}}`,
@@ -71,7 +71,7 @@ func TestReplayReportCompare(t *testing.T) {
 	}
 }
 
-// 고른 case에 맞지 않는 기록(오타 · 다른 variant)은 버려지지만 조용하지는 않다. run은 그 case가 not-run이라 partial이다.
+// 고른 case에 맞지 않는 기록(오타 · 다른 variant)은 버려지지만 조용하지는 않음. run은 그 case가 not-run이라 partial.
 func TestReplayWarnsAboutUnmatchedRecords(t *testing.T) {
 	provider := &fakeProvider{}
 	stub(t, provider)
@@ -90,7 +90,7 @@ func TestReplayWarnsAboutUnmatchedRecords(t *testing.T) {
 	}
 }
 
-// text-extraction dataset의 replay. 기록 fixture만 읽고 모델을 부르지 않으며 summary에 text 표만 있다.
+// text-extraction dataset의 replay. 기록 fixture만 읽고 모델을 부르지 않으며 summary에 text 표만 존재.
 func TestReplayTextExtraction(t *testing.T) {
 	provider := &fakeProvider{}
 	stub(t, provider)
@@ -121,7 +121,7 @@ func TestReplayTextExtraction(t *testing.T) {
 	}
 }
 
-// translation dataset의 replay. 기본 policy는 unscored이고, --policy translation-exact-v1이면 strict로 채점한다.
+// translation dataset의 replay. 기본 policy는 unscored이고, --policy translation-exact-v1이면 strict로 채점.
 func TestReplayTranslation(t *testing.T) {
 	provider := &fakeProvider{}
 	stub(t, provider)
@@ -154,7 +154,7 @@ func TestReplayTranslation(t *testing.T) {
 	}
 }
 
-// tools/evals의 sample은 세 task 모두 저장소의 파일만으로 CLI replay가 된다. 호출 없이 task에 맞는 요약이 나온다.
+// tools/evals의 sample은 세 task 모두 저장소의 파일만으로 CLI replay 가능. 호출 없이 task에 맞는 요약 출력.
 func TestPublicReplayDemos(t *testing.T) {
 	provider := &fakeProvider{}
 	stub(t, provider)
@@ -166,9 +166,9 @@ func TestPublicReplayDemos(t *testing.T) {
 	}{
 		{"sample-classification", "replay-example", "sample-classification.jsonl", nil, "classification"},
 		{"sample-text-extraction", "text-extraction-replay", "sample-text-extraction.jsonl", nil, "text"},
-		// reference가 사람 검토 전(draft)이라 명시적으로 연다. 요약은 공식 benchmark가 아니라고 적는다.
+		// reference가 사람 검토 전(draft)이라 명시적으로 허용. 요약에는 공식 benchmark가 아니라고 기재.
 		{"sample-translation", "translation-replay", "sample-translation.jsonl", []string{"--allow-drafts"}, "translation"},
-		// Python 연구 workspace(tools/evals/lab)의 writer가 쓴 기록. Python이 쓰고 Go가 읽는 경계가 그대로인지 본다.
+		// Python 연구 workspace(tools/evals/lab)의 writer가 쓴 기록. Python이 쓰고 Go가 읽는 경계가 그대로인지 확인.
 		{"sample-classification", "replay-example", "lab-example.jsonl", nil, "classification"},
 	}
 	for _, d := range demos {

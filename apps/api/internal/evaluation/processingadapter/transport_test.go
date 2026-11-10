@@ -17,7 +17,7 @@ func newCapture(body string, limit int) (*teeBody, *capture) {
 	return &teeBody{src: io.NopCloser(strings.NewReader(body)), cap: c, limit: limit}, c
 }
 
-// production이 읽는 byte를 그대로 돌려주면서 옆에 베낀다. 읽지 않은 부분은 베끼지 않는다.
+// production이 읽는 byte를 그대로 돌려주면서 옆에 베낌. 읽지 않은 부분은 베끼지 않음.
 func TestTeeBodyCapturesOnlyWhatProductionReads(t *testing.T) {
 	body, c := newCapture("hello world", captureLimit)
 	buf := make([]byte, 5)
@@ -38,7 +38,7 @@ func TestTeeBodyCapturesOnlyWhatProductionReads(t *testing.T) {
 	}
 }
 
-// 상한을 넘는 부분은 베끼지 않되 production은 그대로 다 읽는다.
+// 상한을 넘는 부분은 베끼지 않되 production은 그대로 다 읽음.
 func TestTeeBodyIsBounded(t *testing.T) {
 	body, c := newCapture("0123456789", 4)
 	read, err := io.ReadAll(body)
@@ -50,7 +50,7 @@ func TestTeeBodyIsBounded(t *testing.T) {
 	}
 }
 
-// 요청은 손대지 않고 그대로 보낸다.
+// 요청은 손대지 않고 그대로 전송.
 func TestObserverPassesTheRequestThrough(t *testing.T) {
 	var seen http.Header
 	var body string
@@ -82,7 +82,7 @@ func TestObserverPassesTheRequestThrough(t *testing.T) {
 	}
 }
 
-// 예산이 없으면 base Transport는 실행되지 않는다 — credential이 실린 요청이 나가지 않는다.
+// 예산이 없으면 base Transport는 실행되지 않음 — credential이 실린 요청이 나가지 않음.
 func TestObserverBudgetGateRunsBeforeTheNetwork(t *testing.T) {
 	fake := &fakeTransport{handler: func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(`{}`)) }}
 	obs := newObserver(fake, evaluation.NewFixedBudget(1))
@@ -114,7 +114,7 @@ func TestObserverRecordsTimeoutsAndTransportErrors(t *testing.T) {
 	}
 }
 
-// 봉투를 판정할 수 있는 경우 — 끝까지 읽음 · 온전한 JSON 값 · 이미 깨진 문법. 잘린 값은 판정하지 않는다.
+// 봉투를 판정할 수 있는 경우 — 끝까지 읽음 · 온전한 JSON 값 · 이미 깨진 문법. 잘린 값은 판정하지 않음.
 func TestCaptureObserved(t *testing.T) {
 	for body, want := range map[string]bool{"": false, `{"a":`: false, `{"a":1}`: true, "<html>": true, `[1,2`: false} {
 		if got := (&capture{body: []byte(body)}).observed(); got != want {

@@ -16,10 +16,10 @@ import (
 	"snapdone/api/internal/processing"
 )
 
-// PNG 파일 서명. http.DetectContentType이 image/png로 본다.
+// PNG 파일 서명. http.DetectContentType이 image/png로 판별.
 var pngImage = append([]byte("\x89PNG\r\n\x1a\n"), make([]byte, 64)...)
 
-// fakeProcessing은 user-1의 job-1과 최근 작업 recent만 알고, 시작 요청과 목록을 물은 사용자를 기록한다.
+// fakeProcessing은 user-1의 job-1과 최근 작업 recent만 알고, 시작 요청과 목록을 물은 사용자를 기록.
 type fakeProcessing struct {
 	job        processing.Job
 	recent     []processing.Job
@@ -79,7 +79,7 @@ func (f *fakeProcessing) Delete(_ context.Context, userID, id string) error {
 	return nil
 }
 
-// user-1의 job-1 · job-2만 지운다. 나머지는 실제 Store처럼 건너뛴다.
+// user-1의 job-1 · job-2만 삭제. 나머지는 실제 Store처럼 건너뜀.
 func (f *fakeProcessing) DeleteMany(_ context.Context, userID string, ids []string) (int, error) {
 	if f.err != nil {
 		return 0, f.err
@@ -105,7 +105,7 @@ func processingRouter(service ProcessingService) http.Handler {
 	return NewRouter(Deps{Sessions: &fakeSessions{}, Processing: service})
 }
 
-// upload는 image 필드에 data를 담은 multipart 요청을 보낸다.
+// upload는 image 필드에 data를 담은 multipart 요청 전송.
 func upload(handler http.Handler, field string, data []byte, headers ...string) *httptest.ResponseRecorder {
 	var body bytes.Buffer
 	form := multipart.NewWriter(&body)
@@ -116,7 +116,7 @@ func upload(handler http.Handler, field string, data []byte, headers ...string) 
 		append([]string{"Content-Type", form.FormDataContentType()}, headers...)...)
 }
 
-// uploadWith는 image와 함께 재처리 필드를 담은 multipart 요청을 보낸다.
+// uploadWith는 image와 함께 재처리 필드를 담은 multipart 요청 전송.
 func uploadWith(handler http.Handler, fields map[string]string, headers ...string) *httptest.ResponseRecorder {
 	var body bytes.Buffer
 	form := multipart.NewWriter(&body)
@@ -211,7 +211,7 @@ func TestProcessingJob(t *testing.T) {
 	}
 }
 
-// 처리 · 인증 설정이 없으면 route는 남기고 503이다.
+// 처리 · 인증 설정이 없으면 route는 남기고 503.
 func TestProcessingDisabled(t *testing.T) {
 	for name, deps := range map[string]Deps{
 		"processing missing": {Sessions: &fakeSessions{}},
@@ -230,7 +230,7 @@ func TestProcessingDisabled(t *testing.T) {
 	}
 }
 
-// running 작업은 result 필드 없이 나간다.
+// running 작업은 result 필드 없이 응답.
 func TestRunningJobHasNoResult(t *testing.T) {
 	handler := processingRouter(&fakeProcessing{job: processing.Job{ID: "job-1", Status: processing.StatusRunning}})
 	r := send(handler, http.MethodGet, "/v1/processing-jobs/job-1", "", bearer...)
@@ -239,7 +239,7 @@ func TestRunningJobHasNoResult(t *testing.T) {
 	}
 }
 
-// 출처는 요청 세션의 온보딩 단계로 정한다. 온보딩을 마친 뒤에만 general이다.
+// 출처는 요청 세션의 온보딩 단계로 결정. 온보딩을 마친 뒤에만 general.
 func TestCreateProcessingJobOrigin(t *testing.T) {
 	for step, want := range map[string]processing.Origin{
 		"intro":       processing.OriginOnboarding,
@@ -282,7 +282,7 @@ func TestProcessingJobs(t *testing.T) {
 	assertNoStore(t, r)
 }
 
-// 온보딩 첫 사진은 온보딩을 마친 뒤에만 목록에 들어간다.
+// 온보딩 첫 사진은 온보딩을 마친 뒤에만 목록에 포함.
 func TestProcessingJobsOrigins(t *testing.T) {
 	both := []processing.Origin{processing.OriginOnboarding, processing.OriginGeneral}
 	for step, want := range map[string][]processing.Origin{
@@ -301,8 +301,8 @@ func TestProcessingJobsOrigins(t *testing.T) {
 	}
 }
 
-// 제품 결과와 재처리 관계는 이 모양으로 나간다. libs/processing의 parser가 같은 본문을 읽는다.
-// 확인하지 못한 영수증 필드는 value가 null이고, 이 migration 전의 작업에는 outcome이 없다.
+// 제품 결과와 재처리 관계는 이 모양으로 응답. libs/processing의 parser가 같은 본문을 읽음.
+// 확인하지 못한 영수증 필드는 value가 null이고, 이 migration 전의 작업에는 outcome이 없음.
 func TestProcessingJobsOutcome(t *testing.T) {
 	created := time.Date(2026, 10, 7, 9, 0, 0, 0, time.UTC)
 	value := func(v string) *string { return &v }
@@ -361,7 +361,7 @@ func TestProcessingJobsOutcome(t *testing.T) {
 	}
 }
 
-// 처리 방식을 읽지 못하는 등 작업을 시작하지 못하면 원인을 숨긴 500이고, 작업은 돌려주지 않는다.
+// 처리 방식을 읽지 못하는 등 작업을 시작하지 못하면 원인을 숨긴 500이고, 작업은 반환하지 않음.
 func TestCreateProcessingJobStartFailure(t *testing.T) {
 	service := &fakeProcessing{startErr: errors.New("processing: preferences: db: connection reset")}
 	r := upload(processingRouter(service), "image", pngImage, bearer...)
@@ -373,7 +373,7 @@ func TestCreateProcessingJobStartFailure(t *testing.T) {
 	}
 }
 
-// 처리 방식만 고르고 결과가 아직 없는 작업은 selection만 나간다.
+// 처리 방식만 고르고 결과가 아직 없는 작업은 selection만 응답.
 func TestProcessingJobWithSelectionOnly(t *testing.T) {
 	service := &fakeProcessing{job: processing.Job{
 		ID: "job-1", Status: processing.StatusCompleted,
@@ -389,7 +389,7 @@ func TestProcessingJobWithSelectionOnly(t *testing.T) {
 	}
 }
 
-// 재처리는 같은 POST에 sourceJobId · imageType · action을 더해 보낸다. 응답에 원래 작업이 실린다.
+// 재처리는 같은 POST에 sourceJobId · imageType · action을 더해 전송. 응답에 원래 작업이 실림.
 func TestReprocessProcessingJob(t *testing.T) {
 	service := &fakeProcessing{}
 	r := uploadWith(processingRouter(service), map[string]string{"sourceJobId": "job-1", "imageType": "text", "action": "summarize"}, bearer...)
@@ -402,7 +402,7 @@ func TestReprocessProcessingJob(t *testing.T) {
 	}
 }
 
-// 재처리 오류는 코드로만 나간다. 원래 작업이 없는 것과 다른 사용자의 것은 같은 404다.
+// 재처리 오류는 코드로만 응답. 원래 작업이 없는 것과 다른 사용자의 것은 같은 404.
 func TestReprocessProcessingJobErrors(t *testing.T) {
 	for _, tc := range []struct {
 		err    error
@@ -424,7 +424,7 @@ func TestReprocessProcessingJobErrors(t *testing.T) {
 	}
 }
 
-// 원래 작업 없이 유형 · 처리 방식만 보내면 새 처리로 넘어가지 않고 거절한다.
+// 원래 작업 없이 유형 · 처리 방식만 보내면 새 처리로 넘어가지 않고 거절.
 func TestCreateProcessingJobRejectsChoiceWithoutSource(t *testing.T) {
 	for _, fields := range []map[string]string{{"imageType": "text"}, {"action": "summarize"}} {
 		service := &fakeProcessing{}
@@ -439,7 +439,7 @@ func receiptPatch(handler http.Handler, path, body string, headers ...string) *h
 	return send(handler, http.MethodPatch, path, body, append([]string{"Content-Type", "application/json"}, headers...)...)
 }
 
-// 영수증 필드 하나를 확정하고 바뀐 뒤의 작업을 돌려준다.
+// 영수증 필드 하나를 확정하고 바뀐 뒤의 작업 반환.
 func TestResolveReceiptField(t *testing.T) {
 	service := &fakeProcessing{job: processing.Job{ID: "job-1", Status: processing.StatusCompleted,
 		Result: &processing.Result{Category: "receipt", Facts: []processing.Fact{}, SuggestedAction: "record_expense", Confidence: "medium"}}}
@@ -509,7 +509,7 @@ func TestProcessingJobsRejects(t *testing.T) {
 	}
 }
 
-// 지우면 본문 없이 204다. 남의 작업 · 없는 작업은 404, 로그인 없음은 401, 저장소 실패는 500이다.
+// 지우면 본문 없이 204. 남의 작업 · 없는 작업은 404, 로그인 없음은 401, 저장소 실패는 500.
 func TestDeleteProcessingJob(t *testing.T) {
 	service := &fakeProcessing{}
 	r := send(processingRouter(service), http.MethodDelete, "/v1/processing-jobs/job-1", "", bearer...)
@@ -538,7 +538,7 @@ func TestDeleteProcessingJob(t *testing.T) {
 	}
 }
 
-// 여러 개를 한 번에 지우고 실제로 지운 개수만 센다. 비었거나 20개를 넘으면 400이다.
+// 여러 개를 한 번에 지우고 실제로 지운 개수만 집계. 비었거나 20개를 넘으면 400.
 func TestDeleteProcessingJobs(t *testing.T) {
 	json := append([]string{"Content-Type", "application/json"}, bearer...)
 	service := &fakeProcessing{}

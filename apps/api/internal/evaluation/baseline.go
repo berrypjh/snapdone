@@ -5,7 +5,7 @@ import (
 	"slices"
 )
 
-// 모델 없이 정한 규칙으로 답하는 adapter. 모델이 이것보다 나아야 쓸 이유가 있다. 네트워크 · key가 없다.
+// 모델 없이 정한 규칙으로 답하는 adapter. 모델이 이것보다 나아야 쓸 이유가 있음. 네트워크 · key 없음.
 type baselineAdapter struct {
 	model  string
 	config BaselineConfig
@@ -15,7 +15,7 @@ func newBaselineAdapter(v VariantManifest) *baselineAdapter {
 	return &baselineAdapter{model: v.Model, config: *v.Config.Baseline}
 }
 
-// constant는 늘 같은 답, nearest는 첫 예시의 정답이다. 예시가 없으면 답하지 못한 것으로 남긴다.
+// constant는 늘 같은 답, nearest는 첫 예시의 정답. 예시가 없으면 답하지 못한 것으로 기록.
 func (b *baselineAdapter) Invoke(_ context.Context, in AdapterInput) Observation {
 	obs := Observation{
 		Task: in.Task, RequestedModel: b.model, Attempts: []HTTPAttempt{},

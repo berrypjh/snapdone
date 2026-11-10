@@ -13,7 +13,7 @@ type Auth struct {
 	PublicBaseURL     string
 	WebOrigin         string
 	MobileRedirectURI string
-	EncryptionKey     []byte // 32바이트. 환경변수에는 base64로 둔다
+	EncryptionKey     []byte // 32바이트. 환경변수에는 base64로 저장
 	EncryptionKeyID   string
 	TermsVersion      string
 	PrivacyVersion    string
@@ -75,7 +75,7 @@ func (a *Auth) validateURLs(production bool) error {
 	return nil
 }
 
-// http(s) 절대 URL인지 본다. production은 https만, originOnly면 경로도 허용하지 않는다.
+// http(s) 절대 URL인지 확인. production은 https만, originOnly면 경로도 허용하지 않음.
 func checkURL(key, raw string, production, originOnly bool) error {
 	u, err := url.Parse(raw)
 	valid := err == nil && u.Host != "" && u.User == nil && u.RawQuery == "" && u.Fragment == "" &&

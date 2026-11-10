@@ -42,7 +42,7 @@ const (
 )
 
 func main() {
-	// config보다 먼저 만들어 설정 오류도 같은 형식으로 남긴다. APP_RELEASE는 배포 이미지 태그.
+	// config보다 먼저 생성해 설정 오류도 같은 형식으로 기록. APP_RELEASE는 배포 이미지 태그.
 	logger := logging.New(os.Stderr, os.Getenv("APP_RELEASE"))
 	httpserver.UseReleaseMode()
 
@@ -59,7 +59,7 @@ func main() {
 	defer sentry.Flush(sentryFlushTimeout)
 	logger.Info("api sentry", "enabled", cfg.SentryDSN != "")
 
-	// SIGINT(Ctrl+C) 또는 SIGTERM을 받으면 서버 종료 절차를 시작한다.
+	// SIGINT(Ctrl+C) 또는 SIGTERM을 받으면 서버 종료 절차 시작.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -69,7 +69,7 @@ func main() {
 	}
 	defer pool.Close()
 
-	// 마이그레이션은 cmd/migrate가 배포 단계에서 적용한다. 뒤처진 스키마로는 기동하지 않는다.
+	// 마이그레이션은 배포 단계에서 cmd/migrate가 적용. 뒤처진 스키마로는 기동 거부.
 	if err := database.RequireMigrated(ctx, pool); err != nil {
 		fatal(logger, "api refused to start; run `nx run api:migrate`", err)
 	}
@@ -83,7 +83,7 @@ func main() {
 	go func() {
 		logger.Info("api listening", "addr", server.Addr, "env", cfg.Environment, "swagger", deps.Swagger)
 
-		// Shutdown으로 인한 정상 종료는 에러로 취급하지 않는다.
+		// Shutdown으로 인한 정상 종료는 에러가 아님.
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("api failed to serve", "err", err)
 			stop()
@@ -93,7 +93,7 @@ func main() {
 	<-ctx.Done()
 	logger.Info("api shutting down")
 
-	// 무한정 대기하지 않도록 제한 시간 내에서 graceful shutdown을 수행한다.
+	// 무한정 대기하지 않도록 제한 시간 안에서 graceful shutdown 수행.
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
@@ -102,7 +102,7 @@ func main() {
 	}
 }
 
-// DSN이 있을 때만 Sentry를 켠다. 요청 데이터(헤더 · 본문 · IP)는 보내지 않는다.
+// DSN이 있을 때만 Sentry 활성화. 요청 데이터(헤더 · 본문 · IP)는 보내지 않음.
 func initSentry(dsn, release, environment string) error {
 	if dsn == "" {
 		return nil
@@ -120,15 +120,16 @@ func fatal(logger *slog.Logger, msg string, err error) {
 	os.Exit(1)
 }
 
-// 인증 설정이 없으면 인증 의존성을 비워 인증 endpoint를 503으로 둔다.
-// 사진 처리는 로그인 세션이 필요하므로 인증과 PROCESSING_*가 모두 있을 때만 켠다.
-// Swagger UI는 production이 아닐 때만 연다.
+// 설정에 있는 기능만 켠 HTTP 의존성 생성. 설정이 없는 기능의 의존성은 비워 둠.
 func newDeps(logger *slog.Logger, cfg config.Config, pool *pgxpool.Pool) (httpserver.Deps, error) {
+	// Swagger UI는 production이 아닐 때만 노출.
 	deps := httpserver.Deps{
 		Logger:       logger,
 		Swagger:      cfg.Environment != "production",
 		TraceProject: cfg.TraceProject,
 	}
+
+	// 인증 설정이 없으면 인증 의존성을 비워 인증 endpoint는 503.
 	if cfg.Auth == nil {
 		logger.Info("api auth is disabled: AUTH_* is not set")
 		return deps, nil
@@ -152,16 +153,19 @@ func newDeps(logger *slog.Logger, cfg config.Config, pool *pgxpool.Pool) (httpse
 	deps.Onboarding = onboarding.NewStore(pool)
 	preferences := preference.NewStore(pool)
 	deps.Preferences = preferences
+
+	// 사진 처리는 로그인 세션이 필요해 인증과 PROCESSING_*가 모두 있을 때만 활성화.
 	if cfg.Processing == nil {
 		logger.Info("api processing is disabled: PROCESSING_* is not set")
 		return deps, nil
 	}
+	// 사진 처리기 생성. 공급자와 모델은 PROCESSING_PROVIDER · PROCESSING_MODEL 설정을 따름(newModel).
 	deps.Processing = processing.NewProcessor(processing.NewStore(pool), newModel(*cfg.Processing), preferences, logger)
 	logger.Info("api processing model", "provider", cfg.Processing.Provider, "model", cfg.Processing.Model)
 	return deps, nil
 }
 
-// 설정이 고른 공급자의 모델. 분류와 유형 판단을 같은 모델이 한다. 모델을 바꿀 때 코드를 고치지 않고 PROCESSING_*만 바꾼다.
+// 설정의 공급자에 맞는 모델 생성. Claude와 OpenAI 호환 서버(OpenAI · Ollama 등) 지원.
 func newModel(p config.Processing) processing.Model {
 	httpClient := processing.NewHTTPClient()
 	if p.Provider == config.ProviderAnthropic {

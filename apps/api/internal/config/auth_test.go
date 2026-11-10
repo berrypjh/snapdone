@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// setAuth는 유효한 인증 설정 전체를 넣고 overrides로 일부를 바꾼다.
+// setAuth는 유효한 인증 설정 전체를 넣고 overrides로 일부를 변경.
 func setAuth(t *testing.T, overrides map[string]string) {
 	t.Helper()
 	values := map[string]string{

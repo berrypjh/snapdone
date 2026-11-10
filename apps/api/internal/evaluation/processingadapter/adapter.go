@@ -1,7 +1,7 @@
-// Package processingadapter는 평가 core와 production 사진 분류기(internal/processing)를 잇는다.
+// Package processingadapter는 평가 core와 production 사진 분류기(internal/processing)를 연결.
 // live 분류 평가는 production 생성자(NewClaudeClassifier · NewOpenAIClassifier)와 production HTTP client를
-// 그대로 쓰고, 여기서는 그 Transport를 감싸 왕복을 관찰 · 예산으로 막고 결과를 평가의 모양으로 옮긴다.
-// 의존 방향은 evalcli → processingadapter → evaluation이고, evaluation은 이 package를 모른다.
+// 그대로 쓰고, 여기서는 그 Transport를 감싸 왕복을 관찰 · 예산으로 막고 결과를 평가의 모양으로 옮김.
+// 의존 방향은 evalcli → processingadapter → evaluation이고, evaluation은 이 package를 모름.
 package processingadapter
 
 import (
@@ -21,15 +21,15 @@ import (
 	"snapdone/api/internal/processing"
 )
 
-// production 분류 계약에서 평가가 채점에 쓰는 만큼만 옮긴다. 목록은 production이 정본이다.
+// production 분류 계약에서 평가가 채점에 쓰는 만큼만 옮김. 목록은 production이 정본.
 func Contract() evaluation.ClassificationContract {
 	c := processing.DescribeContract()
 	return evaluation.ClassificationContract{Hash: c.Hash, Categories: c.Categories, Actions: c.Actions, Confidence: c.Confidence}
 }
 
 // Run이 live · 지원 variant마다 부르는 생성자. key는 manifest의 APIKeyEnv가 가리키는 환경변수에서 이때 읽고
-// 어디에도 적지 않는다. base가 nil이면 production Transport를 쓰고, 테스트는 가짜 Transport를 준다. 생성 자체는
-// 네트워크를 쓰지 않는다.
+// 어디에도 적지 않음. base가 nil이면 production Transport를 쓰고, 테스트는 가짜 Transport 주입. 생성 자체는
+// 네트워크를 쓰지 않음.
 func Factory(base http.RoundTripper) evaluation.AdapterFactory {
 	return func(v evaluation.VariantManifest, budget evaluation.CallBudget) (evaluation.Adapter, error) {
 		if v.Adapter != evaluation.AdapterProcessing {
@@ -72,20 +72,20 @@ func unjudged(availability evaluation.Availability, reason string) evaluation.Ju
 }
 
 // production 분류기를 그대로 부르고 옆에서 관찰하는 adapter. 실험 설정이 있으면 지시를 바꾸거나(prompt ·
-// 예시) 두 번째 모델에 다시 묻는다(cascade). Invoke는 한 번에 하나만 돈다.
+// 예시) 두 번째 모델에 다시 질의(cascade). Invoke는 한 번에 하나만 실행.
 type Adapter struct {
 	cfg evaluation.ProviderConfig
-	// 보낼 지시. 기본은 production 지시다.
+	// 보낼 지시. 기본은 production 지시.
 	prompt  string
 	cascade *evaluation.CascadeConfig
-	// 모델과 지시로 production 분류기를 만든다.
+	// 모델과 지시로 production 분류기를 생성.
 	build    func(model, instructions string) processing.Classifier
 	observer *observer
 	secret   string
 	mu       sync.Mutex
 }
 
-// base가 nil이면 production Transport를 쓴다. 테스트는 가짜 Transport를 준다.
+// base가 nil이면 production Transport 사용. 테스트는 가짜 Transport 주입.
 func newAdapter(cfg evaluation.ProviderConfig, apiKey string, budget evaluation.CallBudget, base http.RoundTripper) (*Adapter, error) {
 	client := processing.NewHTTPClient()
 	if base != nil {
@@ -109,7 +109,7 @@ func newAdapter(cfg evaluation.ProviderConfig, apiKey string, budget evaluation.
 	return a, nil
 }
 
-// 사진 하나를 production 분류기로 보낸다. 정답 · 주석은 AdapterInput에 없다. 예시는 다른 dev 사례의 정답이다.
+// 사진 하나를 production 분류기로 전송. 정답 · 주석은 AdapterInput에 없음. 예시는 다른 dev 사례의 정답.
 func (a *Adapter) Invoke(ctx context.Context, in evaluation.AdapterInput) evaluation.Observation {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -122,7 +122,7 @@ func (a *Adapter) Invoke(ctx context.Context, in evaluation.AdapterInput) evalua
 	return obs
 }
 
-// 첫 답이 불확실하거나 없으면 두 번째 모델에 다시 묻는다. 예산 거절 · 취소는 다시 묻지 않는다.
+// 첫 답이 불확실하거나 없으면 두 번째 모델에 다시 질의. 예산 거절 · 취소는 다시 묻지 않음.
 func (a *Adapter) escalate(ctx context.Context, in evaluation.AdapterInput, instructions string, first evaluation.Observation) evaluation.Observation {
 	trace := &evaluation.CascadeTrace{FirstModel: a.cfg.Model}
 	uncertain := first.Result == nil
@@ -148,7 +148,7 @@ func (a *Adapter) escalate(ctx context.Context, in evaluation.AdapterInput, inst
 	return second
 }
 
-// 두 호출의 token 합. 한쪽이라도 모르면 합도 모른다.
+// 두 호출의 token 합. 한쪽이라도 모르면 합도 모름.
 func sumTokens(a, b evaluation.Measure) evaluation.Measure {
 	if a.Availability != evaluation.Measured || b.Availability != evaluation.Measured {
 		return evaluation.Missing(evaluation.Unavailable, "a cascade step reported no usage")
@@ -156,7 +156,7 @@ func sumTokens(a, b evaluation.Measure) evaluation.Measure {
 	return evaluation.MeasuredValue(*a.Value + *b.Value)
 }
 
-// 비슷한 사례의 정답을 지시 끝에 힌트로 붙인다. 예시가 없으면 지시 그대로다.
+// 비슷한 사례의 정답을 지시 끝에 힌트로 추가. 예시가 없으면 지시 그대로.
 func withExamples(instructions string, examples []evaluation.Example) string {
 	if len(examples) == 0 {
 		return instructions
@@ -174,7 +174,7 @@ func withExamples(instructions string, examples []evaluation.Example) string {
 	return b.String()
 }
 
-// 한 모델에 한 번 묻고 관찰한다.
+// 한 모델에 한 번 묻고 관찰.
 func (a *Adapter) call(ctx context.Context, in evaluation.AdapterInput, model, instructions string) evaluation.Observation {
 	obs := evaluation.Observation{
 		Task: in.Task, RequestedModel: model, Attempts: []evaluation.HTTPAttempt{},
@@ -220,7 +220,7 @@ func (a *Adapter) call(ctx context.Context, in evaluation.AdapterInput, model, i
 	return obs
 }
 
-// production 결과를 평가의 예측으로 옮긴다. facts가 비어 있으면 빈 목록이다(production parseResult와 같다).
+// production 결과를 평가의 예측으로 옮김. facts가 비어 있으면 빈 목록(production parseResult와 동일).
 func predictionOf(r processing.Result) *evaluation.ClassificationPrediction {
 	facts := make([]evaluation.ClassificationFact, 0, len(r.Facts))
 	for _, f := range r.Facts {
@@ -229,7 +229,7 @@ func predictionOf(r processing.Result) *evaluation.ClassificationPrediction {
 	return &evaluation.ClassificationPrediction{Category: r.Category, Facts: facts, SuggestedAction: r.SuggestedAction, Confidence: r.Confidence}
 }
 
-// 공급자 응답 봉투에서 허용된 항목만 읽는다. 본문이 온전하지 않으면 그 사실을 남긴다.
+// 공급자 응답 봉투에서 허용된 항목만 읽음. 본문이 온전하지 않으면 그 사실을 기록.
 func (a *Adapter) observeResponse(obs *evaluation.Observation, last *capture) {
 	if last == nil {
 		return
@@ -289,7 +289,7 @@ func textOr(value *string, reason string) evaluation.Text {
 	return observedText(*value)
 }
 
-// 알려진 값만 넣는다. 0은 값이고, 없는 값은 0이 아니다.
+// 알려진 값만 넣음. 0은 값이고, 없는 값은 0 아님.
 func tokens(value *int64, reason string) evaluation.Measure {
 	if value == nil {
 		return evaluation.Missing(evaluation.Unavailable, reason)
@@ -297,11 +297,11 @@ func tokens(value *int64, reason string) evaluation.Measure {
 	return evaluation.MeasuredValue(float64(*value))
 }
 
-// 공급자 봉투에서 허용된 항목. 필드가 없으면 nil이다.
+// 공급자 봉투에서 허용된 항목. 필드가 없으면 nil.
 type envelope struct {
 	model, stopReason, text   *string
 	inputTokens, outputTokens *int64
-	// 답이 끝까지 왔다(end_turn · stop). production은 이때만 parser를 돌린다.
+	// 답이 끝까지 도착(end_turn · stop). production은 이때만 parser 실행.
 	finished bool
 }
 
@@ -371,7 +371,7 @@ func readEnvelope(provider string, body []byte) (envelope, bool) {
 	return env, true
 }
 
-// Classify의 오류를 증거로 분류한다. 마지막 왕복의 상태 · 봉투 · 텍스트가 증거이고, 없으면 unknown이다.
+// Classify의 오류를 증거로 분류. 마지막 왕복의 상태 · 봉투 · 텍스트가 증거이고, 없으면 unknown.
 func classify(err error, attempts []evaluation.HTTPAttempt, last *capture, obs evaluation.Observation) *evaluation.Failure {
 	if len(attempts) == 0 {
 		return &evaluation.Failure{Class: evaluation.OtherError, Kind: evaluation.FailureUnknown, Message: "classifier failed before any HTTP attempt"}
@@ -404,7 +404,7 @@ func classify(err error, attempts []evaluation.HTTPAttempt, last *capture, obs e
 	return &evaluation.Failure{Class: evaluation.OtherError, Kind: evaluation.FailureUnknown, Message: "classifier failed for a reason the harness could not classify"}
 }
 
-// 설정된 secret이 응답에 되풀이돼도 산출물에 남지 않게 한다.
+// 설정된 secret이 응답에 되풀이돼도 산출물에 남지 않게 처리.
 func (a *Adapter) redact(obs *evaluation.Observation) {
 	if a.secret == "" {
 		return

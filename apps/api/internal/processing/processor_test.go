@@ -13,8 +13,8 @@ import (
 	"snapdone/api/internal/preference"
 )
 
-// fakeJobs는 작업이 끝나면 finished로 알리고, 만든 작업과 목록 요청을 기록한다.
-// stored는 user-1의 작업이다 — 다른 사용자 · 없는 id는 ErrNotFound다.
+// fakeJobs는 작업이 끝나면 finished로 알리고, 만든 작업과 목록 요청을 기록.
+// stored는 user-1의 작업 — 다른 사용자 · 없는 id는 ErrNotFound.
 type fakeJobs struct {
 	finished chan Job
 	created  []NewJob
@@ -67,8 +67,8 @@ func (f *fakeJobs) ResolveReceiptField(context.Context, string, string, string, 
 	return Job{}, ErrNotFound
 }
 
-// fakeModel은 정해진 분류 · 유형 판단 · 실행 결과를 돌려준다. release가 있으면 그것이 닫힐 때까지 유형 판단을 기다린다.
-// output이 없으면 고른 처리 방식에 맞는 결과(outputFor)를 돌려주고, acted에 실행한 처리 방식을 남긴다.
+// fakeModel은 정해진 분류 · 유형 판단 · 실행 결과 반환. release가 있으면 그것이 닫힐 때까지 유형 판단을 대기.
+// output이 없으면 고른 처리 방식에 맞는 결과(outputFor)를 돌려주고, acted에 실행한 처리 방식 기록.
 type fakeModel struct {
 	result    Result
 	err       error
@@ -123,7 +123,7 @@ func outputFor(s Selection) Output {
 	return Output{Original: text("Open")}
 }
 
-// fakePreferences는 사용자별 처리 방식을 가진다. 처리 도중 바꿀 수 있다.
+// fakePreferences는 사용자별 처리 방식 보유. 처리 도중 변경 가능.
 type fakePreferences struct {
 	mu    sync.Mutex
 	users map[string]preference.Preferences
@@ -176,7 +176,7 @@ func run(t *testing.T, model Model, prefs preferences, userID string, origin Ori
 	return started, wait(t, jobs)
 }
 
-// 온보딩 첫 사진도 일반 사진과 같이 분류 · 유형 판단 · 처리 방식 실행을 거치고, 분류 결과도 그대로 남긴다.
+// 온보딩 첫 사진도 일반 사진과 같이 분류 · 유형 판단 · 처리 방식 실행을 거치고, 분류 결과도 그대로 기록.
 func TestOnboardingJobGetsTheSameProcessing(t *testing.T) {
 	var acted []Selection
 	started, finished := run(t, fakeModel{result: Result{Category: "receipt"}, typing: TypingReceipt, acted: &acted}, defaults(), "user-1", OriginOnboarding)
@@ -194,7 +194,7 @@ func TestOnboardingJobGetsTheSameProcessing(t *testing.T) {
 	}
 }
 
-// 확정된 유형은 저장된 처리 방식을 실행하고, 실행한 처리 방식과 결과가 같은 작업에 남는다.
+// 확정된 유형은 저장된 처리 방식을 실행하고, 실행한 처리 방식과 결과가 같은 작업에 남음.
 func TestGeneralJobAppliesTheStoredAction(t *testing.T) {
 	stored := preference.Preferences{Text: preference.TextSummarize, Receipt: preference.ReceiptExtractText}
 	for _, tc := range []struct {
@@ -218,7 +218,7 @@ func TestGeneralJobAppliesTheStoredAction(t *testing.T) {
 	}
 }
 
-// 일곱 처리 방식 모두 실행 결과가 처리 방식의 계약대로 작업에 남는다.
+// 일곱 처리 방식 모두 실행 결과가 처리 방식의 계약대로 작업에 남음.
 func TestEveryActionIsExecuted(t *testing.T) {
 	for _, text := range textActions {
 		for _, receipt := range receiptActions {
@@ -233,7 +233,7 @@ func TestEveryActionIsExecuted(t *testing.T) {
 	}
 }
 
-// 서버 기본값(preference.Defaults)도 그대로 적용한다. 앱이 기본값을 만들지 않는다.
+// 서버 기본값(preference.Defaults)도 그대로 적용. 앱이 기본값을 만들지 않음.
 func TestGeneralJobAppliesServerDefaults(t *testing.T) {
 	for typing, want := range map[Typing]Selection{
 		TypingText:    {ImageText, "extract_and_translate"},
@@ -246,7 +246,7 @@ func TestGeneralJobAppliesServerDefaults(t *testing.T) {
 	}
 }
 
-// 지원하지 않는 사진과 고를 수 없는 사진은 처리 방식을 실행하지 않고 서로 다른 결과로 끝난다.
+// 지원하지 않는 사진과 고를 수 없는 사진은 처리 방식을 실행하지 않고 서로 다른 결과로 끝남.
 func TestGeneralJobUnsupportedAndAmbiguous(t *testing.T) {
 	for typing, want := range map[Typing]Outcome{
 		TypingUnsupported: {Kind: OutcomeUnsupported},
@@ -264,7 +264,7 @@ func TestGeneralJobUnsupportedAndAmbiguous(t *testing.T) {
 	}
 }
 
-// 유형은 정했지만 읽을 수 있는 글자가 없으면 실패가 아니라 지원하지 않는 사진으로 끝난다.
+// 유형은 정했지만 읽을 수 있는 글자가 없으면 실패가 아니라 지원하지 않는 사진으로 끝남.
 func TestUnreadableImageEndsUnsupported(t *testing.T) {
 	_, finished := run(t, fakeModel{typing: TypingText, actErr: errUnreadable}, defaults(), "user-1", OriginGeneral)
 	if finished.Status != StatusCompleted || finished.Selection != nil || finished.Outcome == nil ||
@@ -273,7 +273,7 @@ func TestUnreadableImageEndsUnsupported(t *testing.T) {
 	}
 }
 
-// 실행 결과가 고른 처리 방식의 계약과 다르면 completed로 저장하지 않고 바로 실패로 끝낸다.
+// 실행 결과가 고른 처리 방식의 계약과 다르면 completed로 저장하지 않고 바로 실패로 종료.
 func TestActionOutputOutsideTheContractFailsTheJob(t *testing.T) {
 	summary := "요약"
 	_, finished := run(t, fakeModel{typing: TypingText, output: &Output{Summary: &summary}}, defaults(), "user-1", OriginGeneral)
@@ -282,7 +282,7 @@ func TestActionOutputOutsideTheContractFailsTheJob(t *testing.T) {
 	}
 }
 
-// 사용자마다 자기 처리 방식이 적용된다.
+// 사용자마다 자기 처리 방식이 적용됨.
 func TestUsersGetTheirOwnAction(t *testing.T) {
 	prefs := &fakePreferences{users: map[string]preference.Preferences{
 		"user-a": {Text: preference.TextSummarize, Receipt: preference.ReceiptRecordExpense},
@@ -296,7 +296,7 @@ func TestUsersGetTheirOwnAction(t *testing.T) {
 	}
 }
 
-// 처리 방식은 작업을 만들 때 읽는다. 처리 도중 설정이 바뀌어도 이 작업에 적용한 값은 그대로다.
+// 처리 방식은 작업을 만들 때 읽음. 처리 도중 설정이 바뀌어도 이 작업에 적용한 값은 그대로.
 func TestActionIsFixedWhenTheJobStarts(t *testing.T) {
 	prefs := defaults()
 	release := make(chan struct{})
@@ -318,7 +318,7 @@ func TestActionIsFixedWhenTheJobStarts(t *testing.T) {
 	}
 }
 
-// 처리 방식을 읽지 못하면 기본값으로 처리하지 않고 작업을 만들지 않는다.
+// 처리 방식을 읽지 못하면 기본값으로 처리하지 않고 작업을 만들지 않음.
 func TestPreferenceFailureCreatesNoJob(t *testing.T) {
 	jobs := &fakeJobs{finished: make(chan Job, 1)}
 	prefs := &fakePreferences{err: errors.New("db: connection reset")}
@@ -329,7 +329,7 @@ func TestPreferenceFailureCreatesNoJob(t *testing.T) {
 	}
 }
 
-// 분류 · 유형 판단이 실패하면(공급자 오류 · 시간 초과 · 계약 밖 응답) 작업은 실패다. unsupported로 보이지 않는다.
+// 분류 · 유형 판단이 실패하면(공급자 오류 · 시간 초과 · 계약 밖 응답) 작업은 실패. unsupported로 보이지 않음.
 func TestModelFailureFailsTheJob(t *testing.T) {
 	for name, model := range map[string]fakeModel{
 		"classify fails":      {err: errors.New("unavailable"), typing: TypingText},
@@ -351,7 +351,7 @@ func TestModelFailureFailsTheJob(t *testing.T) {
 	}
 }
 
-// 받은 출처를 그대로 저장소에 넘긴다.
+// 받은 출처를 그대로 저장소에 전달.
 func TestStartPassesOrigin(t *testing.T) {
 	for _, origin := range []Origin{OriginOnboarding, OriginGeneral} {
 		jobs := &fakeJobs{finished: make(chan Job, 1)}
@@ -366,7 +366,7 @@ func TestStartPassesOrigin(t *testing.T) {
 	}
 }
 
-// 새 작업은 사진 원본 대신 내용의 SHA-256만 저장소에 넘긴다. 재처리 원래 작업은 아직 정하지 않는다.
+// 새 작업은 사진 원본 대신 내용의 SHA-256만 저장소에 전달. 재처리 원래 작업은 아직 정하지 않음.
 func TestStartPassesImageDigest(t *testing.T) {
 	jobs := &fakeJobs{finished: make(chan Job, 1)}
 	if _, err := newTestProcessor(jobs, fakeModel{typing: TypingUnsupported}, defaults()).
@@ -381,7 +381,7 @@ func TestStartPassesImageDigest(t *testing.T) {
 	}
 }
 
-// 목록은 단건 조회와 같은 staleAfter와 정한 상한으로, 받은 출처만 읽는다.
+// 목록은 단건 조회와 같은 staleAfter와 정한 상한으로, 받은 출처만 읽음.
 func TestRecentUsesSameStaleRule(t *testing.T) {
 	jobs := &fakeJobs{}
 	origins := []Origin{OriginGeneral}

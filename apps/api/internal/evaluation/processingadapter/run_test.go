@@ -12,10 +12,10 @@ import (
 	"snapdone/api/internal/evaluation"
 )
 
-// evaluation.Run을 이 package의 Factory와 가짜 HTTP로 돌린다. production 분류기 · SDK 재시도 · Transport 관찰이
-// 실제로 끼는 경로이고, 평가 core 테스트는 가짜 adapter로 runner 동작만 본다.
+// evaluation.Run을 이 package의 Factory와 가짜 HTTP로 실행. production 분류기 · SDK 재시도 · Transport 관찰이
+// 실제로 끼는 경로이고, 평가 core 테스트는 가짜 adapter로 runner 동작만 확인.
 
-// pilot-v1의 dev를 id 순으로 앞에서 n개(event-01 · event-02 · event-03 …). 모델에 가면 안 되는 notes가 있다.
+// pilot-v1의 dev를 id 순으로 앞에서 n개(event-01 · event-02 · event-03 …). 모델에 가면 안 되는 notes 포함.
 func pilot(t *testing.T) evaluation.Dataset {
 	t.Helper()
 	ds, err := evaluation.LoadDataset("../testdata/datasets/pilot-v1", Contract())
@@ -48,7 +48,7 @@ func deps(transport http.RoundTripper) evaluation.Deps {
 	}
 }
 
-// 예산은 SDK 재시도를 포함한 실제 왕복 수를 센다. 바닥나면 남은 case는 not-run이고 완료된 결과는 남는다.
+// 예산은 SDK 재시도를 포함한 실제 왕복 수를 집계. 바닥나면 남은 case는 not-run이고 완료된 결과는 유지.
 func TestRunBudgetCountsRetries(t *testing.T) {
 	t.Setenv("EVAL_TEST_KEY", "k")
 	fake := &providerFake{before: func(r *http.Request, call int) (*http.Response, bool) {
@@ -101,7 +101,7 @@ func TestRunTimeoutDoesNotAbort(t *testing.T) {
 	}
 }
 
-// 요청 도중에 취소되면 그 invocation은 측정이 아니라 not-run이다. 나간 왕복 수는 그대로 센다.
+// 요청 도중에 취소되면 그 invocation은 측정이 아니라 not-run. 나간 왕복 수는 그대로 집계.
 func TestRunCancellationMidRequest(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -123,7 +123,7 @@ func TestRunCancellationMidRequest(t *testing.T) {
 	}
 }
 
-// 두 variant는 같은 case 목록을 같은 순서로 받고, 요청에는 정답 · 주석 · id가 실리지 않는다.
+// 두 variant는 같은 case 목록을 같은 순서로 받고, 요청에는 정답 · 주석 · id가 실리지 않음.
 func TestRunTwoVariantsPairedAndNoLeak(t *testing.T) {
 	t.Setenv("EVAL_TEST_KEY", "k")
 	fake := &providerFake{}
@@ -153,7 +153,7 @@ func TestRunTwoVariantsPairedAndNoLeak(t *testing.T) {
 	}
 }
 
-// 모델이 설정된 secret을 되풀이해도 어느 파일에도 남지 않고, 표를 깨는 문자는 escape된다.
+// 모델이 설정된 secret을 되풀이해도 어느 파일에도 남지 않고, 표를 깨는 문자는 escape됨.
 func TestArtifactsCarryNoSecretAndEscapeMarkdown(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("EVAL_TEST_KEY", secret)

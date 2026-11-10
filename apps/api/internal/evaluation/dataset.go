@@ -18,10 +18,10 @@ import (
 
 const ManifestSchemaVersion = 1
 
-// production이 받는 사진 상한(httpserver.maxImageBytes)과 같은 값. 제품에 들어올 수 없는 사진은 평가에도 넣지 않는다.
+// production이 받는 사진 상한(httpserver.maxImageBytes)과 같은 값. 제품에 들어올 수 없는 사진은 평가에도 넣지 않음.
 const maxFixtureBytes = 7_500_000
 
-// production이 받는 형식(httpserver.imageTypes)과 그 확장자. 형식은 파일 이름이 아니라 내용으로 판별한다.
+// production이 받는 형식(httpserver.imageTypes)과 그 확장자. 형식은 파일 이름이 아니라 내용으로 판별.
 var fixtureExtensions = map[string][]string{
 	"image/jpeg": {".jpg", ".jpeg"},
 	"image/png":  {".png"},
@@ -29,7 +29,7 @@ var fixtureExtensions = map[string][]string{
 	"image/webp": {".webp"},
 }
 
-// dataset이 무엇을 증명할 수 있는지. software-fixture는 loader 검증용이고 benchmark로 세지 않는다.
+// dataset이 무엇을 증명할 수 있는지. software-fixture는 loader 검증용이고 benchmark로 세지 않음.
 type Tier string
 
 const (
@@ -48,11 +48,11 @@ type Manifest struct {
 	License       string              `json:"license"`
 	Guideline     string              `json:"guideline"`
 	Splits        map[Split]SplitFile `json:"splits"`
-	// split별 category당 목표 case 수. 목표는 정책이고, 수를 채우려고 정답을 지어내지 않는다.
+	// split별 category당 목표 case 수. 목표는 정책이고, 수를 채우려고 정답을 지어내지 않음.
 	TargetPerCategory map[Split]int `json:"targetPerCategory"`
 }
 
-// split 하나의 JSONL 파일과 그 안의 case 수. 수가 실제와 다르면 읽기를 거절한다.
+// split 하나의 JSONL 파일과 그 안의 case 수. 수가 실제와 다르면 읽기를 거절.
 type SplitFile struct {
 	File  string `json:"file"`
 	Cases int    `json:"cases"`
@@ -93,17 +93,17 @@ func (m Manifest) Validate() error {
 	return errors.Join(checks...)
 }
 
-// 읽어 들인 case. Line은 JSONL 원문 한 줄, Image는 사진 byte다. 둘 다 selection hash에 들어간다.
+// 읽어 들인 case. Line은 JSONL 원문 한 줄, Image는 사진 byte. 둘 다 selection hash에 들어감.
 type LoadedCase struct {
 	Case
 	Line  []byte
 	Image []byte
-	// 채점에 쓸 수 있는지. 아니면 Blockers가 이유를 말한다.
+	// 채점에 쓸 수 있는지. 아니면 Blockers가 이유를 말함.
 	Eligible bool
 	Blockers []string
 }
 
-// 검증을 마친 dataset. Cases는 id 순이다.
+// 검증을 마친 dataset. Cases는 id 순.
 type Dataset struct {
 	Root      string
 	Manifest  Manifest
@@ -129,7 +129,7 @@ type SplitReadiness struct {
 	TargetPerCategory   int
 }
 
-// 디렉터리에서 dataset을 읽고 전부 검증한다. 사진은 root 안의 파일만 읽는다(symlink 포함).
+// 디렉터리에서 dataset을 읽고 전부 검증. 사진은 root 안의 파일만 읽음(symlink 포함).
 func LoadDataset(dir string, contract ClassificationContract) (Dataset, error) {
 	root, err := datasetRoot(dir)
 	if err != nil {
@@ -181,7 +181,7 @@ func LoadDataset(dir string, contract ClassificationContract) (Dataset, error) {
 	return Dataset{Root: root, Manifest: manifest, Cases: cases, Readiness: readinessOf(manifest, cases, contract)}, nil
 }
 
-// symlink를 푼 절대 경로. 이 아래만 읽는다.
+// symlink를 푼 절대 경로. 이 아래만 읽음.
 func datasetRoot(dir string) (string, error) {
 	abs, err := filepath.Abs(dir)
 	if err != nil {
@@ -198,7 +198,7 @@ func datasetRoot(dir string) (string, error) {
 	return root, nil
 }
 
-// root 아래의 상대 경로를 실제 파일로 푼다. symlink · `..`로 root 밖에 닿으면 거절한다.
+// root 아래의 상대 경로를 실제 파일로 해석. symlink · `..`로 root 밖에 닿으면 거절.
 func contained(root, rel string) (string, error) {
 	if err := relativePath("path", rel); err != nil {
 		return "", err
@@ -213,7 +213,7 @@ func contained(root, rel string) (string, error) {
 	return resolved, nil
 }
 
-// URL · 절대 경로 · `..` · 정리되지 않은 경로를 거절한다.
+// URL · 절대 경로 · `..` · 정리되지 않은 경로를 거절.
 func relativePath(field, value string) error {
 	clean := path.Clean(value)
 	if value == "" || strings.Contains(value, "://") || strings.Contains(value, "\\") ||
@@ -243,7 +243,7 @@ func readManifest(root string) (Manifest, error) {
 	return manifest, nil
 }
 
-// JSONL의 줄들. 빈 파일은 0줄이고, 중간의 빈 줄과 잘못된 UTF-8은 거절한다.
+// JSONL의 줄들. 빈 파일은 0줄이고, 중간의 빈 줄과 잘못된 UTF-8은 거절.
 func readLines(root, rel string) ([][]byte, error) {
 	file, err := contained(root, rel)
 	if err != nil {
@@ -268,7 +268,7 @@ func readLines(root, rel string) ([][]byte, error) {
 	return lines, nil
 }
 
-// 사진 파일을 읽어 크기 · 형식 · 확장자 · hash를 case와 대조한다.
+// 사진 파일을 읽어 크기 · 형식 · 확장자 · hash를 case와 대조.
 func readFixture(root, caseID string, ref ImageRef) ([]byte, error) {
 	file, err := contained(root, ref.Path)
 	if err != nil {
@@ -300,7 +300,7 @@ func readFixture(root, caseID string, ref ImageRef) ([]byte, error) {
 	return data, nil
 }
 
-// 같은 사진이나 같은 원본(sourceGroupId)이 split 사이에 걸치면 정답이 샌다. 비슷한 사진(near-duplicate)은 아직 잡지 못한다.
+// 같은 사진이나 같은 원본(sourceGroupId)이 split 사이에 걸치면 정답 유출. 비슷한 사진(near-duplicate)은 아직 잡지 못함.
 func checkLeakage(cases []LoadedCase) error {
 	imageSplit := map[string]Split{}
 	groupSplit := map[string]Split{}
@@ -322,7 +322,7 @@ func checkLeakage(cases []LoadedCase) error {
 	return nil
 }
 
-// 채점에 쓰지 못하는 이유. 검토가 실제로 있었는지는 코드가 알 수 없고 provenance를 적은 사람의 책임이다.
+// 채점에 쓰지 못하는 이유. 검토가 실제로 있었는지는 코드가 알 수 없고 provenance를 적은 사람의 책임.
 func blockers(c Case) []string {
 	var reasons []string
 	if c.Annotation.Review != Reviewed {
@@ -383,20 +383,20 @@ func readinessOf(manifest Manifest, cases []LoadedCase, contract ClassificationC
 }
 
 type SelectOptions struct {
-	// 채점 자격이 없는 case도 포함한다(구조 검증 · 시험 실행용). 점수는 benchmark가 아니다.
+	// 채점 자격이 없는 case도 포함(구조 검증 · 시험 실행용). 점수는 benchmark가 아님.
 	AllowDrafts bool
-	// held-out을 고른다. 마지막 확인이 아니면 열지 않는다.
+	// held-out을 선택. 마지막 확인이 아니면 열지 않음.
 	AllowHeldOut bool
 }
 
-// 한 split의 채점 대상과 그 내용의 hash. Cases는 id 순이라 hash는 파일 순서와 무관하다.
+// 한 split의 채점 대상과 그 내용의 hash. Cases는 id 순이라 hash는 파일 순서와 무관.
 type Selection struct {
 	Split Split
 	Cases []LoadedCase
 	Hash  string
 }
 
-// split의 case를 고른다. 비어 있으면 거절한다 — 빈 split의 100%는 성공이 아니다.
+// split의 case를 선택. 비어 있으면 거절 — 빈 split의 100%는 성공이 아님.
 func (d Dataset) Select(split Split, opts SelectOptions) (Selection, error) {
 	if err := oneOf("split", split, splits); err != nil {
 		return Selection{}, err
@@ -424,7 +424,7 @@ func (d Dataset) Select(split Split, opts SelectOptions) (Selection, error) {
 	return Selection{Split: split, Cases: chosen, Hash: selectionHash(d.Manifest, split, chosen)}, nil
 }
 
-// 고른 case의 내용 hash. id 순으로 id · JSONL 원문 · 사진 byte를 잇는다.
+// 고른 case의 내용 hash. id 순으로 id · JSONL 원문 · 사진 byte를 연결.
 func selectionHash(manifest Manifest, split Split, chosen []LoadedCase) string {
 	h := sha256.New()
 	fmt.Fprintf(h, "%s@%d/%s\n", manifest.Name, manifest.Version, split)

@@ -16,7 +16,7 @@ func ptr(v string) *string { return &v }
 // 확인하지 못한 영수증 필드의 모델 응답.
 const unknownField = `{"value":null,"candidates":[],"resolved":false}`
 
-// 처리 방식마다 가짜 모델 응답과, 그 응답에서 나와야 하는 결과. 가짜 HTTP 응답이라 실제 모델 품질과는 무관하다.
+// 처리 방식마다 가짜 모델 응답과, 그 응답에서 나와야 하는 결과. 가짜 HTTP 응답이라 실제 모델 품질과는 무관.
 var actionCases = []struct {
 	selection Selection
 	answer    string
@@ -77,7 +77,7 @@ func schemaJSON(schema map[string]any) any {
 	return decoded
 }
 
-// 일곱 처리 방식은 각자의 지시 · schema로 묻고, 응답을 처리 방식의 결과로 옮긴다.
+// 일곱 처리 방식은 각자의 지시 · schema로 묻고, 응답을 처리 방식의 결과로 옮김.
 func TestClaudeActEveryAction(t *testing.T) {
 	for _, tc := range actionCases {
 		classifier, body, _ := fakeClaude(t, "end_turn", tc.answer)
@@ -107,7 +107,7 @@ func TestClaudeActEveryAction(t *testing.T) {
 	}
 }
 
-// OpenAI 호환 공급자도 같은 지시 · schema를 처리 방식 이름으로 보낸다.
+// OpenAI 호환 공급자도 같은 지시 · schema를 처리 방식 이름으로 전송.
 func TestOpenAIActEveryAction(t *testing.T) {
 	for _, tc := range actionCases {
 		classifier, _, body := fakeChat(t, "", http.StatusOK, "stop", tc.answer)
@@ -126,7 +126,7 @@ func TestOpenAIActEveryAction(t *testing.T) {
 	}
 }
 
-// 원문 · 번역 · 요약은 처리 방식마다 지시가 다르다. 한 지시로 모든 처리 방식을 하지 않는다.
+// 원문 · 번역 · 요약은 처리 방식마다 지시가 다름. 한 지시로 모든 처리 방식을 하지 않음.
 func TestActionSpecsAreSeparate(t *testing.T) {
 	seen := map[string]bool{}
 	for _, tc := range actionCases {
@@ -136,7 +136,7 @@ func TestActionSpecsAreSeparate(t *testing.T) {
 		}
 		seen[spec.instructions] = true
 	}
-	// 텍스트와 영수증의 원문 추출은 같은 지시를 쓴다. 나머지는 모두 다르다.
+	// 텍스트와 영수증의 원문 추출은 같은 지시 사용. 나머지는 모두 다름.
 	if len(seen) != len(actionCases)-1 {
 		t.Errorf("%d distinct instructions for %d actions", len(seen), len(actionCases))
 	}
@@ -147,7 +147,7 @@ func TestActionSpecsAreSeparate(t *testing.T) {
 	}
 }
 
-// OpenAI strict 규칙: 모든 객체는 모든 필드가 필수이고 추가 필드를 받지 않는다.
+// OpenAI strict 규칙: 모든 객체는 모든 필드가 필수이고 추가 필드를 받지 않음.
 func TestActionSchemasAreStrict(t *testing.T) {
 	var check func(name string, schema map[string]any)
 	check = func(name string, schema map[string]any) {
@@ -174,7 +174,7 @@ func TestActionSchemasAreStrict(t *testing.T) {
 	}
 }
 
-// 이미 한국어인 글은 번역할 것이 없다고 밝히고 번역문을 만들지 않는다.
+// 이미 한국어인 글은 번역할 것이 없다고 밝히고 번역문을 만들지 않음.
 func TestTranslationNotNeededAnswer(t *testing.T) {
 	got, err := translateSpec.parse(`{"readable":true,"original":"영업 중","translationNeeded":false,"translation":null}`)
 	if err != nil {
@@ -185,7 +185,7 @@ func TestTranslationNotNeededAnswer(t *testing.T) {
 	}
 }
 
-// 읽을 수 있는 글자가 없으면 결과를 만들지 않고 errUnreadable이다.
+// 읽을 수 있는 글자가 없으면 결과를 만들지 않고 errUnreadable.
 func TestUnreadableAnswer(t *testing.T) {
 	for _, tc := range actionCases {
 		spec, _ := specFor(tc.selection)
@@ -195,7 +195,7 @@ func TestUnreadableAnswer(t *testing.T) {
 	}
 }
 
-// 계약 밖의 응답은 결과로 쓰지 않는다. 형식이 틀린 값을 고쳐 읽지 않는다.
+// 계약 밖의 응답은 결과로 쓰지 않음. 형식이 틀린 값을 고쳐 읽지 않음.
 func TestActionAnswerRejects(t *testing.T) {
 	expense := func(total, date string) string {
 		return `{"readable":true,"merchant":` + unknownField + `,"date":` + date + `,"total":` + total +
@@ -228,7 +228,7 @@ func TestActionAnswerRejects(t *testing.T) {
 	}
 }
 
-// 유형에 없는 처리 방식은 모델을 부르지 않고 거절한다.
+// 유형에 없는 처리 방식은 모델을 부르지 않고 거절.
 func TestActRejectsAnInvalidPair(t *testing.T) {
 	for _, s := range []Selection{
 		{ImageText, "record_expense"},
@@ -246,7 +246,7 @@ func TestActRejectsAnInvalidPair(t *testing.T) {
 	}
 }
 
-// 거절 · 잘린 응답 · 공급자 오류 · 취소는 실행 실패다.
+// 거절 · 잘린 응답 · 공급자 오류 · 취소는 실행 실패.
 func TestActProviderFailures(t *testing.T) {
 	selection := Selection{ImageText, "extract_text"}
 	for _, stop := range []string{"refusal", "max_tokens"} {

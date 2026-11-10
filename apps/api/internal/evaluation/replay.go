@@ -8,19 +8,19 @@ import (
 	"strings"
 )
 
-// replay fixture(predictions JSONL) 한 줄. 모델 출력의 기록이고 dataset의 정답에서 만들지 않는다. 분류는 prediction,
-// 텍스트 과제는 text · fields(text-extraction) · targetLanguage(translation)를 쓴다. 모르는 필드는 거절한다.
+// replay fixture(predictions JSONL) 한 줄. 모델 출력의 기록이고 dataset의 정답에서 만들지 않음. 분류는 prediction,
+// 텍스트 과제는 text · fields(text-extraction) · targetLanguage(translation)를 사용. 모르는 필드는 거절.
 type ReplayRecord struct {
 	VariantID string `json:"variantId"`
 	CaseID    string `json:"caseId"`
-	// 비우면 1이다.
+	// 비우면 1.
 	Trial int `json:"trial"`
-	// 비우면 completed다. completed면 출력이 있고, 아니면 없다.
+	// 비우면 completed. completed면 출력이 있고, 아니면 없음.
 	Status     string                    `json:"status"`
 	Prediction *ClassificationPrediction `json:"prediction"`
 	Text       *string                   `json:"text"`
 	Fields     map[string]string         `json:"fields"`
-	// 번역 출력이 선언한 목표 언어. 감지가 아니라 metadata다.
+	// 번역 출력이 선언한 목표 언어. 감지가 아니라 metadata.
 	TargetLanguage string   `json:"targetLanguage"`
 	Failure        *Failure `json:"failure"`
 	// 분류만. 기록 당시 붙인 예시와 계단식 경로.
@@ -36,9 +36,9 @@ func (f ReplayFixture) Lookup(variantID, caseID string, trial int) (Observation,
 	return obs, ok
 }
 
-// predictions JSONL을 읽어 task에 맞게 검증하고 관측으로 바꾼다. 빈 줄 · 모르는 필드(채점 결과처럼 보이는 것 포함) ·
-// 같은 invocation의 반복 · 실행 상태와 출력의 불일치는 오류이고, 오류는 파일과 줄을 말한다. usage · latency · 모델
-// 원문은 기록에 없으므로 값 없음으로 남긴다.
+// predictions JSONL을 읽어 task에 맞게 검증하고 관측으로 변환. 빈 줄 · 모르는 필드(채점 결과처럼 보이는 것 포함) ·
+// 같은 invocation의 반복 · 실행 상태와 출력의 불일치는 오류이고, 오류는 파일과 줄을 말함. usage · latency · 모델
+// 원문은 기록에 없으므로 값 없음으로 남김.
 func LoadReplayFixture(path string, task Task) (ReplayFixture, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -67,7 +67,7 @@ func LoadReplayFixture(path string, task Task) (ReplayFixture, error) {
 	return fixture, nil
 }
 
-// 고른 variant × case × trial 어디에도 맞지 않는 기록의 invocation id. 오타 난 case id나 다른 variant의 기록을 알린다.
+// 고른 variant × case × trial 어디에도 맞지 않는 기록의 invocation id. 오타 난 case id나 다른 variant의 기록을 알림.
 func (f ReplayFixture) Unmatched(variantIDs, caseIDs []string, trials int) []string {
 	wanted := map[string]bool{}
 	for _, v := range variantIDs {
@@ -130,7 +130,7 @@ func (r ReplayRecord) validate(task Task) error {
 	return nil
 }
 
-// 기록을 관측으로. 실측하지 않은 것은 값 없음이고, 끝난 분류 기록은 production parser가 받은 것으로 본다.
+// 기록을 관측으로. 실측하지 않은 것은 값 없음이고, 끝난 분류 기록은 production parser가 받은 것으로 간주.
 func (r ReplayRecord) observation(task Task) Observation {
 	status := r.status()
 	unjudged := Judgement{Availability: Unavailable, Problems: []string{"replay fixture carries no model text"}}

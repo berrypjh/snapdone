@@ -9,8 +9,8 @@ import (
 	"snapdone/api/internal/evaluation/processingadapter"
 )
 
-// `[설정@]공급자:모델`은 파일 없이 variant가 되고 설정 이름은 tools/evals/experiments 아래로 풀린다. 그 밖의 모양은
-// 파일 이름이다. 모양 · id 규칙 자체는 evaluation.VariantRef의 테스트가 본다.
+// `[설정@]공급자:모델`은 파일 없이 variant가 되고 설정 이름은 tools/evals/experiments 아래로 해석. 그 밖의 모양은
+// 파일 이름. 모양 · id 규칙 자체는 evaluation.VariantRef의 테스트가 확인.
 func TestRefVariant(t *testing.T) {
 	contract := processingadapter.Contract()
 	p := paths{root: repoRoot}
@@ -44,7 +44,7 @@ func TestRefVariant(t *testing.T) {
 	}
 }
 
-// retry는 산출물에 남은 ref로 같은 variant를 다시 만든다.
+// retry는 산출물에 남은 ref로 같은 variant를 다시 생성.
 func TestRetryRebuildsVariantFromRef(t *testing.T) {
 	contract := processingadapter.Contract()
 	p := paths{root: repoRoot}

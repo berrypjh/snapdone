@@ -16,7 +16,7 @@ func writeFixture(t *testing.T, lines ...string) string {
 	return path
 }
 
-// 기록은 관측이 된다 — trial · status 기본값, 실측하지 않은 값은 unavailable, 끝난 분류 기록은 parser가 받은 것.
+// 기록은 관측이 됨 — trial · status 기본값, 실측하지 않은 값은 unavailable, 끝난 분류 기록은 parser가 받은 것.
 func TestLoadReplayFixture(t *testing.T) {
 	path := writeFixture(t,
 		`{"variantId":"v","caseId":"a","prediction":{"category":"place","facts":[],"suggestedAction":"save_place","confidence":"high"}}`,
@@ -43,7 +43,7 @@ func TestLoadReplayFixture(t *testing.T) {
 	}
 }
 
-// 텍스트 기록은 text · fields · targetLanguage를 옮기고, task에 맞지 않는 필드는 거절한다.
+// 텍스트 기록은 text · fields · targetLanguage를 옮기고, task에 맞지 않는 필드는 거절.
 func TestLoadReplayFixtureTextRecords(t *testing.T) {
 	path := writeFixture(t, `{"variantId":"v","caseId":"a","text":"hello","fields":{"title":"hello"}}`)
 	fixture, err := LoadReplayFixture(path, TextExtraction)
@@ -81,7 +81,7 @@ func TestLoadReplayFixtureRejects(t *testing.T) {
 		"targetLanguage on text":       {TextExtraction, `{"variantId":"v","caseId":"a","text":"x","targetLanguage":"ko"}`, "targetLanguage belongs to translation"},
 		"retrieval on text":            {TextExtraction, `{"variantId":"v","caseId":"a","text":"x","retrieval":{"examples":[]}}`, "belong to classification records"},
 		"repeated invocation (line 2)": {ImageClassification, `{"variantId":"v","caseId":"a",` + prediction + "}\n" + `{"variantId":"v","caseId":"a","trial":1,` + prediction + `}`, "repeats v/a/1"},
-		// 기록은 모델의 답만 담는다. 채점 결과처럼 보이는 필드는 어느 것도 받지 않는다 — 점수는 이 평가기가 낸다.
+		// 기록은 모델의 답만 담음. 채점 결과처럼 보이는 필드는 어느 것도 받지 않음 — 점수는 이 평가기가 산출.
 		"official-looking passed":     {ImageClassification, `{"variantId":"v","caseId":"a","passed":true,` + prediction + `}`, `unknown field "passed"`},
 		"official-looking accuracy":   {ImageClassification, `{"variantId":"v","caseId":"a","accuracy":0.9,` + prediction + `}`, `unknown field "accuracy"`},
 		"official-looking gatePassed": {ImageClassification, `{"variantId":"v","caseId":"a","gatePassed":true,` + prediction + `}`, `unknown field "gatePassed"`},
@@ -97,7 +97,7 @@ func TestLoadReplayFixtureRejects(t *testing.T) {
 	}
 }
 
-// 고른 variant · case · trial에 맞지 않는 기록을 알린다. 맞는 기록은 알리지 않는다.
+// 고른 variant · case · trial에 맞지 않는 기록을 알림. 맞는 기록은 알리지 않음.
 func TestReplayFixtureUnmatched(t *testing.T) {
 	prediction := `"prediction":{"category":"place","facts":[],"suggestedAction":"save_place","confidence":"high"}`
 	path := writeFixture(t,

@@ -35,10 +35,10 @@ func Open(ctx context.Context, url string) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-// 적용되지 않은 마이그레이션이 남아 있다.
+// 적용되지 않은 마이그레이션이 남은 상태.
 var ErrPendingMigrations = errors.New("database: pending migrations")
 
-// 적용되지 않은 마이그레이션을 순서대로 적용한다.
+// 적용되지 않은 마이그레이션을 순서대로 적용.
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	names, err := fs.Glob(migrations, "migrations/*.sql")
 	if err != nil {
@@ -52,7 +52,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	return nil
 }
 
-// schema_migrations에 기록되지 않은 마이그레이션 파일 이름을 돌려준다.
+// schema_migrations에 기록되지 않은 마이그레이션 파일 이름 반환.
 func Pending(ctx context.Context, pool *pgxpool.Pool) ([]string, error) {
 	names, err := fs.Glob(migrations, "migrations/*.sql")
 	if err != nil {
@@ -85,7 +85,7 @@ func Pending(ctx context.Context, pool *pgxpool.Pool) ([]string, error) {
 	return pending, nil
 }
 
-// 미적용 마이그레이션이 하나라도 있으면 ErrPendingMigrations를 반환한다.
+// 미적용 마이그레이션이 하나라도 있으면 ErrPendingMigrations 반환.
 func RequireMigrated(ctx context.Context, pool *pgxpool.Pool) error {
 	pending, err := Pending(ctx, pool)
 	if err != nil {

@@ -22,7 +22,7 @@ type RunArtifacts struct {
 	Summary RunSummary
 }
 
-// metadata · cases를 읽고 요약을 다시 만든다. 저장된 summary.json이 있으면 다시 만든 것과 같아야 한다.
+// metadata · cases를 읽고 요약을 다시 생성. 저장된 summary.json이 있으면 다시 만든 것과 같아야 함.
 func LoadRun(dir string, contract ClassificationContract) (RunArtifacts, error) {
 	f, err := os.Open(filepath.Join(dir, metadataFile))
 	if err != nil {
@@ -62,13 +62,13 @@ type RunRef struct {
 type CompareRequest struct {
 	Baseline  RunRef
 	Candidate RunRef
-	// partial run도 짝이 맞는 case만으로 서술적 비교를 허용한다. gate는 여전히 적용되지 않는다.
+	// partial run도 짝이 맞는 case만으로 서술적 비교를 허용. gate는 여전히 적용되지 않음.
 	AllowPartial bool
-	// 채점기 hash가 달라도 비교한다. 두 run의 quality는 이 build의 채점기로 raw에서 다시 계산된다.
+	// 채점기 hash가 달라도 비교. 두 run의 quality는 이 build의 채점기로 raw에서 다시 계산됨.
 	AllowEvaluatorDrift bool
-	// 명시된 버전의 규칙이 있을 때만 판정한다. 없으면 서술만 한다.
+	// 명시된 버전의 규칙이 있을 때만 판정. 없으면 서술만 함.
 	Gate *GatePolicy
-	// 비어 있으면 baseline · candidate에서 결정적으로 만든다.
+	// 비어 있으면 baseline · candidate에서 결정적으로 생성.
 	ComparisonID string
 }
 
@@ -88,7 +88,7 @@ const (
 	NotComparable Change = "not-comparable"
 )
 
-// metric 하나의 차이. 비율은 fraction(0..1)이고 DeltaPP는 percentage point, RelativePercent는 baseline 대비 %다.
+// metric 하나의 차이. 비율은 fraction(0..1)이고 DeltaPP는 percentage point, RelativePercent는 baseline 대비 %.
 type MetricDelta struct {
 	Name            string    `json:"name"`
 	Direction       Direction `json:"direction"`
@@ -115,7 +115,7 @@ type LabelDelta struct {
 	F1        MetricDelta `json:"f1"`
 }
 
-// case 하나의 변화. 예측 문자열은 "category/action (confidence)" 또는 실행 상태다.
+// case 하나의 변화. 예측 문자열은 "category/action (confidence)" 또는 실행 상태.
 type CaseChange struct {
 	CaseID              string `json:"caseId"`
 	Check               string `json:"check"`
@@ -142,7 +142,7 @@ type ConfidenceDelta struct {
 	Candidate ConfidenceSlice `json:"candidate"`
 }
 
-// 명시적 gate 규칙. 기본값은 없다 — 값을 적은 규칙만 판정한다.
+// 명시적 gate 규칙. 기본값 없음 — 값을 적은 규칙만 판정.
 type GatePolicy struct {
 	Version                  string   `json:"version"`
 	MaxNewCriticalErrors     *int     `json:"maxNewCriticalErrors,omitempty"`
@@ -165,7 +165,7 @@ type GateResult struct {
 	Rules      []GateRule `json:"rules"`
 }
 
-// 두 variant의 짝 비교. 비교 불가면 Incomparable에 이유가 있고 어떤 delta도 없다.
+// 두 variant의 짝 비교. 비교 불가면 Incomparable에 이유가 있고 어떤 delta도 없음.
 type Comparison struct {
 	SchemaVersion    int                        `json:"schemaVersion"`
 	ComparisonID     string                     `json:"comparisonId"`
@@ -183,11 +183,11 @@ type Comparison struct {
 	Confidence       map[string]ConfidenceDelta `json:"confidence"`
 	Cases            CaseDiffs                  `json:"cases"`
 	Gate             *GateResult                `json:"gate"`
-	// 서술만 한다. 통계적 유의성 · 우월성 판단은 없다.
+	// 서술만 함. 통계적 유의성 · 우월성 판단 없음.
 	Conclusion string `json:"conclusion"`
 }
 
-// 두 run 산출물을 비교한다. 모델 API · adapter를 부르지 않는다.
+// 두 run 산출물을 비교. 모델 API · adapter를 부르지 않음.
 func Compare(base, cand RunArtifacts, req CompareRequest, contract ClassificationContract) (Comparison, error) {
 	if req.Baseline.Trial == 0 {
 		req.Baseline.Trial = 1
@@ -274,7 +274,7 @@ func findVariant(run RunArtifacts, ref RunRef) (Variant, error) {
 	return Variant{}, fmt.Errorf("evaluation: run %s has no variant %s", ref.RunID, ref.VariantID)
 }
 
-// 비교 가능성. 같아야 하는 것이 다르면 이유를, 허용한 차이는 경고를 돌려준다. 지시 · commit · 모델은 실험 변수다.
+// 비교 가능성. 같아야 하는 것이 다르면 이유를, 허용한 차이는 경고를 반환. 지시 · commit · 모델은 실험 변수.
 func checkComparable(base, cand RunArtifacts, bv, cv Variant, req CompareRequest) (reasons, warnings []string) {
 	reasons, warnings = []string{}, []string{}
 	differ := func(name string, a, b any) {
@@ -329,7 +329,7 @@ type casePair struct {
 	base, cand CaseResult
 }
 
-// case id · revision · task로 짝을 만든다. 한쪽에 두 번 있거나 없으면 오류(partial 허용 시 unpaired로 남김).
+// case id · revision · task로 짝 생성. 한쪽에 두 번 있거나 없으면 오류(partial 허용 시 unpaired로 남김).
 func pairCases(base, cand RunArtifacts, req CompareRequest) ([]casePair, []string, error) {
 	index := func(run RunArtifacts, ref RunRef) (map[string]CaseResult, error) {
 		out := map[string]CaseResult{}
@@ -393,7 +393,7 @@ func variantReport(s RunSummary, id string) VariantReport {
 	return VariantReport{}
 }
 
-// 두 Measure의 차이. 한쪽이라도 값이 없으면 not-comparable이고 delta를 만들지 않는다.
+// 두 Measure의 차이. 한쪽이라도 값이 없으면 not-comparable이고 delta를 만들지 않음.
 func delta(name string, dir Direction, b, c Measure, rate bool) MetricDelta {
 	d := MetricDelta{Name: name, Direction: dir, Baseline: b, Candidate: c}
 	if b.Availability != Measured || c.Availability != Measured {
@@ -459,7 +459,7 @@ func qualityAxis(b, c ClassificationSummary) AxisComparison {
 	}}
 }
 
-// 추출값 · 자동 실행 집계가 없는 옛 요약은 값이 없는 것으로 비교한다(0이 아니다).
+// 추출값 · 자동 실행 집계가 없는 옛 요약은 값이 없는 것으로 비교(0 아님).
 func factsOf(s ClassificationSummary) FactMetrics {
 	if s.Facts != nil {
 		return *s.Facts
@@ -476,7 +476,7 @@ func calibrationOf(s ClassificationSummary) CalibrationMetrics {
 	return CalibrationMetrics{HighWrongRate: missing, AutoPrecision: missing, AutoCoverage: missing}
 }
 
-// 텍스트 과제의 품질 축. corpus 비율과 case 평균을 둘 다 두고 category · action은 없다.
+// 텍스트 과제의 품질 축. corpus 비율과 case 평균을 둘 다 두고 category · action은 없음.
 func textAxis(b, c TextSummary) AxisComparison {
 	return AxisComparison{Axis: "quality", Comparable: true, Metrics: []MetricDelta{
 		delta("raw-exact-match-rate", HigherIsBetter, b.RawExactMatchRate, c.RawExactMatchRate, true),
@@ -490,7 +490,7 @@ func textAxis(b, c TextSummary) AxisComparison {
 	}}
 }
 
-// 번역 품질 축. 전부 reference 진단값이고 의미 점수는 unsupported로 남는다.
+// 번역 품질 축. 전부 reference 진단값이고 의미 점수는 unsupported로 남음.
 func translationAxis(b, c TranslationSummary) AxisComparison {
 	return AxisComparison{Axis: "quality", Comparable: true, Metrics: []MetricDelta{
 		delta("raw-exact-match-rate", HigherIsBetter, b.RawExactMatchRate, c.RawExactMatchRate, true),
@@ -502,7 +502,7 @@ func translationAxis(b, c TranslationSummary) AxisComparison {
 	}}
 }
 
-// 저장된 Quality.checks로 case 변화를 나열한다. 텍스트 과제처럼 check 이름이 곧 판정인 경우에 쓴다.
+// 저장된 Quality.checks로 case 변화를 나열. 텍스트 과제처럼 check 이름이 곧 판정인 경우에 사용.
 func diffCasesByChecks(diffs *CaseDiffs, pairs []casePair) {
 	diffs.NewlyFailed, diffs.Fixed = []CaseChange{}, []CaseChange{}
 	diffs.NewlyErrored, diffs.ErrorsResolved = []CaseChange{}, []CaseChange{}
@@ -540,7 +540,7 @@ func diffCasesByChecks(diffs *CaseDiffs, pairs []casePair) {
 	}
 }
 
-// 모델 원문은 비교 보고서에 옮기지 않고 길이와 CER만 적는다.
+// 모델 원문은 비교 보고서에 옮기지 않고 길이와 CER만 기록.
 func describeText(r CaseResult) string {
 	if r.Prediction == nil || r.Prediction.Text == nil {
 		return "no prediction (" + string(r.Execution.Status) + ")"
@@ -572,7 +572,7 @@ func reliabilityAxis(b, c VariantReport) AxisComparison {
 	}}
 }
 
-// latency는 두 run이 모두 live로 실제로 쟀고 timeout 설정이 같을 때만 비교한다.
+// latency는 두 run이 모두 live로 실제로 쟀고 timeout 설정이 같을 때만 비교.
 func latencyAxis(bm, cm RunMetadata, b, c VariantReport) AxisComparison {
 	axis := AxisComparison{Axis: "latency", Metrics: []MetricDelta{}}
 	switch {
@@ -593,7 +593,7 @@ func latencyAxis(bm, cm RunMetadata, b, c VariantReport) AxisComparison {
 	return axis
 }
 
-// cost는 양쪽 usage가 완전히 측정됐을 때만 token을 비교한다. 금액은 가격표가 없어 비교하지 않는다.
+// cost는 양쪽 usage가 완전히 측정됐을 때만 token을 비교. 금액은 가격표가 없어 비교하지 않음.
 func costAxis(b, c VariantReport) AxisComparison {
 	axis := AxisComparison{Axis: "cost", Metrics: []MetricDelta{}}
 	for _, side := range []struct {
@@ -614,7 +614,7 @@ func costAxis(b, c VariantReport) AxisComparison {
 	return axis
 }
 
-// case별 판정을 두 쪽에서 다시 계산해 새로 틀린 것 · 고쳐진 것 · 실행 변화 · critical 변화를 나열한다.
+// case별 판정을 두 쪽에서 다시 계산해 새로 틀린 것 · 고쳐진 것 · 실행 변화 · critical 변화를 나열.
 func diffCases(diffs *CaseDiffs, pairs []casePair, contract ClassificationContract, policy ScoringPolicy) {
 	diffs.NewlyFailed, diffs.Fixed = []CaseChange{}, []CaseChange{}
 	diffs.NewlyErrored, diffs.ErrorsResolved = []CaseChange{}, []CaseChange{}
@@ -703,7 +703,7 @@ func critical(k CaseContribution) string {
 	return "safe"
 }
 
-// 명시된 규칙만 판정한다. partial · evaluator drift가 있으면 적용하지 않는다.
+// 명시된 규칙만 판정. partial · evaluator drift가 있으면 적용하지 않음.
 func applyGate(policy GatePolicy, c Comparison, passB, passC Measure, shapeB, shapeC int, formal bool) *GateResult {
 	g := &GateResult{Policy: policy, Rules: []GateRule{}}
 	if !formal {
@@ -766,7 +766,7 @@ func conclusion(c Comparison) string {
 	return text + ". No statistical significance or superiority is claimed."
 }
 
-// comparison을 별도 디렉터리(root/comparisons/<id>)에 쓴다. 원래 run 산출물은 건드리지 않는다.
+// comparison을 별도 디렉터리(root/comparisons/<id>)에 기록. 원래 run 산출물은 건드리지 않음.
 func WriteComparison(root string, c Comparison) (string, error) {
 	if err := identifier("comparisonId", c.ComparisonID); err != nil {
 		return "", err

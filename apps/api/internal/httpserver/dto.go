@@ -9,13 +9,13 @@ import (
 	"snapdone/api/internal/processing"
 )
 
-// HTTP 요청 · 응답 본문. JSON 필드 이름이 web · mobile과의 계약이다.
+// HTTP 요청 · 응답 본문. JSON 필드 이름이 web · mobile과의 계약.
 
 type HealthResponse struct {
 	Status string `json:"status" example:"ok"`
 }
 
-// 모든 오류 응답의 모양. 값은 클라이언트가 아는 오류 코드뿐이다.
+// 모든 오류 응답의 모양. 값은 클라이언트가 아는 오류 코드뿐.
 type ErrorResponse struct {
 	Error string `json:"error" example:"session_expired" enums:"session_expired,provider_unavailable,invalid_callback,invalid_image,image_too_large,unsupported_image,job_not_found,invalid_onboarding,onboarding_complete,onboarding_out_of_order,invalid_preference,invalid_reprocess,image_mismatch,source_running,source_not_reprocessable,invalid_receipt_field,job_not_resolvable,receipt_field_resolved"`
 }
@@ -34,7 +34,7 @@ type SessionResponse struct {
 	ExpiresAt      time.Time    `json:"expiresAt" format:"date-time" example:"2026-10-01T00:00:00Z"`
 }
 
-// 새 세션과 그 credential. credential은 JWT가 아닌 opaque 세션 토큰이다.
+// 새 세션과 그 credential. credential은 JWT가 아닌 opaque 세션 토큰.
 type LoginResponse struct {
 	Session    SessionResponse `json:"session"`
 	Credential string          `json:"credential" example:"opaque-session-credential"`
@@ -61,8 +61,8 @@ type ExchangeRequest struct {
 	State    string `json:"state" binding:"required" example:"base64url-app-state-43-to-128-chars"`
 }
 
-// next는 핸드오프 뒤 WebView가 갈 web 경로다 — `/` · `/history` · `/settings/processing` 중 하나와 정확히 같거나,
-// 처리 결과 하나인 `/history/{jobId}`(jobId는 소문자 uuid)다. 그 밖은 invalid_callback이다.
+// next는 핸드오프 뒤 WebView가 갈 web 경로 — `/` · `/history` · `/settings/processing` 중 하나와 정확히 같거나,
+// 처리 결과 하나인 `/history/{jobId}`(jobId는 소문자 uuid). 그 밖은 invalid_callback.
 type HandoffStartRequest struct {
 	Challenge string `json:"challenge" binding:"required" example:"base64url-S256-challenge-of-the-web-verifier"`
 	Next      string `json:"next" binding:"required" example:"/history/4f1c2a9e-0000-4000-8000-000000000000"`
@@ -72,7 +72,7 @@ type HandoffStartResponse struct {
 	Code string `json:"code" example:"one-time-handoff-code"`
 }
 
-// next는 핸드오프를 시작할 때와 같은 경로여야 한다(HandoffStartRequest).
+// next는 핸드오프를 시작할 때와 같은 경로여야 함(HandoffStartRequest).
 type HandoffExchangeRequest struct {
 	Code     string `json:"code" binding:"required" example:"one-time-handoff-code"`
 	Verifier string `json:"verifier" binding:"required" example:"base64url-web-verifier-43-to-128-chars"`
@@ -92,7 +92,7 @@ func toLoginResponse(session auth.Session, credential string) LoginResponse {
 }
 
 // 처리 작업. result는 status가 completed일 때만, selection은 서버가 유형 · 처리 방식을 고른 작업에만,
-// outcome은 제품 결과를 남긴 completed 작업에만, sourceJobId는 원래 작업이 남아 있는 재처리 작업에만 있다.
+// outcome은 제품 결과를 남긴 completed 작업에만, sourceJobId는 원래 작업이 남아 있는 재처리 작업에만 있음.
 type ProcessingJobResponse struct {
 	JobID       string                       `json:"jobId" example:"4f1c2a9e-0000-4000-8000-000000000000"`
 	Status      string                       `json:"status" enums:"running,completed,failed" example:"running"`
@@ -102,7 +102,7 @@ type ProcessingJobResponse struct {
 	SourceJobID *string                      `json:"sourceJobId,omitempty" example:"4f1c2a9e-0000-4000-8000-000000000001"`
 }
 
-// 사진에서 찾은 것. 신뢰도는 숫자가 아니라 단계다.
+// 사진에서 찾은 것. 신뢰도는 숫자가 아니라 단계.
 type ProcessingResultResponse struct {
 	Category        string                   `json:"category" enums:"place,event,receipt,foreign_text,shopping,work,other" example:"event"`
 	Facts           []ProcessingFactResponse `json:"facts"`
@@ -115,13 +115,13 @@ type ProcessingFactResponse struct {
 	Value string `json:"value" example:"8월 20일 19시"`
 }
 
-// 영수증 필드 하나를 확정할 값. 후보 중 하나이거나 그 필드 형식의 직접 입력이다.
-// 한 번에 지울 작업들. 최근 처리 목록과 같은 20개까지다.
+// 영수증 필드 하나를 확정할 값. 후보 중 하나이거나 그 필드 형식의 직접 입력.
+// 한 번에 지울 작업들. 최근 처리 목록과 같은 20개까지.
 type DeleteJobsRequest struct {
 	JobIDs []string `json:"jobIds" binding:"required,min=1,max=20,dive,required" example:"0f8fad5b-d9cb-469f-a165-70867728950e"`
 }
 
-// 실제로 지운 작업 수. 없거나 다른 사용자의 작업은 세지 않는다.
+// 실제로 지운 작업 수. 없거나 다른 사용자의 작업은 세지 않음.
 type DeleteJobsResponse struct {
 	Deleted int `json:"deleted" example:"2"`
 }
@@ -130,12 +130,12 @@ type ReceiptFieldRequest struct {
 	Value string `json:"value" binding:"required" example:"12000"`
 }
 
-// 최근 처리 작업. 없으면 빈 목록이다.
+// 최근 처리 작업. 없으면 빈 목록.
 type ProcessingJobListResponse struct {
 	Jobs []ProcessingJobSummaryResponse `json:"jobs"`
 }
 
-// 목록의 작업 하나. result는 status가 completed일 때만, finishedAt은 끝난 시각을 아는 작업에만 있다.
+// 목록의 작업 하나. result는 status가 completed일 때만, finishedAt은 끝난 시각을 아는 작업에만 있음.
 type ProcessingJobSummaryResponse struct {
 	JobID       string                       `json:"jobId" example:"4f1c2a9e-0000-4000-8000-000000000000"`
 	Status      string                       `json:"status" enums:"running,completed,failed" example:"completed"`
@@ -147,15 +147,15 @@ type ProcessingJobSummaryResponse struct {
 	SourceJobID *string                      `json:"sourceJobId,omitempty" example:"4f1c2a9e-0000-4000-8000-000000000001"`
 }
 
-// 서버가 이 작업에 적용한 사진 유형과 처리 방식. 작업을 만들 때 저장돼 있던 사용자 처리 방식에서 골랐다.
-// 화면은 지금 처리 방식을 다시 읽어 짐작하지 않고 이 값을 쓴다.
+// 서버가 이 작업에 적용한 사진 유형과 처리 방식. 작업을 만들 때 저장돼 있던 사용자 처리 방식에서 선택.
+// 화면은 지금 처리 방식을 다시 읽어 짐작하지 않고 이 값을 사용.
 type ProcessingSelectionResponse struct {
 	ImageType     string `json:"imageType" enums:"text,receipt" example:"text"`
 	AppliedAction string `json:"appliedAction" enums:"extract_and_translate,extract_text,summarize,extract_and_summarize,record_expense" example:"extract_and_translate"`
 }
 
-// 제품 처리 결과. processed에만 imageType · appliedAction · output이, ambiguous에만 candidates가 있다.
-// appliedAction은 imageType에 있는 처리 방식뿐이다(processing-preferences와 같은 값).
+// 제품 처리 결과. processed에만 imageType · appliedAction · output이, ambiguous에만 candidates가 있음.
+// appliedAction은 imageType에 있는 처리 방식뿐(processing-preferences와 같은 값).
 type ProcessingOutcomeResponse struct {
 	Kind          string                    `json:"kind" enums:"processed,unsupported,ambiguous" example:"processed"`
 	ImageType     string                    `json:"imageType,omitempty" enums:"text,receipt" example:"text"`
@@ -164,7 +164,7 @@ type ProcessingOutcomeResponse struct {
 	Candidates    []string                  `json:"candidates,omitempty" enums:"text,receipt" example:"text,receipt"`
 }
 
-// 적용한 처리 방식의 결과. 처리 방식마다 있는 필드가 정해져 있다.
+// 적용한 처리 방식의 결과. 처리 방식마다 있는 필드가 정해져 있음.
 // extract_text: original · extract_and_translate: original, translation · summarize: summary ·
 // extract_and_summarize: original, summary · record_expense: expense
 type ProcessingOutputResponse struct {
@@ -174,14 +174,14 @@ type ProcessingOutputResponse struct {
 	Expense     *ReceiptExpenseResponse `json:"expense,omitempty"`
 }
 
-// 번역. 원문이 이미 한국어라 번역할 것이 없으면 needed가 false이고 text가 null이다.
+// 번역. 원문이 이미 한국어라 번역할 것이 없으면 needed가 false이고 text가 null.
 type TranslationResponse struct {
 	Needed bool    `json:"needed" example:"true"`
 	Text   *string `json:"text" example:"매일 오전 9시-오후 6시 영업"`
 }
 
-// 영수증의 지출 정보. 필드는 모두 있고, 사진에서 확인하지 못한 값은 value가 null이다.
-// date는 YYYY-MM-DD, total은 소수점 문자열(부동소수점이 아니다), currency는 ISO 4217 코드, 나머지는 사진에 쓰인 그대로다.
+// 영수증의 지출 정보. 필드는 모두 있고, 사진에서 확인하지 못한 값은 value가 null.
+// date는 YYYY-MM-DD, total은 소수점 문자열(부동소수점 아님), currency는 ISO 4217 코드, 나머지는 사진에 쓰인 그대로.
 type ReceiptExpenseResponse struct {
 	Merchant      ReceiptFieldResponse `json:"merchant"`
 	Date          ReceiptFieldResponse `json:"date"`
@@ -190,7 +190,7 @@ type ReceiptExpenseResponse struct {
 	PaymentMethod ReceiptFieldResponse `json:"paymentMethod"`
 }
 
-// 영수증 필드 하나. resolved가 아니면 확인이 필요하다 — value가 있으면 candidates 중 하나다. 후보는 없을 수 있다.
+// 영수증 필드 하나. resolved가 아니면 확인 필요 — value가 있으면 candidates 중 하나. 후보는 없을 수 있음.
 type ReceiptFieldResponse struct {
 	Value      *string  `json:"value" example:"12000"`
 	Candidates []string `json:"candidates" example:"12000,13000"`
@@ -289,7 +289,7 @@ func toOnboardingResponse(p onboarding.Progress) OnboardingResponse {
 	return OnboardingResponse{Step: p.Step}
 }
 
-// 이미지 유형 하나의 처리 방식. 고를 수 있는 값은 유형마다 다르다(경로의 imageType).
+// 이미지 유형 하나의 처리 방식. 고를 수 있는 값은 유형마다 다름(경로의 imageType).
 type ProcessingPreferenceRequest struct {
 	Action string `json:"action" binding:"required" enums:"extract_and_translate,extract_text,summarize,extract_and_summarize,record_expense" example:"summarize"`
 }

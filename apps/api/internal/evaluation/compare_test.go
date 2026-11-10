@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// 완료된 run 하나를 메모리에서 만든다. summary는 raw에서 계산한다.
+// 완료된 run 하나를 메모리에서 생성. summary는 raw에서 계산.
 func artifactsOf(t *testing.T, runID, variantID string, caseIDs []string, results []CaseResult, mutate func(*RunMetadata)) RunArtifacts {
 	t.Helper()
 	meta := testMeta(runID, Live, 1, caseIDs, testVariant(variantID))
@@ -32,7 +32,7 @@ type sideResult struct {
 	action   string
 }
 
-// gold(category/action)와 두 variant의 결과로 짝 run을 만든다.
+// gold(category/action)와 두 variant의 결과로 짝 run 생성.
 func pairedRuns(t *testing.T, gold map[string][2]string, base, cand map[string]sideResult) (RunArtifacts, RunArtifacts) {
 	t.Helper()
 	var ids []string
@@ -118,7 +118,7 @@ func TestCompareSameDataDifferentVariants(t *testing.T) {
 	for _, ch := range cmp.Cases.Fixed {
 		fixed[ch.CaseID+"/"+ch.Check]++
 	}
-	// b는 category · action · joint 셋 다, c도 셋 다 고쳐졌다 → 6.
+	// b는 category · action · joint 셋 다, c도 셋 다 고쳐짐 → 6.
 	if len(cmp.Cases.NewlyFailed) != 0 || fixed["b/category"] != 1 || fixed["b/action-accepted"] != 1 || fixed["b/joint"] != 1 || fixed["c/category"] != 1 || fixed["c/action-accepted"] != 1 || len(cmp.Cases.Fixed) != 6 {
 		t.Errorf("fixed = %+v, newly failed = %+v", cmp.Cases.Fixed, cmp.Cases.NewlyFailed)
 	}
@@ -136,7 +136,7 @@ func TestCompareSameDataDifferentVariants(t *testing.T) {
 	}
 }
 
-// 지시(prompt)가 바뀌어 contract hash · source hash가 달라도 label 목록 · 채점기가 같으면 비교한다.
+// 지시(prompt)가 바뀌어 contract hash · source hash가 달라도 label 목록 · 채점기가 같으면 비교.
 func TestComparePromptChangeIsAnExperimentVariable(t *testing.T) {
 	gold := map[string][2]string{"a": {"event", "add_to_calendar"}}
 	b, c := pairedRuns(t, gold, map[string]sideResult{"a": done("event", "add_to_calendar")}, map[string]sideResult{"a": done("event", "none")})
@@ -149,7 +149,7 @@ func TestComparePromptChangeIsAnExperimentVariable(t *testing.T) {
 	}
 }
 
-// 같아야 하는 것이 다르면 비교 불가이고 delta가 하나도 없다.
+// 같아야 하는 것이 다르면 비교 불가이고 delta가 하나도 없음.
 func TestCompareRejectsMismatches(t *testing.T) {
 	gold := map[string][2]string{"a": {"event", "add_to_calendar"}}
 	same := map[string]sideResult{"a": done("event", "add_to_calendar")}
@@ -183,7 +183,7 @@ func TestCompareRejectsMismatches(t *testing.T) {
 			}
 		})
 	}
-	// 채점기 drift는 명시적으로 허용할 수 있고, 그러면 경고와 함께 raw에서 다시 계산한다.
+	// 채점기 drift는 명시적으로 허용할 수 있고, 그러면 경고와 함께 raw에서 다시 계산.
 	b, c := pairedRuns(t, gold, same, same)
 	c.Meta.Source.EvaluatorHash = strings.Repeat("6", 64)
 	cmp := compare(t, b, c, CompareRequest{AllowEvaluatorDrift: true, Gate: &GatePolicy{Version: "gate-test", MaxNewCriticalErrors: new(int)}})
@@ -192,7 +192,7 @@ func TestCompareRejectsMismatches(t *testing.T) {
 	}
 }
 
-// partial run은 정식 비교에서 거절하고, 허용하면 짝이 맞는 case만 서술한다.
+// partial run은 정식 비교에서 거절하고, 허용하면 짝이 맞는 case만 서술.
 func TestComparePartialRuns(t *testing.T) {
 	gold := map[string][2]string{"a": {"event", "add_to_calendar"}, "b": {"place", "save_place"}}
 	b, c := pairedRuns(t, gold, map[string]sideResult{"a": done("event", "add_to_calendar"), "b": done("place", "save_place")},
@@ -208,7 +208,7 @@ func TestComparePartialRuns(t *testing.T) {
 	}
 }
 
-// case가 한쪽에 없거나 두 번 있으면 오류다.
+// case가 한쪽에 없거나 두 번 있으면 오류.
 func TestCompareRejectsMissingAndDuplicateCases(t *testing.T) {
 	gold := map[string][2]string{"a": {"event", "add_to_calendar"}, "b": {"place", "save_place"}}
 	same := map[string]sideResult{"a": done("event", "add_to_calendar"), "b": done("place", "save_place")}
@@ -238,7 +238,7 @@ func TestCompareRejectsMissingAndDuplicateCases(t *testing.T) {
 	}
 }
 
-// 맞던 것이 timeout이 되면 newly errored이고 category도 newly failed다. error → correct는 반대다.
+// 맞던 것이 timeout이 되면 newly errored이고 category도 newly failed. error → correct는 반대.
 func TestCompareExecutionTransitions(t *testing.T) {
 	gold := map[string][2]string{"a": {"event", "add_to_calendar"}, "b": {"place", "save_place"}}
 	b, c := pairedRuns(t, gold, map[string]sideResult{"a": done("event", "add_to_calendar"), "b": {Failed, "", ""}},
@@ -265,7 +265,7 @@ func TestCompareExecutionTransitions(t *testing.T) {
 	}
 }
 
-// 평균은 같아도 category별로는 한쪽이 나빠진다.
+// 평균은 같아도 category별로는 한쪽이 나빠짐.
 func TestComparePerCategoryRegressionHiddenByAverage(t *testing.T) {
 	gold := map[string][2]string{"p1": {"place", "save_place"}, "p2": {"place", "save_place"}, "e1": {"event", "add_to_calendar"}, "r1": {"receipt", "record_expense"}}
 	b, c := pairedRuns(t, gold,
@@ -290,7 +290,7 @@ func TestComparePerCategoryRegressionHiddenByAverage(t *testing.T) {
 	}
 }
 
-// baseline 0의 relative delta는 값이 없고, lower-is-better는 감소가 개선이다.
+// baseline 0의 relative delta는 값이 없고, lower-is-better는 감소가 개선.
 func TestCompareZeroBaselineAndDirection(t *testing.T) {
 	gold := map[string][2]string{"a": {"event", "add_to_calendar"}}
 	b, c := pairedRuns(t, gold, map[string]sideResult{"a": done("event", "none")}, map[string]sideResult{"a": done("event", "add_to_calendar")})
@@ -331,7 +331,7 @@ func riskyLine(runID, variantID, predictedAction string) CaseResult {
 	return NewCaseResult(testMeta(runID, Live, 1, nil), result, c, contract)
 }
 
-// usage가 부분적이면 cost 축만 비교하지 않고 quality delta는 그대로 낸다. latency는 live에서만.
+// usage가 부분적이면 cost 축만 비교하지 않고 quality delta는 그대로 냄. latency는 live에서만.
 func TestCompareAxesAreIndependent(t *testing.T) {
 	gold := map[string][2]string{"a": {"event", "add_to_calendar"}, "b": {"place", "save_place"}}
 	b, c := pairedRuns(t, gold, map[string]sideResult{"a": done("event", "add_to_calendar"), "b": done("place", "save_place")},
@@ -356,7 +356,7 @@ func TestCompareAxesAreIndependent(t *testing.T) {
 	}
 }
 
-// comparison은 별도 디렉터리에 쓰고 원래 run 파일은 byte 하나 바뀌지 않는다.
+// comparison은 별도 디렉터리에 쓰고 원래 run 파일은 byte 하나 바뀌지 않음.
 func TestWriteComparisonLeavesRunsUntouched(t *testing.T) {
 	root := t.TempDir()
 	ds := runnerDataset(t, 2)
@@ -404,7 +404,7 @@ func TestWriteComparisonLeavesRunsUntouched(t *testing.T) {
 			t.Errorf("%s changed", path)
 		}
 	}
-	// 저장된 summary가 raw와 어긋나면 읽기를 거절한다.
+	// 저장된 summary가 raw와 어긋나면 읽기를 거절.
 	if err := os.WriteFile(filepath.Join(baseDir, summaryFile), []byte("{}\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -413,7 +413,7 @@ func TestWriteComparisonLeavesRunsUntouched(t *testing.T) {
 	}
 }
 
-// replay golden 두 개를 비교한 결과를 golden과 byte 단위로 비교한다(EVAL_UPDATE_GOLDEN=1로 갱신).
+// replay golden 두 개를 비교한 결과를 golden과 byte 단위로 비교(EVAL_UPDATE_GOLDEN=1로 갱신).
 func TestComparisonGolden(t *testing.T) {
 	golden := "testdata/comparisons/replay-pair"
 	gold := map[string][2]string{"a": {"event", "add_to_calendar"}, "b": {"place", "save_place"}, "c": {"receipt", "record_expense"}}

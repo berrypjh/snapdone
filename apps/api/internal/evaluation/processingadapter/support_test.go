@@ -1,6 +1,6 @@
 package processingadapter
 
-// 여러 테스트 파일이 함께 쓰는 helper. 가짜 provider 응답과 Transport다.
+// 여러 테스트 파일이 함께 쓰는 helper. 가짜 provider 응답과 Transport.
 
 import (
 	"encoding/json"
@@ -16,7 +16,7 @@ const (
 	goodResult = `{"category":"event","facts":[{"label":"날짜","value":"8월 20일 19시"}],"suggestedAction":"add_to_calendar","confidence":"medium"}`
 )
 
-// Claude Messages API 응답 봉투. 인자로 필드를 뺄 수 있다.
+// Claude Messages API 응답 봉투. 인자로 필드 제외 가능.
 func claudeBody(stop string, text *string, model *string, usage map[string]any) []byte {
 	m := map[string]any{"id": "msg_1", "type": "message", "role": "assistant", "stop_reason": stop, "content": []map[string]any{}}
 	if text != nil {
@@ -69,7 +69,7 @@ func respond(status int, body []byte, header map[string]string) *fakeTransport {
 	}}
 }
 
-// host로 공급자를 구분해 정상 답을 주고, 요청 본문을 모아 둔다.
+// host로 공급자를 구분해 정상 답을 주고, 요청 본문을 모아 둠.
 type providerFake struct {
 	mu     sync.Mutex
 	bodies []string
@@ -102,7 +102,7 @@ func (f *providerFake) count() int {
 	return f.calls
 }
 
-// 포트를 열지 않고 요청을 handler로 보내는 가짜 Transport. 실제 요청 수를 센다.
+// 포트를 열지 않고 요청을 handler로 보내는 가짜 Transport. 실제 요청 수 집계.
 type fakeTransport struct {
 	mu      sync.Mutex
 	calls   int

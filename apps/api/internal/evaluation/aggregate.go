@@ -9,8 +9,8 @@ import (
 
 const RunSummarySchemaVersion = 1
 
-// run 하나의 요약. raw 산출물(metadata.json · cases.jsonl)에서 언제든 같은 값으로 다시 만든다.
-// 종합 점수는 없다 — 네 축과 실행 수를 따로 둔다.
+// run 하나의 요약. raw 산출물(metadata.json · cases.jsonl)에서 언제든 같은 값으로 다시 생성.
+// 종합 점수 없음 — 네 축과 실행 수를 따로 둠.
 type RunSummary struct {
 	SchemaVersion int              `json:"schemaVersion"`
 	RunID         string           `json:"runId"`
@@ -36,11 +36,11 @@ type VariantReport struct {
 	Reliability ReliabilityTable `json:"reliability"`
 	Latency     LatencyTable     `json:"latency"`
 	Cost        CostTable        `json:"cost"`
-	// 공급자가 답에 적은 모델별 수. 모델 이름이 있는 결과가 없으면(replay 기록) nil이다.
+	// 공급자가 답에 적은 모델별 수. 모델 이름이 있는 결과가 없으면(replay 기록) nil.
 	Models *ModelCounts `json:"models,omitempty"`
 }
 
-// 실제로 어느 모델이 답했는지. 요청은 variant(와 계단식 설정)에 있다.
+// 실제로 어느 모델이 답했는지. 요청은 variant(와 계단식 설정)에 있음.
 type ModelCounts struct {
 	// 답한 모델 → 호출 수.
 	Answered map[string]int `json:"answered"`
@@ -91,14 +91,14 @@ type ExecutionCounts struct {
 	Carried int `json:"carried,omitempty"`
 }
 
-// 불변식: Passed + Failed + Unscored = Invocations. 실행 오류는 Unscored이고 분류 정확도 분모에서는 빠지지 않는다.
+// 불변식: Passed + Failed + Unscored = Invocations. 실행 오류는 Unscored이고 분류 정확도 분모에서는 빠지지 않음.
 type OutcomeCounts struct {
 	Passed   int `json:"passed"`
 	Failed   int `json:"failed"`
 	Unscored int `json:"unscored"`
 }
 
-// task별 품질 요약. 한 쪽만 채워지고 다른 task의 열을 0으로 채우지 않는다.
+// task별 품질 요약. 한 쪽만 채워지고 다른 task의 열을 0으로 채우지 않음.
 type TrialQuality struct {
 	Trial          int                    `json:"trial"`
 	Classification *ClassificationSummary `json:"classification,omitempty"`
@@ -106,7 +106,7 @@ type TrialQuality struct {
 	Translation    *TranslationSummary    `json:"translation,omitempty"`
 }
 
-// trial의 모든 case가 돌았는지. 채워진 task 요약 하나가 답한다.
+// trial의 모든 case가 돌았는지. 채워진 task 요약 하나가 답함.
 func (q TrialQuality) complete() bool {
 	switch {
 	case q.Classification != nil:
@@ -146,13 +146,13 @@ type LatencyTable struct {
 type CostTable struct {
 	WireCalls int           `json:"wireCalls"`
 	Usage     UsageCoverage `json:"usage"`
-	// 가격표가 있어야 값이 생긴다. 지금은 없다.
+	// 가격표가 있어야 값이 생김. 지금은 없음.
 	Estimated Measure        `json:"estimated"`
 	Actual    Measure        `json:"actual"`
 	Pricing   *PricingSource `json:"pricing"`
 }
 
-// 추정 비용의 근거. nil이면 추정하지 않는다.
+// 추정 비용의 근거. nil이면 추정하지 않음.
 type PricingSource struct {
 	Source   string `json:"source"`
 	Version  string `json:"version"`
@@ -162,7 +162,7 @@ type PricingSource struct {
 
 const latencyDefinition = "adapter wall time per invocation in ms; attempted includes timed-out and failed; mean = sum/n; median averages the two middle values for even n; p95 = value at rank ceil(0.95*n) (nearest-rank)"
 
-// metadata와 case result로 요약을 만든다. 모델 API를 부르지 않는다.
+// metadata와 case result로 요약 생성. 모델 API를 부르지 않음.
 func SummarizeResults(meta RunMetadata, results []CaseResult, contract ClassificationContract) (RunSummary, error) {
 	if len(meta.Variants) > 0 && !policyFitsTask(meta.Policy, meta.Variants[0].Task) {
 		return RunSummary{}, fmt.Errorf("evaluation: policy version %q is not known to this build for %s", meta.Policy.Version, meta.Variants[0].Task)
@@ -209,7 +209,7 @@ func byVariantResults(results []CaseResult, id string) []CaseResult {
 	return out
 }
 
-// run 전체를 멈춘 이유(취소 · 예산 소진)만. 기록이 없어 not-run인 replay case는 중단이 아니다.
+// run 전체를 멈춘 이유(취소 · 예산 소진)만. 기록이 없어 not-run인 replay case는 중단 아님.
 func abortReason(results []CaseResult) string {
 	for _, r := range results {
 		if r.Execution.Status == NotRun && r.Execution.Error != nil {
@@ -331,7 +331,7 @@ func translationForTrial(meta RunMetadata, results []CaseResult, trial int) Tran
 	return summary
 }
 
-// 텍스트 계열 case result를 evaluator 입력으로 되돌린다.
+// 텍스트 계열 case result를 evaluator 입력으로 되돌림.
 func textCasesForTrial(meta RunMetadata, results []CaseResult, trial int) ([]Case, map[string]Observation) {
 	var cases []Case
 	observations := map[string]Observation{}
@@ -353,7 +353,7 @@ func textCasesForTrial(meta RunMetadata, results []CaseResult, trial int) ([]Cas
 	return cases, observations
 }
 
-// 텍스트 case result를 evaluator 입력으로 되돌린다.
+// 텍스트 case result를 evaluator 입력으로 되돌림.
 func textForTrial(meta RunMetadata, results []CaseResult, trial int) TextSummary {
 	var cases []Case
 	observations := map[string]Observation{}
@@ -380,7 +380,7 @@ func textForTrial(meta RunMetadata, results []CaseResult, trial int) TextSummary
 	return summary
 }
 
-// 분류 case result를 evaluator 입력으로 되돌린다. 줄이 없는 case는 evaluator에 넣지 못하므로 Complete가 거짓이 된다.
+// 분류 case result를 evaluator 입력으로 되돌림. 줄이 없는 case는 evaluator에 넣지 못하므로 Complete가 거짓이 됨.
 func classificationForTrial(meta RunMetadata, results []CaseResult, trial int, contract ClassificationContract) ClassificationSummary {
 	var cases []Case
 	observations := map[string]Observation{}
@@ -421,7 +421,7 @@ func compareIDs(a, b string) int {
 	return 0
 }
 
-// n = 0이면 값이 없다. replay면 잰 것이 없다는 뜻이다.
+// n = 0이면 값 없음. replay면 잰 것이 없다는 뜻.
 func latencyStats(samples []float64, replay bool) LatencyStats {
 	n := len(samples)
 	if n == 0 {

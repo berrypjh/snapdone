@@ -24,14 +24,14 @@ var result = processing.Result{
 	Confidence:      "high",
 }
 
-// setup은 격리된 schema에 사용자 하나와 처리 저장소를 만든다.
+// setup은 격리된 schema에 사용자 하나와 처리 저장소 생성.
 func setup(t *testing.T) (*processing.Store, string) {
 	t.Helper()
 	store, _, userID := setupPool(t)
 	return store, userID
 }
 
-// setupPool은 setup에 행을 직접 다룰 pool을 더한다.
+// setupPool은 setup에 행을 직접 다룰 pool을 추가.
 func setupPool(t *testing.T) (*processing.Store, *pgxpool.Pool, string) {
 	t.Helper()
 	pool := databasetest.MigratedPool(t)
@@ -49,7 +49,7 @@ func newUser(t *testing.T, pool *pgxpool.Pool, subject string) string {
 	return user.ID
 }
 
-// create는 온보딩 첫 사진 작업을 만든다. 출처가 중요한 테스트는 createFrom을 쓴다.
+// create는 온보딩 첫 사진 작업 생성. 출처가 중요한 테스트는 createFrom 사용.
 func create(t *testing.T, store *processing.Store, userID string) processing.Job {
 	t.Helper()
 	return createFrom(t, store, userID, processing.OriginOnboarding)
@@ -73,7 +73,7 @@ func find(t *testing.T, store *processing.Store, userID, id string) processing.J
 	return job
 }
 
-// 새 작업은 결과 없이 처리 중이다.
+// 새 작업은 결과 없이 처리 중.
 func TestCreateStartsRunning(t *testing.T) {
 	store, userID := setup(t)
 	created := create(t, store, userID)
@@ -84,7 +84,7 @@ func TestCreateStartsRunning(t *testing.T) {
 	}
 }
 
-// 완료된 작업은 결과를 그대로 돌려준다.
+// 완료된 작업은 결과를 그대로 반환.
 func TestCompleteStoresResult(t *testing.T) {
 	store, userID := setup(t)
 	job := create(t, store, userID)
@@ -99,7 +99,7 @@ func TestCompleteStoresResult(t *testing.T) {
 	}
 }
 
-// 끝난 작업은 다시 바뀌지 않는다. 늦게 끝난 처리가 결과를 덮지 못한다.
+// 끝난 작업은 다시 바뀌지 않음. 늦게 끝난 처리가 결과를 덮지 못함.
 func TestFinishedJobDoesNotChange(t *testing.T) {
 	store, userID := setup(t)
 	ctx := context.Background()
@@ -127,7 +127,7 @@ func TestFinishedJobDoesNotChange(t *testing.T) {
 	}
 }
 
-// 너무 오래 처리 중인 작업(서버가 끝내지 못함)은 실패로 보인다.
+// 너무 오래 처리 중인 작업(서버가 끝내지 못함)은 실패로 보임.
 func TestStaleRunningJobReadsAsFailed(t *testing.T) {
 	store, userID := setup(t)
 	job := create(t, store, userID)
@@ -141,7 +141,7 @@ func TestStaleRunningJobReadsAsFailed(t *testing.T) {
 	}
 }
 
-// 다른 사용자의 작업 · 없는 작업 · uuid가 아닌 id는 모두 찾지 못한 것으로 본다.
+// 다른 사용자의 작업 · 없는 작업 · uuid가 아닌 id는 모두 찾지 못한 것으로 간주.
 func TestFindHidesOtherJobs(t *testing.T) {
 	store, userID := setup(t)
 	job := create(t, store, userID)
@@ -160,7 +160,7 @@ func TestFindHidesOtherJobs(t *testing.T) {
 	}
 }
 
-// 작업은 받은 출처로 저장된다.
+// 작업은 받은 출처로 저장됨.
 func TestCreateStoresOrigin(t *testing.T) {
 	store, pool, userID := setupPool(t)
 	for _, origin := range []processing.Origin{processing.OriginOnboarding, processing.OriginGeneral} {
@@ -176,7 +176,7 @@ func TestCreateStoresOrigin(t *testing.T) {
 	}
 }
 
-// 계약 밖의 출처와 출처 없는 작업은 DB가 거절한다. DEFAULT는 기존 행을 채우는 데만 썼다.
+// 계약 밖의 출처와 출처 없는 작업은 DB가 거절. DEFAULT는 기존 행을 채우는 데만 사용.
 func TestOriginRejectedOutsideContract(t *testing.T) {
 	store, pool, userID := setupPool(t)
 	ctx := context.Background()
@@ -191,7 +191,7 @@ func TestOriginRejectedOutsideContract(t *testing.T) {
 	}
 }
 
-// at으로 작업의 생성 시각을 정한다. 목록 순서를 결정적으로 본다.
+// at으로 작업의 생성 시각 지정. 목록 순서를 결정적으로 확인.
 func at(t *testing.T, pool *pgxpool.Pool, id string, created time.Time) {
 	t.Helper()
 	if _, err := pool.Exec(context.Background(),
@@ -200,7 +200,7 @@ func at(t *testing.T, pool *pgxpool.Pool, id string, created time.Time) {
 	}
 }
 
-// recent는 general 작업만 읽는다. 출처를 고르는 시험은 store.Recent를 직접 부른다.
+// recent는 general 작업만 읽음. 출처를 고르는 시험은 store.Recent를 직접 호출.
 func recent(t *testing.T, store *processing.Store, userID string, limit int, staleAfter time.Duration) []processing.Job {
 	t.Helper()
 	jobs, err := store.Recent(context.Background(), userID, []processing.Origin{processing.OriginGeneral}, limit, staleAfter)
@@ -227,7 +227,7 @@ func TestRecentEmpty(t *testing.T) {
 	}
 }
 
-// 이 사용자의 고른 출처 작업만, 최근에 만든 것부터 상한까지. 같은 시각이면 id가 큰 것부터다.
+// 이 사용자의 고른 출처 작업만, 최근에 만든 것부터 상한까지. 같은 시각이면 id가 큰 것부터.
 func TestRecentFiltersAndOrders(t *testing.T) {
 	store, pool, userID := setupPool(t)
 	other := newUser(t, pool, "g-2")
@@ -269,7 +269,7 @@ func TestRecentFiltersAndOrders(t *testing.T) {
 	}
 }
 
-// 목록은 단건 조회와 같은 상태 · 결과를 보인다. 끝나지 못한 작업은 둘 다 실패이고 끝난 시각이 없다.
+// 목록은 단건 조회와 같은 상태 · 결과를 보임. 끝나지 못한 작업은 둘 다 실패이고 끝난 시각이 없음.
 func TestRecentMatchesFind(t *testing.T) {
 	store, userID := setup(t)
 	ctx := context.Background()
@@ -315,8 +315,8 @@ func TestRecentMatchesFind(t *testing.T) {
 	}
 }
 
-// 지우면 그 작업만 사라지고, 다시 처리한 작업은 원래 작업과의 연결만 끊긴 채 남는다.
-// 다른 사용자의 작업 · 없는 작업 · 형식이 틀린 id는 모두 없는 작업이다.
+// 지우면 그 작업만 사라지고, 다시 처리한 작업은 원래 작업과의 연결만 끊긴 채 남음.
+// 다른 사용자의 작업 · 없는 작업 · 형식이 틀린 id는 모두 없는 작업.
 func TestDeleteJob(t *testing.T) {
 	store, pool, userID := setupPool(t)
 	ctx := context.Background()
@@ -345,7 +345,7 @@ func TestDeleteJob(t *testing.T) {
 	}
 }
 
-// 여러 개를 한 문장으로 지운다. 본인 작업만 세고, 다른 사용자의 작업 · 없는 작업 · 형식이 틀린 id는 건너뛴다.
+// 여러 개를 한 문장으로 삭제. 본인 작업만 세고, 다른 사용자의 작업 · 없는 작업 · 형식이 틀린 id는 건너뜀.
 func TestDeleteManyJobs(t *testing.T) {
 	store, pool, userID := setupPool(t)
 	ctx := context.Background()
