@@ -71,7 +71,6 @@ export const authFailureRecovery: Scenario = {
       tests: [
         'web-callback-cancelled',
         'web-callback-failed-exchange',
-        'e2e-login-callback-error',
         'e2e-callback-alert',
         'e2e-cancel-no-error',
         'e2e-google-closed',
