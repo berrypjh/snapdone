@@ -29,6 +29,12 @@ export const documents: DocumentRef[] = [
     topic: 'architecture',
   },
   {
+    id: 'ai-task-definition',
+    path: 'docs/ai-research/01-task-definition.md',
+    title: '01. AI 평가 과제 정의',
+    topic: 'architecture',
+  },
+  {
     id: 'foundation',
     path: 'docs/design/foundation.md',
     title: 'Design Foundation',
