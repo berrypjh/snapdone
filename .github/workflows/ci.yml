@@ -60,6 +60,12 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # 브라우저와 시스템 의존성이 이미지에 들어 있어 runner apt 미러에 의존하지 않는다.
+    # 태그는 pnpm-lock.yaml의 playwright 버전과 같아야 한다.
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
+      options: --user 1001
     env:
       # PR은 chromium만, main은 세 브라우저
       E2E_CHROMIUM_ONLY: ${{ github.event_name == 'pull_request' && '1' || '' }}
@@ -74,7 +80,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - uses: nrwl/nx-set-shas@v4
-      - run: pnpm exec playwright install --with-deps ${{ env.E2E_CHROMIUM_ONLY && 'chromium' || 'chromium firefox webkit' }}
       - run: pnpm exec nx ${{ github.event_name == 'workflow_dispatch' && 'run-many' || 'affected' }} -t e2e --parallel=1
       - if: failure()
         uses: actions/upload-artifact@v7
