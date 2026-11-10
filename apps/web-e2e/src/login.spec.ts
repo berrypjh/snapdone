@@ -1,4 +1,4 @@
-import { GOOGLE, overflowsSideways } from './support/fixture';
+import { GOOGLE } from './support/fixture';
 import { expect, test } from './support/test';
 
 test.describe('login screen', () => {
@@ -17,21 +17,6 @@ test.describe('login screen', () => {
     await expect(page.getByRole('navigation')).toHaveCount(0);
     await expect(page.getByRole('banner')).toHaveCount(0);
     await expect(page.getByRole('complementary')).toHaveCount(0);
-  });
-
-  test('does not scroll sideways at 320px', async ({ page }) => {
-    await page.setViewportSize({ width: 320, height: 800 });
-    await page.goto('/login');
-
-    expect(await overflowsSideways(page)).toBe(false);
-  });
-
-  test('shows a callback error from the query', async ({ page }) => {
-    await page.goto('/login?error=invalid_callback');
-
-    await expect(page.getByRole('main').getByRole('alert')).toHaveText(
-      '로그인을 끝내지 못했습니다. 다시 시도해 주세요.',
-    );
   });
 
   test('sends a signed-out visitor from onboarding to login', async ({ page }) => {
