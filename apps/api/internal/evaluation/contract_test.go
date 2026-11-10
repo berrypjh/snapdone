@@ -32,7 +32,7 @@ func TestDecodeCase(t *testing.T) {
 	}
 }
 
-// 분류 정답은 production 계약의 값이어야 한다. 값 목록은 여기 없고 processing에서 온다.
+// 분류 정답은 production 계약의 값이어야 함. 값 목록은 여기 없고 processing에서 옴.
 func TestDecodeCaseChecksExpectedAgainstTheContract(t *testing.T) {
 	c := classificationCase()
 	c["expected"] = map[string]any{"classification": classification("food", "resolved", []string{"add_to_calendar"}, []string{})}
@@ -49,7 +49,7 @@ func TestDecodeCaseChecksExpectedAgainstTheContract(t *testing.T) {
 	}
 }
 
-// 행동은 하나로 강제하지 않는다. intent가 acceptableActions의 수를 정한다.
+// 행동은 하나로 강제하지 않음. intent가 acceptableActions의 수를 정함.
 func TestClassificationIntent(t *testing.T) {
 	accept := map[string]map[string]any{
 		"resolved one":         classification("shopping", "resolved", []string{"none"}, []string{}),
@@ -130,7 +130,7 @@ func TestDecodeCaseRejects(t *testing.T) {
 	}
 }
 
-// 텍스트 정답이 없는 것(null)과 빈 텍스트가 정답인 것("")은 다르다.
+// 텍스트 정답이 없는 것(null)과 빈 텍스트가 정답인 것("")은 다름.
 func TestTextExpectedDistinguishesMissingFromEmpty(t *testing.T) {
 	c := classificationCase()
 	c["task"] = "text-extraction"
@@ -149,7 +149,7 @@ func TestTextExpectedDistinguishesMissingFromEmpty(t *testing.T) {
 	}
 }
 
-// adapter 입력에는 정답 · 주석이 없고, 사진은 case의 hash와 맞아야 한다.
+// adapter 입력에는 정답 · 주석이 없고, 사진은 case의 hash와 맞아야 함.
 func TestAdapterInputOf(t *testing.T) {
 	c, err := decodeCase(t, classificationCase())
 	if err != nil {
@@ -178,7 +178,7 @@ func TestAdapterInputOf(t *testing.T) {
 	if _, err := AdapterInputOf(tr, []byte("x")); err == nil {
 		t.Fatal("translation accepted an image")
 	}
-	// sourceImage는 provenance일 뿐이라 adapter 입력에 사진이 실리지 않는다.
+	// sourceImage는 provenance일 뿐이라 adapter 입력에 사진이 실리지 않음.
 	withImage := translationCase()
 	withImage["input"].(map[string]any)["text"].(map[string]any)["sourceImage"] = imageRef("fixtures/src.png", "image/png", imageSHA)
 	tr2, err := decodeCase(t, withImage)
@@ -190,7 +190,7 @@ func TestAdapterInputOf(t *testing.T) {
 	}
 }
 
-// 정답이 adapter로 새지 않는다 — AdapterInput에는 Expected · Annotation 필드가 없다.
+// 정답이 adapter로 새지 않음 — AdapterInput에는 Expected · Annotation 필드가 없음.
 func TestAdapterInputHasNoAnswerFields(t *testing.T) {
 	encoded, _ := json.Marshal(AdapterInput{Task: ImageClassification})
 	for _, leak := range []string{"xpected", "nnotation", "notes"} {

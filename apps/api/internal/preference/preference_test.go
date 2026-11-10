@@ -38,7 +38,7 @@ func TestReceiptActionValid(t *testing.T) {
 			t.Errorf("%q refused", a)
 		}
 	}
-	// 텍스트에만 있는 값은 영수증에서 받지 않는다.
+	// 텍스트에만 있는 값은 영수증에서 받지 않음.
 	for _, a := range []preference.ReceiptAction{"", "extract_and_summarize", "extract_and_translate", "other"} {
 		if a.Valid() {
 			t.Errorf("%q allowed", a)
@@ -53,7 +53,7 @@ func TestDefaults(t *testing.T) {
 	}
 }
 
-// setup은 격리된 schema에 사용자 둘과 처리 방식 저장소를 만든다.
+// setup은 격리된 schema에 사용자 둘과 처리 방식 저장소 생성.
 func setup(t *testing.T) (*preference.Store, *pgxpool.Pool, string, string) {
 	t.Helper()
 	pool := databasetest.MigratedPool(t)
@@ -145,7 +145,7 @@ func TestStoreRejectsInvalid(t *testing.T) {
 		t.Errorf("SetReceipt invalid = %v, want ErrInvalid", err)
 	}
 
-	// 저장소를 거치지 않은 쓰기도 DB CHECK가 거절한다.
+	// 저장소를 거치지 않은 쓰기도 DB CHECK가 거절.
 	for _, column := range []string{"processing_text_action", "processing_receipt_action"} {
 		_, err := pool.Exec(ctx, "UPDATE profiles SET "+column+" = 'other' WHERE user_id = $1::uuid", userID)
 		var pgErr *pgconn.PgError
@@ -158,7 +158,7 @@ func TestStoreRejectsInvalid(t *testing.T) {
 	}
 }
 
-// 텍스트와 영수증을 동시에 바꿔도 어느 쪽도 잃지 않는다.
+// 텍스트와 영수증을 동시에 바꿔도 어느 쪽도 잃지 않음.
 func TestStoreSetsConcurrently(t *testing.T) {
 	store, _, userID, _ := setup(t)
 	ctx := context.Background()

@@ -34,4 +34,18 @@ describe.each(projects)('%s %s summary', (section, id) => {
     expect(html).toContain('관계');
     if (related.length === 0) expect(html).toContain('관계 없음');
   });
+
+  it('lists the API endpoints only for the project that serves them', () => {
+    const [root] = catalog.nodes.flatMap((node) =>
+      node.kind !== 'external' && node.id === id ? [node.root] : [],
+    );
+    const served = catalog.apis.filter((api) => api.handler.path.startsWith(`${root}/`));
+    expect(html.includes('API endpoint')).toBe(served.length > 0);
+    if (served.length === 0) return;
+    expect(html).toContain(`API endpoint ${served.length}개`);
+    for (const api of served) {
+      expect(html).toContain(`${api.method} ${api.path}`);
+      expect(html).toContain(`href="/source?path=${encodeURIComponent(api.handler.path)}"`);
+    }
+  });
 });

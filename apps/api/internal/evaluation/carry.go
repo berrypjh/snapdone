@@ -8,8 +8,8 @@ import (
 	"reflect"
 )
 
-// 이전 live run에서 끝난(completed) 호출. 실패한 것만 다시 부를 때 성공한 결과를 호출 없이 새 run으로 옮긴다.
-// 옮긴 관측은 지금 채점기로 다시 채점한다(replay와 같다) — 새 run 전체가 한 채점기의 점수다.
+// 이전 live run에서 끝난(completed) 호출. 실패한 것만 다시 부를 때 성공한 결과를 호출 없이 새 run으로 옮김.
+// 옮긴 관측은 지금 채점기로 다시 채점(replay와 같음) — 새 run 전체가 한 채점기의 점수.
 type Carry struct {
 	Metadata RunMetadata
 	// invocationId → 끝난 결과.
@@ -18,7 +18,7 @@ type Carry struct {
 	Pending int
 }
 
-// run 디렉터리에서 끝난 결과를 읽는다. replay run은 다시 부를 것이 없으므로 받지 않는다.
+// run 디렉터리에서 끝난 결과를 읽음. replay run은 다시 부를 것이 없으므로 받지 않음.
 func LoadCarry(dir string, contract ClassificationContract) (Carry, error) {
 	f, err := os.Open(filepath.Join(dir, metadataFile))
 	if err != nil {
@@ -55,7 +55,7 @@ func LoadCarry(dir string, contract ClassificationContract) (Carry, error) {
 	return carry, nil
 }
 
-// 옮길 invocation. 기록된 관측을 되살리고 실측 latency는 원래 값 그대로다.
+// 옮길 invocation. 기록된 관측을 되살리고 실측 latency는 원래 값 그대로.
 func (c *Carry) lookup(variantID, caseID string, trial int) (InvocationResult, bool) {
 	if c == nil {
 		return InvocationResult{}, false
@@ -71,7 +71,7 @@ func (c *Carry) lookup(variantID, caseID string, trial int) (InvocationResult, b
 	}, true
 }
 
-// 끝난 case result에서 채점에 드는 관측을 되살린다. 요청 · 응답 원문은 결과에 없으므로 되살리지 않는다.
+// 끝난 case result에서 채점에 드는 관측을 되살림. 요청 · 응답 원문은 결과에 없으므로 되살리지 않음.
 func observationOf(r CaseResult) Observation {
 	obs := Observation{
 		Task: r.Task, Status: r.Execution.Status, Usage: r.Usage, Calls: r.Execution.Attempts, Attempts: []HTTPAttempt{},
@@ -112,7 +112,7 @@ func (c *Carry) check(m RunMetadata) error {
 	return errors.Join(checks...)
 }
 
-// variant의 모든 invocation이 옮겨지는지. 그렇다면 이 variant는 부르지 않으므로 key도 필요 없다.
+// variant의 모든 invocation이 옮겨지는지. 그렇다면 이 variant는 부르지 않으므로 key도 필요 없음.
 func (c *Carry) covers(variantID string, cases []LoadedCase, trials int) bool {
 	if c == nil {
 		return false

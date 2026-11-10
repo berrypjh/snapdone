@@ -6,10 +6,10 @@ import (
 	"slices"
 )
 
-// 모델 응답이 결과 계약을 지키지 않았다.
+// 모델 응답이 결과 계약을 지키지 않음.
 var errInvalidResult = errors.New("processing: result outside the contract")
 
-// 모든 공급자에 같은 지시와 같은 결과 schema를 쓴다.
+// 모든 공급자에 같은 지시와 같은 결과 schema 사용.
 const instructions = `You look at one photo or screenshot that a Korean user wants help with.
 Decide what it is and what single action would finish the user's task.
 
@@ -22,7 +22,7 @@ Answer with JSON only.`
 
 const request = "Classify this image."
 
-// 사진에서 찾은 것. JSON 이름이 앱과의 계약이다. 신뢰도는 숫자가 아니라 단계로만 준다.
+// 사진에서 찾은 것. JSON 이름이 앱과의 계약. 신뢰도는 숫자가 아니라 단계로만 제공.
 type Result struct {
 	Category        string `json:"category"`
 	Facts           []Fact `json:"facts"`
@@ -42,7 +42,7 @@ var (
 	confidence = []string{"high", "medium", "low"}
 )
 
-// resultSchema는 모든 공급자의 응답을 이 모양으로 강제하는 JSON schema다.
+// resultSchema는 모든 공급자의 응답을 이 모양으로 강제하는 JSON schema.
 func resultSchema() map[string]any {
 	str := map[string]any{"type": "string"}
 	enum := func(values []string) map[string]any { return map[string]any{"type": "string", "enum": values} }
@@ -67,7 +67,7 @@ func resultSchema() map[string]any {
 	}
 }
 
-// 모델이 돌려준 JSON을 결과로 바꾼다. 어느 공급자의 응답이든 계약 밖의 값은 거절한다.
+// 모델이 돌려준 JSON을 결과로 변환. 어느 공급자의 응답이든 계약 밖의 값은 거절.
 func parseResult(text string) (Result, error) {
 	var result Result
 	if err := json.Unmarshal([]byte(text), &result); err != nil {

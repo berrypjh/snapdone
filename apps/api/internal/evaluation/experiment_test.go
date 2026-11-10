@@ -46,7 +46,7 @@ func predictedFacts(category, action, confidence string, facts ...Classification
 	return obs
 }
 
-// 손으로 검산한 네 case. 날짜가 없으면 일정 등록을 끝낼 수 없고, high인데 끝낼 수 없는 답은 자동 실행해선 안 된다.
+// 손으로 검산한 네 case. 날짜가 없으면 일정 등록을 끝낼 수 없고, high인데 끝낼 수 없는 답은 자동 실행 금지.
 func TestFactsReadinessAndCalibration(t *testing.T) {
 	date := ExpectedFact{ID: "date", Label: "일시", Kind: FactDate, AcceptedValues: []string{"2026-10-03"}, RequiredFor: []string{"add_to_calendar"}}
 	venue := ExpectedFact{ID: "venue", Label: "장소", Kind: FactText, AcceptedValues: []string{"마포아트홀"}, RequiredFor: []string{}}
@@ -88,13 +88,13 @@ func TestFactsReadinessAndCalibration(t *testing.T) {
 	if contributions[3].Metrics["action-ready"].Availability != NotApplicable {
 		t.Errorf("case d action-ready = %+v", contributions[3].Metrics["action-ready"])
 	}
-	// 추출값은 pass에 넣지 않는다 — policy v1 그대로.
+	// 추출값은 pass에 넣지 않음 — policy v1 그대로.
 	if s.Passed != 4 {
 		t.Errorf("passed = %d", s.Passed)
 	}
 }
 
-// 예측이 없으면 facts는 못 찾은 것이고 case metric은 unavailable이다.
+// 예측이 없으면 facts는 못 찾은 것이고 case metric은 unavailable.
 func TestFactsWithoutPrediction(t *testing.T) {
 	date := ExpectedFact{ID: "date", Label: "일시", Kind: FactDate, AcceptedValues: []string{"2026-10-03"}, RequiredFor: []string{"add_to_calendar"}}
 	s, contributions := evaluate([]Case{withFacts(resolved("a", "event", "add_to_calendar"), date)}, map[string]Observation{"a": failed(Failed)})
@@ -106,7 +106,7 @@ func TestFactsWithoutPrediction(t *testing.T) {
 	}
 }
 
-// 위 절반이 검은 사진과 아래 절반이 검은 사진. 배치가 같으면 비슷하다.
+// 위 절반이 검은 사진과 아래 절반이 검은 사진. 배치가 같으면 비슷함.
 func halfImage(t *testing.T, top bool, shade uint8) []byte {
 	t.Helper()
 	img := image.NewGray(image.Rect(0, 0, 32, 32))
@@ -149,7 +149,7 @@ func retrievalDataset(t *testing.T) Dataset {
 	return ds
 }
 
-// 예시는 dev에서만 오고, 자신과 같은 원본 묶음은 빠진다. validation case는 예시가 되지 않는다.
+// 예시는 dev에서만 오고, 자신과 같은 원본 묶음은 빠짐. validation case는 예시가 되지 않음.
 func TestProbeRetrieval(t *testing.T) {
 	ds := retrievalDataset(t)
 	metrics, traces, err := ProbeRetrieval(ds, Dev, 2)
@@ -159,7 +159,7 @@ func TestProbeRetrieval(t *testing.T) {
 	if got := traces["event-a"].Examples; len(got) != 2 || got[0].CaseID != "event-b" || got[0].Category != "event" {
 		t.Errorf("event-a examples = %+v", got)
 	}
-	// receipt-b는 receipt-a와 같은 원본 묶음이라 서로를 예시로 쓰지 않는다.
+	// receipt-b는 receipt-a와 같은 원본 묶음이라 서로를 예시로 쓰지 않음.
 	for _, e := range traces["receipt-a"].Examples {
 		if e.CaseID == "receipt-b" || e.CaseID == "receipt-a" || e.CaseID == "event-v" {
 			t.Errorf("receipt-a leaked %s", e.CaseID)
@@ -177,7 +177,7 @@ func baselineVariant(id string, cfg VariantConfig) VariantManifest {
 	return VariantManifest{SchemaVersion: 1, ID: id, Version: 1, Task: ImageClassification, Adapter: AdapterBaseline, Provider: ProviderNone, Model: id, ExpectedContractHash: contract.Hash, Config: cfg}
 }
 
-// 기준선은 --allow-api · 예산 없이 live로 돈다. 모델 생성자를 부르지 않고 호출은 0이다.
+// 기준선은 --allow-api · 예산 없이 live로 실행. 모델 생성자를 부르지 않고 호출은 0.
 func TestBaselineRunsWithoutAPI(t *testing.T) {
 	ds := retrievalDataset(t)
 	constant := baselineVariant("always-other", VariantConfig{Baseline: &BaselineConfig{Strategy: BaselineConstant, Category: "other", SuggestedAction: "none", Confidence: "low"}})
@@ -216,7 +216,7 @@ func TestBaselineRunsWithoutAPI(t *testing.T) {
 	}
 }
 
-// 계단식 경로는 산출물 줄에서 다시 읽혀 요약의 재질문 비율이 된다.
+// 계단식 경로는 산출물 줄에서 다시 읽혀 요약의 재질문 비율이 됨.
 func TestCascadeSummary(t *testing.T) {
 	cases := []Case{resolved("a", "event", "add_to_calendar"), resolved("b", "event", "add_to_calendar")}
 	escalated := predicted("event", "add_to_calendar", "high")
@@ -232,7 +232,7 @@ func TestCascadeSummary(t *testing.T) {
 	}
 }
 
-// 요청한 모델과 답한 모델이 case 줄에 남고, variant 요약이 답한 모델별로 센다. 날짜 붙은 판은 같은 모델이다.
+// 요청한 모델과 답한 모델이 case 줄에 남고, variant 요약이 답한 모델별로 집계. 날짜 붙은 판은 같은 모델.
 func TestAnsweredModelIsRecorded(t *testing.T) {
 	meta := testMeta("run-test", Live, 1, []string{"a", "b", "c"}, testVariant("v"))
 	invocation := func(id, requested string, answered Text) CaseResult {

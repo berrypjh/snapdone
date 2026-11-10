@@ -20,7 +20,7 @@ func TestValidate(t *testing.T) {
 			t.Errorf("Validate(%s) = %v", step, err)
 		}
 	}
-	// purpose는 없앤 단계다. complete는 Complete만 만든다.
+	// purpose는 없앤 단계. complete는 Complete만 생성.
 	for _, step := range []string{"complete", "purpose", "result", ""} {
 		if err := onboarding.Validate(onboarding.Progress{Step: step}); !errors.Is(err, onboarding.ErrInvalid) {
 			t.Errorf("Validate(%q) = %v, want ErrInvalid", step, err)
@@ -52,7 +52,7 @@ func TestCanMove(t *testing.T) {
 	}
 }
 
-// setup은 격리된 schema에 사용자 하나와 온보딩 저장소를 만든다.
+// setup은 격리된 schema에 사용자 하나와 온보딩 저장소 생성.
 func setup(t *testing.T) (*onboarding.Store, *pgxpool.Pool, string) {
 	t.Helper()
 	pool := databasetest.MigratedPool(t)
@@ -110,7 +110,7 @@ func TestStoreRejects(t *testing.T) {
 	}
 }
 
-// toFirstImage는 사용자를 first-image 단계로 옮긴다.
+// toFirstImage는 사용자를 first-image 단계로 이동.
 func toFirstImage(t *testing.T, store *onboarding.Store, userID string) {
 	t.Helper()
 	if err := store.Save(context.Background(), userID, onboarding.Progress{Step: "first-image"}); err != nil {
@@ -123,7 +123,7 @@ func TestStoreCompletes(t *testing.T) {
 	ctx := context.Background()
 	toFirstImage(t, store, userID)
 
-	// 두 번째는 두 번 누름 · 다른 기기가 먼저 마친 경우다. 둘 다 같은 진행으로 성공한다.
+	// 두 번째는 두 번 누름 · 다른 기기가 먼저 마친 경우. 둘 다 같은 진행으로 성공.
 	for range 2 {
 		got, err := store.Complete(ctx, userID)
 		if err != nil || got.Step != "complete" {
@@ -151,7 +151,7 @@ func TestStoreCompleteRejectsEarlySteps(t *testing.T) {
 	}
 }
 
-// 동시에 온 완료 요청은 하나도 실패하지 않고 같은 진행으로 끝난다.
+// 동시에 온 완료 요청은 하나도 실패하지 않고 같은 진행으로 끝남.
 func TestStoreCompleteConcurrently(t *testing.T) {
 	store, _, userID := setup(t)
 	toFirstImage(t, store, userID)

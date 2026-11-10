@@ -60,7 +60,7 @@ func TestPlanRejects(t *testing.T) {
 	}
 }
 
-// preflight는 모델 API를 부르지 않고 문제를 나열한다. 문제가 있으면 Run은 adapter도 만들지 않는다.
+// preflight는 모델 API를 부르지 않고 문제를 나열. 문제가 있으면 Run은 adapter도 만들지 않음.
 func TestPreflightBlocksWithoutCalls(t *testing.T) {
 	ds := runnerDataset(t, 1)
 	t.Setenv("EVAL_TEST_KEY", "")
@@ -94,7 +94,7 @@ func TestPreflightBlocksWithoutCalls(t *testing.T) {
 	}
 }
 
-// 첫 case 뒤에 취소되면 나머지는 not-run이고 첫 결과는 남는다.
+// 첫 case 뒤에 취소되면 나머지는 not-run이고 첫 결과는 남음.
 func TestRunCancellationAfterFirstCase(t *testing.T) {
 	ds := runnerDataset(t, 3)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -118,7 +118,7 @@ func TestRunCancellationAfterFirstCase(t *testing.T) {
 	}
 }
 
-// 한 번의 호출로 category와 action 두 check가 채점된다.
+// 한 번의 호출로 category와 action 두 check가 채점됨.
 func TestRunOneInvocationTwoScorers(t *testing.T) {
 	ds := runnerDataset(t, 1)
 	fake := &fakeAdapters{}
@@ -143,7 +143,7 @@ func TestRunOneInvocationTwoScorers(t *testing.T) {
 	}
 }
 
-// 지원하지 않는 task는 adapter를 만들지 않고 호출 0회로 unsupported 결과를 낸다.
+// 지원하지 않는 task는 adapter를 만들지 않고 호출 0회로 unsupported 결과를 냄.
 func TestRunUnsupportedTaskMakesNoCalls(t *testing.T) {
 	d := newTestDataset(t)
 	d.manifest["task"] = "translation"
@@ -172,7 +172,7 @@ func TestRunUnsupportedTaskMakesNoCalls(t *testing.T) {
 	}
 }
 
-// replay는 네트워크 없이 기록을 다시 채점하고 latency를 실측으로 적지 않는다.
+// replay는 네트워크 없이 기록을 다시 채점하고 latency를 실측으로 적지 않음.
 func TestRunReplay(t *testing.T) {
 	ds := runnerDataset(t, 2)
 	fake := &fakeAdapters{}
@@ -199,7 +199,7 @@ func TestRunReplay(t *testing.T) {
 	}
 }
 
-// 소스 hash는 관여한 .go · go.mod · go.sum만 보고, 그 밖의 파일(secret 포함)은 읽지 않는다.
+// 소스 hash는 관여한 .go · go.mod · go.sum만 보고, 그 밖의 파일(secret 포함)은 읽지 않음.
 func TestCollectSourceHashesOnlyEvaluatedFiles(t *testing.T) {
 	root := t.TempDir()
 	write := func(rel, content string) {

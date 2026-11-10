@@ -35,7 +35,7 @@ func invoke(t *testing.T, a *Adapter) evaluation.Observation {
 	return a.Invoke(ctx, evaluation.AdapterInput{Task: evaluation.ImageClassification, MediaType: "image/png", Image: []byte("png-bytes")})
 }
 
-// 두 production 생성자를 그대로 부르고, 정상 응답에서 허용된 항목만 관찰한다.
+// 두 production 생성자를 그대로 부르고, 정상 응답에서 허용된 항목만 관찰.
 func TestAdapterObservesANormalAnswer(t *testing.T) {
 	usage := map[string]any{"input_tokens": 12, "output_tokens": 0}
 	cases := map[string]struct {
@@ -74,7 +74,7 @@ func TestAdapterObservesANormalAnswer(t *testing.T) {
 	}
 }
 
-// schema 판정과 production parser 판정은 다를 수 있고, 둘 다 그대로 남는다.
+// schema 판정과 production parser 판정은 다를 수 있고, 둘 다 그대로 기록.
 func TestAdapterKeepsShapeAndParserApart(t *testing.T) {
 	cases := map[string]struct {
 		text         string
@@ -111,7 +111,7 @@ func TestAdapterKeepsShapeAndParserApart(t *testing.T) {
 	}
 }
 
-// 실패는 증거가 있을 때만 구체적으로 분류한다.
+// 실패는 증거가 있을 때만 구체적으로 분류.
 func TestAdapterClassifiesFailures(t *testing.T) {
 	retryNow := map[string]string{"Retry-After-Ms": "0"}
 	cases := map[string]struct {
@@ -168,7 +168,7 @@ func TestAdapterClassifiesFailures(t *testing.T) {
 	}
 }
 
-// 재시도된 왕복의 본문은 production이 읽지 않으므로 관찰도 마지막 응답만 쓴다.
+// 재시도된 왕복의 본문은 production이 읽지 않으므로 관찰도 마지막 응답만 사용.
 func TestAdapterUsesTheFinalAttempt(t *testing.T) {
 	calls := 0
 	fake := &fakeTransport{handler: func(w http.ResponseWriter, _ *http.Request) {
@@ -205,7 +205,7 @@ func TestAdapterMarksAbsentFields(t *testing.T) {
 	}
 }
 
-// 응답 상한을 넘긴 본문은 부분 관찰이고, production 결과는 그대로다.
+// 응답 상한을 넘긴 본문은 부분 관찰이고, production 결과는 그대로.
 func TestAdapterMarksTruncatedCapture(t *testing.T) {
 	a := adapter(t, openaiCfg, respond(200, chatBody("stop", ptr(goodResult), "", ptr("m"), nil), nil), nil)
 	a.observer.limit = 16
@@ -218,7 +218,7 @@ func TestAdapterMarksTruncatedCapture(t *testing.T) {
 	}
 }
 
-// 설정된 secret이 응답 어디에 되풀이되어도 관찰 JSON에 남지 않는다.
+// 설정된 secret이 응답 어디에 되풀이되어도 관찰 JSON에 남지 않음.
 func TestAdapterRedactsTheSecret(t *testing.T) {
 	echo := `{"category":"other","facts":[{"label":"key","value":"` + secret + `"}],"suggestedAction":"none","confidence":"low"}`
 	fake := respond(200, claudeBody("end_turn", ptr(echo), ptr("model-"+secret), map[string]any{"input_tokens": 1, "output_tokens": 1}), map[string]string{"request-id": secret})
@@ -238,7 +238,7 @@ func TestAdapterRedactsTheSecret(t *testing.T) {
 	}
 }
 
-// 예산이 0이면 provider 요청이 한 번도 나가지 않는다.
+// 예산이 0이면 provider 요청이 한 번도 나가지 않음.
 func TestAdapterBudgetBlocksCalls(t *testing.T) {
 	fake := respond(200, claudeBody("end_turn", ptr(goodResult), ptr("m"), nil), nil)
 	obs := invoke(t, adapter(t, anthropicCfg, fake, evaluation.NewFixedBudget(0)))
@@ -257,7 +257,7 @@ func TestAdapterBudgetBlocksCalls(t *testing.T) {
 	}
 }
 
-// 사진 분류 밖의 과제는 지원하지 않고, provider 호출은 0회다.
+// 사진 분류 밖의 과제는 지원하지 않고, provider 호출은 0회.
 func TestAdapterRejectsUnsupportedTasks(t *testing.T) {
 	fake := respond(200, claudeBody("end_turn", ptr(goodResult), ptr("m"), nil), nil)
 	a := adapter(t, anthropicCfg, fake, nil)
@@ -273,8 +273,8 @@ func TestAdapterRejectsUnsupportedTasks(t *testing.T) {
 	}
 }
 
-// Factory는 production 생성자로 adapter를 만든다 — live 분류는 processing.ClaudeClassifier · OpenAIClassifier를 그대로
-// 부른다. key는 환경변수에서 읽고 설정에는 남지 않는다.
+// Factory는 production 생성자로 adapter를 생성 — live 분류는 processing.ClaudeClassifier · OpenAIClassifier를 그대로
+// 호출. key는 환경변수에서 읽고 설정에는 남지 않음.
 func TestFactory(t *testing.T) {
 	build := Factory(nil)
 	manifest := func(adapter, provider, model, endpoint, keyEnv string) evaluation.VariantManifest {
@@ -311,7 +311,7 @@ func TestFactory(t *testing.T) {
 	}
 }
 
-// 평가의 계약 view는 production 계약의 값 그대로다.
+// 평가의 계약 view는 production 계약의 값 그대로.
 func TestContractIsProduction(t *testing.T) {
 	c, p := Contract(), processing.DescribeContract()
 	if c.Hash != p.Hash || !slices.Equal(c.Categories, p.Categories) || !slices.Equal(c.Actions, p.Actions) || !slices.Equal(c.Confidence, p.Confidence) {
@@ -319,7 +319,7 @@ func TestContractIsProduction(t *testing.T) {
 	}
 }
 
-// production 결과를 옮기면 JSON이 production Result와 byte 단위로 같다 — 산출물 v1의 prediction.classification.
+// production 결과를 옮기면 JSON이 production Result와 byte 단위로 동일 — 산출물 v1의 prediction.classification.
 func TestPredictionKeepsTheResultWireShape(t *testing.T) {
 	for _, r := range []processing.Result{
 		{Category: "event", Facts: []processing.Fact{{Label: "날짜", Value: "8월 20일"}}, SuggestedAction: "add_to_calendar", Confidence: "high"},

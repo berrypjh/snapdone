@@ -12,7 +12,7 @@ import (
 	"snapdone/api/internal/database/databasetest"
 )
 
-// sessionFixture는 사용자 한 명과 그 사용자의 저장소 · pool을 만든다.
+// sessionFixture는 사용자 한 명과 그 사용자의 저장소 · pool 생성.
 func sessionFixture(t *testing.T) (*pgxpool.Pool, *auth.Store, auth.User) {
 	t.Helper()
 	pool := databasetest.MigratedPool(t)
@@ -44,7 +44,7 @@ func assertGone(t *testing.T, store *auth.Store, hash []byte, what string) {
 	}
 }
 
-// 세션 생성 · 조회 · 취소 흐름을 확인한다. 취소는 여러 번 해도 된다.
+// 세션 생성 · 조회 · 취소 흐름 확인. 취소는 여러 번 해도 무방.
 func TestSessionLifecycle(t *testing.T) {
 	_, store, user := sessionFixture(t)
 	ctx := context.Background()
@@ -66,7 +66,7 @@ func TestSessionLifecycle(t *testing.T) {
 	assertGone(t, store, hash, "revoked session")
 }
 
-// 새 세션의 만료는 종류별 idle 정책을 따른다.
+// 새 세션의 만료는 종류별 idle 정책을 따름.
 func TestCreateSessionUsesKindPolicy(t *testing.T) {
 	_, store, user := sessionFixture(t)
 
@@ -78,7 +78,7 @@ func TestCreateSessionUsesKindPolicy(t *testing.T) {
 	}
 }
 
-// idle 또는 absolute 만료가 지난 세션은 조회되지 않는다.
+// idle 또는 absolute 만료가 지난 세션은 조회 불가.
 func TestFindSessionIgnoresExpired(t *testing.T) {
 	pool, store, user := sessionFixture(t)
 
@@ -92,7 +92,7 @@ func TestFindSessionIgnoresExpired(t *testing.T) {
 	assertGone(t, store, absHash, "absolute expired")
 }
 
-// 조회하면 idle 만료가 연장되지만 absolute 만료를 넘지 않는다.
+// 조회하면 idle 만료가 연장되지만 absolute 만료를 넘지 않음.
 func TestFindSessionExtendsIdleWithinAbsolute(t *testing.T) {
 	pool, store, user := sessionFixture(t)
 	ctx := context.Background()
@@ -122,7 +122,7 @@ func TestFindSessionExtendsIdleWithinAbsolute(t *testing.T) {
 	}
 }
 
-// root를 취소하면 child도 무효다. child 취소는 root에 영향이 없다.
+// root를 취소하면 child도 무효. child 취소는 root에 영향 없음.
 func TestRevokeRootInvalidatesChildren(t *testing.T) {
 	pool, store, user := sessionFixture(t)
 	ctx := context.Background()
@@ -153,12 +153,12 @@ func TestRevokeRootInvalidatesChildren(t *testing.T) {
 	}
 	assertGone(t, store, childHash, "child of revoked root")
 
-	// revoked_at이 child에 기록되지 않았더라도 parent 검사로 무효여야 한다.
+	// revoked_at이 child에 기록되지 않았더라도 parent 검사로 무효.
 	exec(t, pool, "UPDATE auth_sessions SET revoked_at = NULL WHERE token_hash = $1", childHash)
 	assertGone(t, store, childHash, "child with only parent revoked")
 }
 
-// child 만료는 parent absolute 만료를 넘지 않고, 취소된 parent · child 아래에는 만들 수 없다.
+// child 만료는 parent absolute 만료를 넘지 않고, 취소된 parent · child 아래에는 생성 불가.
 func TestCreateChildSessionRules(t *testing.T) {
 	pool, store, user := sessionFixture(t)
 	ctx := context.Background()
@@ -189,7 +189,7 @@ func TestCreateChildSessionRules(t *testing.T) {
 	}
 }
 
-// 서버 재시작(새 pool) 후에도 세션이 유지된다.
+// 서버 재시작(새 pool) 후에도 세션 유지.
 func TestSessionSurvivesNewPool(t *testing.T) {
 	pool, store, user := sessionFixture(t)
 	ctx := context.Background()

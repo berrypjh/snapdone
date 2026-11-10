@@ -30,7 +30,7 @@ func TestDescribeContractMatchesTheParser(t *testing.T) {
 	}
 }
 
-// 돌려준 값을 바꿔도 분류기의 enum · schema는 그대로다.
+// 돌려준 값을 바꿔도 분류기의 enum · schema는 그대로.
 func TestDescribeContractIsACopy(t *testing.T) {
 	c := DescribeContract()
 	c.Categories[0] = "food"
@@ -49,7 +49,7 @@ func TestDescribeContractIsACopy(t *testing.T) {
 	}
 }
 
-// 두 공급자가 실제로 보내는 지시 · 요청 · schema가 descriptor와 같다.
+// 두 공급자가 실제로 보내는 지시 · 요청 · schema가 descriptor와 같음.
 func TestDescribeContractMatchesProviderRequests(t *testing.T) {
 	c := DescribeContract()
 	var want any

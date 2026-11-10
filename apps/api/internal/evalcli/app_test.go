@@ -35,7 +35,7 @@ func TestUsageErrors(t *testing.T) {
 	}
 }
 
-// -h는 flag 목록을 한 번만 찍는다(필수 flag 누락 때만 한 번 더).
+// -h는 flag 목록을 한 번만 출력(필수 flag 누락 때만 한 번 더).
 func TestHelpPrintsFlagsOnce(t *testing.T) {
 	for _, command := range []string{"list", "validate", "plan", "run", "replay", "report", "retry", "compare", "retrieve"} {
 		code, _, stderr := cli(t, context.Background(), command, "-h")

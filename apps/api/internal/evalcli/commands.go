@@ -66,7 +66,7 @@ func cmdList(_ context.Context, args []string, stdout, stderr io.Writer) int {
 	return ExitOK
 }
 
-// variant를 무엇으로 돌릴 수 있는지. replay는 어느 variant든 되고, live는 adapter가 task를 지원하고 placeholder가 아닐 때만이다.
+// variant를 무엇으로 돌릴 수 있는지. replay는 어느 variant든 되고, live는 adapter가 task를 지원하고 placeholder가 아닐 때만.
 func liveness(v evaluation.VariantManifest) string {
 	switch {
 	case !v.Supported():
@@ -79,7 +79,7 @@ func liveness(v evaluation.VariantManifest) string {
 	return "live adapter exists · replay also works"
 }
 
-// split별 case 수와 benchmark-ready 여부. 한 줄에 하나씩, indent를 붙여 쓴다.
+// split별 case 수와 benchmark-ready 여부. 한 줄에 하나씩, indent를 붙여 씀.
 func readinessLines(r evaluation.Readiness, indent string) string {
 	var b strings.Builder
 	for _, split := range []evaluation.Split{evaluation.Dev, evaluation.Validation, evaluation.HeldOut} {

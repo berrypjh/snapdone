@@ -15,7 +15,7 @@ const (
 	KindWeb    SessionKind = "web"
 )
 
-// 세션 만료 정책. absolute는 발급 시각부터의 상한, idle은 마지막 사용부터의 유효 기간이다.
+// 세션 만료 정책. absolute는 발급 시각부터의 상한, idle은 마지막 사용부터의 유효 기간.
 const (
 	MobileAbsoluteTTL = 30 * 24 * time.Hour
 	MobileIdleTTL     = 7 * 24 * time.Hour
@@ -30,14 +30,14 @@ func ttls(kind SessionKind) (absolute, idle time.Duration) {
 	return WebAbsoluteTTL, WebIdleTTL
 }
 
-// ExpiresAt은 현재 유효 만료 시각(idle 만료)이다. idle 만료는 absolute 만료를 넘지 않는다.
+// ExpiresAt은 현재 유효 만료 시각(idle 만료). idle 만료는 absolute 만료를 넘지 않음.
 type Session struct {
 	ID        string
 	User      User
 	ExpiresAt time.Time
 }
 
-// root 세션을 만든다.
+// root 세션 생성.
 func (s *Store) CreateSession(ctx context.Context, userID string, kind SessionKind, tokenHash []byte) (Session, error) {
 	absolute, idle := ttls(kind)
 	return s.querySession(ctx, `
@@ -51,8 +51,8 @@ func (s *Store) CreateSession(ctx context.Context, userID string, kind SessionKi
 		userID, kind, tokenHash, absolute.Seconds(), idle.Seconds())
 }
 
-// 유효한 root 세션 아래에 child 세션을 만든다. 만료는 parent의 absolute 만료를 넘지 않는다.
-// parent가 없거나 child · 취소 · 만료 상태면 ErrNotFound를 반환한다.
+// 유효한 root 세션 아래에 child 세션 생성. 만료는 parent의 absolute 만료를 넘지 않음.
+// parent가 없거나 child · 취소 · 만료 상태면 ErrNotFound 반환.
 func (s *Store) CreateChildSession(ctx context.Context, parentID string, kind SessionKind, tokenHash []byte) (Session, error) {
 	absolute, idle := ttls(kind)
 	return s.querySession(ctx, `
@@ -71,7 +71,7 @@ func (s *Store) CreateChildSession(ctx context.Context, parentID string, kind Se
 		parentID, kind, tokenHash, absolute.Seconds(), idle.Seconds())
 }
 
-// 세션 한 행을 돌려주는 쿼리를 실행한다. 행이 없으면 ErrNotFound다.
+// 세션 한 행을 돌려주는 쿼리 실행. 행이 없으면 ErrNotFound.
 func (s *Store) querySession(ctx context.Context, sql string, args ...any) (Session, error) {
 	var session Session
 	err := s.pool.QueryRow(ctx, sql, args...).
@@ -82,8 +82,8 @@ func (s *Store) querySession(ctx context.Context, sql string, args ...any) (Sess
 	return session, err
 }
 
-// 유효한 세션을 찾고 idle 만료를 absolute 만료 이내로 연장한다.
-// 만료 · 취소됐거나 parent가 취소됐으면 ErrNotFound를 반환한다. 시각은 DB now() 기준.
+// 유효한 세션을 찾고 idle 만료를 absolute 만료 이내로 연장.
+// 만료 · 취소됐거나 parent가 취소됐으면 ErrNotFound 반환. 시각은 DB now() 기준.
 func (s *Store) FindSession(ctx context.Context, tokenHash []byte) (Session, error) {
 	return s.querySession(ctx, `
 		UPDATE auth_sessions s
@@ -102,8 +102,8 @@ func (s *Store) FindSession(ctx context.Context, tokenHash []byte) (Session, err
 		tokenHash, MobileIdleTTL.Seconds(), WebIdleTTL.Seconds())
 }
 
-// 세션을 삭제하지 않고 revoked_at을 기록한다. root면 child도 함께 취소한다.
-// 이미 취소됐거나 없는 세션이어도 오류가 아니다.
+// 세션을 삭제하지 않고 revoked_at 기록. root면 child도 함께 취소.
+// 이미 취소됐거나 없는 세션이어도 오류 아님.
 func (s *Store) RevokeSession(ctx context.Context, tokenHash []byte) error {
 	_, err := s.pool.Exec(ctx, `
 		UPDATE auth_sessions SET revoked_at = now()

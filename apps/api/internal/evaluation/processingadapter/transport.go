@@ -15,25 +15,25 @@ import (
 )
 
 // 응답 본문을 이만큼까지만 베껴 둔다. production의 응답 상한(processing.maxResponseBody, 1 MiB)과 같아
-// production이 읽는 범위를 넘지 않는다.
+// production이 읽는 범위를 넘지 않음.
 const captureLimit = 1 << 20
 
-// 호출 예산이 남지 않아 요청을 보내지 않았다.
+// 호출 예산이 남지 않아 요청을 보내지 않음.
 var errCallBudget = errors.New("evaluation: call budget exhausted")
 
-// 마지막 응답 본문의 사본. production이 실제로 읽은 만큼만 있다.
+// 마지막 응답 본문의 사본. production이 실제로 읽은 만큼만 포함.
 type capture struct {
 	body      []byte
 	requestID string
-	// production이 EOF까지 읽었다.
+	// production이 EOF까지 읽음.
 	complete bool
-	// captureLimit를 넘어 뒷부분을 베끼지 못했다.
+	// captureLimit를 넘어 뒷부분을 베끼지 못함.
 	truncated bool
 	closed    bool
 }
 
 // 베낀 본문만으로 봉투를 판정할 수 있는지. production이 끝까지 읽었거나, 읽은 만큼이 이미 온전한 JSON 값이거나,
-// 읽은 만큼에서 이미 문법이 깨졌으면 그렇다(json.Decoder는 값 뒤의 EOF를 읽지 않는다). 더 읽어 보지는 않는다.
+// 읽은 만큼에서 이미 문법이 깨졌으면 판정 가능(json.Decoder는 값 뒤의 EOF를 읽지 않음). 더 읽어 보지는 않음.
 func (c *capture) observed() bool {
 	if c.truncated {
 		return false
@@ -47,8 +47,8 @@ func (c *capture) observed() bool {
 	return err == nil || errors.As(err, &syntax)
 }
 
-// production HTTP client의 Transport를 감싸 왕복을 기록한다. 요청은 손대지 않고, 본문은 production이 읽는 만큼만
-// 옆에서 베낀다. timeout · 응답 상한 · redirect 정책은 감싸인 client가 그대로 가진다.
+// production HTTP client의 Transport를 감싸 왕복을 기록. 요청은 손대지 않고, 본문은 production이 읽는 만큼만
+// 옆에서 베낌. timeout · 응답 상한 · redirect 정책은 감싸인 client가 그대로 보유.
 type observer struct {
 	base   http.RoundTripper
 	budget evaluation.CallBudget
@@ -91,7 +91,7 @@ func (o *observer) record(attempt evaluation.HTTPAttempt, c *capture) {
 	o.last = c
 }
 
-// 지금까지의 기록을 꺼내고 비운다. 한 호출(Classify)마다 한 번 부른다.
+// 지금까지의 기록을 꺼내고 비움. 한 호출(Classify)마다 한 번 호출.
 func (o *observer) take() ([]evaluation.HTTPAttempt, *capture) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
@@ -115,7 +115,7 @@ func firstHeader(h http.Header, names ...string) string {
 	return ""
 }
 
-// production이 읽는 byte를 limit까지 옆에 베낀다. 더 읽지도, 먼저 읽지도 않는다.
+// production이 읽는 byte를 limit까지 옆에 베낌. 더 읽지도, 먼저 읽지도 않음.
 type teeBody struct {
 	src   io.ReadCloser
 	cap   *capture

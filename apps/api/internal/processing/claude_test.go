@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-// handlerTransport는 포트를 열지 않고 요청을 handler로 바로 보낸다.
+// handlerTransport는 포트를 열지 않고 요청을 handler로 바로 전송.
 type handlerTransport struct{ handler http.HandlerFunc }
 
 func (h handlerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -20,7 +20,7 @@ func (h handlerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return rec.Result(), nil
 }
 
-// fakeClaude는 받은 요청을 기록하고 stop reason과 본문 text로 Messages API 응답을 만든다.
+// fakeClaude는 받은 요청 기록, stop reason과 본문 text로 Messages API 응답 생성.
 func fakeClaude(t *testing.T, stopReason, text string) (*ClaudeClassifier, *map[string]any, *http.Header) {
 	return fakeClaudeModel(t, "claude-opus-5", stopReason, text)
 }
@@ -62,7 +62,7 @@ func TestClassifyReturnsResult(t *testing.T) {
 	}
 }
 
-// 사진 · 모델 · 결과 schema · 거절 시 대체 모델이 요청에 실린다.
+// 사진 · 모델 · 결과 schema · 거절 시 대체 모델이 요청에 실림.
 func TestClassifyRequestShape(t *testing.T) {
 	classifier, body, header := fakeClaude(t, "end_turn", resultJSON)
 	if _, err := classifier.Classify(context.Background(), []byte("jpeg-bytes"), "image/jpeg"); err != nil {
@@ -86,7 +86,7 @@ func TestClassifyRequestShape(t *testing.T) {
 	}
 }
 
-// 대체 모델 설정은 문서가 권하는 모델에만 보낸다. 다른 모델은 그 설정 없이 그대로 부른다.
+// 대체 모델 설정은 문서가 권하는 모델에만 전송. 다른 모델은 그 설정 없이 그대로 호출.
 func TestClassifySendsFallbacksOnlyForListedModels(t *testing.T) {
 	classifier, body, header := fakeClaudeModel(t, "claude-sonnet-5", "end_turn", resultJSON)
 	if _, err := classifier.Classify(context.Background(), []byte("x"), "image/png"); err != nil {
@@ -97,7 +97,7 @@ func TestClassifySendsFallbacksOnlyForListedModels(t *testing.T) {
 	}
 }
 
-// 거절 · 잘린 응답은 결과로 쓰지 않는다.
+// 거절 · 잘린 응답은 결과로 쓰지 않음.
 func TestClassifyRejectsIncompleteAnswer(t *testing.T) {
 	for _, stop := range []string{"refusal", "max_tokens"} {
 		t.Run(stop, func(t *testing.T) {
@@ -116,7 +116,7 @@ func TestClassifyRejectsMalformedText(t *testing.T) {
 	}
 }
 
-// 상한보다 큰 응답 본문은 잘라 읽으므로 결과가 되지 못한다.
+// 상한보다 큰 응답 본문은 잘라 읽으므로 결과가 되지 못함.
 func TestLimitedTransportCutsLargeBodies(t *testing.T) {
 	transport := limitedTransport{handlerTransport{func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(strings.Repeat("a", maxResponseBody+10)))
@@ -131,7 +131,7 @@ func TestLimitedTransportCutsLargeBodies(t *testing.T) {
 	}
 }
 
-// 평가 실험용 복사본은 system 지시만 바꾸고 원본은 production 지시 그대로다.
+// 평가 실험용 복사본은 system 지시만 바꾸고 원본은 production 지시 그대로.
 func TestWithInstructionsChangesOnlyTheCopy(t *testing.T) {
 	classifier, body, _ := fakeClaude(t, "end_turn", resultJSON)
 	system := func() any { return (*body)["system"].([]any)[0].(map[string]any)["text"] }

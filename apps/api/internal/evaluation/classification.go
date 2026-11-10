@@ -5,17 +5,17 @@ import (
 	"slices"
 )
 
-// 평가 내부의 오답 bucket. 결과가 없거나(실패 · timeout · 미실행) 계약 밖의 값이면 여기로 간다. enum이 아니다.
+// 평가 내부의 오답 bucket. 결과가 없거나(실패 · timeout · 미실행) 계약 밖의 값이면 여기로 감. enum 아님.
 const InvalidLabel = "__invalid__"
 
 // v1 — category가 맞고, 예측한 행동이 acceptableActions에 있고(unresolved면 행동은 보지 않음), forbiddenActions를
 // 추천하지 않았으면 pass.
 var DefaultClassificationPolicy = ScoringPolicy{Version: "classification-pass-v1"}
 
-// case 하나가 집계에 보태는 것. 손으로 검산할 수 있게 판정을 전부 남긴다.
+// case 하나가 집계에 보태는 것. 손으로 검산할 수 있게 판정을 전부 기록.
 type CaseContribution struct {
 	CaseID string `json:"caseId"`
-	// 관측이 없으면(run이 그 case를 돌리지 않음) false. 정답 수 0으로 센다.
+	// 관측이 없으면(run이 그 case를 돌리지 않음) false. 정답 수 0으로 셈.
 	Ran       bool            `json:"ran"`
 	Execution ExecutionStatus `json:"execution,omitempty"`
 	Predicted bool            `json:"predicted"`
@@ -24,7 +24,7 @@ type CaseContribution struct {
 	PredictedCategory string `json:"predictedCategory"`
 	CategoryCorrect   bool   `json:"categoryCorrect"`
 
-	// resolved · adjudicated면 acceptableActions[0]. unresolved면 비어 있고 행동은 채점하지 않는다.
+	// resolved · adjudicated면 acceptableActions[0]. unresolved면 비어 있고 행동은 채점하지 않음.
 	CanonicalAction   string   `json:"canonicalAction,omitempty"`
 	AcceptableActions []string `json:"acceptableActions"`
 	PredictedAction   string   `json:"predictedAction"`
@@ -34,21 +34,21 @@ type CaseContribution struct {
 
 	Confidence string `json:"confidence,omitempty"`
 
-	// forbiddenActions가 있는 case만 위험을 잰다.
+	// forbiddenActions가 있는 case만 위험 측정.
 	RiskEligible  bool `json:"riskEligible"`
 	CriticalError bool `json:"criticalError"`
 
-	// 기대 facts 중 예측에서 찾은 수. 예측이 없으면 0이다.
+	// 기대 facts 중 예측에서 찾은 수. 예측이 없으면 0.
 	FactsExpected int      `json:"factsExpected"`
 	FactsFound    int      `json:"factsFound"`
 	MissingFacts  []string `json:"missingFacts,omitempty"`
-	// 행동 완료 가능 — 받아들일 수 있는 행동을 골랐고 그 행동에 필요한 값을 모두 읽었다. facts가 있고 행동을
-	// 채점하는 case만 잰다.
+	// 행동 완료 가능 — 받아들일 수 있는 행동을 골랐고 그 행동에 필요한 값을 모두 읽음. facts가 있고 행동을
+	// 채점하는 case만 측정.
 	ReadyApplicable bool `json:"readyApplicable"`
 	ActionReady     bool `json:"actionReady"`
-	// confidence high이고 행동이 none이 아님 — 제품이 확인 없이 실행하는 답이다.
+	// confidence high이고 행동이 none이 아님 — 제품이 확인 없이 실행하는 답.
 	AutoExecuted bool `json:"autoExecuted"`
-	// 제품이 해도 되는 답이었는지. category · 행동이 맞고 금지 행동이 아니며, facts가 있으면 완료 가능해야 한다.
+	// 제품이 해도 되는 답이었는지. category · 행동이 맞고 금지 행동이 아니며, facts가 있으면 완료 가능해야 함.
 	Correct bool `json:"correct"`
 
 	Quality Quality            `json:"quality"`
@@ -66,7 +66,7 @@ type LabelStats struct {
 	F1        Measure `json:"f1"`
 }
 
-// 관측 가능 여부를 함께 세는 참 · 거짓 집계. Unobserved를 거짓으로 세지 않는다.
+// 관측 가능 여부를 함께 세는 참 · 거짓 집계. Unobserved를 거짓으로 세지 않음.
 type Tally struct {
 	Valid      int `json:"valid"`
 	Invalid    int `json:"invalid"`
@@ -98,12 +98,12 @@ type CategoryMetrics struct {
 	// 결과가 없거나 계약 밖이라 __invalid__로 간 수.
 	Invalid int                   `json:"invalid"`
 	Labels  map[string]LabelStats `json:"labels"`
-	// gold support가 있는 label의 F1 평균. support가 없는 label은 빼고 MissingLabels에 적는다.
+	// gold support가 있는 label의 F1 평균. support가 없는 label은 빼고 MissingLabels에 기록.
 	MacroF1 Measure `json:"macroF1"`
 	// full — 계약의 모든 category에 gold가 있음. subset — 일부만 있음
 	MacroCoverage string   `json:"macroCoverage"`
 	MissingLabels []string `json:"missingLabels"`
-	// gold → 예측 → 수. 예측 열에는 __invalid__가 있다.
+	// gold → 예측 → 수. 예측 열에는 __invalid__가 있음.
 	Confusion map[string]map[string]int `json:"confusion"`
 }
 
@@ -114,10 +114,10 @@ type ActionMetrics struct {
 	// 예측 == canonical.
 	CanonicalCorrect    int     `json:"canonicalCorrect"`
 	CanonicalExactMatch Measure `json:"canonicalExactMatch"`
-	// 예측 ∈ acceptableActions. canonical EM보다 크거나 같다.
+	// 예측 ∈ acceptableActions. canonical EM보다 크거나 같음.
 	AcceptedCorrect  int     `json:"acceptedCorrect"`
 	AcceptedAccuracy Measure `json:"acceptedAccuracy"`
-	// canonical 기준 label 통계 · confusion. adjudicated case의 off-diagonal은 오답이 아닐 수 있다.
+	// canonical 기준 label 통계 · confusion. adjudicated case의 off-diagonal은 오답이 아닐 수 있음.
 	Labels              map[string]LabelStats     `json:"labels"`
 	Confusion           map[string]map[string]int `json:"confusion"`
 	OffDiagonalAccepted int                       `json:"offDiagonalAccepted"`
@@ -127,10 +127,10 @@ type ActionMetrics struct {
 type RiskMetrics struct {
 	Eligible int `json:"eligible"`
 	Observed int `json:"observed"`
-	// 실패 · timeout · 미실행이라 위험을 보지 못한 case. pass가 아니다.
+	// 실패 · timeout · 미실행이라 위험을 보지 못한 case. pass 아님.
 	Unobserved int `json:"unobserved"`
 	Critical   int `json:"critical"`
-	// Critical / Observed. 관측 못 한 case가 빠지므로 이것만 보면 timeout이 위험률을 낮춘다.
+	// Critical / Observed. 관측 못 한 case가 빠지므로 이것만 보면 timeout이 위험률을 낮춤.
 	CriticalRate Measure `json:"criticalRate"`
 	// (Critical + Unobserved) / Eligible. 보수적인 값.
 	CriticalOrUnobservedRate Measure `json:"criticalOrUnobservedRate"`
@@ -140,7 +140,7 @@ type FactMetrics struct {
 	// 기대 facts가 있는 case와 그 facts 수.
 	Annotated int `json:"annotated"`
 	Expected  int `json:"expected"`
-	// 찾은 facts. 예측이 없는 case의 facts는 못 찾은 것으로 센다.
+	// 찾은 facts. 예측이 없는 case의 facts는 못 찾은 것으로 셈.
 	Found  int     `json:"found"`
 	Recall Measure `json:"recall"`
 	// 분모는 facts가 있고 행동을 채점하는 case.
@@ -149,7 +149,7 @@ type FactMetrics struct {
 	ReadyRate     Measure `json:"readyRate"`
 }
 
-// 제품은 high일 때 확인 없이 실행하고 나머지는 사용자에게 묻는다. 그 규칙이 안전한지를 잰다.
+// 제품은 high일 때 확인 없이 실행하고 나머지는 사용자에게 물음. 그 규칙이 안전한지 측정.
 type CalibrationMetrics struct {
 	// high로 답한 case와 그중 제품이 해서는 안 되는 답.
 	High          int     `json:"high"`
@@ -159,7 +159,7 @@ type CalibrationMetrics struct {
 	AutoExecuted  int     `json:"autoExecuted"`
 	AutoCorrect   int     `json:"autoCorrect"`
 	AutoPrecision Measure `json:"autoPrecision"`
-	// 고른 case 중 자동으로 끝낸 몫. 나머지는 사용자 확인을 거친다.
+	// 고른 case 중 자동으로 끝낸 몫. 나머지는 사용자 확인을 거침.
 	AutoCoverage Measure `json:"autoCoverage"`
 }
 
@@ -170,10 +170,10 @@ type CascadeMetrics struct {
 	EscalationRate Measure `json:"escalationRate"`
 }
 
-// 한 split · 한 variant · 한 trial의 분류 집계. 분모는 고른 case 전부다.
+// 한 split · 한 variant · 한 trial의 분류 집계. 분모는 고른 case 전부.
 type ClassificationSummary struct {
 	Policy ScoringPolicy `json:"policy"`
-	// 고른 case 수 · 관측이 있던 수 · 없던 수. NotRun > 0이면 official summary가 아니다.
+	// 고른 case 수 · 관측이 있던 수 · 없던 수. NotRun > 0이면 official summary 아님.
 	Selected  int  `json:"selected"`
 	Evaluated int  `json:"evaluated"`
 	NotRun    int  `json:"notRun"`
@@ -184,7 +184,7 @@ type ClassificationSummary struct {
 
 	Category CategoryMetrics `json:"category"`
 	Action   ActionMetrics   `json:"action"`
-	// category가 맞고 예측 == canonical. facts · confidence는 넣지 않는다. 분모는 Action.WithCanonical.
+	// category가 맞고 예측 == canonical. facts · confidence는 넣지 않음. 분모는 Action.WithCanonical.
 	JointCorrect    int     `json:"jointCorrect"`
 	JointExactMatch Measure `json:"jointExactMatch"`
 	// policy 기준 pass. 분모는 Selected.
@@ -193,20 +193,20 @@ type ClassificationSummary struct {
 
 	Confidence map[string]ConfidenceSlice `json:"confidence"`
 	Risk       RiskMetrics                `json:"risk"`
-	// 추출값과 행동 완료 가능률. pass에는 넣지 않는다(policy v1 그대로).
+	// 추출값과 행동 완료 가능률. pass에는 넣지 않음(policy v1 그대로).
 	Facts *FactMetrics `json:"facts,omitempty"`
 	// confidence를 믿고 자동 실행해도 되는지.
 	Calibration *CalibrationMetrics `json:"calibration,omitempty"`
-	// 비슷한 사례 검색 · 계단식을 쓴 variant에만 있다.
+	// 비슷한 사례 검색 · 계단식을 쓴 variant에만 있음.
 	Retrieval *RetrievalMetrics `json:"retrieval,omitempty"`
 	Cascade   *CascadeMetrics   `json:"cascade,omitempty"`
-	// 모델 원문 판정의 집계. unavailable은 따로 센다.
+	// 모델 원문 판정의 집계. unavailable은 따로 셈.
 	RawSyntax Tally `json:"rawSyntax"`
 	RawShape  Tally `json:"rawShape"`
 	Parser    Tally `json:"parser"`
 }
 
-// 고른 case와 관측으로 집계한다. 관측이 없는 case는 정답 수 0이고 NotRun으로 남는다. provider를 부르지 않는다.
+// 고른 case와 관측으로 집계. 관측이 없는 case는 정답 수 0이고 NotRun으로 남음. provider를 부르지 않음.
 func EvaluateClassification(cases []Case, observations map[string]Observation, contract ClassificationContract, policy ScoringPolicy) (ClassificationSummary, []CaseContribution) {
 	s := ClassificationSummary{
 		Policy: policy, Selected: len(cases), Execution: map[ExecutionStatus]int{},
@@ -273,7 +273,7 @@ func contribute(c Case, obs Observation, ran bool, contract ClassificationContra
 		k.AutoExecuted = result.Confidence == "high" && result.SuggestedAction != "none"
 	}
 	k.scoreFacts(expected.Facts, result)
-	// 예측이 없으면 case metric은 unavailable이다. 집계는 그래도 오답으로 센다(분모는 고른 case 전부).
+	// 예측이 없으면 case metric은 unavailable. 집계는 그래도 오답으로 셈(분모는 고른 case 전부).
 	noPrediction := Missing(Unavailable, "no prediction")
 	k.Metrics["category-match"] = MeasuredValue(boolToFloat(k.CategoryCorrect))
 	if !k.Predicted {
@@ -303,7 +303,7 @@ func contribute(c Case, obs Observation, ran bool, contract ClassificationContra
 	return k
 }
 
-// 기대 facts를 찾고, 고른 행동에 필요한 값을 모두 읽었는지 본다. 행동 판정이 끝난 뒤에 부른다.
+// 기대 facts를 찾고, 고른 행동에 필요한 값을 모두 읽었는지 확인. 행동 판정이 끝난 뒤에 호출.
 func (k *CaseContribution) scoreFacts(facts []ExpectedFact, result *ClassificationPrediction) {
 	k.FactsExpected = len(facts)
 	k.ReadyApplicable = len(facts) > 0 && k.ActionApplicable
@@ -339,7 +339,7 @@ func (k *CaseContribution) scoreFacts(facts []ExpectedFact, result *Classificati
 	}
 }
 
-// 실행이 끝났을 때만 채점한다. 판정 하나라도 틀리면 failed.
+// 실행이 끝났을 때만 채점. 판정 하나라도 틀리면 failed.
 func quality(k CaseContribution, obs Observation, policy ScoringPolicy) Quality {
 	if !k.Ran || obs.Status != Completed {
 		return Quality{Outcome: NotEvaluated, Checks: []Check{}}
@@ -539,7 +539,7 @@ func (s *ClassificationSummary) finish(contract ClassificationContract, categori
 	s.Risk.CriticalOrUnobservedRate = rate(s.Risk.Critical+s.Risk.Unobserved, s.Risk.Eligible, "no risk-annotated case")
 }
 
-// 분모가 0이면 not-applicable. 0/n은 0이다.
+// 분모가 0이면 not-applicable. 0/n은 0.
 func rate(numerator, denominator int, reason string) Measure {
 	if denominator == 0 {
 		return Missing(NotApplicable, reason)
@@ -547,7 +547,7 @@ func rate(numerator, denominator int, reason string) Measure {
 	return MeasuredValue(float64(numerator) / float64(denominator))
 }
 
-// label별 통계와, gold support가 있는 label만의 macro F1. support가 있는데 예측이 없는 label은 F1 0이다.
+// label별 통계와, gold support가 있는 label만의 macro F1. support가 있는데 예측이 없는 label은 F1 0.
 func labelStats(c *counts) (map[string]LabelStats, Measure, []string) {
 	stats := map[string]LabelStats{}
 	missing := []string{}

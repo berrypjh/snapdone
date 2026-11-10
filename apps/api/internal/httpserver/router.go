@@ -13,7 +13,7 @@ import (
 	"snapdone/api/internal/auth"
 )
 
-// 클라이언트에 나가는 오류 코드. 서버 · 제공자 원문은 이 값으로만 바뀌어 나간다.
+// 클라이언트에 나가는 오류 코드. 서버 · 제공자 원문은 이 값으로만 바뀌어 전달.
 const (
 	errSessionExpired         = "session_expired"
 	errProviderUnavailable    = "provider_unavailable"
@@ -36,22 +36,20 @@ const (
 	errInvalidJobIDs          = "invalid_job_ids"
 )
 
-// Router가 쓰는 의존성. Sessions · OAuth · Handoff · Processing · Onboarding · Preferences가 nil이면 해당 endpoint는 503이다.
+// Router가 쓰는 의존성. Sessions · OAuth · Handoff · Processing · Onboarding · Preferences가 nil이면 해당 endpoint는 503.
 type Deps struct {
-	Logger      *slog.Logger
-	Sessions    SessionStore
-	OAuth       *auth.OAuth
-	Handoff     *auth.Handoff
-	Processing  ProcessingService
-	Onboarding  OnboardingStore
-	Preferences PreferenceStore
-	// Swagger UI(/swagger/*)를 연다. production에서는 끈다.
-	Swagger bool
-	// Cloud Logging trace 이름의 GCP 프로젝트. 비면 trace를 남기지 않는다.
+	Logger       *slog.Logger
+	Sessions     SessionStore
+	OAuth        *auth.OAuth
+	Handoff      *auth.Handoff
+	Processing   ProcessingService
+	Onboarding   OnboardingStore
+	Preferences  PreferenceStore
+	Swagger      bool
 	TraceProject string
 }
 
-// Gin은 이 패키지 안의 HTTP 경계에만 쓴다. 핸들러 밖으로 gin.Context를 넘기지 않는다.
+// Gin은 이 패키지 안의 HTTP 경계에만 사용. 핸들러 밖으로 gin.Context를 넘기지 않음.
 type handlers struct {
 	log             *slog.Logger
 	sessions        SessionStore
@@ -62,13 +60,12 @@ type handlers struct {
 	preferenceStore PreferenceStore
 }
 
-// Gin의 debug 출력(route 목록 · 경고)을 끈다. 구조화 로그와 섞이지 않게 main이 시작할 때 한 번 부른다.
+// Gin의 debug 출력(route 목록 · 경고) 끄기. 구조화 로그와 섞이지 않게 main이 시작할 때 한 번 호출.
 func UseReleaseMode() {
 	gin.SetMode(gin.ReleaseMode)
 }
 
-// 모든 endpoint를 등록한 Gin engine을 만든다.
-// trailing slash · 대소문자 교정 redirect를 하지 않고, 다른 메서드면 405(Allow 포함), 없는 경로면 404다.
+// 모든 endpoint를 등록한 Gin engine 생성.
 func NewRouter(deps Deps) *gin.Engine {
 	if deps.Logger == nil {
 		deps.Logger = slog.New(slog.DiscardHandler)
@@ -79,11 +76,15 @@ func NewRouter(deps Deps) *gin.Engine {
 	}
 
 	router := gin.New()
+	// 경로는 있지만 메서드가 다르면 405(Allow 포함), 없는 경로는 404
 	router.HandleMethodNotAllowed = true
+	// 끝 slash 교정 redirect 끄기(예: /health/ -> /health)
 	router.RedirectTrailingSlash = false
+	// 대소문자 · 중복 slash 교정 redirect 끄기(예: /HEALTH -> /health)
 	router.RedirectFixedPath = false
-	// 프록시 헤더로 client IP를 바꾸지 않는다. 지금 ClientIP를 쓰는 곳은 없다.
+	// 신뢰하는 프록시 없음. 프록시 헤더로 client IP를 바꾸지 않음(지금 ClientIP를 쓰는 곳은 없음)
 	_ = router.SetTrustedProxies(nil)
+
 	router.Use(requestID(deps.TraceProject), requestLogger(deps.Logger), recovery(deps.Logger))
 
 	get(&router.RouterGroup, "/health", health)
@@ -105,7 +106,7 @@ func NewRouter(deps Deps) *gin.Engine {
 	handoff.POST("/start", h.handoffStart)
 	handoff.POST("/exchange", h.handoffExchange)
 
-	// 처리는 로그인 세션이 필요하다. 사진 본문은 인증 요청보다 큰 상한을 쓴다.
+	// 처리는 로그인 세션 필요. 사진 본문은 인증 요청보다 큰 상한 사용.
 	jobs := v1.Group("/processing-jobs", noStore, requireConfigured(deps.Sessions != nil && deps.Processing != nil))
 	jobs.POST("", extendDeadline(uploadTimeout), limitBody(maxUploadBody), h.createProcessingJob)
 	get(jobs, "", h.processingJobs)
@@ -129,7 +130,7 @@ func NewRouter(deps Deps) *gin.Engine {
 	return router
 }
 
-// GET route를 HEAD에도 연결한다. Go 1.22+ ServeMux의 "GET" 패턴이 HEAD를 받던 동작을 그대로 둔다.
+// GET route를 HEAD에도 연결. Go 1.22+ ServeMux의 "GET" 패턴이 HEAD를 받던 동작 유지.
 func get(group *gin.RouterGroup, path string, handler gin.HandlerFunc) {
 	group.GET(path, handler)
 	group.HEAD(path, handler)
@@ -149,13 +150,13 @@ func writeError(c *gin.Context, status int, code string) {
 	c.AbortWithStatusJSON(status, ErrorResponse{Error: code})
 }
 
-// 내부 오류 원인을 요청 ID와 함께 남기고 Sentry로 보낸다. 요청 값은 넣지 않는다.
+// 내부 오류 원인을 요청 ID와 함께 기록하고 Sentry로 전송. 요청 값은 넣지 않음.
 func (h *handlers) logFailure(c *gin.Context, msg string, err error) {
 	h.log.Error(msg, append(requestAttrs(c), "err", err)...)
 	report(c, fmt.Errorf("%s: %w", msg, err))
 }
 
-// 내부 오류를 남기고 원인을 숨긴 500을 돌려준다.
+// 내부 오류를 기록하고 원인을 숨긴 500 반환.
 func (h *handlers) internalError(c *gin.Context, msg string, err error) {
 	h.logFailure(c, msg, err)
 	writeError(c, http.StatusInternalServerError, errProviderUnavailable)

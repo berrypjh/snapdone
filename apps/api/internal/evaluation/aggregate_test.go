@@ -84,7 +84,7 @@ func TestSummarizeMultiVariantHandCalculated(t *testing.T) {
 	}
 }
 
-// 지원하지 않는 variant는 attempted 0이라 completion rate가 N/A이고 정확도는 0/3이다.
+// 지원하지 않는 variant는 attempted 0이라 completion rate가 N/A이고 정확도는 0/3.
 func TestSummarizeUnsupportedVariant(t *testing.T) {
 	meta := testMeta("run-2", Live, 1, []string{"a", "b", "c"}, testVariant("u"))
 	var results []CaseResult
@@ -104,7 +104,7 @@ func TestSummarizeUnsupportedVariant(t *testing.T) {
 	}
 }
 
-// 줄이 빠진 invocation(프로세스 중단)은 missing이고 run은 partial이다.
+// 줄이 빠진 invocation(프로세스 중단)은 missing이고 run은 partial.
 func TestSummarizeMissingLinesArePartial(t *testing.T) {
 	meta := testMeta("run-3", Live, 1, []string{"a", "b"}, testVariant("x"))
 	results := []CaseResult{line("run-3", "x", "a", "event", "add_to_calendar", Completed, "event", "add_to_calendar", 50, f(1), f(1))}

@@ -6,14 +6,14 @@ import (
 	"os"
 )
 
-// 사진 처리 모델. 공급자와 모델을 환경변수로 골라 코드 변경 없이 바꾼다.
+// 사진 처리 모델. 공급자와 모델을 환경변수로 골라 코드 변경 없이 교체.
 type Processing struct {
 	// anthropic(Claude API) 또는 openai(OpenAI · Ollama 등 OpenAI 호환 API).
 	Provider string
 	Model    string
-	// openai에서만 쓴다. 예: https://api.openai.com/v1, http://localhost:11434/v1
+	// openai에서만 사용. 예: https://api.openai.com/v1, http://localhost:11434/v1
 	BaseURL string
-	// anthropic은 필수. openai는 로컬 서버라면 비워도 된다.
+	// anthropic은 필수. openai는 로컬 서버라면 비워도 됨.
 	APIKey string
 }
 
@@ -22,7 +22,7 @@ const (
 	ProviderOpenAI    = "openai"
 )
 
-// 모두 비면 사진 처리 비활성(nil). 일부만 있거나 값이 틀리면 오류다.
+// 모두 비면 사진 처리 비활성(nil). 일부만 있거나 값이 틀리면 오류.
 func loadProcessing() (*Processing, error) {
 	p := Processing{
 		Provider: os.Getenv("PROCESSING_PROVIDER"),

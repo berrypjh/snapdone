@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// retry는 원래 run에서 끝나지 않은 호출만 다시 부르고, 모든 variant가 든 새 run을 쓴다. 원래 run은 그대로다.
+// retry는 원래 run에서 끝나지 않은 호출만 다시 부르고, 모든 variant가 든 새 run 기록. 원래 run은 그대로.
 func TestRetryCallsOnlyWhatDidNotComplete(t *testing.T) {
 	provider := &fakeProvider{}
 	stub(t, provider)
@@ -17,7 +17,7 @@ func TestRetryCallsOnlyWhatDidNotComplete(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "results")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	// 두 번째 case를 부르기 직전에 멈춘다 — 모델 variant의 case 하나가 미실행으로 남는다.
+	// 두 번째 case를 부르기 직전에 중단 — 모델 variant의 case 하나가 미실행으로 남음.
 	provider.before = func(call int) {
 		if call == 2 {
 			cancel()

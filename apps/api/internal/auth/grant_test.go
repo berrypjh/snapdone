@@ -11,7 +11,7 @@ import (
 	"snapdone/api/internal/auth"
 )
 
-// consumeConcurrently는 consume을 동시에 n번 부르고 성공 횟수를 센다.
+// consumeConcurrently는 consume을 동시에 n번 부르고 성공 횟수 집계.
 func consumeConcurrently(t *testing.T, n int, consume func() error) int64 {
 	t.Helper()
 	var ok atomic.Int64
@@ -31,7 +31,7 @@ func consumeConcurrently(t *testing.T, n int, consume func() error) int64 {
 	return ok.Load()
 }
 
-// grant는 동시에 소비해도 정확히 한 번만 성공하고 저장한 값을 돌려준다.
+// grant는 동시에 소비해도 정확히 한 번만 성공하고 저장한 값 반환.
 func TestConsumeGrantExactlyOnce(t *testing.T) {
 	_, store, user := sessionFixture(t)
 	ctx := context.Background()
@@ -65,7 +65,7 @@ func TestConsumeGrantExactlyOnce(t *testing.T) {
 	}
 }
 
-// 만료된 grant는 소비할 수 없다.
+// 만료된 grant는 소비 불가.
 func TestConsumeGrantRejectsExpired(t *testing.T) {
 	_, store, user := sessionFixture(t)
 	ctx := context.Background()
@@ -80,7 +80,7 @@ func TestConsumeGrantRejectsExpired(t *testing.T) {
 	}
 }
 
-// transaction은 동시에 소비해도 정확히 한 번만 성공하고 암호문을 그대로 돌려준다.
+// transaction은 동시에 소비해도 정확히 한 번만 성공하고 암호문을 그대로 반환.
 func TestConsumeTransactionExactlyOnce(t *testing.T) {
 	store := newStore(t)
 	ctx := context.Background()
@@ -121,7 +121,7 @@ func TestConsumeTransactionExactlyOnce(t *testing.T) {
 	}
 }
 
-// provider CHECK는 transaction에도 적용된다. 네이버처럼 암호문이 없으면 key_id도 없다.
+// provider CHECK는 transaction에도 적용. 네이버처럼 암호문이 없으면 key_id도 없음.
 func TestCreateTransactionChecks(t *testing.T) {
 	store := newStore(t)
 	ctx := context.Background()

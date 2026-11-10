@@ -10,19 +10,19 @@ type Config struct {
 	Port        string
 	Environment string
 	DatabaseURL string
-	// Cloud Logging trace 이름의 GCP 프로젝트(GOOGLE_CLOUD_PROJECT). 비면 trace를 남기지 않는다.
+	// Cloud Logging trace 이름의 GCP 프로젝트(GOOGLE_CLOUD_PROJECT). 비면 trace를 남기지 않음.
 	TraceProject string
-	// 내부 오류를 보낼 Sentry DSN(SENTRY_DSN). 비면 Sentry를 켜지 않는다.
+	// 내부 오류를 보낼 Sentry DSN(SENTRY_DSN). 비면 Sentry를 켜지 않음.
 	SentryDSN string
 
 	Auth   *Auth
 	Google *Google
-	// nil이면 사진 처리가 비활성(/v1/processing-jobs 503)이다.
+	// nil이면 사진 처리가 비활성(/v1/processing-jobs 503).
 	Processing *Processing
 }
 
-// 환경 변수에서 설정을 읽고, 값이 없으면 로컬 개발 환경을 위한 기본값을 사용한다.
-// 인증 · 사진 처리 설정이 일부만 있거나 잘못됐으면 오류를 반환한다.
+// 환경 변수에서 설정을 읽고, 값이 없으면 로컬 개발 환경을 위한 기본값 사용.
+// 인증 · 사진 처리 설정이 일부만 있거나 잘못됐으면 오류 반환.
 func Load() (Config, error) {
 	cfg := Config{
 		Host:         env("API_HOST", "127.0.0.1"),
@@ -46,7 +46,7 @@ func Load() (Config, error) {
 	return cfg, nil
 }
 
-// HTTP 서버가 사용할 host:port 형식의 주소를 반환한다.
+// HTTP 서버가 사용할 host:port 형식의 주소 반환.
 func (c Config) Addr() string {
 	return net.JoinHostPort(c.Host, c.Port)
 }

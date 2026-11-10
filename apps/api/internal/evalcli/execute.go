@@ -44,7 +44,7 @@ func cmdRun(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	return execute(ctx, req, s, stdout, stderr)
 }
 
-// plan · preflight · lineage 수집 뒤에야 adapter가 만들어진다. 산출물은 writer가 쓰고 partial이면 3이다.
+// plan · preflight · lineage 수집 뒤에야 adapter 생성. 산출물은 writer가 쓰고 partial이면 3.
 func execute(ctx context.Context, req evaluation.RunRequest, s selection, stdout, stderr io.Writer) int {
 	p := s.paths
 	contract := processingadapter.Contract()
@@ -126,7 +126,7 @@ func cmdReplay(ctx context.Context, args []string, stdout, stderr io.Writer) int
 	return execute(ctx, req, s, stdout, stderr)
 }
 
-// 고른 variant · case에 맞지 않는 기록은 조용히 버려지지 않고 경고로 보인다 — case id 오타나 다른 variant의 기록이다.
+// 고른 variant · case에 맞지 않는 기록은 조용히 버려지지 않고 경고로 표시 — case id 오타나 다른 variant의 기록.
 func warnUnmatched(req evaluation.RunRequest, fixture evaluation.ReplayFixture, stderr io.Writer) {
 	plan, err := evaluation.NewPlan(req)
 	if err != nil {

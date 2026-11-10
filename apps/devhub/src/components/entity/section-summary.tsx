@@ -5,8 +5,9 @@ import { WorkspaceSection } from '@berrypjh/devhub-ui';
 import { entityHref, entityStatus, type Section } from '@/lib/catalog/entities';
 
 import { StatusChip } from './status-chip';
+import { VerificationLimits } from './verification-note';
 
-/** 탐색기 섹션 하나의 가운데 화면. 모든 항목을 링크와 상태로 보인다. */
+/** 탐색기 섹션 하나의 가운데 화면. 모든 항목을 링크와 상태로 보이고, 시나리오는 검증 제한도 글자로 덧붙인다. */
 export function SectionSummary({ section }: { section: Section }) {
   return (
     <WorkspaceSection id="section-list" title={`${section.entities.length}개`}>
@@ -15,12 +16,15 @@ export function SectionSummary({ section }: { section: Section }) {
           const status = entityStatus(entity);
           return (
             <li key={entity.id} className="flex items-center justify-between gap-3 py-2">
-              <Link
-                href={entityHref(entity)}
-                className="typo-body-small text-text-link underline-offset-2 hover:underline"
-              >
-                {entity.label}
-              </Link>
+              <span className="flex min-w-0 flex-col">
+                <Link
+                  href={entityHref(entity)}
+                  className="typo-body-small text-text-link underline-offset-2 hover:underline"
+                >
+                  {entity.label}
+                </Link>
+                {entity.section === 'scenarios' && <VerificationLimits scenario={entity.record} />}
+              </span>
               {status && <StatusChip status={status} />}
             </li>
           );

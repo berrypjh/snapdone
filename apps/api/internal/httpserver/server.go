@@ -7,7 +7,7 @@ import (
 	"snapdone/api/internal/config"
 )
 
-// 설정된 주소와 기본 timeout을 적용한 HTTP 서버를 생성한다. Gin은 Handler로만 쓴다.
+// 설정된 주소와 기본 timeout을 적용한 HTTP 서버 생성. Gin은 Handler로만 사용.
 func New(cfg config.Config, deps Deps) *http.Server {
 	return &http.Server{
 		Addr:              cfg.Addr(),

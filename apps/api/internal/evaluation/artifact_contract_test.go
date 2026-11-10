@@ -13,7 +13,7 @@ import (
 )
 
 // Artifact v1 계약. golden은 실제 writer · Summarize · Compare가 만든 byte이고(EVAL_UPDATE_GOLDEN=1로 갱신),
-// DevHub의 TypeScript decoder(apps/devhub/src/lib/evaluations)도 같은 파일을 읽는다.
+// DevHub의 TypeScript decoder(apps/devhub/src/lib/evaluations)도 같은 파일을 읽음.
 
 var runGoldens = []struct {
 	dir  string
@@ -24,7 +24,7 @@ var runGoldens = []struct {
 	{"testdata/artifacts/translation-golden", Translation},
 }
 
-// comparison golden. replay-pair는 TestComparisonGolden이, 나머지는 TestComparisonGoldensForEveryShape가 만든다.
+// comparison golden. replay-pair는 TestComparisonGolden이, 나머지는 TestComparisonGoldensForEveryShape가 생성.
 var comparisonGoldens = []string{
 	"testdata/comparisons/replay-pair/comparison.json",
 	"testdata/comparisons/gate-failed/comparison.json",
@@ -34,7 +34,7 @@ var comparisonGoldens = []string{
 	"testdata/comparisons/incomparable/comparison.json",
 }
 
-// 파일 종류별 최상위 key. required가 빠지면 이름이 바뀌었거나 지워진 것이고, 목록에 없는 key는 새 field다.
+// 파일 종류별 최상위 key. required가 빠지면 이름이 바뀌었거나 지워진 것이고, 목록에 없는 key는 새 field.
 var frozenKeys = map[string]struct{ required, optional []string }{
 	"metadata": {
 		required: []string{"schemaVersion", "runId", "startedAt", "status", "finishedAt", "mode", "source", "dataset", "selectedCaseIds", "variants", "policy", "evaluatorPolicyHash", "labelContractHash", "sampling", "controls"},
@@ -56,7 +56,7 @@ var frozenKeys = map[string]struct{ required, optional []string }{
 	},
 }
 
-// text-extraction · translation run golden. 기록은 손으로 쓴 replay이고 dataset의 정답에서 만들지 않는다.
+// text-extraction · translation run golden. 기록은 손으로 쓴 replay이고 dataset의 정답에서 만들지 않음.
 func TestTextAndTranslationRunGoldens(t *testing.T) {
 	text, _ := replayText(t, t.TempDir(), "text-golden", "tv", replayMap{
 		"tv/ocr-1": textObs("테스트 카페\r\n합계  12,800원", map[string]string{"합계": "12,800원", "store": "테스트카페"}),
@@ -65,7 +65,7 @@ func TestTextAndTranslationRunGoldens(t *testing.T) {
 	})
 	matchRunGolden(t, "testdata/artifacts/text-golden", text.Dir())
 
-	// tr-3은 기록이 없어 not-run이다 — partial run의 모양도 golden에 남긴다.
+	// tr-3은 기록이 없어 not-run — partial run의 모양도 golden에 기록.
 	translation := replayTranslation(t, t.TempDir(), "translation-golden", replayMap{
 		"tv/tr-1": {Task: Translation, Status: Completed, TextOutput: translated("9월 25일에 엘리베이터가 멈춥니다.", "ko")},
 		"tv/tr-2": {Task: Translation, Status: Completed, TextOutput: translated("기다려 주셔서 감사합니다.", "")},
@@ -73,7 +73,7 @@ func TestTextAndTranslationRunGoldens(t *testing.T) {
 	matchRunGolden(t, "testdata/artifacts/translation-golden", translation.Dir())
 }
 
-// 모든 golden이 엄격한 decoder를 통과하고, summary는 raw 두 파일에서 같은 byte로 다시 만들어진다.
+// 모든 golden이 엄격한 decoder를 통과하고, summary는 raw 두 파일에서 같은 byte로 다시 생성됨.
 func TestArtifactV1GoldensDecode(t *testing.T) {
 	for _, g := range runGoldens {
 		t.Run(filepath.Base(g.dir), func(t *testing.T) {
@@ -135,8 +135,8 @@ func TestArtifactV1GoldensDecode(t *testing.T) {
 	}
 }
 
-// field를 지우거나 이름을 바꾸면 여기서 실패한다. 새 field는 frozenKeys와 계약 문서에 선택 field로 더하거나
-// schemaVersion을 올린다.
+// field를 지우거나 이름을 바꾸면 여기서 실패. 새 field는 frozenKeys와 계약 문서에 선택 field로 더하거나
+// schemaVersion을 올림.
 func TestArtifactV1FieldsAreFrozen(t *testing.T) {
 	check := func(kind, where string, object map[string]any) {
 		t.Helper()
@@ -168,8 +168,8 @@ func TestArtifactV1FieldsAreFrozen(t *testing.T) {
 	}
 }
 
-// availability는 알려진 값뿐이고, measured는 값(0 포함)이 있고 나머지는 값이 null이다. golden에 measured 0과
-// 값 없는 unavailable이 둘 다 있어 DevHub decoder가 둘을 구분하는지 같은 파일로 확인할 수 있다.
+// availability는 알려진 값뿐이고, measured는 값(0 포함)이 있고 나머지는 값이 null. golden에 measured 0과
+// 값 없는 unavailable이 둘 다 있어 DevHub decoder가 둘을 구분하는지 같은 파일로 확인 가능.
 func TestArtifactV1MeasuredZeroIsNotMissing(t *testing.T) {
 	zeros, missing := 0, 0
 	var walk func(where string, v any)
@@ -210,7 +210,7 @@ func TestArtifactV1MeasuredZeroIsNotMissing(t *testing.T) {
 	}
 }
 
-// 모르는 schemaVersion은 조용히 읽지 않고 버전을 말하는 오류로 거절한다.
+// 모르는 schemaVersion은 조용히 읽지 않고 버전을 말하는 오류로 거절.
 func TestArtifactV1RejectsUnknownSchemaVersion(t *testing.T) {
 	g := runGoldens[0].dir
 	bump := func(data []byte) []byte {
@@ -224,7 +224,7 @@ func TestArtifactV1RejectsUnknownSchemaVersion(t *testing.T) {
 	if _, err := DecodeCaseResult(bytes.NewReader(bump(line)), contract); err == nil || !strings.Contains(err.Error(), "case result schemaVersion 2 is not supported (want 1)") {
 		t.Errorf("case v2: %v", err)
 	}
-	// report · compare가 쓰는 경로도 같은 오류로 멈춘다.
+	// report · compare가 쓰는 경로도 같은 오류로 멈춤.
 	dir := t.TempDir()
 	for _, name := range []string{metadataFile, casesFile} {
 		data := read(t, filepath.Join(g, name))
@@ -240,7 +240,7 @@ func TestArtifactV1RejectsUnknownSchemaVersion(t *testing.T) {
 	}
 }
 
-// golden에는 credential · 헤더 · 사진 byte가 없다.
+// golden에는 credential · 헤더 · 사진 byte 없음.
 func TestArtifactV1GoldensCarryNoSecret(t *testing.T) {
 	for _, path := range goldenJSONFiles(t) {
 		data := string(read(t, path))
@@ -252,29 +252,29 @@ func TestArtifactV1GoldensCarryNoSecret(t *testing.T) {
 	}
 }
 
-// DevHub 비교 화면이 읽는 모양마다 golden 하나. 전부 실제 Compare가 만든 byte다(EVAL_UPDATE_GOLDEN=1로 갱신).
+// DevHub 비교 화면이 읽는 모양마다 golden 하나. 전부 실제 Compare가 만든 byte(EVAL_UPDATE_GOLDEN=1로 갱신).
 func TestComparisonGoldensForEveryShape(t *testing.T) {
 	gold := map[string][2]string{"a": {"event", "add_to_calendar"}, "b": {"place", "save_place"}, "c": {"receipt", "record_expense"}}
 	good := map[string]sideResult{"a": done("event", "add_to_calendar"), "b": done("place", "save_place"), "c": done("receipt", "record_expense")}
 	worse := map[string]sideResult{"a": done("event", "add_to_calendar"), "b": done("event", "add_to_calendar"), "c": {Failed, "", ""}}
 	gate := &GatePolicy{Version: "gate-example-v1", MaxNewCriticalErrors: new(int), MaxPassRateDropPP: f(5)}
 
-	// 후보가 나빠져 pass rate gate가 실패한다.
+	// 후보가 나빠져 pass rate gate가 실패.
 	b, c := pairedRuns(t, gold, good, worse)
 	matchComparisonGolden(t, "gate-failed", compare(t, b, c, CompareRequest{ComparisonID: "gate-failed", Gate: gate}))
 
-	// 한쪽이 partial이면 짝이 맞는 case만 서술하고 gate를 적용하지 않는다.
+	// 한쪽이 partial이면 짝이 맞는 case만 서술하고 gate를 적용하지 않음.
 	b, c = pairedRuns(t, gold, good, map[string]sideResult{"a": done("event", "add_to_calendar"), "b": done("place", "save_place"), "c": {NotRun, "", ""}})
 	c.Meta.Status = RunPartial
 	c.Summary, _ = SummarizeResults(c.Meta, c.Results, contract)
 	matchComparisonGolden(t, "partial-pair", compare(t, b, c, CompareRequest{ComparisonID: "partial-pair", AllowPartial: true, Gate: gate}))
 
-	// 고른 case가 다르면 비교하지 않고 이유만 남긴다.
+	// 고른 case가 다르면 비교하지 않고 이유만 기록.
 	b, c = pairedRuns(t, gold, good, good)
 	c.Meta.Dataset.SelectionHash = strings.Repeat("f", 64)
 	matchComparisonGolden(t, "incomparable", compare(t, b, c, CompareRequest{ComparisonID: "incomparable", Gate: gate}))
 
-	// text · 번역은 replay라 지연 · token 축을 비교하지 않는다.
+	// text · 번역은 replay라 지연 · token 축을 비교하지 않음.
 	root := t.TempDir()
 	tb, _ := replayText(t, root, "text-base", "tv", replayMap{
 		"tv/ocr-1": textObs("테스트 카페 합계 12,800원", map[string]string{"total": "12,800원", "store": "테스트 카페"}),
@@ -389,7 +389,7 @@ func goldenJSONFiles(t *testing.T) []string {
 	return files
 }
 
-// JSONL은 줄마다, 나머지는 파일 하나가 객체 하나다.
+// JSONL은 줄마다, 나머지는 파일 하나가 객체 하나.
 func jsonObjects(t *testing.T, path string) []map[string]any {
 	t.Helper()
 	data := read(t, path)

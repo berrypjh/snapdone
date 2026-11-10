@@ -15,7 +15,7 @@ func TestParseResult(t *testing.T) {
 	}
 }
 
-// facts가 없으면 빈 목록이다. 앱은 배열을 기대한다.
+// facts가 없으면 빈 목록. 앱은 배열을 기대.
 func TestParseResultEmptyFacts(t *testing.T) {
 	got, err := parseResult(`{"category":"other","facts":null,"suggestedAction":"none","confidence":"low"}`)
 	if err != nil {
@@ -26,7 +26,7 @@ func TestParseResultEmptyFacts(t *testing.T) {
 	}
 }
 
-// 모델이 스키마를 지키지 않았으면 결과로 쓰지 않는다.
+// 모델이 스키마를 지키지 않았으면 결과로 쓰지 않음.
 func TestParseResultRejectsOutsideTheContract(t *testing.T) {
 	for name, text := range map[string]string{
 		"not json":         `{"category":`,

@@ -11,32 +11,32 @@ import (
 	"slices"
 )
 
-// 예시는 많아야 이만큼이다. 지시가 예시로 가득 차지 않게 한다.
+// 예시는 많아야 이만큼. 지시가 예시로 가득 차지 않게 함.
 const maxExamples = 5
 
 // 사진을 줄여 비교하는 격자 한 변의 칸 수.
 const featureGrid = 16
 
-// 비슷한 사례 하나. Answer는 그 사례의 정답이고, 질문 case의 정답은 어디에도 없다.
+// 비슷한 사례 하나. Answer는 그 사례의 정답이고, 질문 case의 정답은 어디에도 없음.
 type Example struct {
 	CaseID     string
 	Similarity float64
 	Answer     ClassificationPrediction
 }
 
-// case 하나에 붙인 예시의 기록. 산출물의 cases.jsonl에 남고 요약이 여기서 검색 품질을 다시 잰다.
+// case 하나에 붙인 예시의 기록. 산출물의 cases.jsonl에 남고 요약이 여기서 검색 품질을 다시 측정.
 type RetrievalTrace struct {
 	Examples []RetrievedExample `json:"examples"`
 }
 
 type RetrievedExample struct {
 	CaseID string `json:"caseId"`
-	// 예시 사례의 정답 category. 질문 case의 정답과 같으면 맞는 예시로 센다.
+	// 예시 사례의 정답 category. 질문 case의 정답과 같으면 맞는 예시로 집계.
 	Category   string  `json:"category"`
 	Similarity float64 `json:"similarity"`
 }
 
-// 예시를 찾는 곳. dataset의 dev split에서 채점 자격이 있는 사진 분류 case만 담는다.
+// 예시를 찾는 곳. dataset의 dev split에서 채점 자격이 있는 사진 분류 case만 담음.
 type exampleBank struct {
 	entries []bankEntry
 }
@@ -64,7 +64,7 @@ func newExampleBank(cases []LoadedCase) (*exampleBank, error) {
 	return bank, nil
 }
 
-// 질문 case와 가장 비슷한 k개. 자신과 같은 원본 묶음은 빼서 답이 새지 않게 한다. 같은 점수는 id 순이다.
+// 질문 case와 가장 비슷한 k개. 자신과 같은 원본 묶음은 빼서 답이 새지 않게 함. 같은 점수는 id 순.
 func (b *exampleBank) nearest(query LoadedCase, k int) ([]Example, error) {
 	vector, err := imageVector(query.Image)
 	if err != nil {
@@ -89,7 +89,7 @@ func (b *exampleBank) nearest(query LoadedCase, k int) ([]Example, error) {
 	return found[:min(k, len(found))], nil
 }
 
-// 예시 사례의 정답을 예측 모양으로. 행동은 canonical, unresolved면 none이고 facts는 첫 허용 값이다.
+// 예시 사례의 정답을 예측 모양으로. 행동은 canonical, unresolved면 none이고 facts는 첫 허용 값.
 func answerOf(c Case) ClassificationPrediction {
 	e := c.Expected.Classification
 	answer := ClassificationPrediction{Category: e.Category, SuggestedAction: "none", Confidence: "high", Facts: []ClassificationFact{}}
@@ -110,7 +110,7 @@ func traceOf(examples []Example) *RetrievalTrace {
 	return t
 }
 
-// 사진을 featureGrid² 칸의 밝기 평균으로 줄이고, 평균을 빼 길이 1로 맞춘다. 배치가 닮은 사진이 가깝다.
+// 사진을 featureGrid² 칸의 밝기 평균으로 줄이고, 평균을 빼 길이 1로 맞춤. 배치가 닮은 사진이 가까움.
 func imageVector(data []byte) ([]float64, error) {
 	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
@@ -151,14 +151,14 @@ func imageVector(data []byte) ([]float64, error) {
 	return sums, nil
 }
 
-// 격자 칸 하나가 덮는 픽셀 범위. 사진이 격자보다 작아도 칸마다 픽셀이 하나 이상 있다.
+// 격자 칸 하나가 덮는 픽셀 범위. 사진이 격자보다 작아도 칸마다 픽셀이 하나 이상 있음.
 func span(start, length, cell int) (int, int) {
 	from := start + cell*length/featureGrid
 	to := start + (cell+1)*length/featureGrid
 	return from, max(to, from+1)
 }
 
-// 길이 1인 두 vector의 cosine. 한쪽이 0 vector면 0이다.
+// 길이 1인 두 vector의 cosine. 한쪽이 0 vector면 0.
 func cosine(a, b []float64) float64 {
 	dot := 0.0
 	for i := range a {
@@ -177,7 +177,7 @@ type RetrievalMetrics struct {
 	// 예시 중 하나라도 맞은 case.
 	AnyCorrect int     `json:"anyCorrect"`
 	HitRate    Measure `json:"hitRate"`
-	// 첫 맞는 예시 순위의 역수 평균. 맞는 예시가 없으면 0으로 더한다.
+	// 첫 맞는 예시 순위의 역수 평균. 맞는 예시가 없으면 0으로 더함.
 	MeanReciprocalRank Measure `json:"meanReciprocalRank"`
 }
 
@@ -206,7 +206,7 @@ func (t *retrievalTally) add(gold string, trace *RetrievalTrace) {
 	}
 }
 
-// 예시를 붙인 case가 없으면 nil이다(검색을 쓰지 않은 variant).
+// 예시를 붙인 case가 없으면 nil(검색을 쓰지 않은 variant).
 func (t *retrievalTally) finish() *RetrievalMetrics {
 	if !t.active {
 		return nil
@@ -218,7 +218,7 @@ func (t *retrievalTally) finish() *RetrievalMetrics {
 	return &m
 }
 
-// 모델 없이 검색만 잰다. split의 채점 가능한 case마다 dev에서 k개를 찾는다. 네트워크를 쓰지 않는다.
+// 모델 없이 검색만 측정. split의 채점 가능한 case마다 dev에서 k개를 찾음. 네트워크를 쓰지 않음.
 func ProbeRetrieval(ds Dataset, split Split, k int) (RetrievalMetrics, map[string]*RetrievalTrace, error) {
 	if k < 1 || k > maxExamples {
 		return RetrievalMetrics{}, nil, fmt.Errorf("evaluation: k must be 1 to %d", maxExamples)

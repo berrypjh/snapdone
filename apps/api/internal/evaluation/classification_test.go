@@ -50,7 +50,7 @@ func TestAccuracyDiffersFromMacroF1(t *testing.T) {
 	}
 }
 
-// 실패 · timeout · 미실행은 정답 0이고 분모에 남는다. 성공한 응답만으로 나누지 않는다.
+// 실패 · timeout · 미실행은 정답 0이고 분모에 남음. 성공한 응답만으로 나누지 않음.
 func TestErrorsStayInTheDenominator(t *testing.T) {
 	cases := []Case{
 		resolved("a", "place", "save_place"), resolved("b", "place", "save_place"),
@@ -60,7 +60,7 @@ func TestErrorsStayInTheDenominator(t *testing.T) {
 		"a": predicted("place", "save_place", "high"),
 		"b": failed(Failed),
 		"c": failed(TimedOut),
-		// d는 돌리지 않았다.
+		// d는 돌리지 않음.
 	}
 	s, contributions := evaluate(cases, obs)
 	if s.Selected != 4 || s.Evaluated != 3 || s.NotRun != 1 || s.Complete || s.Predicted != 1 || s.Category.Invalid != 3 {
@@ -106,7 +106,7 @@ func TestAllInvalidAndZeroDenominator(t *testing.T) {
 	}
 }
 
-// canonical EM과 accepted accuracy는 다르다. adjudicated case의 대안은 accepted이지만 canonical은 아니다.
+// canonical EM과 accepted accuracy는 다름. adjudicated case의 대안은 accepted이지만 canonical은 아님.
 func TestCanonicalVersusAcceptedAction(t *testing.T) {
 	cases := []Case{
 		resolved("wrong-action", "event", "add_to_calendar"),
@@ -162,7 +162,7 @@ func TestCanonicalVersusAcceptedAction(t *testing.T) {
 	}
 }
 
-// forbiddenActions 추천은 critical이고, timeout은 위험을 지운 것이 아니라 보지 못한 것이다.
+// forbiddenActions 추천은 critical이고, timeout은 위험을 지운 것이 아니라 보지 못한 것.
 func TestRiskCountsCriticalAndUnobserved(t *testing.T) {
 	cases := []Case{
 		gold("forbidden", "shopping", Unresolved, []string{}, []string{"record_expense"}),
@@ -201,7 +201,7 @@ func TestRiskCountsCriticalAndUnobserved(t *testing.T) {
 		t.Errorf("passed = %d, want safe and no-risk only", s.Passed)
 	}
 
-	// timeout 하나가 더 있어도 관측 기준 위험률은 그대로이고 보수적 비율은 오른다.
+	// timeout 하나가 더 있어도 관측 기준 위험률은 그대로이고 보수적 비율은 오름.
 	cases = append(cases, resolved("timed-out-2", "place", "save_place", "record_expense"))
 	obs["timed-out-2"] = failed(TimedOut)
 	again, _ := evaluate(cases, obs)
@@ -210,7 +210,7 @@ func TestRiskCountsCriticalAndUnobserved(t *testing.T) {
 	}
 }
 
-// schema가 틀려도 production이 받았으면 pass이고(v1), 판정은 따로 집계된다. policy가 요구하면 fail.
+// schema가 틀려도 production이 받았으면 pass이고(v1), 판정은 따로 집계됨. policy가 요구하면 fail.
 func TestSchemaInvalidButAccepted(t *testing.T) {
 	cases := []Case{resolved("a", "event", "add_to_calendar"), resolved("b", "event", "add_to_calendar")}
 	shapeInvalid := predicted("event", "add_to_calendar", "high")
@@ -234,7 +234,7 @@ func TestSchemaInvalidButAccepted(t *testing.T) {
 	}
 }
 
-// 계약 밖의 결과는 __invalid__로 가고 enum에 더해지지 않는다.
+// 계약 밖의 결과는 __invalid__로 가고 enum에 더해지지 않음.
 func TestOutOfContractResultIsInvalid(t *testing.T) {
 	cases := []Case{resolved("a", "place", "save_place")}
 	odd := predicted("food", "save_place", "high")
@@ -247,7 +247,7 @@ func TestOutOfContractResultIsInvalid(t *testing.T) {
 	}
 }
 
-// 집계는 그대로 JSON이 되고, 0인 비율이 사라지지 않는다.
+// 집계는 그대로 JSON이 되고, 0인 비율이 사라지지 않음.
 func TestSummaryRoundTrip(t *testing.T) {
 	s, _ := evaluate([]Case{resolved("a", "place", "save_place")}, map[string]Observation{"a": failed(Failed)})
 	encoded, err := json.Marshal(s)
@@ -265,7 +265,7 @@ func TestSummaryRoundTrip(t *testing.T) {
 	}
 }
 
-// testdata의 검산표를 그대로 계산해 비교한다. 표는 사람이 읽고 다시 셀 수 있다.
+// testdata의 검산표를 그대로 계산해 비교. 표는 사람이 읽고 다시 셀 수 있음.
 func TestPredictionsFixture(t *testing.T) {
 	raw, err := os.ReadFile("testdata/predictions/imbalanced.json")
 	if err != nil {

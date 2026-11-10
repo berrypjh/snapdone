@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-// fakeChat은 받은 요청을 기록하고 상태 코드 · finish reason · content로 Chat Completions 응답을 만든다.
+// fakeChat은 받은 요청 기록, 상태 코드 · finish reason · content로 Chat Completions 응답 생성.
 func fakeChat(t *testing.T, apiKey string, status int, finish, content string) (*OpenAIClassifier, *http.Request, *map[string]any) {
 	t.Helper()
 	var seen http.Request
@@ -45,7 +45,7 @@ func TestOpenAIClassifyReturnsResult(t *testing.T) {
 	}
 }
 
-// 같은 지시 · 사진 · 결과 schema를 Chat Completions 형식으로 보낸다.
+// 같은 지시 · 사진 · 결과 schema를 Chat Completions 형식으로 전송.
 func TestOpenAIClassifyRequestShape(t *testing.T) {
 	classifier, seen, body := fakeChat(t, "test-key", http.StatusOK, "stop", resultJSON)
 	if _, err := classifier.Classify(context.Background(), []byte("png-bytes"), "image/png"); err != nil {
@@ -75,7 +75,7 @@ func TestOpenAIClassifyRequestShape(t *testing.T) {
 	}
 }
 
-// 로컬 서버처럼 키가 없으면 Authorization을 보내지 않는다.
+// 로컬 서버처럼 키가 없으면 Authorization 생략.
 func TestOpenAIClassifyWithoutKey(t *testing.T) {
 	classifier, seen, _ := fakeChat(t, "", http.StatusOK, "stop", resultJSON)
 	if _, err := classifier.Classify(context.Background(), []byte("x"), "image/png"); err != nil {

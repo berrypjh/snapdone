@@ -6,29 +6,29 @@ import (
 	"unicode/utf8"
 )
 
-// 공백 정규화 규칙의 이름. 규칙이 바뀌면 이름도 바꾼다.
+// 공백 정규화 규칙의 이름. 규칙이 바뀌면 이름도 바꿈.
 const NormalizationWhitespaceV1 = "text-ws-v1"
 
-// Unicode 정규화는 하지 않는다. 한글 완성형(NFC)과 분해형(NFD)은 다른 문자열이다. NFC는 v2에서 x/text 승인 뒤 따로 둔다.
+// Unicode 정규화는 하지 않음. 한글 완성형(NFC)과 분해형(NFD)은 다른 문자열. NFC는 v2에서 x/text 승인 뒤 따로 둠.
 const UnicodeNormalizationNone = "none"
 
-// 텍스트 하나의 rune 상한. 편집 거리는 O(n·m) 시간 · O(min(n, m)) 메모리라 이보다 긴 글은 재지 않는다.
+// 텍스트 하나의 rune 상한. 편집 거리는 O(n·m) 시간 · O(min(n, m)) 메모리라 이보다 긴 글은 재지 않음.
 const maxTextRunes = 10000
 
-// 텍스트 과제의 모델 출력. TargetLanguage는 번역 출력이 선언한 언어이고 감지 결과가 아니다.
+// 텍스트 과제의 모델 출력. TargetLanguage는 번역 출력이 선언한 언어이고 감지 결과가 아님.
 type TextOutput struct {
 	Text           string            `json:"text"`
 	Fields         map[string]string `json:"fields,omitempty"`
 	TargetLanguage string            `json:"targetLanguage,omitempty"`
 }
 
-// CRLF · CR을 줄바꿈으로 보고, 모든 Unicode 공백의 연속을 공백 하나로 접고, 양끝을 자른다.
-// 구두점 · 대소문자 · 통화 · 숫자는 그대로다.
+// CRLF · CR을 줄바꿈으로 보고, 모든 Unicode 공백의 연속을 공백 하나로 접고, 양끝을 자름.
+// 구두점 · 대소문자 · 통화 · 숫자는 그대로.
 func normalizeWhitespaceV1(s string) string {
 	return strings.Join(strings.Fields(s), " ")
 }
 
-// rune 단위 Levenshtein 거리. 두 줄만 쓰는 DP다. byte나 자모 · grapheme이 아니라 코드포인트다.
+// rune 단위 Levenshtein 거리. 두 줄만 쓰는 DP. byte나 자모 · grapheme이 아니라 코드포인트.
 func runeEditDistance(a, b []rune) int {
 	if len(a) < len(b) {
 		a, b = b, a
@@ -73,7 +73,7 @@ func tokenID(ids map[string]rune, s string) rune {
 	return id
 }
 
-// 텍스트 case 하나의 판정. 편집 수와 길이를 그대로 남겨 corpus 비율을 다시 낼 수 있다.
+// 텍스트 case 하나의 판정. 편집 수와 길이를 그대로 남겨 corpus 비율을 다시 낼 수 있음.
 type TextOutcome struct {
 	Normalization string `json:"normalization"`
 	Unicode       string `json:"unicode"`
@@ -81,11 +81,11 @@ type TextOutcome struct {
 	// 원문 그대로 같은지 · 공백 정규화 뒤 같은지.
 	RawExactMatch        Measure `json:"rawExactMatch"`
 	NormalizedExactMatch Measure `json:"normalizedExactMatch"`
-	// 정규화한 텍스트의 rune 편집 거리와 길이. 예측이 없거나 상한을 넘으면 0이고 CER가 이유를 말한다.
+	// 정규화한 텍스트의 rune 편집 거리와 길이. 예측이 없거나 상한을 넘으면 0이고 CER가 이유를 말함.
 	CharEdits int `json:"charEdits"`
 	RefChars  int `json:"refChars"`
 	HypChars  int `json:"hypChars"`
-	// CharEdits / RefChars. 삽입이 많으면 1을 넘고 자르지 않는다. 정답이 비면 not-applicable.
+	// CharEdits / RefChars. 삽입이 많으면 1을 넘고 자르지 않음. 정답이 비면 not-applicable.
 	CER Measure `json:"cer"`
 	// 정답이 빈 텍스트일 때 모델이 지어낸 문자 · 단어 수.
 	HallucinatedChars int    `json:"hallucinatedChars"`
@@ -118,7 +118,7 @@ type FieldDetail struct {
 	Predicted string `json:"predicted,omitempty"`
 }
 
-// 정답과 출력으로 case 판정을 낸다. 출력이 nil이면 예측이 없는 것이다.
+// 정답과 출력으로 case 판정을 냄. 출력이 nil이면 예측이 없는 것.
 func EvaluateText(expected TextExpected, out *TextOutput) TextOutcome {
 	o := TextOutcome{Normalization: NormalizationWhitespaceV1, Unicode: UnicodeNormalizationNone, Tokenizer: string(expected.Tokenizer)}
 	none := Missing(Unavailable, "no prediction")
@@ -166,7 +166,7 @@ func EvaluateText(expected TextExpected, out *TextOutput) TextOutcome {
 	return o
 }
 
-// id 또는 승인된 alias로 예측 값을 찾고, 공백 정규화 뒤 acceptedValues 중 하나면 맞다.
+// id 또는 승인된 alias로 예측 값을 찾고, 공백 정규화 뒤 acceptedValues 중 하나면 맞음.
 func evaluateFields(fields []ExpectedField, predicted map[string]string) *FieldOutcome {
 	f := &FieldOutcome{Total: len(fields), Details: []FieldDetail{}}
 	for _, field := range fields {
@@ -218,7 +218,7 @@ func acceptedValue(field ExpectedField, value string) bool {
 	return false
 }
 
-// 텍스트 pass 규칙 v1 — 공백 정규화 뒤 정확히 같고, field 계약이 있으면 전부 맞음. 허용 오차는 없다.
+// 텍스트 pass 규칙 v1 — 공백 정규화 뒤 정확히 같고, field 계약이 있으면 전부 맞음. 허용 오차는 없음.
 var DefaultTextPolicy = ScoringPolicy{Version: "text-pass-v1"}
 
 type TextContribution struct {
@@ -273,7 +273,7 @@ func contributeText(c Case, obs Observation, ran bool) TextContribution {
 	return k
 }
 
-// 한 split · variant · trial의 텍스트 집계. corpus 비율은 합의 비율이고 case 평균과 이름을 나눈다. category · action 열은 없다.
+// 한 split · variant · trial의 텍스트 집계. corpus 비율은 합의 비율이고 case 평균과 이름을 구분. category · action 열은 없음.
 type TextSummary struct {
 	Policy        ScoringPolicy `json:"policy"`
 	Normalization string        `json:"normalization"`
@@ -313,29 +313,29 @@ type TextSummary struct {
 	ImportantCorrect     int     `json:"importantCorrect"`
 	FieldAccuracy        Measure `json:"fieldAccuracy"`
 	ImportantFieldRecall Measure `json:"importantFieldRecall"`
-	// field id별 집계. field 계약이 있는 case가 없으면 빠진다(v1 선택 field).
+	// field id별 집계. field 계약이 있는 case가 없으면 빠짐(v1 선택 field).
 	FieldStats []FieldStat `json:"fieldStats,omitempty"`
 
 	Passed   int     `json:"passed"`
 	PassRate Measure `json:"passRate"`
 }
 
-// field id 하나의 집계 — 어느 field가 자주 틀리는지 본다. case 판정(evaluateFields)을 그대로 세고 새로 맞춰 보지 않는다.
+// field id 하나의 집계 — 어느 field가 자주 틀리는지 확인. case 판정(evaluateFields)을 그대로 세고 새로 맞춰 보지 않음.
 type FieldStat struct {
 	ID string `json:"id"`
 	// 이 field를 계약에 둔 case 수와, 그중 important로 둔 수.
 	Support   int `json:"support"`
 	Important int `json:"important"`
-	// 예측이 있어 판정한 수. support - evaluated는 실행 실패 · 미실행이라 판정하지 못한 case다.
+	// 예측이 있어 판정한 수. support - evaluated는 실행 실패 · 미실행이라 판정하지 못한 case.
 	Evaluated int `json:"evaluated"`
 	Correct   int `json:"correct"`
 	Wrong     int `json:"wrong"`
 	Missing   int `json:"missing"`
-	// Correct / Evaluated. field accuracy와 같은 분모 규칙이다.
+	// Correct / Evaluated. field accuracy와 같은 분모 규칙.
 	Accuracy Measure `json:"accuracy"`
 }
 
-// case들의 field 계약과 판정을 id별로 모은다. 순서는 id 순이다.
+// case들의 field 계약과 판정을 id별로 모음. 순서는 id 순.
 func fieldStats(cases []Case, contributions []TextContribution) []FieldStat {
 	byID := map[string]*FieldStat{}
 	for i, c := range cases {
@@ -448,7 +448,7 @@ func ratioOrNA(numerator, denominator float64, reason string) Measure {
 	return MeasuredValue(numerator / denominator)
 }
 
-// 문자열이 상한 안인지. dataset 검증과 replay fixture가 같은 기준을 쓴다.
+// 문자열이 상한 안인지. dataset 검증과 replay fixture가 같은 기준을 사용.
 func withinTextLimit(s string) bool {
 	return utf8.RuneCountInString(s) <= maxTextRunes
 }

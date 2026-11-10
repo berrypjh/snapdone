@@ -13,7 +13,7 @@ import (
 	"snapdone/api/internal/processing"
 )
 
-// 모델마다 정한 confidence로 답하는 openai 호환 가짜. 받은 요청을 모델 · system 지시로 모은다.
+// 모델마다 정한 confidence로 답하는 openai 호환 가짜. 받은 요청을 모델 · system 지시로 수집.
 type modelFake struct {
 	confidence map[string]string
 	models     []string
@@ -57,7 +57,7 @@ func invokeWith(t *testing.T, a *Adapter, examples []evaluation.Example) evaluat
 	return a.Invoke(ctx, evaluation.AdapterInput{Task: evaluation.ImageClassification, MediaType: "image/png", Image: []byte("png"), Examples: examples})
 }
 
-// 첫 모델이 불확실하면 두 번째 모델에 다시 묻고, 호출 · token은 두 번을 합친다. 확실하면 한 번으로 끝난다.
+// 첫 모델이 불확실하면 두 번째 모델에 다시 묻고, 호출 · token은 두 번을 합산. 확실하면 한 번으로 종료.
 func TestCascadeEscalatesOnlyUncertainAnswers(t *testing.T) {
 	cascade := &evaluation.CascadeConfig{Model: "large", EscalateOn: []string{"low", "medium"}}
 	for name, tc := range map[string]struct {
@@ -77,7 +77,7 @@ func TestCascadeEscalatesOnlyUncertainAnswers(t *testing.T) {
 			if obs.Calls != tc.calls || len(obs.Attempts) != tc.calls || len(fake.models) != tc.calls {
 				t.Errorf("calls = %d, attempts = %d, models = %v", obs.Calls, len(obs.Attempts), fake.models)
 			}
-			// 답한 것은 마지막으로 물은 모델이다.
+			// 답한 것은 마지막으로 물은 모델.
 			want := map[bool]string{true: "large", false: "small"}[tc.escalated]
 			if obs.RequestedModel != want || obs.EffectiveModel.Value != want {
 				t.Errorf("requested = %s, answered = %+v, want %s", obs.RequestedModel, obs.EffectiveModel, want)
@@ -89,7 +89,7 @@ func TestCascadeEscalatesOnlyUncertainAnswers(t *testing.T) {
 	}
 }
 
-// 실험 지시는 production 지시 대신 가고, 비슷한 사례는 그 끝에 힌트로 붙는다. 예시가 없으면 production 지시 그대로다.
+// 실험 지시는 production 지시 대신 가고, 비슷한 사례는 그 끝에 힌트로 붙음. 예시가 없으면 production 지시 그대로.
 func TestPromptAndExamplesReachTheModel(t *testing.T) {
 	fake := &modelFake{confidence: map[string]string{"small": "high"}}
 	transport := fake.transport()

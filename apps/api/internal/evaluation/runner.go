@@ -15,45 +15,45 @@ import (
 	"time"
 )
 
-// case 하나의 기본 상한. production 처리 상한(processing의 processTimeout)과 같다.
+// case 하나의 기본 상한. production 처리 상한(processing의 processTimeout)과 같음.
 const defaultCaseTimeout = 2 * time.Minute
 
-// run 전체를 멈춘 이유. not-run의 error.message로도 남아 요약이 raw에서 되찾는다.
+// run 전체를 멈춘 이유. not-run의 error.message로도 남아 요약이 raw에서 되찾음.
 const (
 	AbortCancelled = "cancelled"
 	AbortBudget    = "budget exhausted"
 )
 
-// 무엇을 어떻게 돌릴지. CLI가 채우고 NewPlan이 검증한다.
+// 무엇을 어떻게 돌릴지. CLI가 채우고 NewPlan이 검증.
 type RunRequest struct {
 	Dataset  Dataset
 	Variants []VariantManifest
 	Split    Split
-	// 비어 있으면 split 전부. 있으면 그 id만(선택 안의 id여야 한다).
+	// 비어 있으면 split 전부. 있으면 그 id만(선택 안의 id여야 함).
 	CaseIDs []string
-	// 0이면 전부. id 순으로 앞에서 자른다.
+	// 0이면 전부. id 순으로 앞에서 자름.
 	Limit  int
 	Trials int
-	// 채점 자격이 없는 case · held-out 허용. dataset.Select와 같다.
+	// 채점 자격이 없는 case · held-out 허용. dataset.Select와 같음.
 	AllowDrafts  bool
 	AllowHeldOut bool
 	Mode         Mode
-	// live 실행의 명시적 opt-in. 없으면 adapter를 만들지 않는다.
+	// live 실행의 명시적 opt-in. 없으면 adapter를 만들지 않음.
 	AllowAPI bool
 	// 실제 HTTP 왕복(SDK 재시도 포함)의 총 상한. live면 1 이상.
 	CallBudget  int
 	CaseTimeout time.Duration
 	Concurrency int
 	Policy      ScoringPolicy
-	// production 분류 계약. label hash와 채점의 기준이다.
+	// production 분류 계약. label hash와 채점의 기준.
 	Contract ClassificationContract
 	// replay 모드의 기록 출처.
 	Replay ReplaySource
-	// live 모드에서 이전 run의 끝난 결과. 있으면 그 invocation은 부르지 않고 옮긴다.
+	// live 모드에서 이전 run의 끝난 결과. 있으면 그 invocation은 부르지 않고 옮김.
 	Carry *Carry
 }
 
-// 기록된 관측을 돌려준다. 실측 latency · cost로 저장하지 않는다.
+// 기록된 관측을 반환. 실측 latency · cost로 저장하지 않음.
 type ReplaySource interface {
 	Lookup(variantID, caseID string, trial int) (Observation, bool)
 }
@@ -66,7 +66,7 @@ type PlannedVariant struct {
 	MissingCredential bool   `json:"missingCredential"`
 }
 
-// 실행 전에 확정한 것. 모델 API를 부르지 않고 만든다.
+// 실행 전에 확정한 것. 모델 API를 부르지 않고 생성.
 type Plan struct {
 	Mode            Mode             `json:"mode"`
 	Dataset         DatasetSelection `json:"dataset"`
@@ -78,7 +78,7 @@ type Plan struct {
 	AllowAPI      bool `json:"allowApi"`
 	CallBudget    int  `json:"callBudget"`
 	CaseTimeoutMs int  `json:"caseTimeoutMs"`
-	// 이 상태로는 실행할 수 없는 이유. 비어 있어야 Run이 돈다.
+	// 이 상태로는 실행할 수 없는 이유. 비어 있어야 Run이 실행됨.
 	Preflight []string `json:"preflight"`
 
 	cases        []LoadedCase
@@ -90,7 +90,7 @@ type Plan struct {
 	allowHeldOut bool
 }
 
-// 요청을 검증하고 case를 고른다. 같은 요청은 같은 SelectedCaseIDs와 hash를 낸다.
+// 요청을 검증하고 case를 선택. 같은 요청은 같은 SelectedCaseIDs와 hash를 냄.
 func NewPlan(req RunRequest) (Plan, error) {
 	if req.Trials == 0 {
 		req.Trials = 1
@@ -189,7 +189,7 @@ func NewPlan(req RunRequest) (Plan, error) {
 	return plan, nil
 }
 
-// id 필터와 limit. 순서는 Select가 정한 id 순 그대로다.
+// id 필터와 limit. 순서는 Select가 정한 id 순 그대로.
 func filterCases(all []LoadedCase, ids []string, limit int) ([]LoadedCase, error) {
 	chosen := all
 	if len(ids) > 0 {
@@ -215,7 +215,7 @@ func filterCases(all []LoadedCase, ids []string, limit int) ([]LoadedCase, error
 	return chosen, nil
 }
 
-// variant × case × trial 하나의 결과. Ran이 거짓이면 관측이 없고 Reason이 이유다.
+// variant × case × trial 하나의 결과. Ran이 거짓이면 관측이 없고 Reason이 이유.
 type InvocationResult struct {
 	VariantID   string       `json:"variantId"`
 	CaseID      string       `json:"caseId"`
@@ -242,11 +242,11 @@ type RunCounts struct {
 	Skipped   int `json:"skipped"`
 	NotRun    int `json:"notRun"`
 	WireCalls int `json:"wireCalls"`
-	// 이전 run에서 호출 없이 옮긴 결과. Completed에도 들어 있다.
+	// 이전 run에서 호출 없이 옮긴 결과. Completed에도 들어 있음.
 	Carried int `json:"carried"`
 }
 
-// 알려진 usage의 합과 그 범위. Unknown이 0이 아니면 합은 전체가 아니다.
+// 알려진 usage의 합과 그 범위. Unknown이 0이 아니면 합은 전체가 아님.
 type UsageCoverage struct {
 	InputTokens  Measure `json:"inputTokens"`
 	OutputTokens Measure `json:"outputTokens"`
@@ -259,23 +259,23 @@ type RunReport struct {
 	Plan     Plan               `json:"plan"`
 	Results  []InvocationResult `json:"results"`
 	Counts   RunCounts          `json:"counts"`
-	// 중단 이유("cancelled" · "budget exhausted"). 비어 있으면 끝까지 돌았다.
+	// 중단 이유("cancelled" · "budget exhausted"). 비어 있으면 끝까지 실행됨.
 	Abort string        `json:"abort,omitempty"`
 	Usage UsageCoverage `json:"usage"`
 	Cost  Measure       `json:"cost"`
 }
 
-// 실행 시점에 바꿔 끼우는 것. 테스트는 시계 · id · adapter를 가짜로 준다.
+// 실행 시점에 바꿔 끼우는 것. 테스트는 시계 · id · adapter를 가짜로 주입.
 type Deps struct {
 	Now      func() time.Time
 	NewRunID func() string
-	// live adapter 생성자. replay만 돌리면 nil이어도 된다.
+	// live adapter 생성자. replay만 돌리면 nil이어도 됨.
 	NewAdapter AdapterFactory
 	Source     Source
 }
 
-// 결과를 받는 곳. Begin은 첫 호출 전에, Result는 invocation마다 채점을 마친 CaseResult로 순서대로 불린다.
-// 오류를 돌려주면 run이 멈춘다.
+// 결과를 받는 곳. Begin은 첫 호출 전에, Result는 invocation마다 채점을 마친 CaseResult로 순서대로 호출됨.
+// 오류를 반환하면 run이 멈춤.
 type Sink interface {
 	Begin(meta RunMetadata) error
 	Result(result CaseResult) error
@@ -290,8 +290,8 @@ func (f ResultFunc) Result(r CaseResult) error {
 	return nil
 }
 
-// plan을 순서대로 돈다. variant → case → trial. 자체 재시도는 없고, 중단되면 남은 것은 not-run이다.
-// sink가 쓰기에 실패하면 그 자리에서 오류로 끝나고 성공으로 보고하지 않는다.
+// plan을 순서대로 실행. variant → case → trial. 자체 재시도는 없고, 중단되면 남은 것은 not-run.
+// sink가 쓰기에 실패하면 그 자리에서 오류로 끝나고 성공으로 보고하지 않음.
 func Run(ctx context.Context, req RunRequest, deps Deps, sink Sink) (RunReport, error) {
 	plan, err := NewPlan(req)
 	if err != nil {
@@ -346,12 +346,12 @@ type runner struct {
 	sink    Sink
 	inputs  int
 	outputs int
-	// 예시를 찾는 곳. retrieval을 쓰는 variant가 처음 돌 때 만든다.
+	// 예시를 찾는 곳. retrieval을 쓰는 variant가 처음 돌 때 생성.
 	bank *exampleBank
 }
 
 func (r *runner) runVariant(v VariantManifest) error {
-	// 첫 실제 호출 때 만든다. 결과를 전부 옮겨 오는 variant는 만들지 않는다.
+	// 첫 실제 호출 때 생성. 결과를 전부 옮겨 오는 variant는 만들지 않음.
 	var adapter Adapter
 	for _, c := range r.plan.cases {
 		for trial := 1; trial <= r.plan.Trials; trial++ {
@@ -371,7 +371,7 @@ func (r *runner) runVariant(v VariantManifest) error {
 				r.report.Abort = AbortCancelled
 				result.Reason = r.report.Abort
 			case r.plan.Mode == Replay:
-				// replay는 기록을 다시 채점할 뿐이라 live adapter가 없는 task도 돈다.
+				// replay는 기록을 다시 채점할 뿐이라 live adapter가 없는 task도 실행됨.
 				obs, found := r.req.Replay.Lookup(v.ID, c.ID, trial)
 				if !found {
 					result.Reason = "no replay record"
@@ -400,7 +400,7 @@ func (r *runner) runVariant(v VariantManifest) error {
 	return nil
 }
 
-// baseline은 여기서 만들고, 모델을 부르는 adapter는 주입된 생성자가 만든다.
+// baseline은 여기서 만들고, 모델을 부르는 adapter는 주입된 생성자가 생성.
 func (r *runner) adapterFor(v VariantManifest) (Adapter, error) {
 	if v.Config.Retrieval != nil && r.bank == nil {
 		bank, err := newExampleBank(r.req.Dataset.Cases)
@@ -418,7 +418,7 @@ func (r *runner) adapterFor(v VariantManifest) (Adapter, error) {
 	return r.deps.NewAdapter(v, r.budget)
 }
 
-// live 호출 하나. 예산 거절과 취소는 관측이 아니라 not-run이다.
+// live 호출 하나. 예산 거절과 취소는 관측이 아니라 not-run.
 func (r *runner) invoke(adapter Adapter, v VariantManifest, c LoadedCase, result *InvocationResult) {
 	input, err := AdapterInputOf(c.Case, c.Image)
 	if err == nil && v.Config.Retrieval != nil {
@@ -448,7 +448,7 @@ func (r *runner) invoke(adapter Adapter, v VariantManifest, c LoadedCase, result
 	}
 }
 
-// invocation 하나를 세고 report에 더한 뒤, sink가 있으면 채점한 CaseResult를 넘긴다.
+// invocation 하나를 세고 report에 더한 뒤, sink가 있으면 채점한 CaseResult를 전달.
 func (r *runner) record(result InvocationResult, c Case) error {
 	counts := &r.report.Counts
 	counts.WireCalls += result.WireCalls
@@ -500,7 +500,7 @@ func (r *runner) finish() {
 	}
 }
 
-// adapter를 만들지 않고 낸 미지원 결과. provider 호출은 없다.
+// adapter를 만들지 않고 낸 미지원 결과. provider 호출은 없음.
 func unsupportedObservation(task Task) Observation {
 	return Observation{
 		Task: task, Status: Skipped, Attempts: []HTTPAttempt{},
@@ -525,7 +525,7 @@ func metadata(plan Plan, deps Deps) RunMetadata {
 	return m
 }
 
-// production label 목록의 hash. 지시 문구와 무관하게 category · action · confidence 값만 본다.
+// production label 목록의 hash. 지시 문구와 무관하게 category · action · confidence 값만 봄.
 func labelHash(contract ClassificationContract) string {
 	h := sha256.New()
 	for _, list := range [][]string{contract.Categories, contract.Actions, contract.Confidence} {
@@ -534,14 +534,14 @@ func labelHash(contract ClassificationContract) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// 채점 규칙의 hash. policy 값이 조금이라도 다르면 달라진다.
+// 채점 규칙의 hash. policy 값이 조금이라도 다르면 달라짐.
 func policyHash(policy ScoringPolicy) string {
 	encoded, _ := json.Marshal(policy)
 	sum := sha256.Sum256(encoded)
 	return hex.EncodeToString(sum[:])
 }
 
-// 한 variant · trial의 관측을 case id로 모은다. 채점(EvaluateClassification)의 입력이다.
+// 한 variant · trial의 관측을 case id로 모음. 채점(EvaluateClassification)의 입력.
 func (r RunReport) Observations(variantID string, trial int) map[string]Observation {
 	out := map[string]Observation{}
 	for _, result := range r.Results {
@@ -559,7 +559,7 @@ type GitInfo struct {
 }
 
 // 평가에 관여한 소스의 lineage. apiDir 아래 internal/processing · internal/evaluation(과 processingadapter) · internal/evalcli · cmd/eval의 .go 파일과
-// go.mod · go.sum만 hash한다. 다른 파일(설정 · secret)은 읽지 않는다.
+// go.mod · go.sum만 hash. 다른 파일(설정 · secret)은 읽지 않음.
 func CollectSource(apiDir string, git GitInfo) (Source, error) {
 	source := Source{Commit: git.Commit, Branch: git.Branch, Dirty: git.Dirty, GoVersion: runtime.Version()}
 	var err error
@@ -575,7 +575,7 @@ func CollectSource(apiDir string, git GitInfo) (Source, error) {
 	return source, nil
 }
 
-// 디렉터리들(재귀 없음)의 주어진 확장자 파일을 상대 경로순으로 hash한다. 없는 디렉터리는 건너뛴다.
+// 디렉터리들(재귀 없음)의 주어진 확장자 파일을 상대 경로순으로 hash. 없는 디렉터리는 건너뜀.
 func hashFiles(root string, dirs []string, extensions ...string) (string, error) {
 	var paths []string
 	for _, dir := range dirs {

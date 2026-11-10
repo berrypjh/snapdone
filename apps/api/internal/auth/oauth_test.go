@@ -10,7 +10,7 @@ import (
 	"snapdone/api/internal/google"
 )
 
-// DB에 닿기 전에 거절되는 입력은 저장소 없이 확인한다.
+// DB에 닿기 전에 거절되는 입력은 저장소 없이 확인.
 func TestOAuthRejectsMalformedInputBeforeStorage(t *testing.T) {
 	oauth := NewOAuth(nil, nil, google.NewClient("id", "secret", "https://api.example.com/cb"), ReturnURIs{}, Consent{})
 	ctx := context.Background()

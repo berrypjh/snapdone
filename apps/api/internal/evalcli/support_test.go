@@ -26,12 +26,12 @@ var repoRoot = func() string {
 	return root
 }()
 
-// 여러 case가 필요한 테스트가 쓰는 21건 합성 dataset. tools/evals는 사용자가 채우므로 테스트는 기대지 않는다.
+// 여러 case가 필요한 테스트가 쓰는 21건 합성 dataset. tools/evals는 사용자가 채우므로 테스트는 기대지 않음.
 var pilotDataset = filepath.Join(repoRoot, "apps", "api", "internal", "evaluation", "testdata", "datasets", "pilot-v1")
 
 var fixtureDataset = filepath.Join(repoRoot, "apps", "api", "internal", "evaluation", "testdata", "datasets", "software-fixture")
 
-// provider를 흉내 내는 Transport. 호출 수를 세고, before가 있으면 먼저 부른다.
+// provider를 흉내 내는 Transport. 호출 수를 세고, before가 있으면 먼저 호출.
 type fakeProvider struct {
 	mu     sync.Mutex
 	calls  int
@@ -63,7 +63,7 @@ func (f *fakeProvider) count() int {
 	return f.calls
 }
 
-// 테스트마다 Transport · git을 바꿔 끼우고 뒤에 되돌린다.
+// 테스트마다 Transport · git을 바꿔 끼우고 뒤에 복원.
 func stub(t *testing.T, provider *fakeProvider) {
 	t.Helper()
 	transport, gitInfo = provider, func(string) (evaluation.GitInfo, error) {
@@ -79,7 +79,7 @@ func cli(t *testing.T, ctx context.Context, args ...string) (int, string, string
 	return code, stdout.String(), stderr.String()
 }
 
-// 임시 variant manifest. provider별 필수 필드만 채운다.
+// 임시 variant manifest. provider별 필수 필드만 채움.
 func writeVariant(t *testing.T, dir, id, provider, model string) string {
 	t.Helper()
 	m := map[string]any{

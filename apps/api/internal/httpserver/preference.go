@@ -10,7 +10,7 @@ import (
 	"snapdone/api/internal/preference"
 )
 
-// 이미지 유형별 처리 방식 저장소. 운영에서는 *preference.Store다.
+// 이미지 유형별 처리 방식 저장소. 운영에서는 *preference.Store.
 type PreferenceStore interface {
 	Find(ctx context.Context, userID string) (preference.Preferences, error)
 	SetText(ctx context.Context, userID string, action preference.TextAction) (preference.Preferences, error)

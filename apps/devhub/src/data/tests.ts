@@ -1101,12 +1101,6 @@ export const tests: TestRef[] = [
     'shows the sign-in copy and exactly one Google button, without navigation',
   ),
   playwright(
-    'e2e-login-callback-error',
-    'login.spec.ts',
-    'login screen',
-    'shows a callback error from the query',
-  ),
-  playwright(
     'e2e-login-from-onboarding',
     'login.spec.ts',
     'login screen',

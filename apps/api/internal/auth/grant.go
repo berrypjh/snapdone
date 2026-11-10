@@ -16,7 +16,7 @@ const (
 	PurposeHandoff     Purpose = "handoff"
 )
 
-// 일회용 코드가 가리키는 로그인 결과. 빈 문자열 필드는 DB에서 NULL이다.
+// 일회용 코드가 가리키는 로그인 결과. 빈 문자열 필드는 DB에서 NULL.
 type Grant struct {
 	Purpose         Purpose
 	UserID          string
@@ -37,7 +37,7 @@ func (s *Store) CreateGrant(ctx context.Context, codeHash []byte, grant Grant, t
 	return err
 }
 
-// grant를 한 번만 소비한다. 없거나 · 목적이 다르거나 · 만료 · 소비됐으면 ErrNotFound를 반환한다.
+// grant를 한 번만 소비. 없거나 · 목적이 다르거나 · 만료 · 소비됐으면 ErrNotFound 반환.
 func (s *Store) ConsumeGrant(ctx context.Context, codeHash []byte, purpose Purpose) (Grant, error) {
 	var grant Grant
 	err := s.pool.QueryRow(ctx, `
@@ -53,8 +53,8 @@ func (s *Store) ConsumeGrant(ctx context.Context, codeHash []byte, purpose Purpo
 	return grant, err
 }
 
-// 로그인 grant를 PKCE challenge · 앱 state가 일치할 때만 한 번 소비한다.
-// 확인과 소비가 한 문장이라 병렬 exchange 중 하나만 성공한다. 맞지 않으면 ErrNotFound다.
+// 로그인 grant를 PKCE challenge · 앱 state가 일치할 때만 한 번 소비.
+// 확인과 소비가 한 문장이라 병렬 exchange 중 하나만 성공. 맞지 않으면 ErrNotFound.
 func (s *Store) ConsumeLoginGrant(ctx context.Context, codeHash []byte, challenge, clientState string) (Grant, error) {
 	grant := Grant{ClientChallenge: challenge, ClientState: clientState}
 	err := s.pool.QueryRow(ctx, `

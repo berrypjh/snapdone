@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// 모든 하위 명령이 공유하는 경로 flag. 상대 경로는 저장소 root 기준이다.
+// 모든 하위 명령이 공유하는 경로 flag. 상대 경로는 저장소 root 기준.
 type paths struct {
 	root string
 	out  string
@@ -36,7 +36,7 @@ func (p *paths) resolve() error {
 	return nil
 }
 
-// root 아래로 푼 경로. 이미 절대 경로면 그대로다.
+// root 아래로 푼 경로. 이미 절대 경로면 그대로.
 func (p *paths) under(rel string) string {
 	if filepath.IsAbs(rel) {
 		return rel
@@ -73,7 +73,7 @@ func (p *paths) experiment(ref string) string {
 	return p.under(ref)
 }
 
-// 현재 디렉터리에서 위로 올라가며 nx.json이 있는 곳. Nx(cwd apps/api)에서도, root에서도 같은 답이다.
+// 현재 디렉터리에서 위로 올라가며 nx.json이 있는 곳. Nx(cwd apps/api)에서도, root에서도 같은 답.
 func findRoot() (string, error) {
 	dir, err := os.Getwd()
 	if err != nil {

@@ -20,20 +20,20 @@ func expectText(text string, tokenizer Tokenizer, fields ...ExpectedField) TextE
 	return TextExpected{Text: &text, ReadingOrder: LinesTopToBottom, Tokenizer: tokenizer, Fields: fields}
 }
 
-// 한글 완성형과 분해형은 다른 문자열이다 — Unicode 정규화를 하지 않으므로 같아지지 않는다.
+// 한글 완성형과 분해형은 다른 문자열 — Unicode 정규화를 하지 않으므로 같아지지 않음.
 func TestTextKoreanCompositionIsNotNormalized(t *testing.T) {
 	composed, decomposed := "한글", "한글"
 	o := EvaluateText(expectText(composed, ""), &TextOutput{Text: decomposed})
 	if value(t, o.RawExactMatch) != 0 || value(t, o.NormalizedExactMatch) != 0 || o.RefChars != 2 || o.HypChars != 6 || o.Unicode != UnicodeNormalizationNone {
 		t.Errorf("outcome = %+v", o)
 	}
-	// 정답 2 rune을 6 rune으로 바꾸려면 치환 2 + 삽입 4 = 6 → CER 3.0 (1을 넘고 자르지 않는다).
+	// 정답 2 rune을 6 rune으로 바꾸려면 치환 2 + 삽입 4 = 6 → CER 3.0 (1을 넘고 자르지 않음).
 	if o.CharEdits != 6 || value(t, o.CER) != 3 {
 		t.Errorf("edits = %d, CER = %+v", o.CharEdits, o.CER)
 	}
 }
 
-// 영어 삽입 · 삭제 · 치환은 rune 편집 하나씩이고, whitespace tokenizer면 WER도 난다.
+// 영어 삽입 · 삭제 · 치환은 rune 편집 하나씩이고, whitespace tokenizer면 WER도 나옴.
 func TestTextEnglishEdits(t *testing.T) {
 	ref := "Please use the stairs."
 	cases := map[string]struct {
@@ -62,7 +62,7 @@ func TestTextEnglishEdits(t *testing.T) {
 	}
 }
 
-// 공백이 없는 일본어는 tokenizer가 없으면 WER가 not-applicable이고 CER만 있다.
+// 공백이 없는 일본어는 tokenizer가 없으면 WER가 not-applicable이고 CER만 있음.
 func TestTextJapaneseWithoutTokenizer(t *testing.T) {
 	o := EvaluateText(expectText("東京都渋谷区", ""), &TextOutput{Text: "東京都渋谷"})
 	if o.RefChars != 6 || o.CharEdits != 1 || !near(value(t, o.CER), 1.0/6) || o.WER.Availability != NotApplicable || !strings.Contains(o.WER.Reason, "tokenizer") {
@@ -70,7 +70,7 @@ func TestTextJapaneseWithoutTokenizer(t *testing.T) {
 	}
 }
 
-// emoji는 rune 여러 개일 수 있다 — 코드포인트로 세고 grapheme으로 부르지 않는다.
+// emoji는 rune 여러 개일 수 있음 — 코드포인트로 세고 grapheme으로 부르지 않음.
 func TestTextEmojiCountsCodepoints(t *testing.T) {
 	flag := "\U0001F1F0\U0001F1F7" // 지역 표시 기호 둘
 	o := EvaluateText(expectText(flag, ""), &TextOutput{Text: ""})
@@ -79,7 +79,7 @@ func TestTextEmojiCountsCodepoints(t *testing.T) {
 	}
 }
 
-// text-ws-v1 — CRLF · tab · 여러 Unicode 공백은 공백 하나로, 양끝은 잘린다. 구두점 · 대소문자 · 통화 · 숫자는 그대로.
+// text-ws-v1 — CRLF · tab · 여러 Unicode 공백은 공백 하나로, 양끝은 잘림. 구두점 · 대소문자 · 통화 · 숫자는 그대로.
 func TestTextWhitespaceNormalization(t *testing.T) {
 	ref := "합계 12,800원\n카드 결제"
 	for _, hyp := range []string{"합계 12,800원\r\n카드 결제", "  합계\t12,800원\n\n카드　결제 ", "합계 12,800원 카드 결제\n"} {
@@ -98,7 +98,7 @@ func TestTextWhitespaceNormalization(t *testing.T) {
 	}
 }
 
-// 정답이 빈 텍스트면 CER는 N/A이고 지어낸 글자 수가 남는다. 양쪽이 비어도 CER 0이 되지 않는다.
+// 정답이 빈 텍스트면 CER는 N/A이고 지어낸 글자 수가 남음. 양쪽이 비어도 CER 0이 되지 않음.
 func TestTextEmptyReference(t *testing.T) {
 	o := EvaluateText(expectText("", TokenizerWhitespace), &TextOutput{Text: "환영합니다 고객님"})
 	if o.CER.Availability != NotApplicable || o.HallucinatedChars != 9 || o.WER.Availability != NotApplicable || o.HallucinatedWords != 2 || value(t, o.NormalizedExactMatch) != 0 {
@@ -114,7 +114,7 @@ func TestTextEmptyReference(t *testing.T) {
 	}
 }
 
-// 정답이 없는(null) 텍스트는 dataset 검증에서 거절한다 — 빈 문자열과 다르다.
+// 정답이 없는(null) 텍스트는 dataset 검증에서 거절 — 빈 문자열과 다름.
 func TestTextMissingReferenceIsInvalid(t *testing.T) {
 	c := textCase("x", "", "")
 	c.Expected.TextExtraction.Text = nil
@@ -136,7 +136,7 @@ func TestTextMissingReferenceIsInvalid(t *testing.T) {
 	}
 }
 
-// field는 id나 승인된 alias로만 찾고, 값은 공백 정규화 뒤 acceptedValues 중 하나여야 한다.
+// field는 id나 승인된 alias로만 찾고, 값은 공백 정규화 뒤 acceptedValues 중 하나여야 함.
 func TestTextFields(t *testing.T) {
 	fields := []ExpectedField{
 		{ID: "total", Aliases: []string{"합계"}, AcceptedValues: []string{"12,800원", "12800원"}, Important: true},
@@ -151,7 +151,7 @@ func TestTextFields(t *testing.T) {
 	if !near(value(t, f.Accuracy), 1.0/3) || value(t, f.ImportantRecall) != 0.5 {
 		t.Errorf("accuracy = %+v, recall = %+v", f.Accuracy, f.ImportantRecall)
 	}
-	// "날짜"는 승인된 alias가 아니므로 date는 missing이다 — 한국어 label을 추정으로 잇지 않는다.
+	// "날짜"는 승인된 alias가 아니므로 date는 missing — 한국어 label을 추정으로 잇지 않음.
 	if f.Details[2].Status != "missing" || f.Details[1].Status != "wrong" || f.Details[0].Status != "correct" {
 		t.Errorf("details = %+v", f.Details)
 	}
@@ -160,7 +160,7 @@ func TestTextFields(t *testing.T) {
 	}
 }
 
-// 삽입이 많으면 CER > 1이고 자르지 않는다.
+// 삽입이 많으면 CER > 1이고 자르지 않음.
 func TestTextCERAboveOne(t *testing.T) {
 	o := EvaluateText(expectText("ab", ""), &TextOutput{Text: "abcdefgh"})
 	if o.CharEdits != 6 || value(t, o.CER) != 3 {
@@ -168,7 +168,7 @@ func TestTextCERAboveOne(t *testing.T) {
 	}
 }
 
-// corpus CER는 합의 비율, mean case CER는 비율의 평균이라 다르다. 정답이 빈 case · 예측 없는 case는 corpus 합에 안 들어간다.
+// corpus CER는 합의 비율, mean case CER는 비율의 평균이라 다름. 정답이 빈 case · 예측 없는 case는 corpus 합에 안 들어감.
 func TestTextCorpusVersusMean(t *testing.T) {
 	cases := []Case{
 		textCase("long", strings.Repeat("a", 100), TokenizerWhitespace), // 100 rune, 편집 0
@@ -208,7 +208,7 @@ func TestTextCorpusVersusMean(t *testing.T) {
 	}
 }
 
-// 상한을 넘는 예측은 재지 않고 unavailable로 남긴다.
+// 상한을 넘는 예측은 재지 않고 unavailable로 기록.
 func TestTextLengthBudget(t *testing.T) {
 	o := EvaluateText(expectText("abc", TokenizerWhitespace), &TextOutput{Text: strings.Repeat("x", maxTextRunes+1)})
 	if o.CER.Availability != Unavailable || !strings.Contains(o.CER.Reason, "longer than") || o.CharEdits != 0 || o.WER.Availability != Unavailable {
@@ -231,7 +231,7 @@ func TestRuneEditDistance(t *testing.T) {
 	}
 }
 
-// field id별 집계는 case 판정을 그대로 센다. 예측이 없는 case의 field는 support에만 들어가고 정확도 분모에서 빠진다.
+// field id별 집계는 case 판정을 그대로 셈. 예측이 없는 case의 field는 support에만 들어가고 정확도 분모에서 빠짐.
 func TestTextFieldStats(t *testing.T) {
 	total := func(important bool) ExpectedField {
 		return ExpectedField{ID: "total", Aliases: []string{"합계"}, AcceptedValues: []string{"12,800원"}, Important: important}
@@ -264,7 +264,7 @@ func TestTextFieldStats(t *testing.T) {
 	if tot.Support != 4 || tot.Important != 3 || tot.Evaluated != 3 || tot.Correct != 1 || tot.Wrong != 1 || tot.Missing != 1 || !near(value(t, tot.Accuracy), 1.0/3) {
 		t.Errorf("total = %+v", tot)
 	}
-	// 집계와 합이 맞는다.
+	// 집계와 합이 맞음.
 	if s.Fields != st.Evaluated+tot.Evaluated || s.CorrectFields != st.Correct+tot.Correct {
 		t.Errorf("summary fields %d/%d vs stats", s.CorrectFields, s.Fields)
 	}

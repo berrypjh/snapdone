@@ -10,7 +10,7 @@ import (
 	"snapdone/api/internal/onboarding"
 )
 
-// 온보딩 진행 저장소. 운영에서는 *onboarding.Store다.
+// 온보딩 진행 저장소. 운영에서는 *onboarding.Store.
 type OnboardingStore interface {
 	Find(ctx context.Context, userID string) (onboarding.Progress, error)
 	Save(ctx context.Context, userID string, p onboarding.Progress) error

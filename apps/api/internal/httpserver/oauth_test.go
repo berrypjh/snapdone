@@ -30,12 +30,12 @@ const (
 	otherAppVerifier = "app-verifier-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 )
 
-// transportFunc는 포트를 열지 않고 가짜 Google token endpoint를 흉내 낸다.
+// transportFunc는 포트 없이 가짜 Google token endpoint 흉내.
 type transportFunc func(*http.Request) *http.Response
 
 func (f transportFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r), nil }
 
-// fakeGoogle은 token endpoint가 돌려줄 응답을 테스트마다 바꿀 수 있게 한다.
+// fakeGoogle은 token endpoint가 돌려줄 응답을 테스트마다 바꾸는 용도.
 type fakeGoogle struct {
 	mu      sync.Mutex
 	status  int
@@ -114,7 +114,7 @@ func (f *oauthFixture) do(method, target string, body any) *httptest.ResponseRec
 	return recorder
 }
 
-// appState는 테스트마다 다른 43자 앱 state를 만든다.
+// appState는 테스트마다 다른 43자 앱 state 생성.
 func appState(t *testing.T) string {
 	t.Helper()
 	token, _ := auth.NewToken()
@@ -128,7 +128,7 @@ type started struct {
 	challenge   string
 }
 
-// start는 oauth/start를 부르고 Google에 보낼 값을 authorize URL에서 꺼낸다.
+// start는 oauth/start를 부르고 Google에 보낼 값을 authorize URL에서 추출.
 func (f *oauthFixture) start(t *testing.T, platform string) started {
 	t.Helper()
 	state := appState(t)
@@ -156,7 +156,7 @@ func (f *oauthFixture) start(t *testing.T, platform string) started {
 	return started{appState: state, googleState: q.Get("state"), nonce: q.Get("nonce"), challenge: q.Get("code_challenge")}
 }
 
-// callback은 Google이 브라우저를 돌려보낸 요청을 흉내 내고 Location의 query를 돌려준다.
+// callback은 Google이 브라우저를 돌려보낸 요청을 흉내 내고 Location의 query 반환.
 func (f *oauthFixture) callback(t *testing.T, query url.Values) (*httptest.ResponseRecorder, string, url.Values) {
 	t.Helper()
 	r := f.do(http.MethodGet, "/v1/auth/oauth/callback?"+query.Encode(), nil)
@@ -235,7 +235,7 @@ func TestOAuthGoogleMobileLogin(t *testing.T) {
 	}
 }
 
-// 같은 Google 계정으로 다시 로그인하면 같은 사용자다. web 시작은 web 복귀 URI와 web 세션이 된다.
+// 같은 Google 계정으로 다시 로그인하면 같은 사용자. web 시작은 web 복귀 URI와 web 세션.
 func TestOAuthGoogleReturningUserOnWeb(t *testing.T) {
 	f := newOAuthFixture(t)
 	login := func(platform string) (string, string) {
@@ -292,7 +292,7 @@ func TestOAuthStartRejectsBadRequests(t *testing.T) {
 	}
 }
 
-// 모르는 state · 이미 쓴 state로 온 콜백은 어디로도 redirect하지 않는다.
+// 모르는 state · 이미 쓴 state로 온 콜백은 어디로도 redirect하지 않음.
 func TestOAuthCallbackRejectsInjectionAndReplay(t *testing.T) {
 	f := newOAuthFixture(t)
 
@@ -319,7 +319,7 @@ func TestOAuthCallbackRejectsInjectionAndReplay(t *testing.T) {
 	}
 }
 
-// 콜백 동시 도착도 transaction 소비가 원자적이라 한 번만 Google에 교환한다.
+// 콜백 동시 도착도 transaction 소비가 원자적이라 Google 교환은 한 번만.
 func TestOAuthParallelCallbackExchangesOnce(t *testing.T) {
 	f := newOAuthFixture(t)
 	s := f.start(t, "mobile")
@@ -407,7 +407,7 @@ func TestOAuthCallbackReturnsErrorsToTheApp(t *testing.T) {
 	}
 }
 
-// exchange는 앱 verifier · 앱 state가 맞을 때만, 한 번만 세션을 준다.
+// exchange는 앱 verifier · 앱 state가 맞을 때만, 한 번만 세션 발급.
 func TestOAuthExchangeChecksProofAndRunsOnce(t *testing.T) {
 	f := newOAuthFixture(t)
 	s := f.start(t, "mobile")
@@ -454,7 +454,7 @@ func TestOAuthExchangeRejectsExpiredGrant(t *testing.T) {
 	}
 }
 
-// 앱이 취소한 시작은 이후 콜백이 와도 로그인되지 않는다.
+// 앱이 취소한 시작은 이후 콜백이 와도 로그인 불가.
 func TestOAuthCancelDiscardsTransaction(t *testing.T) {
 	f := newOAuthFixture(t)
 	s := f.start(t, "mobile")
@@ -477,7 +477,7 @@ func TestCapabilitiesListGoogleWhenConfigured(t *testing.T) {
 	}
 }
 
-// 유효한 시작 요청도 본문이 4 KiB를 넘으면 binding 전에 끊겨 400이다.
+// 유효한 시작 요청도 본문이 4 KiB를 넘으면 binding 전에 끊겨 400.
 func TestOAuthStartRejectsOversizedBody(t *testing.T) {
 	f := newOAuthFixture(t)
 	body := func(size int) map[string]string {

@@ -49,7 +49,7 @@ func decodeResult(t *testing.T, doc map[string]any) (CaseResult, error) {
 	return DecodeCaseResult(strings.NewReader(string(encoded)), contract)
 }
 
-// 실행이 끝난 것과 채점이 통과한 것은 다른 사실이다. 둘 다 그대로 남는다.
+// 실행이 끝난 것과 채점이 통과한 것은 다른 사실. 둘 다 그대로 남음.
 func TestDecodeCaseResultSeparatesExecutionFromQuality(t *testing.T) {
 	r, err := decodeResult(t, completedResult())
 	if err != nil {
@@ -74,7 +74,7 @@ func TestDecodeCaseResultSeparatesExecutionFromQuality(t *testing.T) {
 	}
 }
 
-// 다시 쓰면 0인 metric이 살아 있고 값 없는 측정은 null로 남는다.
+// 다시 쓰면 0인 metric이 살아 있고 값 없는 측정은 null로 남음.
 func TestCaseResultRoundTripKeepsZeroMetrics(t *testing.T) {
 	r, _ := decodeResult(t, completedResult())
 	encoded, err := json.Marshal(r)
@@ -137,7 +137,7 @@ func TestDecodeCaseResultRejects(t *testing.T) {
 	}
 }
 
-// 텍스트 과제의 예측은 문자열이고, ""도 예측이다.
+// 텍스트 과제의 예측은 문자열이고, ""도 예측.
 func TestTextPrediction(t *testing.T) {
 	r := completedResult()
 	r["task"] = "text-extraction"

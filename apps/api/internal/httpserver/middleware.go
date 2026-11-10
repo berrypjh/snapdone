@@ -18,12 +18,12 @@ import (
 const (
 	requestIDKey    = "request_id"
 	requestIDHeader = "X-Request-ID"
-	// JSON 요청(인증 · 온보딩) 본문 상한. 가장 큰 요청도 수백 바이트다.
+	// JSON 요청(인증 · 온보딩) 본문 상한. 가장 큰 요청도 수백 바이트.
 	maxJSONBody = 4 << 10
 )
 
-// 요청마다 새 ID를 만들어 응답 헤더와 로그에 쓴다. 클라이언트가 보낸 ID는 믿지 않는다.
-// Cloud Run의 traceparent로 Cloud Logging trace 이름도 남긴다(project가 없으면 생략).
+// 요청마다 새 ID를 만들어 응답 헤더와 로그에 사용. 클라이언트가 보낸 ID는 믿지 않음.
+// Cloud Run의 traceparent로 Cloud Logging trace 이름도 기록(project가 없으면 생략).
 func requestID(traceProject string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		b := make([]byte, 8)
@@ -47,7 +47,7 @@ func requestAttrs(c *gin.Context) []any {
 	return attrs
 }
 
-// 요청 한 줄 로그. 원문 URL · query · 헤더 · 본문은 남기지 않고 매칭된 route template만 쓴다.
+// 요청 한 줄 로그. 원문 URL · query · 헤더 · 본문은 남기지 않고 매칭된 route template만 기록.
 func requestLogger(log *slog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
@@ -61,7 +61,7 @@ func requestLogger(log *slog.Logger) gin.HandlerFunc {
 	}
 }
 
-// panic을 500으로 바꾼다. panic 값에는 요청 데이터가 들어 있을 수 있어 타입만 남긴다.
+// panic을 500으로 변환. panic 값에는 요청 데이터가 들어 있을 수 있어 타입만 기록.
 func recovery(log *slog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
@@ -84,8 +84,8 @@ func recovery(log *slog.Logger) gin.HandlerFunc {
 	}
 }
 
-// 내부 오류를 Sentry로 보낸다. 요청 데이터 대신 route와 request ID만 붙인다.
-// Sentry가 꺼져 있으면(SENTRY_DSN 없음) 아무 일도 하지 않는다.
+// 내부 오류를 Sentry로 전송. 요청 데이터 대신 route와 request ID만 첨부.
+// Sentry가 꺼져 있으면(SENTRY_DSN 없음) 아무 일도 하지 않음.
 func report(c *gin.Context, err error) {
 	hub := sentry.CurrentHub().Clone()
 	hub.Scope().SetTag("route", c.FullPath())
@@ -93,15 +93,15 @@ func report(c *gin.Context, err error) {
 	hub.CaptureException(err)
 }
 
-// 세션 · 개인 데이터가 담긴 응답은 캐시 · Referer로 새지 않게 한다.
+// 세션 · 개인 데이터가 담긴 응답의 캐시 · Referer 유출 방지.
 func noStore(c *gin.Context) {
 	c.Header("Cache-Control", "no-store")
 	c.Header("Referrer-Policy", "no-referrer")
 	c.Next()
 }
 
-// 본문을 읽는 binding보다 먼저 상한을 건다. 넘으면 binding · multipart 읽기가 실패해 400 · 413이 된다.
-// net/http의 원래 writer를 넘겨야 상한을 넘긴 연결을 서버가 응답 뒤 닫는다.
+// 본문을 읽는 binding보다 먼저 상한 적용. 넘으면 binding · multipart 읽기가 실패해 400 · 413.
+// net/http의 원래 writer를 넘겨야 상한을 넘긴 연결을 서버가 응답 뒤 종료.
 func limitBody(limit int64) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		w := c.Writer.(interface{ Unwrap() http.ResponseWriter }).Unwrap()
@@ -110,7 +110,7 @@ func limitBody(limit int64) gin.HandlerFunc {
 	}
 }
 
-// 의존성이 설정되지 않은 endpoint는 route를 남겨 둔 채 503을 돌려준다.
+// 의존성이 설정되지 않은 endpoint는 route를 남겨 둔 채 503 반환.
 func requireConfigured(ok bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !ok {

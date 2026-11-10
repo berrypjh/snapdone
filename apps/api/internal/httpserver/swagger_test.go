@@ -28,7 +28,7 @@ func documentedOperations(t *testing.T) []string {
 	return ops
 }
 
-// Gin 경로 매개변수(:jobId)를 Swagger 표기({jobId})로 바꾼다.
+// Gin 경로 매개변수(:jobId)를 Swagger 표기({jobId})로 변환.
 func swaggerPath(ginPath string) string {
 	segments := strings.Split(ginPath, "/")
 	for i, segment := range segments {
@@ -39,9 +39,9 @@ func swaggerPath(ginPath string) string {
 	return strings.Join(segments, "/")
 }
 
-// 등록된 route와 Swagger 문서가 일치해야 한다. 새 endpoint에 주석을 달지 않았거나
-// `nx run api:swagger`로 다시 생성하지 않으면 여기서 실패한다.
-// HEAD route는 GET을 그대로 받는 것이라 GET 문서로 대신하고, Swagger UI route는 제외한다.
+// 등록된 route와 Swagger 문서가 일치해야 함. 새 endpoint에 주석을 달지 않았거나
+// `nx run api:swagger`로 다시 생성하지 않으면 여기서 실패.
+// HEAD route는 GET을 그대로 받는 것이라 GET 문서로 대신하고, Swagger UI route는 제외.
 func TestEveryRouteIsDocumentedInSwagger(t *testing.T) {
 	documented := documentedOperations(t)
 
@@ -70,7 +70,7 @@ func TestEveryRouteIsDocumentedInSwagger(t *testing.T) {
 	}
 }
 
-// Bearer가 필요한 endpoint만 BearerAuth로 문서화한다.
+// Bearer가 필요한 endpoint만 BearerAuth로 문서화.
 func TestSwaggerSecurityMatchesBearerRoutes(t *testing.T) {
 	var doc struct {
 		SecurityDefinitions map[string]struct {

@@ -12,7 +12,7 @@ import (
 	"snapdone/api/internal/evaluation"
 )
 
-// list · validate · plan은 모델을 부르지 않고, root는 어느 cwd에서 시작해도 같다.
+// list · validate · plan은 모델을 부르지 않고, root는 어느 cwd에서 시작해도 동일.
 func TestListValidatePlanMakeNoCalls(t *testing.T) {
 	provider := &fakeProvider{}
 	stub(t, provider)

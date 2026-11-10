@@ -9,10 +9,10 @@ import (
 	"slices"
 )
 
-// JSON 값 뒤에 무언가 더 있다.
+// JSON 값 뒤에 무언가 더 있음.
 var errTrailingJSON = errors.New("evaluation: trailing data after the JSON value")
 
-// 모르는 필드 · 뒤따르는 값을 거절하며 하나의 JSON 값을 읽는다. 값의 검증은 부르는 쪽이 한다.
+// 모르는 필드 · 뒤따르는 값을 거절하며 하나의 JSON 값을 읽음. 값의 검증은 부르는 쪽이 담당.
 func decodeStrict(r io.Reader, v any) error {
 	dec := json.NewDecoder(r)
 	dec.DisallowUnknownFields()

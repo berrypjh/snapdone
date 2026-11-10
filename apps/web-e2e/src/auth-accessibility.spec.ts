@@ -16,7 +16,8 @@ import { expect, test } from './support/test';
  * Real screen readers are a manual check; this pins the roles, names, and live regions they read.
  */
 
-const WIDTHS = [320, 767, 768, 1280] as const;
+/** Login and onboarding have no web shell, so the md breakpoint (767/768) changes nothing here. */
+const WIDTHS = [320, 1280] as const;
 const SCHEMES = ['light', 'dark'] as const;
 
 /** Text color and background resolve to different colors, so the copy is not painted invisible. */

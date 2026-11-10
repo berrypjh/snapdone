@@ -12,13 +12,13 @@ import (
 
 var consent = auth.Consent{TermsVersion: "2026-09-01", PrivacyVersion: "2026-09-01"}
 
-// newStore는 격리된 schema 위의 인증 저장소를 만든다.
+// newStore는 격리된 schema 위의 인증 저장소 생성.
 func newStore(t *testing.T) *auth.Store {
 	t.Helper()
 	return auth.NewStore(databasetest.MigratedPool(t))
 }
 
-// createUser는 사용자를 만들고 실패하면 테스트를 멈춘다.
+// createUser는 사용자를 만들고 실패하면 테스트 중단.
 func createUser(t *testing.T, store *auth.Store, identity auth.Identity) auth.User {
 	t.Helper()
 	user, err := store.CreateUser(context.Background(), identity, consent)
@@ -28,7 +28,7 @@ func createUser(t *testing.T, store *auth.Store, identity auth.Identity) auth.Us
 	return user
 }
 
-// 새 사용자는 온보딩 intro 단계에서 시작한다.
+// 새 사용자는 온보딩 intro 단계에서 시작.
 func TestCreateUserStartsAtIntro(t *testing.T) {
 	store := newStore(t)
 	ctx := context.Background()
@@ -47,7 +47,7 @@ func TestCreateUserStartsAtIntro(t *testing.T) {
 	}
 }
 
-// 로그인 수단으로 사용자를 찾는다. provider와 subject가 정확히 일치해야 한다.
+// 로그인 수단으로 사용자 조회. provider와 subject가 정확히 일치해야 함.
 func TestFindUserByIdentity(t *testing.T) {
 	store := newStore(t)
 	ctx := context.Background()
@@ -67,7 +67,7 @@ func TestFindUserByIdentity(t *testing.T) {
 	}
 }
 
-// 이미 다른 사용자에 연결된 로그인 수단으로는 가입할 수 없다.
+// 이미 다른 사용자에 연결된 로그인 수단으로는 가입 불가.
 func TestCreateUserRejectsLinkedIdentity(t *testing.T) {
 	store := newStore(t)
 	ctx := context.Background()
@@ -79,7 +79,7 @@ func TestCreateUserRejectsLinkedIdentity(t *testing.T) {
 	}
 }
 
-// identities.provider CHECK는 네 provider만 허용한다.
+// identities.provider CHECK는 네 provider만 허용.
 func TestCreateUserRejectsUnknownProvider(t *testing.T) {
 	store := newStore(t)
 
@@ -89,7 +89,7 @@ func TestCreateUserRejectsUnknownProvider(t *testing.T) {
 	}
 }
 
-// 같은 로그인 수단으로 동시에 가입해도 사용자는 하나로 수렴한다.
+// 같은 로그인 수단으로 동시에 가입해도 사용자는 하나로 수렴.
 func TestFindOrCreateUserConvergesUnderRace(t *testing.T) {
 	pool := databasetest.MigratedPool(t)
 	store := auth.NewStore(pool)

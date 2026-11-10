@@ -1,4 +1,4 @@
-import { SCENARIO, tabTo } from './support/keyboard';
+import { enterMain, SCENARIO, tabTo } from './support/keyboard';
 import { expect, test } from './support/test';
 
 test.describe('shell', () => {
@@ -130,6 +130,21 @@ test.describe('top bar on wide screens', () => {
       });
       expect(Math.abs((theme?.y ?? 0) - (search?.y ?? 0)), `${width}px`).toBeLessThan(8);
     }
+  });
+});
+
+test.describe('start path on the overview', () => {
+  test('reaches the journey from the keyboard, after the skip link', async ({ page }) => {
+    await page.goto('/');
+    const start = page.getByRole('region', { name: '처음 10분' });
+    await expect(start.getByRole('heading', { level: 3 })).toHaveCount(3);
+
+    await enterMain(page);
+    const journey = start.getByRole('link', { name: '사진으로 할 일 끝내기' });
+    await tabTo(page, journey);
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL('/scenarios/finish-task-from-image');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('사진으로 할 일 끝내기');
   });
 });
 

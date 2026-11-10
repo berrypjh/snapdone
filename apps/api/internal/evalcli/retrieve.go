@@ -12,7 +12,7 @@ import (
 	"snapdone/api/internal/evaluation/processingadapter"
 )
 
-// 모델 없이 비슷한 사례 검색만 잰다. split의 case마다 dev에서 k개를 찾고, 정답 category가 같은 예시를 맞는 것으로 센다.
+// 모델 없이 비슷한 사례 검색만 측정. split의 case마다 dev에서 k개를 찾고, 정답 category가 같은 예시를 맞는 것으로 집계.
 func cmdRetrieve(_ context.Context, args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("retrieve", flag.ContinueOnError)
 	var p paths

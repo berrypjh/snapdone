@@ -1,6 +1,6 @@
 package evaluation
 
-// 여러 테스트 파일이 함께 쓰는 helper. 한 파일에서만 쓰는 helper는 그 파일에 둔다.
+// 여러 테스트 파일이 함께 쓰는 helper. 한 파일에서만 쓰는 helper는 그 파일에 둠.
 
 import (
 	"bytes"
@@ -40,7 +40,7 @@ func testVariant(id string) Variant {
 	return Variant{ID: id, Version: 1, Task: ImageClassification, Adapter: AdapterProcessing, Provider: "openai", Model: "m", ContractHash: contract.Hash}
 }
 
-// case result 한 줄. status에 따라 나머지를 맞춘다.
+// case result 한 줄. status에 따라 나머지를 맞춤.
 func line(runID, variantID, caseID, goldCategory, goldAction string, status ExecutionStatus, predCategory, predAction string, durationMs float64, in, out *float64) CaseResult {
 	c := resolved(caseID, goldCategory, goldAction)
 	c.Revision = 1
@@ -80,7 +80,7 @@ func f(v float64) *float64 { return &v }
 
 // ---- artifact에서 옮김
 
-// 가짜 adapter로 live run을 돌리고 산출물을 쓴다.
+// 가짜 adapter로 live run을 돌리고 산출물을 기록.
 func writeRun(t *testing.T, root string, ds Dataset, fake *fakeAdapters, runID string, sink func(*RunWriter, RunReport), variants ...VariantManifest) (*RunWriter, RunReport) {
 	t.Helper()
 	w, err := NewRunWriter(root, contract, fixedClock)
@@ -110,7 +110,7 @@ func read(t *testing.T, path string) []byte {
 
 // ---- classification에서 옮김
 
-// 검토를 마친 dev case에 id와 정답만 바꿔 얹는다. 파일 · 사진은 없어도 evaluator에는 충분하다.
+// 검토를 마친 dev case에 id와 정답만 바꿔 얹음. 파일 · 사진은 없어도 evaluator에는 충분.
 func gold(id, category string, intent Intent, acceptable, forbidden []string) Case {
 	encoded, _ := json.Marshal(classificationCase())
 	var c Case
@@ -151,7 +151,7 @@ func near(a, b float64) bool { return math.Abs(a-b) < 1e-9 }
 
 // ---- contract에서 옮김
 
-// production 계약에서 옮긴 평가용 view. golden의 hash가 실제 production 값이어야 하므로 production에서 읽는다.
+// production 계약에서 옮긴 평가용 view. golden의 hash가 실제 production 값이어야 하므로 production에서 읽음.
 var contract = func() ClassificationContract {
 	c := processing.DescribeContract()
 	return ClassificationContract{Hash: c.Hash, Categories: c.Categories, Actions: c.Actions, Confidence: c.Confidence}
@@ -189,7 +189,7 @@ func sha256Hex(data []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// seed마다 픽셀이 다른 2x2 PNG. 파일마다 hash가 달라야 중복 검사가 뜻이 있다.
+// seed마다 픽셀이 다른 2x2 PNG. 파일마다 hash가 달라야 중복 검사가 뜻이 있음.
 func pngBytes(t *testing.T, seed byte) []byte {
 	t.Helper()
 	img := image.NewNRGBA(image.Rect(0, 0, 2, 2))
@@ -203,7 +203,7 @@ func pngBytes(t *testing.T, seed byte) []byte {
 	return buf.Bytes()
 }
 
-// 임시 디렉터리에 dataset을 쓴다. 파일을 직접 고치는 테스트는 write 뒤에 mutate로 한다.
+// 임시 디렉터리에 dataset을 기록. 파일을 직접 고치는 테스트는 write 뒤에 mutate로 처리.
 type testDataset struct {
 	t        *testing.T
 	root     string
@@ -228,7 +228,7 @@ func newTestDataset(t *testing.T) *testDataset {
 	}}
 }
 
-// fixtures/<name>에 사진을 쓰고 case의 input.image를 돌려준다.
+// fixtures/<name>에 사진을 쓰고 case의 input.image를 반환.
 func (d *testDataset) image(name string, data []byte) map[string]any {
 	d.t.Helper()
 	if err := os.WriteFile(filepath.Join(d.root, "fixtures", name), data, 0o644); err != nil {
@@ -241,7 +241,7 @@ func imageRef(path, mediaType, sha string) map[string]any {
 	return map[string]any{"path": path, "mediaType": mediaType, "sha256": sha}
 }
 
-// 검토를 마친 dev case. 필요한 필드만 바꿔 쓴다.
+// 검토를 마친 dev case. 필요한 필드만 바꿔 사용.
 func fixtureCase(id string, split Split, category string, input map[string]any) map[string]any {
 	c := classificationCase()
 	c["id"] = id
@@ -272,7 +272,7 @@ func (d *testDataset) write() *testDataset {
 		}
 		file, declared := d.manifest["splits"].(map[string]any)[string(split)].(map[string]any)
 		if !declared {
-			// manifest에서 뺀 split — 파일은 있어도 manifest가 말하지 않는다.
+			// manifest에서 뺀 split — 파일은 있어도 manifest가 말하지 않음.
 			d.file(string(split)+".jsonl", buf.Bytes())
 			continue
 		}
@@ -301,7 +301,7 @@ const hash64 = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
 // ---- runner에서 옮김
 
-// dev에 n개의 검토된 case. notes에 표식을 두어 요청에 새지 않는지 본다.
+// dev에 n개의 검토된 case. notes에 표식을 두어 요청에 새지 않는지 확인.
 func runnerDataset(t *testing.T, n int) Dataset {
 	t.Helper()
 	d := newTestDataset(t)
@@ -346,14 +346,14 @@ func (m replayMap) Lookup(variantID, caseID string, trial int) (Observation, boo
 	return obs, ok
 }
 
-// production 분류기 대신 정해진 관측을 돌려주는 adapter. 호출마다 예산을 하나 쓰고, 예산이 없으면 production
-// adapter처럼 budget-denied 실패를 낸다. HTTP · 재시도 · redaction은 processingadapter 테스트가 본다.
+// production 분류기 대신 정해진 관측을 반환하는 adapter. 호출마다 예산을 하나 쓰고, 예산이 없으면 production
+// adapter처럼 budget-denied 실패를 냄. HTTP · 재시도 · redaction은 processingadapter 테스트가 확인.
 type fakeAdapters struct {
 	mu            sync.Mutex
 	constructions int
 	calls         int
 	inputs        []AdapterInput
-	// nil이면 정상 답(event · add_to_calendar)이다. call은 1부터 센다.
+	// nil이면 정상 답(event · add_to_calendar). call은 1부터 셈.
 	observe func(in AdapterInput, call int) Observation
 }
 
@@ -411,7 +411,7 @@ func deps(fake *fakeAdapters) Deps {
 	return d
 }
 
-// ---- 관측 값 생성자. production adapter는 processingadapter 안에 자기 것을 둔다.
+// ---- 관측 값 생성자. production adapter는 processingadapter 안에 자기 것을 둠.
 
 func observedText(value string) Text { return Text{Availability: Measured, Value: value} }
 

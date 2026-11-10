@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-// ocr-fixture를 replay로 돌려 산출물을 쓴다. 기록은 손으로 쓴 것이고 dataset의 정답에서 만들지 않는다.
+// ocr-fixture를 replay로 돌려 산출물을 기록. 기록은 손으로 쓴 것이고 dataset의 정답에서 만들지 않음.
 func replayText(t *testing.T, root, runID, variantID string, records replayMap) (*RunWriter, RunReport) {
 	t.Helper()
 	ds, err := LoadDataset("testdata/datasets/ocr-fixture", contract)
@@ -35,7 +35,7 @@ func replayText(t *testing.T, root, runID, variantID string, records replayMap) 
 	return w, report
 }
 
-// 텍스트 run의 summary는 text 표만 있고 category · action 열이 없다. case 줄은 wire 계약을 지킨다.
+// 텍스트 run의 summary는 text 표만 있고 category · action 열이 없음. case 줄은 wire 계약을 지킴.
 func TestTextRunArtifacts(t *testing.T) {
 	root := t.TempDir()
 	records := replayMap{
@@ -76,7 +76,7 @@ func TestTextRunArtifacts(t *testing.T) {
 	}
 }
 
-// 두 텍스트 run의 비교는 EM · CER 축과 check 기반 case 목록을 낸다.
+// 두 텍스트 run의 비교는 EM · CER 축과 check 기반 case 목록을 냄.
 func TestCompareTextRuns(t *testing.T) {
 	root := t.TempDir()
 	base := replayMap{
@@ -123,7 +123,7 @@ func TestCompareTextRuns(t *testing.T) {
 	}
 }
 
-// live 모드의 text variant는 adapter를 만들지 않고 호출 0회로 skipped다.
+// live 모드의 text variant는 adapter를 만들지 않고 호출 0회로 skipped.
 func TestTextLiveIsUnsupported(t *testing.T) {
 	ds, err := LoadDataset("testdata/datasets/ocr-fixture", contract)
 	if err != nil {

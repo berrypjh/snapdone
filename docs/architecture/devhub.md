@@ -11,7 +11,7 @@
 ## 하지 않는 것
 
 - **제품 화면 아님** — 최종 사용자 · 앱 WebView에 노출하지 않음
-- **코드 검색 엔진 아님** — 상태를 코드에서 자동 추론하지 않음
+- **코드 검색 엔진 아님** — 상태를 코드에서 자동 추론하지 않음. 검색도 카탈로그 항목의 이름 · 경로 · 요약만 봄([검색](#검색))
 - **문서 대체 아님** — `docs/`는 근거로 링크만 함
 - **테스트 실행기 아님** — 테스트 · CI를 대신 돌리지 않음
 - **화면 편집 없음** — 데이터 변경은 PR 리뷰를 거침
@@ -35,16 +35,28 @@
 - **`partial`** — 소스가 있지만 근거 공백(`EvidenceGap`)이 함께 있음
 - **시나리오 상태** — 단계 상태에서 파생. 모든 단계가 `implemented`일 때만 `implemented`
 - **검증 수준** — 상태에 섞지 않음. `TestRef.requires`(`database` · `port-binding` · `browser-binaries`)와 시나리오의 공백(실기기 · 실제 외부 서비스 · 설정 필요)으로 표시
+- **화면에서 구분** — 목록은 상태 칩 옆에 중요한 공백 종류 두 개까지 글자로("미검증: …"), 상세는 "검증 범위" 절이 러너별 테스트 수 · 실행 script · 요구 환경과 공백 전부를 이유와 함께 보임(`lib/catalog/verification.ts`). 테스트는 인용한 근거이고 이 커밋의 통과 결과가 아님 — 결과는 CI · 로컬 실행에서만
 - **상태는 사람이 정함** — 모순은 검사가 막음
 
 ## 화면
 
 - **섹션** — 개요 · 시나리오 · 아키텍처 · 애플리케이션 · 라이브러리 · 문서 · 기록 · 평가(`/evals`), 파일 하나는 `/source?path=…`
+- **개요** — 제품과 DevHub의 목적 구분, 처음 10분 경로(제품 원칙 · 상위 시나리오와 `via` 상세 · 구성 요소와 경계 · 로컬 실행과 첫 gate), 저장소 · 항목 · 상태. 경로의 대상은 모두 카탈로그 항목이고 순서만 `lib/catalog/start-path.ts`가 가짐
 - **상세 정보** — parallel route 슬롯 `@inspector`. 섹션 순서 고정, 비어 있으면 숨기지 않고 이유를 씀
 - **목록이 정본** — 그림(아키텍처 · 단계 흐름)은 같은 데이터의 보조 표현. 노드는 단계 · 구성 요소 URL로 가는 링크, pan · zoom · "크게 보기"(`<dialog>`)
 - **배치** — 렌더할 때 데이터에서 계산. 좌표를 데이터에 두지 않음
 - **평가 화면** — 관찰만. 판정 · 채점은 Go 산출물 값을 그대로 씀
 - **공용 UI** — 일반 개발 도구 UI는 `@berrypjh/devhub-ui`. 이 앱은 무엇을 보여 줄지만 가짐
+
+## 검색
+
+상단 바의 전역 검색(⌘K · Ctrl+K). 범위 설명의 정본은 여기이고, 화면은 입력창 설명과 결과 없음 문구로 같은 범위를 말함(`lib/search/search-view.ts`).
+
+- **색인** — 페이지를 열 때 카탈로그에서 만듦(`lib/search/search-index.ts`). 손으로 관리하는 검색 목록 · 별도 색인 파일 없음
+- **항목** — 시나리오 · 시나리오 단계 · 애플리케이션 · 라이브러리 · 아키텍처 구성 요소 · 개념(경계 · 런타임) · 문서 · 기록 · API · 계약 · 소스 파일(카탈로그가 인용한 경로) · symbol(인용된 식별자) · 테스트. 종류 이름의 정본은 `KIND_LABEL`
+- **보는 글자** — 항목의 id · 제목 · 경로 · 요약 한 줄(시나리오 goal · 단계 intent · behavior · 문서 제목 · API path · handler symbol · 테스트 제목). 문서 본문 · 소스 코드 내용 · 인용되지 않은 파일은 색인에 없음
+- **순위** — 공용 `buildIndex` · `search`의 고정 규칙(정확 → 접두 → 단어 → 부분 → 연관). 유사 일치 없음. 종류마다 상위 몇 개만 보임
+- **전체 텍스트 검색** — 하지 않음. 코드 · 문서 본문은 GitHub 검색이나 에디터에서 찾음
 
 ## 접근성
 
@@ -60,12 +72,15 @@
 - **경로 판정** — `domain/links.ts`의 `isCanonicalPath` 한 곳. 절대 경로 · 저장소 밖 `..` · 역슬래시 · 제어 문자 · URL · 앵커 거부
 - **symbol** — 그 파일에 글자 그대로 있는 식별자. Go 메서드만 `Type.method`
 - **줄 번호 · URL을 데이터에 쓰지 않음** — 링크는 `RepositoryRef` 템플릿 + 스냅샷 commit + 인코딩된 경로로 렌더할 때 만듦
+- **스냅샷** — 설명하는 커밋은 `DEVHUB_COMMIT_SHA` → `git rev-parse HEAD` → 둘 다 없으면 unavailable(`lib/repository/snapshot.ts`). 상단 바가 커밋 · 출처 · 브랜치를 보이고, `git status`에 변경이 있으면 "커밋 이후 로컬 변경 있음"을 덧붙임. 커밋을 모르면 그렇다고 말하고 SHA를 지어내지 않음
+- **permalink 조건** — 저장소 상대 경로이고 디스크에 있고, git이 답하면 스냅샷 커밋의 tree에도 있을 때만(`lib/repository/source-links.ts`). 하나라도 어긋나면 링크 대신 이유(`invalid-path` · `missing` · `not-committed` · `unknown-commit`)를 보임. 커밋을 모를 때는 브랜치 최신 링크만 두고 그렇다고 표시함
+- **로컬 변경과 링크** — 미커밋 새 파일은 `not-committed`로 링크 없음. 커밋된 파일을 고친 상태라도 permalink는 스냅샷 커밋의 내용을 열므로 로컬 파일과 다를 수 있음(코드 기준. 실제 브라우저 확인은 하지 않음)
 - **로컬 에디터 링크** — 개발 서버(`NODE_ENV=development`)에서만. 에디터는 `DEVHUB_EDITOR`로 선택
 
 ## 데이터 소유
 
 - **curated** — `src/data/`. 사람 · AI 에이전트가 쓰고 리뷰 후 커밋
-- **저장소 사실** — 별도 생성 파일 없음. 검사가 manifest · `swagger.json` · `nx graph --file`을 직접 읽음
+- **저장소 사실** — 별도 생성 파일 없음. 검사가 manifest · `swagger.json` · `nx graph --file`을 직접 읽음. `api` 상세의 endpoint 목록만 `swagger.json`의 요약 · tag · `security`를 렌더할 때 읽음(`lib/repository/swagger.ts`) — 명세의 정본은 그 문서, route와 연결(호출 단계 · 계약 · 테스트)은 카탈로그
 - **평가 결과** — `tools/evals/results`는 Go 산출물. 요청마다 읽고 v1 decoder로 검증
 - **범위** — 카탈로그는 제품만 담음. `devhub` · `devhub-e2e`와 이 문서는 어디에도 없음(`test-support/scope.ts`)
 - **다른 앱 import 없음** — 빌드 시 `fs`로 읽음. 새 공유 library를 만들지 않음
@@ -98,7 +113,7 @@
 - **`nx affected`가 DevHub를 모름** — 인용된 파일을 바꿨으면 `pnpm devhub:check`를 따로 실행
 - **`next build`는 검사를 돌리지 않음** — `nx build devhub`만으로는 검사 없이 빌드됨
 - **`next dev`는 스냅샷을 한 번 읽음** — 커밋 뒤에는 다시 띄워야 새 SHA가 보임
-- **저장소가 private** — permalink는 권한 있는 로그인 세션에서만 열림
+- **permalink는 push된 커밋만** — 저장소는 public이라 로그인 없이 열림(2026-10-25 GitHub API 확인). DevHub는 push 여부를 확인하지 않으므로 로컬에만 있는 커밋을 가리키는 permalink는 GitHub에 없는 주소임
 
 ## 검증 명령
 

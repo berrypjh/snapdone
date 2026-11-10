@@ -48,7 +48,7 @@ func TestNewUsesConfiguredAddressAndTimeouts(t *testing.T) {
 	if server.Addr != "0.0.0.0:9999" {
 		t.Errorf("Addr = %q, want %q", server.Addr, "0.0.0.0:9999")
 	}
-	// slow-header · slow-body client가 연결을 붙잡지 못하게 한다.
+	// slow-header · slow-body client의 연결 점유 방지.
 	for name, got := range map[string][2]time.Duration{
 		"ReadHeaderTimeout": {server.ReadHeaderTimeout, 5 * time.Second},
 		"ReadTimeout":       {server.ReadTimeout, 15 * time.Second},
@@ -64,7 +64,7 @@ func TestNewUsesConfiguredAddressAndTimeouts(t *testing.T) {
 	}
 }
 
-// pipeListener는 포트를 열지 않고 net.Pipe 연결을 http.Server에 넘긴다(샌드박스가 포트 바인딩을 막는다).
+// pipeListener는 포트 없이 net.Pipe 연결을 http.Server에 전달(샌드박스의 포트 바인딩 차단 때문).
 type pipeListener struct {
 	conns chan net.Conn
 	done  chan struct{}
@@ -101,7 +101,7 @@ func (l *pipeListener) dial(ctx context.Context, _, _ string) (net.Conn, error) 
 	}
 }
 
-// New가 만든 실제 http.Server로 요청을 보내고 graceful shutdown까지 확인한다.
+// New가 만든 실제 http.Server로 요청을 보내고 graceful shutdown까지 확인.
 func TestServerServesRouterAndShutsDown(t *testing.T) {
 	server := New(config.Config{Host: "127.0.0.1", Port: "0"}, Deps{Sessions: &fakeSessions{}, Swagger: true})
 	listener := newPipeListener()
@@ -135,7 +135,7 @@ func TestServerServesRouterAndShutsDown(t *testing.T) {
 	}
 }
 
-// 본문 상한을 넘긴 요청은 400이고, 서버가 남은 본문을 읽지 않도록 연결을 닫는다.
+// 본문 상한을 넘긴 요청은 400, 남은 본문을 읽지 않도록 연결 종료.
 func TestServerClosesConnectionAfterOversizedBody(t *testing.T) {
 	server := New(config.Config{}, Deps{Sessions: &fakeSessions{}, Handoff: auth.NewHandoff(nil)})
 	listener := newPipeListener()
@@ -158,7 +158,7 @@ func TestServerClosesConnectionAfterOversizedBody(t *testing.T) {
 	}
 }
 
-// slowUpload는 image 필드에 data를 담은 multipart 본문을 took 동안 나눠 보낸다.
+// slowUpload는 image 필드에 data를 담은 multipart 본문을 took 동안 나눠 전송.
 func slowUpload(data []byte, took time.Duration) (io.Reader, string) {
 	reader, writer := io.Pipe()
 	form := multipart.NewWriter(writer)
@@ -180,7 +180,7 @@ func slowUpload(data []byte, took time.Duration) (io.Reader, string) {
 	return reader, form.FormDataContentType()
 }
 
-// 사진 업로드는 서버 기본 읽기 · 쓰기 기한보다 오래 걸려도 끝까지 받는다(느린 모바일 네트워크).
+// 사진 업로드는 서버 기본 읽기 · 쓰기 기한보다 오래 걸려도 끝까지 수신(느린 모바일 네트워크).
 func TestServerAcceptsPhotoUploadSlowerThanDefaultTimeouts(t *testing.T) {
 	server := New(config.Config{}, Deps{Sessions: &fakeSessions{}, Processing: &fakeProcessing{}, Handoff: auth.NewHandoff(nil)})
 	server.ReadTimeout, server.WriteTimeout = 100*time.Millisecond, 100*time.Millisecond
@@ -203,10 +203,10 @@ func TestServerAcceptsPhotoUploadSlowerThanDefaultTimeouts(t *testing.T) {
 		t.Errorf("status %d, body %s", resp.StatusCode, answer)
 	}
 
-	// 다른 route는 기본 기한 그대로라 같은 속도의 본문을 끝까지 기다리지 않는다.
-	// 기한에 걸리면 연결이 끊기거나, 쓰기 기한이 남았으면 본문을 못 읽은 400이 나간다.
-	// 읽기 기한은 헤더 전에, 쓰기 기한은 헤더 뒤에 걸려 둘 중 무엇일지는 정해지지 않는다.
-	// 어느 쪽이든 본문(400ms)을 다 보내기 전에 끝나야 기한이 적용된 것이다.
+	// 다른 route는 기본 기한 그대로라 같은 속도의 본문을 끝까지 기다리지 않음.
+	// 기한에 걸리면 연결 끊김, 쓰기 기한이 남았으면 본문을 못 읽은 400.
+	// 읽기 기한은 헤더 전, 쓰기 기한은 헤더 뒤에 걸려 어느 쪽일지는 미정.
+	// 어느 쪽이든 본문(400ms)을 다 보내기 전에 끝나야 기한 적용.
 	slow, _ := slowUpload([]byte(`{"challenge":"`+strings.Repeat("a", 64)+`","next":"/"}`), 400*time.Millisecond)
 	other, _ := http.NewRequest(http.MethodPost, "http://api/v1/auth/handoff/start", slow)
 	other.Header.Set("Authorization", "Bearer "+validToken)

@@ -12,8 +12,8 @@ import (
 	"snapdone/api/internal/database"
 )
 
-// Pool은 테스트 전용 schema를 만들고 그 schema만 보는 pool을 돌려준다.
-// TEST_DATABASE_URL이 없으면 테스트를 skip하고, 테스트가 끝나면 schema를 지운다.
+// Pool은 테스트 전용 schema를 만들고 그 schema만 보는 pool 반환.
+// TEST_DATABASE_URL이 없으면 테스트 skip, 테스트가 끝나면 schema 삭제.
 func Pool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 	url := os.Getenv("TEST_DATABASE_URL")
@@ -50,7 +50,7 @@ func Pool(t *testing.T) *pgxpool.Pool {
 	return pool
 }
 
-// MigratedPool은 Pool에 마이그레이션을 적용한 상태로 돌려준다.
+// MigratedPool은 마이그레이션을 적용한 Pool 반환.
 func MigratedPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 	pool := Pool(t)

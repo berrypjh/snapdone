@@ -11,12 +11,12 @@ import (
 
 func text(value string) *string { return &value }
 
-// field는 확인한 영수증 필드다.
+// field는 확인한 영수증 필드.
 func field(value string) processing.ReceiptField {
 	return processing.ReceiptField{Value: text(value), Candidates: []string{}, Resolved: true}
 }
 
-// 확인하지 못한 영수증 필드. 값도 후보도 없다.
+// 확인하지 못한 영수증 필드. 값도 후보도 없음.
 var unresolved = processing.ReceiptField{Candidates: []string{}}
 
 var expense = processing.Expense{
@@ -46,7 +46,7 @@ func outcome(imageType processing.ImageType, action string, output processing.Ou
 	return processing.Outcome{Kind: processing.OutcomeProcessed, ImageType: imageType, AppliedAction: action, Output: &output}
 }
 
-// 유형별로 고를 수 있는 처리 방식은 preference의 값과 같고, 그 밖은 없다.
+// 유형별로 고를 수 있는 처리 방식은 preference의 값과 같고, 그 밖은 없음.
 func TestValidActionMatchesPreferences(t *testing.T) {
 	for _, action := range []preference.TextAction{
 		preference.TextExtractAndTranslate, preference.TextExtractOnly, preference.TextSummarize, preference.TextExtractAndSummarize,
@@ -79,7 +79,7 @@ func TestValidActionMatchesPreferences(t *testing.T) {
 	}
 }
 
-// 모든 허용 짝의 결과는 계약을 지키고, JSON으로 저장했다 읽어도 같다.
+// 모든 허용 짝의 결과는 계약을 지키고, JSON으로 저장했다 읽어도 같음.
 func TestProcessedOutcomesRoundTrip(t *testing.T) {
 	for imageType, actions := range processed {
 		for action, output := range actions {
@@ -106,7 +106,7 @@ func TestProcessedOutcomesRoundTrip(t *testing.T) {
 	}
 }
 
-// 처리 방식에 맞지 않는 결과 · 다른 유형의 처리 방식은 거절한다.
+// 처리 방식에 맞지 않는 결과 · 다른 유형의 처리 방식은 거절.
 func TestProcessedOutcomeRejectsMismatch(t *testing.T) {
 	for name, o := range map[string]processing.Outcome{
 		"text with record_expense":    outcome(processing.ImageText, "record_expense", processing.Output{Expense: &expense}),
@@ -136,7 +136,7 @@ func TestProcessedOutcomeRejectsMismatch(t *testing.T) {
 	}
 }
 
-// 지원하지 않는 사진과 유형을 정하지 못한 사진은 서로 다른 결과다. 어느 쪽도 처리 방식 · 결과가 없다.
+// 지원하지 않는 사진과 유형을 정하지 못한 사진은 서로 다른 결과. 어느 쪽도 처리 방식 · 결과가 없음.
 func TestUnsupportedAndAmbiguousAreDistinct(t *testing.T) {
 	unsupported := processing.Outcome{Kind: processing.OutcomeUnsupported}
 	ambiguous := processing.Outcome{Kind: processing.OutcomeAmbiguous, Candidates: []processing.ImageType{processing.ImageText, processing.ImageReceipt}}
@@ -194,7 +194,7 @@ func TestReceiptFields(t *testing.T) {
 	}
 }
 
-// 날짜는 실제로 있는 YYYY-MM-DD, 통화는 ISO 4217 코드만이다. 연도 없는 날짜를 확정하지 않는다.
+// 날짜는 실제로 있는 YYYY-MM-DD, 통화는 ISO 4217 코드만. 연도 없는 날짜를 확정하지 않음.
 func TestReceiptDateAndCurrencyFormats(t *testing.T) {
 	for name, tc := range map[string]struct {
 		date, currency processing.ReceiptField
@@ -217,7 +217,7 @@ func TestReceiptDateAndCurrencyFormats(t *testing.T) {
 	}
 }
 
-// 번역할 것이 없으면 그렇다고 밝히고 번역문을 만들지 않는다.
+// 번역할 것이 없으면 그렇다고 밝히고 번역문을 만들지 않음.
 func TestTranslationNotNeeded(t *testing.T) {
 	o := outcome(processing.ImageText, "extract_and_translate",
 		processing.Output{Original: text("영업 중"), Translation: &processing.Translation{}})
@@ -230,7 +230,7 @@ func TestTranslationNotNeeded(t *testing.T) {
 	}
 }
 
-// 확인하지 못한 필드는 값을 지어내지 않고 null로, 후보는 빈 목록으로 나간다.
+// 확인하지 못한 필드는 값을 지어내지 않고 null로, 후보는 빈 목록으로 나감.
 func TestUnresolvedReceiptFieldJSON(t *testing.T) {
 	got, err := json.Marshal(unresolved)
 	if err != nil {

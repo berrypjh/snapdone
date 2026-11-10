@@ -11,18 +11,18 @@ import (
 )
 
 var (
-	// 사진에 읽을 수 있는 글자가 없다. 실패가 아니라 처리할 수 없는 사진이다.
+	// 사진에 읽을 수 있는 글자가 없음. 실패가 아니라 처리할 수 없는 사진.
 	errUnreadable = errors.New("processing: no readable text")
-	// 모델 응답이 처리 방식의 계약을 지키지 않았다.
+	// 모델 응답이 처리 방식의 계약을 지키지 않음.
 	errInvalidAction = errors.New("processing: action answer outside the contract")
 )
 
-// 고른 처리 방식을 사진에 실행한다. 분류 · 유형 판단과 같은 모델을 쓴다.
+// 고른 처리 방식을 사진에 실행. 분류 · 유형 판단과 같은 모델 사용.
 type Actor interface {
 	Act(ctx context.Context, image []byte, mediaType string, s Selection) (Output, error)
 }
 
-// 처리 방식 하나의 지시 · 응답 schema · 해석. name은 OpenAI json_schema 이름이다.
+// 처리 방식 하나의 지시 · 응답 schema · 해석. name은 OpenAI json_schema 이름.
 type actionSpec struct {
 	name         string
 	instructions string
@@ -78,7 +78,7 @@ Use only facts printed on it, such as the store, the date, the total, and the pa
 	}
 )
 
-// 유형과 처리 방식의 짝에 맞는 실행 방법. 계약 밖의 짝이면 errInvalidAction이다.
+// 유형과 처리 방식의 짝에 맞는 실행 방법. 계약 밖의 짝이면 errInvalidAction.
 func specFor(s Selection) (actionSpec, error) {
 	switch s.ImageType {
 	case ImageText:
@@ -105,7 +105,7 @@ func specFor(s Selection) (actionSpec, error) {
 	return actionSpec{}, errInvalidAction
 }
 
-// 모든 처리 방식의 모델 응답 필드. 처리 방식마다 schema가 정한 필드만 온다.
+// 모든 처리 방식의 모델 응답 필드. 처리 방식마다 schema가 정한 필드만 옴.
 type actionAnswer struct {
 	Readable          bool          `json:"readable"`
 	Original          *string       `json:"original"`
@@ -119,7 +119,7 @@ type actionAnswer struct {
 	PaymentMethod     *ReceiptField `json:"paymentMethod"`
 }
 
-// 모델이 돌려준 JSON을 처리 방식의 결과로 바꾼다. schema 밖의 필드 · 계약 밖의 값은 거절하고 고쳐 읽지 않는다.
+// 모델이 돌려준 JSON을 처리 방식의 결과로 변환. schema 밖의 필드 · 계약 밖의 값은 거절하고 고쳐 읽지 않음.
 func (s actionSpec) parse(text string) (Output, error) {
 	decoder := json.NewDecoder(strings.NewReader(text))
 	decoder.DisallowUnknownFields()
@@ -140,7 +140,7 @@ func (s actionSpec) parse(text string) (Output, error) {
 	return output, nil
 }
 
-// 응답에서 fields만 결과로 옮긴다. 하나라도 없으면 errInvalidAction이다.
+// 응답에서 fields만 결과로 옮김. 하나라도 없으면 errInvalidAction.
 func buildOutput(fields ...string) func(actionAnswer) (Output, error) {
 	return func(a actionAnswer) (Output, error) {
 		var output Output
@@ -166,7 +166,7 @@ func buildOutput(fields ...string) func(actionAnswer) (Output, error) {
 
 var nullableString = map[string]any{"anyOf": []any{map[string]any{"type": "string"}, map[string]any{"type": "null"}}}
 
-// 응답 schema. readable과 처리 방식의 필드가 모두 필수다(OpenAI strict 규칙). 값이 없으면 null이다.
+// 응답 schema. readable과 처리 방식의 필드 모두 필수(OpenAI strict 규칙). 값이 없으면 null.
 func answerSchema(fields ...string) map[string]any {
 	properties := map[string]any{"readable": map[string]any{"type": "boolean"}}
 	for _, field := range fields {

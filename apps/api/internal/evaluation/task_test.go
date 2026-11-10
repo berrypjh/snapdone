@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// 모든 task가 채점 연결을 빠짐없이 갖는다. 새 Task 상수를 더하고 taskScorings를 잊으면 여기서 실패한다.
+// 모든 task가 채점 연결을 빠짐없이 가짐. 새 Task 상수를 더하고 taskScorings를 잊으면 여기서 실패.
 func TestEveryTaskHasScoring(t *testing.T) {
 	for _, task := range tasks {
 		s, ok := taskScorings[task]
@@ -18,7 +18,7 @@ func TestEveryTaskHasScoring(t *testing.T) {
 	}
 }
 
-// 기본 규칙과 받는 규칙. 번역 기본은 채점하지 않는 reference 비교이고 strict는 명시해야 한다.
+// 기본 규칙과 받는 규칙. 번역 기본은 채점하지 않는 reference 비교이고 strict는 명시해야 함.
 func TestTaskPolicies(t *testing.T) {
 	defaults := map[Task]string{
 		ImageClassification: "classification-pass-v1",

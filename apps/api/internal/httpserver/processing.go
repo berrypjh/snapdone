@@ -13,19 +13,19 @@ import (
 )
 
 const (
-	// Claude API의 이미지 한 장 상한은 base64로 10 MB다. 원본 7,500,000 byte는 base64로 10,000,000자다.
+	// Claude API의 이미지 한 장 상한은 base64로 10 MB. 원본 7,500,000 byte는 base64로 10,000,000자.
 	maxImageBytes = 7_500_000
 	// multipart 경계 · 헤더 몫을 더한 본문 상한.
 	maxUploadBody = maxImageBytes + 64<<10
 	// 사진 업로드의 읽기 · 쓰기 기한. 서버 기본값(15초)으로는 느린 모바일 네트워크에서 7.5 MB를 다 받지
-	// 못하고 연결이 끊긴다. 2분이면 약 0.5 Mbps까지 받는다.
+	// 못하고 연결이 끊김. 2분이면 약 0.5 Mbps까지 수신.
 	uploadTimeout = 2 * time.Minute
 )
 
-// 분류 모델에 보내는 형식. 파일 이름 · 헤더가 아니라 내용으로 판별한다.
+// 분류 모델에 보내는 형식. 파일 이름 · 헤더가 아니라 내용으로 판별.
 var imageTypes = map[string]bool{"image/jpeg": true, "image/png": true, "image/gif": true, "image/webp": true}
 
-// 사진 처리 작업. 운영에서는 *processing.Processor다.
+// 사진 처리 작업. 운영에서는 *processing.Processor.
 type ProcessingService interface {
 	Start(ctx context.Context, userID string, origin processing.Origin, image []byte, mediaType string) (processing.Job, error)
 	Reprocess(ctx context.Context, userID string, origin processing.Origin, image []byte, mediaType string, r processing.Reprocess) (processing.Job, error)
@@ -36,8 +36,8 @@ type ProcessingService interface {
 	DeleteMany(ctx context.Context, userID string, ids []string) (int, error)
 }
 
-// 작업의 출처는 요청 세션의 온보딩 단계로 서버가 정한다. 온보딩을 마친 뒤에만 general이다.
-// 온보딩 첫 사진은 결과를 본 뒤에 온보딩을 마치므로 onboarding으로 남는다.
+// 작업의 출처는 요청 세션의 온보딩 단계로 서버가 결정. 온보딩을 마친 뒤에만 general.
+// 온보딩 첫 사진은 결과를 본 뒤에 온보딩을 마치므로 onboarding으로 남음.
 func jobOrigin(onboardingStep string) processing.Origin {
 	if onboardingStep == "complete" {
 		return processing.OriginGeneral
@@ -45,7 +45,7 @@ func jobOrigin(onboardingStep string) processing.Origin {
 	return processing.OriginOnboarding
 }
 
-// 목록에 넣는 출처. 온보딩 첫 사진은 온보딩을 마친 뒤에만 보인다.
+// 목록에 넣는 출처. 온보딩 첫 사진은 온보딩을 마친 뒤에만 보임.
 func listedOrigins(onboardingStep string) []processing.Origin {
 	if onboardingStep == "complete" {
 		return []processing.Origin{processing.OriginOnboarding, processing.OriginGeneral}
@@ -123,7 +123,7 @@ func (h *handlers) createProcessingJob(c *gin.Context) {
 	c.JSON(http.StatusAccepted, toProcessingJobResponse(job))
 }
 
-// 처리 시작 · 재처리 오류를 상태 코드로 바꾼다. 원래 작업이 없는 것과 다른 사용자의 것은 구분하지 않는다.
+// 처리 시작 · 재처리 오류를 상태 코드로 변환. 원래 작업이 없는 것과 다른 사용자의 것은 구분하지 않음.
 func (h *handlers) processingStartError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, processing.ErrInvalidReprocess):
@@ -301,7 +301,7 @@ func (h *handlers) processingJobs(c *gin.Context) {
 	c.JSON(http.StatusOK, toProcessingJobListResponse(jobs))
 }
 
-// multipart 필드 image의 내용. 실패하면 상태 코드와 오류 코드를 돌려준다.
+// multipart 필드 image의 내용. 실패하면 상태 코드와 오류 코드 반환.
 func readImage(r *http.Request) ([]byte, int, string) {
 	file, _, err := r.FormFile("image")
 	var tooLarge *http.MaxBytesError
@@ -322,8 +322,8 @@ func readImage(r *http.Request) ([]byte, int, string) {
 	return image, 0, ""
 }
 
-// 업로드 route에서만 서버 기본 읽기 · 쓰기 기한을 늘린다. 다른 요청은 짧은 기한으로 느린 연결을 끊는다.
-// net/http 연결이 아닌 writer(httptest)는 기한을 지원하지 않아 오류를 돌려주므로 무시한다.
+// 업로드 route에서만 서버 기본 읽기 · 쓰기 기한을 늘림. 다른 요청은 짧은 기한으로 느린 연결을 끊음.
+// net/http 연결이 아닌 writer(httptest)는 기한을 지원하지 않아 오류를 돌려주므로 무시.
 func extendDeadline(timeout time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		deadline := time.Now().Add(timeout)

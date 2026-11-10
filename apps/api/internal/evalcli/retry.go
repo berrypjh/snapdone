@@ -12,7 +12,7 @@ import (
 	"snapdone/api/internal/evaluation/processingadapter"
 )
 
-// 실패 · 미실행인 호출만 다시 부르고, 끝난 결과는 호출 없이 옮겨 모든 variant가 든 새 run을 쓴다. 원래 run은 그대로다.
+// 실패 · 미실행인 호출만 다시 부르고, 끝난 결과는 호출 없이 옮겨 모든 variant가 든 새 run 기록. 원래 run은 그대로.
 func cmdRetry(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("retry", flag.ContinueOnError)
 	var s selection
@@ -56,7 +56,7 @@ func cmdRetry(ctx context.Context, args []string, stdout, stderr io.Writer) int 
 	return execute(ctx, req, s, stdout, stderr)
 }
 
-// 원래 run과 같은 조건의 요청. variant는 같은 id의 설정 파일, 없으면 `[실험 설정@]공급자:모델`로 다시 만든다.
+// 원래 run과 같은 조건의 요청. variant는 같은 id의 설정 파일, 없으면 `[실험 설정@]공급자:모델`로 다시 생성.
 func retryRequest(p paths, meta evaluation.RunMetadata, contract evaluation.ClassificationContract) (evaluation.RunRequest, error) {
 	ds, err := evaluation.LoadDataset(p.dataset(meta.Dataset.Name), contract)
 	if err != nil {
@@ -78,7 +78,7 @@ func retryRequest(p paths, meta evaluation.RunMetadata, contract evaluation.Clas
 	}, nil
 }
 
-// 산출물에 참조가 남은 variant는 그 참조로, 아니면 같은 id의 manifest 파일로 다시 만든다.
+// 산출물에 참조가 남은 variant는 그 참조로, 아니면 같은 id의 manifest 파일로 다시 생성.
 func retryVariant(p paths, v evaluation.Variant, contract evaluation.ClassificationContract) (evaluation.VariantManifest, error) {
 	if v.Ref == "" {
 		loaded, err := evaluation.LoadVariants([]string{p.variant(v.ID)}, contract)

@@ -46,8 +46,8 @@ func (s *selection) bind(fs *flag.FlagSet) {
 	fs.StringVar(&s.policy, "policy", "", "scoring policy version (default per task; translation-exact-v1 turns translation into strict pass/fail)")
 }
 
-// 파일 없이 만드는 variant — `[실험 설정@]공급자:모델`. 그 모양이 아니면 ok가 false라 파일 이름으로 본다.
-// 모양 · id 규칙은 evaluation.VariantRef가 정하고 여기서는 설정 이름을 경로로 풀기만 한다.
+// 파일 없이 만드는 variant — `[실험 설정@]공급자:모델`. 그 모양이 아니면 ok가 false라 파일 이름으로 간주.
+// 모양 · id 규칙은 evaluation.VariantRef가 정하고 여기서는 설정 이름을 경로로 풀기만 함.
 func refVariant(p paths, ref string, contract evaluation.ClassificationContract) (evaluation.VariantManifest, bool, error) {
 	r, ok, err := evaluation.ParseVariantRef(ref)
 	if err != nil {

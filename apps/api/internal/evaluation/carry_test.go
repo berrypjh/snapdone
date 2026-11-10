@@ -7,13 +7,13 @@ import (
 	"testing"
 )
 
-// 실패한 variant만 다시 부르고, 끝난 variant의 결과는 호출 없이 한 run으로 옮긴다.
+// 실패한 variant만 다시 부르고, 끝난 variant의 결과는 호출 없이 한 run으로 옮김.
 func TestRetryCarriesCompletedAndCallsOnlyFailed(t *testing.T) {
 	ds := runnerDataset(t, 2)
 	root := t.TempDir()
 	good, bad := variant("good", "anthropic"), variant("bad", "openai")
 	t.Setenv("EVAL_TEST_KEY", "set")
-	// good이 먼저 돈다(호출 1 · 2), bad는 실패(호출 3 · 4).
+	// good이 먼저 실행(호출 1 · 2), bad는 실패(호출 3 · 4).
 	first := &fakeAdapters{observe: func(_ AdapterInput, call int) Observation {
 		if call > 2 {
 			obs := failed(Failed)
@@ -31,7 +31,7 @@ func TestRetryCarriesCompletedAndCallsOnlyFailed(t *testing.T) {
 		t.Fatalf("pending = %d, err = %v", carry.Pending, err)
 	}
 
-	// 다시 할 때는 good의 key가 없어도 된다 — 부르지 않는다.
+	// 다시 할 때는 good의 key가 없어도 됨 — 부르지 않음.
 	t.Setenv("EVAL_TEST_KEY", "")
 	retry := &fakeAdapters{}
 	w2, err := NewRunWriter(root, contract, fixedClock)
@@ -71,7 +71,7 @@ func TestRetryCarriesCompletedAndCallsOnlyFailed(t *testing.T) {
 	}
 }
 
-// case 선택 · variant 설정이 다르면 옛 결과와 섞지 않는다. 채점기가 달라진 것은 괜찮다 — 옮긴 관측을 다시 채점한다.
+// case 선택 · variant 설정이 다르면 옛 결과와 섞지 않음. 채점기가 달라진 것은 허용 — 옮긴 관측을 다시 채점.
 func TestRetryRefusesWhenConditionsDiffer(t *testing.T) {
 	ds := runnerDataset(t, 2)
 	root := t.TempDir()

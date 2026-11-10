@@ -84,7 +84,7 @@ func (h *handlers) oauthCallback(c *gin.Context) {
 		writeError(c, http.StatusBadRequest, errInvalidCallback)
 		return
 	}
-	// c.Redirect는 Location을 되풀이한 HTML 본문을 붙인다. 헤더만 보낸다.
+	// c.Redirect는 Location을 되풀이한 HTML 본문을 붙여서 헤더만 전송.
 	c.Header("Location", location)
 	c.Status(http.StatusFound)
 }
@@ -119,7 +119,7 @@ func (h *handlers) exchange(c *gin.Context) {
 }
 
 // callback 실패의 로그 레벨. 사용자 취소는 정상 동작(Info), 맞지 않는 · 이미 쓴 state는
-// 재시도나 변조일 수 있어 Warn, provider · 저장소 · 복호화 오류는 장애라 Error다.
+// 재시도나 변조일 수 있어 Warn, provider · 저장소 · 복호화 오류는 장애라 Error.
 func callbackLogLevel(err error) slog.Level {
 	switch {
 	case errors.Is(err, auth.ErrCancelled):

@@ -10,9 +10,9 @@ import (
 )
 
 var (
-	// 조회 대상 행이 없거나, 세션이 만료 · 폐기됐다.
+	// 조회 대상 행이 없거나, 세션이 만료 · 폐기됨.
 	ErrNotFound = errors.New("auth: not found")
-	// 로그인 수단(provider, subject)이 이미 다른 사용자에 연결돼 있다.
+	// 로그인 수단(provider, subject)이 이미 다른 사용자에 연결됨.
 	ErrIdentityTaken = errors.New("auth: identity already linked")
 )
 
@@ -48,8 +48,8 @@ func NewStore(pool *pgxpool.Pool) *Store {
 	return &Store{pool: pool}
 }
 
-// 사용자 · 로그인 수단 · profile을 한 트랜잭션으로 만든다.
-// 로그인 수단이 이미 연결돼 있으면 ErrIdentityTaken을 반환한다.
+// 사용자 · 로그인 수단 · profile을 한 트랜잭션으로 생성.
+// 로그인 수단이 이미 연결돼 있으면 ErrIdentityTaken 반환.
 func (s *Store) CreateUser(ctx context.Context, identity Identity, consent Consent) (User, error) {
 	user := User{OnboardingStep: "intro"}
 
@@ -79,7 +79,7 @@ func (s *Store) CreateUser(ctx context.Context, identity Identity, consent Conse
 	return user, nil
 }
 
-// 로그인 수단으로 사용자를 찾는다. 없으면 ErrNotFound를 반환한다.
+// 로그인 수단으로 사용자 조회. 없으면 ErrNotFound 반환.
 func (s *Store) FindUserByIdentity(ctx context.Context, provider, subject string) (User, error) {
 	var user User
 	err := s.pool.QueryRow(ctx, `
@@ -95,8 +95,8 @@ func (s *Store) FindUserByIdentity(ctx context.Context, provider, subject string
 	return user, err
 }
 
-// 로그인 수단의 사용자를 찾고, 없으면 만든다.
-// 같은 로그인 수단으로 동시에 가입하면 한쪽이 UNIQUE 위반 후 재조회로 같은 사용자에 수렴한다.
+// 로그인 수단의 사용자를 찾고, 없으면 생성.
+// 같은 로그인 수단으로 동시에 가입하면 한쪽이 UNIQUE 위반 후 재조회로 같은 사용자에 수렴.
 func (s *Store) FindOrCreateUser(ctx context.Context, identity Identity, consent Consent) (User, error) {
 	user, err := s.FindUserByIdentity(ctx, identity.Provider, identity.Subject)
 	if !errors.Is(err, ErrNotFound) {

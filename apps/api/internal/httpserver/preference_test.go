@@ -9,7 +9,7 @@ import (
 	"snapdone/api/internal/preference"
 )
 
-// fakePreferences는 사용자 한 명의 처리 방식을 가진다. 값 검사는 실제 Valid를 쓰고, 받은 userID를 남긴다.
+// fakePreferences는 사용자 한 명의 처리 방식을 보유. 값 검사는 실제 Valid를 쓰고, 받은 userID를 기록.
 type fakePreferences struct {
 	prefs  preference.Preferences
 	err    error
@@ -64,7 +64,7 @@ func TestProcessingPreferences(t *testing.T) {
 	assertNoStore(t, r)
 }
 
-// 한 유형을 바꾸면 그 값만 바뀌고, 응답은 바뀐 뒤의 전체다.
+// 한 유형을 바꾸면 그 값만 바뀌고, 응답은 바뀐 뒤의 전체.
 func TestSetProcessingPreference(t *testing.T) {
 	store := &fakePreferences{prefs: preference.Defaults()}
 	handler := preferenceRouter(store)
@@ -84,7 +84,7 @@ func TestSetProcessingPreference(t *testing.T) {
 	}
 }
 
-// 본문의 사용자 식별자는 무시하고 세션의 사용자에게만 적용한다.
+// 본문의 사용자 식별자는 무시하고 세션의 사용자에게만 적용.
 func TestSetProcessingPreferenceIgnoresBodyUser(t *testing.T) {
 	store := &fakePreferences{prefs: preference.Defaults()}
 	r := send(preferenceRouter(store), http.MethodPut, "/v1/processing-preferences/text",
@@ -125,7 +125,7 @@ func TestProcessingPreferenceRejects(t *testing.T) {
 	}
 }
 
-// 저장소 오류는 원인을 숨긴 500이다.
+// 저장소 오류는 원인을 숨긴 500.
 func TestProcessingPreferenceStoreFailure(t *testing.T) {
 	store := &fakePreferences{err: errors.New("db: connection reset at 10.0.0.5")}
 	handler := preferenceRouter(store)

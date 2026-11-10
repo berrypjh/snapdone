@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// 0은 잰 값이다. 저장했다 읽어도 0이 남고 사라지지 않는다.
+// 0은 잰 값. 저장했다 읽어도 0이 남고 사라지지 않음.
 func TestMeasureZeroRoundTrip(t *testing.T) {
 	encoded, err := json.Marshal(MeasuredValue(0))
 	if err != nil {
@@ -41,7 +41,7 @@ func TestMeasureUnavailableRoundTrip(t *testing.T) {
 	}
 }
 
-// availability와 value의 짝이 틀리면 읽는 단계에서 거절한다. 없는 값이 0으로 읽히는 길이 없다.
+// availability와 value의 짝이 틀리면 읽는 단계에서 거절. 없는 값이 0으로 읽히는 길이 없음.
 func TestMeasureRejects(t *testing.T) {
 	for name, text := range map[string]string{
 		"measured without value":  `{"availability":"measured","value":null}`,

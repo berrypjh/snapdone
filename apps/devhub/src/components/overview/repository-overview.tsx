@@ -7,8 +7,10 @@ import { catalog } from '@/data';
 import type { ImplementationStatus, Scenario } from '@/domain/model';
 import { entityHref, sectionHref, SECTIONS } from '@/lib/catalog/entities';
 import { STATUS, TRACK } from '@/lib/catalog/labels';
+import { startPath } from '@/lib/catalog/start-path';
 
 import { StatusChip } from '../entity/status-chip';
+import { VerificationLimits } from '../entity/verification-note';
 
 import { SnapshotSummary } from './snapshot-summary';
 
@@ -32,9 +34,12 @@ function ScenarioList({ track }: { track: Scenario['track'] }) {
       <ul className="flex flex-col divide-y divide-stroke-light">
         {listed.map((scenario) => (
           <li key={scenario.id} className="flex items-center justify-between gap-3 py-2">
-            <Link href={entityHref({ section: 'scenarios', id: scenario.id })} className={LINK}>
-              {scenario.title}
-            </Link>
+            <span className="flex min-w-0 flex-col">
+              <Link href={entityHref({ section: 'scenarios', id: scenario.id })} className={LINK}>
+                {scenario.title}
+              </Link>
+              <VerificationLimits scenario={scenario} />
+            </span>
             <StatusChip status={scenario.status} />
           </li>
         ))}
@@ -43,13 +48,55 @@ function ScenarioList({ track }: { track: Scenario['track'] }) {
   );
 }
 
-/** 문서에서 인용한 제품의 목적과, 지금 코드에 있는 흐름. */
+/** 문서에서 인용한 제품의 목적, 이 도구의 목적, 지금 코드에 있는 흐름. */
 function ProductSummary() {
   return (
     <WorkspaceSection id="overview-product" title="제품">
-      <p className="typo-body-small">{catalog.product.text}</p>
+      <dl className="flex flex-col gap-2 typo-body-small">
+        <div className="flex flex-col gap-0.5">
+          <dt className="typo-body-small-strong">Snapdone</dt>
+          <dd>{catalog.product.text}</dd>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <dt className="typo-body-small-strong">DevHub</dt>
+          <dd>
+            그 제품이 어떤 코드 · API · 계약 · 문서 · 테스트로 동작하는지 근거까지 찾는 내부 도구.
+            제품 화면이 아니고, 상태는 사람이 적은 카탈로그에서 옴
+          </dd>
+        </div>
+      </dl>
       <ScenarioList track="current" />
       <ScenarioList track="developer" />
+    </WorkspaceSection>
+  );
+}
+
+/** 처음 온 개발자가 차례로 여는 세 단계. 모든 링크는 이미 있는 시나리오 · 구성 요소 · 문서로 간다. */
+function StartPath() {
+  return (
+    <WorkspaceSection id="overview-start" title="처음 10분">
+      <ol className="flex flex-col gap-4">
+        {startPath().map((step, index) => (
+          <li key={step.title} className="flex flex-col gap-1">
+            <h3 className="typo-body-small-strong">
+              {index + 1}. {step.title}
+            </h3>
+            <p className="typo-body-small text-text-light">{step.lead}</p>
+            <ul className="flex flex-col gap-1">
+              {step.links.map((link) => (
+                <li key={link.href} className="flex flex-wrap items-baseline gap-x-2">
+                  <Link href={link.href} className={LINK}>
+                    {link.label}
+                  </Link>
+                  {link.detail && (
+                    <span className="typo-caption-small text-text-light">{link.detail}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ol>
     </WorkspaceSection>
   );
 }
@@ -65,6 +112,7 @@ export function RepositoryOverview() {
   return (
     <>
       <ProductSummary />
+      <StartPath />
       <WorkspaceSection id="overview-repository" title="저장소">
         <dl className="grid grid-cols-[7rem_minmax(0,1fr)] gap-x-3 gap-y-2 typo-body-small">
           <dt className="text-text-light">원격</dt>

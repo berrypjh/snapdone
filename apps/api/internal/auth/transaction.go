@@ -9,7 +9,7 @@ import (
 )
 
 // OAuth 시작 시 저장해 콜백에서 한 번 꺼내는 상태.
-// UpstreamVerifier · UpstreamNonce는 Cipher.Seal 결과(AAD는 state 해시)이고 KeyID는 그 키 식별자다.
+// UpstreamVerifier · UpstreamNonce는 Cipher.Seal 결과(AAD는 state 해시), KeyID는 그 키 식별자.
 type Transaction struct {
 	Purpose          Purpose
 	Provider         string
@@ -30,7 +30,7 @@ func (s *Store) CreateTransaction(ctx context.Context, stateHash []byte, tx Tran
 	return err
 }
 
-// transaction을 한 번만 소비한다. 없거나 만료 · 소비됐으면 ErrNotFound를 반환한다.
+// transaction을 한 번만 소비. 없거나 만료 · 소비됐으면 ErrNotFound 반환.
 func (s *Store) ConsumeTransaction(ctx context.Context, stateHash []byte) (Transaction, error) {
 	var tx Transaction
 	err := s.pool.QueryRow(ctx, `
@@ -45,7 +45,7 @@ func (s *Store) ConsumeTransaction(ctx context.Context, stateHash []byte) (Trans
 	return tx, err
 }
 
-// 앱이 취소한 OAuth 시작을 폐기한다. 없거나 이미 소비됐어도 오류가 아니다.
+// 앱이 취소한 OAuth 시작 폐기. 없거나 이미 소비됐어도 오류 아님.
 func (s *Store) DiscardTransaction(ctx context.Context, clientState string) error {
 	_, err := s.pool.Exec(ctx,
 		"UPDATE auth_transactions SET consumed_at = now() WHERE client_state = $1 AND consumed_at IS NULL",
