@@ -1,0 +1,9 @@
+{
+  "note": "smoke: 사람이 직접 쓴 고정 답. 모델 출력이 아니고 품질 근거가 아니다. 파이프라인(해석 · 상태 · replay)을 확인하는 데만 쓴다.",
+  "answers": {
+    "text-notice": "{\"imageType\": \"text\"}",
+    "receipt-card": "{\"imageType\": \"receipt\"}",
+    "unsupported-shapes": "{\"imageType\": \"unsupported\"}",
+    "ambiguous-invoice": "{\"imageType\": \"document\"}"
+  }
+}

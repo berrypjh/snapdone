@@ -32,6 +32,11 @@ def datasets_dir(root: Path | None = None) -> Path:
     return (root or repository_root()) / "tools" / "evals" / "datasets"
 
 
+def research_fixtures_dir(root: Path | None = None) -> Path:
+    """Go가 아직 읽지 않는 과제(image-typing)의 연구 fixture. `pnpm eval list`가 보는 datasets/ 밖이다."""
+    return (root or repository_root()) / "tools" / "evals" / "lab" / "fixtures"
+
+
 def list_datasets(root: Path | None = None) -> list[str]:
     """manifest.json이 있는 dataset 디렉터리 이름, 정렬한 것."""
     return sorted(p.parent.name for p in datasets_dir(root).glob("*/manifest.json"))
@@ -52,7 +57,9 @@ class Dataset:
         return self.manifest["task"]
 
 
-def load_dataset(name: str, split: str = "dev", *, allow_held_out: bool = False, root: Path | None = None) -> Dataset:
+def load_dataset(
+    name: str, split: str = "dev", *, allow_held_out: bool = False, root: Path | None = None, directory: Path | None = None
+) -> Dataset:
     """dataset 하나의 split을 디렉터리 이름으로 읽는다.
 
     held-out은 `allow_held_out=True`를 명시해야 열린다. notebook이 실수로 최종 split을 열지 않게 하는 연구용 UX
@@ -65,11 +72,16 @@ def load_dataset(name: str, split: str = "dev", *, allow_held_out: bool = False,
             "held-out is closed for research; pass allow_held_out=True only for a final check "
             "(the official rule is Go's --allow-held-out)"
         )
-    directory = datasets_dir(root) / name
+    directory = directory or datasets_dir(root) / name
     manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
     cases = _read_jsonl(directory / manifest["splits"][split]["file"])
     frame = pd.DataFrame([_row(case, directory) for case in cases])
     return Dataset(name=name, split=split, directory=directory, manifest=manifest, cases=cases, frame=frame)
+
+
+def load_research_fixture(name: str, split: str = "dev", *, allow_held_out: bool = False, root: Path | None = None) -> Dataset:
+    """lab 연구 fixture(예: sample-image-typing)를 Go dataset과 같은 모양으로 읽는다. 정식 검증은 Go 과제가 생긴 뒤의 일이다."""
+    return load_dataset(name, split, allow_held_out=allow_held_out, directory=research_fixtures_dir(root) / name)
 
 
 def _read_jsonl(path: Path) -> list[dict]:
@@ -99,6 +111,7 @@ def _row(case: dict, directory: Path) -> dict:
     if image := inp.get("image"):
         row["fixture_path"] = image["path"]
         row["fixture_exists"] = (directory / image["path"]).is_file()
+    row["language"] = inp.get("language", pd.NA)
     if text := inp.get("text"):
         row["source_language"] = text["sourceLanguage"]
         row["target_language"] = text["targetLanguage"]
@@ -114,6 +127,9 @@ def _row(case: dict, directory: Path) -> dict:
         row["expected_chars"] = len(extraction["text"] or "")
         row["reading_order"] = extraction.get("readingOrder", pd.NA)
         row["field_count"] = len(extraction.get("fields", []))
+        row["tokenizer"] = extraction.get("tokenizer", pd.NA)
+    if typing := expected.get("imageTyping"):
+        row["image_type"] = typing["imageType"]
     if translation := expected.get("translation"):
         row["reference_count"] = len(translation["references"])
         row["critical_span_count"] = len(translation.get("criticalSpans", []))

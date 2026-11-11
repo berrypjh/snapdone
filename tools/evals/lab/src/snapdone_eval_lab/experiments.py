@@ -14,6 +14,7 @@ from typing import Any, Callable
 
 from .datasets import Dataset
 from .predictions import Record, classified, failed, write_jsonl
+from .tasks import failure_for
 from .providers import ANTHROPIC, OPENAI, OPENAI_DEFAULT_BASE_URL, PROVIDERS, RawResponse, call_anthropic, call_openai_compatible, result_schema
 
 # production label 어휘(apps/api/internal/processing/result.go)의 연구용 복사본. 기준은 Go의 계약이다:
@@ -26,6 +27,9 @@ VOCABULARY: dict[str, tuple[str, ...]] = {
 
 # production의 user turn 문구와 같다. 지시문처럼 실험 변수다.
 DEFAULT_REQUEST = "Classify this image."
+
+# dry-run에서 부르지 않은 case의 문구. 실패가 아니라 미실행이고 replay로 내보내지 않는다.
+NOT_CALLED = "not called (dry run)"
 
 # 실험 id는 variant id와 파일 이름이 된다: Go의 식별자 규칙.
 IDENTIFIER = re.compile(r"^[a-z0-9-]+$")
@@ -111,7 +115,7 @@ def run_classification_experiment(
     for case_id in case_ids:
         image_ref = by_id[case_id]["input"]["image"]
         if dry_run:
-            raw = RawResponse(provider, model, None, None, None, None, None, 0, error="not called (dry run)")
+            raw = RawResponse(provider, model, None, None, None, None, None, None, error=NOT_CALLED)
         else:
             image = (dataset.directory / image_ref["path"]).read_bytes()
             raw = _call(experiment, image, image_ref["mediaType"], schema, call)
@@ -152,9 +156,14 @@ def _result(case_id: str, raw: RawResponse) -> Result:
 
 
 def to_records(experiment: Experiment) -> list[Record]:
-    """Go로 넘길 replay 기록. 쓸 수 있는 답은 completed 기록, 나머지는 이유를 단 failed 기록이다."""
+    """Go로 넘길 replay 기록. 쓸 수 있는 답은 completed 기록, 나머지는 이유를 단 failed 기록이다.
+
+    dry-run으로 부르지 않은 case는 내보내지 않는다. Go는 기록이 없는 case를 not-run으로 세고 실패로 세지 않는다.
+    """
     records = []
     for r in experiment.results:
+        if r.problem == NOT_CALLED:
+            continue
         if r.problem is None and r.prediction is not None:
             p = r.prediction
             records.append(classified(experiment.id, r.case_id, p["category"], p["suggestedAction"], p["confidence"], facts=p["facts"]))
@@ -165,28 +174,20 @@ def to_records(experiment: Experiment) -> list[Record]:
 
 
 def _failure_kind(r: Result) -> tuple[str, str, str]:
-    problem = r.problem or ""
-    if problem.startswith("provider returned HTTP"):
-        return "http-status", "provider", "failed"
-    if problem == "no response from the provider":
-        return "transport", "transport", "failed"
-    if problem == "model refused":
-        return "refusal", "provider", "failed"
-    if problem.startswith("stop reason") or problem.startswith("finish reason"):
-        return "truncation", "provider", "failed"
-    if problem == "model text is not JSON":
-        return "model-json-syntax", "contract", "failed"
-    if "outside" in problem:
-        return "contract", "contract", "failed"
-    if problem == "response carried no text":
-        return "no-content", "provider", "failed"
-    return "unknown", "other", "failed"
+    kind, failure_class = failure_for(r.problem or "")
+    return kind, failure_class, "failed"
 
 
 def export_predictions(experiment: Experiment, path: Path) -> Path:
-    """replay 파일을 쓴다. 다시 쓸 결과는 tools/evals/predictions/<id>.jsonl, 임시 결과는 lab/out/."""
+    """replay 파일을 쓴다. 다시 쓸 결과는 tools/evals/predictions/<id>.jsonl, 임시 결과는 lab/out/.
+
+    내보낼 기록이 없으면(모두 dry-run) 쓰지 않고 ValueError다 — 빈 파일은 Go replay가 거절한다.
+    """
+    records = to_records(experiment)
+    if not records:
+        raise ValueError("nothing to export: every case is not-run (dry run)")
     path.parent.mkdir(parents=True, exist_ok=True)
-    return write_jsonl(to_records(experiment), path)
+    return write_jsonl(records, path)
 
 
 def export_replay_variant(experiment: Experiment, path: Path, template: Path) -> Path:

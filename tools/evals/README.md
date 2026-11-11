@@ -108,8 +108,12 @@ notebook에서 탐색(dev)  →  후보(지시문 · 모델 · 임계값)  →  
 | task                   | live 실행                                                 | replay | 형식 예시                | 기본 채점 규칙(다른 규칙)                                                         | 대표 지표                       |
 | ---------------------- | --------------------------------------------------------- | ------ | ------------------------ | --------------------------------------------------------------------------------- | ------------------------------- |
 | `image-classification` | **됨** — production 분류기(Claude · OpenAI 호환 · Ollama) | 됨     | `sample-classification`  | `classification-pass-v1`                                                          | category 정확도                 |
-| `text-extraction`      | **없음** — production OCR 코드가 없다                     | 됨     | `sample-text-extraction` | `text-pass-v1`                                                                    | corpus CER                      |
-| `translation`          | **없음** — production 번역 코드가 없다                    | 됨     | `sample-translation`     | `translation-reference-v1`(case를 채점하지 않음) · `translation-exact-v1`(strict) | 보존 구간(critical span) 재현율 |
+| `text-extraction`      | **없음** — 평가 adapter가 `Act`를 부르지 않는다           | 됨     | `sample-text-extraction` | `text-pass-v1`                                                                    | corpus CER                      |
+| `translation`          | **없음** — 평가 adapter가 `Act`를 부르지 않는다           | 됨     | `sample-translation`     | `translation-reference-v1`(case를 채점하지 않음) · `translation-exact-v1`(strict) | 보존 구간(critical span) 재현율 |
+
+제품에는 OCR · 번역이 있다. `Act`가 `extract_text` · `extract_and_translate`를 실행한다(`apps/api/internal/processing/action.go`). 평가 live adapter(`processingadapter/adapter.go`)는 `Classify`만 부르고 다른 과제는 `unsupported-task`로 기록한다(`variant.go`의 `adapterTasks`). 그래서 두 과제는 Python lab이 쓴 기록을 replay로만 채점한다. 제품 유형 판단(`TypeImage`, lab 이름 `image-typing`)은 Go 과제가 아직 없다 — [lab/text-experiments.md](lab/text-experiments.md).
+
+경계 fixture(`software-fixture`, benchmark 아님): `sample-ocr-boundaries` · `sample-translation-boundaries` · `sample-classification-boundaries`(nearest 기준선 확인용). `sample-*`만 커밋되고 나머지 dataset은 git 제외다.
 
 - 분류 — category · 추천 행동(acceptable · forbidden) · 위험(critical) · confidence 분포, 추출값(facts) 재현율 · 행동 완료 가능률 · 자동 실행 점검. 추출값은 pass에 넣지 않는다
 - 텍스트 추출 — 공백 정규화 뒤 rune CER · 단어 WER(`tokenizer: whitespace`인 case만) · field 정확도. Unicode 정규화는 하지 않는다
@@ -248,13 +252,13 @@ zero-touch가 아니라 정해진 목록을 고친다. 빠뜨리면 컴파일 ·
 5. `aggregate.go`(요약 branch) · `artifact.go`(`summary.md` 표) · `dataset.go`(사진 여부 · readiness)
 6. live가 있으면 adapter와 `variant.go`의 `adapterTasks`, 없으면 `evaluation/replay.go`의 `ReplayRecord` 검증
 7. 산출물 golden · DevHub `apps/devhub/src/lib/evaluations`의 decoder와 화면
-8. `datasets/sample-<task>` 형식 예시 · `predictions/sample-<task>.jsonl` · replay 이름표 manifest. Python `lab/`은 분류 실험만 알므로 새 과제의 live 실험은 별도 작업
+8. `datasets/sample-<task>` 형식 예시 · `predictions/sample-<task>.jsonl` · replay 이름표 manifest. Python `lab/`은 분류 · OCR · 번역 · 제품 유형 판단 실험을 안다(`lab/src/snapdone_eval_lab/tasks.py`). 새 Go 과제는 lab 연구 기록을 replay 기록으로 옮기는 일까지 포함한다
 
 ## 검증
 
 ```bash
 pnpm eval:check                 # Go — cmd/eval · evalcli · evaluation/... 테스트 + sample 3개 validate. 모델 호출 없음
-pnpm eval:lab:test              # Python — loader · 예측 writer · 실험(가짜 공급자) · gate 연구 · notebook 정책. Go CLI를 빌드해 replay까지
+pnpm eval:lab:test              # Python — loader · 예측 writer · 실험(가짜 공급자 · smoke 재생) · gate 연구 · notebook 정책. Go CLI를 빌드해 분류 · OCR · 번역 replay까지
 pnpm nx run devhub:test         # DevHub — 산출물 decoder · repository · /evals 화면(Go golden을 그대로 읽음)
 ```
 

@@ -1,0 +1,10 @@
+{
+  "note": "smoke: 사람이 직접 쓴 고정 답. 모델 출력이 아니고 품질 근거가 아니다. 파이프라인(해석 · 상태 · replay)을 확인하는 데만 쓴다.",
+  "answers": {
+    "en-hours": "{\"readable\": true, \"original\": \"STORE HOURS\\nMon-Fri 10:00-21:00\\nSat 11:00-18:00\\nClosed on Sundays\"}",
+    "en-hours-crop": "{\"readable\": true, \"original\": \"STORE HOURS\\nMon-Fri 10:00-21:0O\"}",
+    "ja-menu": "{\"readable\": true, \"original\": \"本日のおすすめ\\n味噌ラーメン 950円\\n餃子 460円\"}",
+    "mixed-ko-en": "{\"readable\": true, \"original\": \"\"}",
+    "no-text": "{\"readable\": false, \"original\": null}"
+  }
+}

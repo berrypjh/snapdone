@@ -90,9 +90,10 @@ def test_guards_dry_run_and_export_shape(tmp_path: Path):
         run_classification_experiment(load_dataset("sample-text-extraction"), [], experiment_id="x", provider="openai", model="m", prompt="P", dry_run=True)
 
     dry = run_classification_experiment(dataset, ["event-01"], experiment_id="dry", provider="anthropic", model="m", prompt="P", dry_run=True)
-    assert dry.results[0].problem == "not called (dry run)"
-    records = to_records(dry)
-    assert records[0].status == "failed" and records[0].failure == {"class": "other", "kind": "unknown", "message": "not called (dry run)"}
+    assert dry.results[0].problem == "not called (dry run)" and dry.results[0].raw.elapsed_ms is None
+    assert to_records(dry) == [], "a dry run is not-run, never a failed inference"
+    with pytest.raises(ValueError, match="nothing to export"):
+        export_predictions(dry, tmp_path / "out" / "dry.jsonl")
 
     good = json.dumps({"category": "event", "facts": [], "suggestedAction": "add_to_calendar", "confidence": "high"})
     experiment = run_classification_experiment(dataset, ["event-01"], experiment_id="lab-test", provider="openai", model="m", prompt="P", base_url="http://localhost:11434/v1", call=fake([answer(good)]))

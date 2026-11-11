@@ -1,6 +1,6 @@
 # evals lab
 
-`tools/evals` 평가 dataset을 살피는 Python 연구 공간: pandas로 데이터 읽기, 이미지 보기, case 몇 개에 지시문이나 모델 시험하기, 원시 답 잘라 보기, 임계값 훑기.
+`tools/evals` 평가 dataset을 살피는 Python 연구 공간: pandas로 데이터 읽기, 이미지 보기, case 몇 개에 지시문이나 모델 시험하기, 원시 답 잘라 보기, 임계값 훑기. 분류 · OCR · 번역 · 제품 유형 판단(`image-typing`)을 실험한다 — 계획과 Go로 넘길 것은 [text-experiments.md](text-experiments.md).
 
 **연구 전용이다.** 여기서 나온 어느 것도 공식 결과가 아니다. dataset 검증 · benchmark 준비 상태 · case 선택 · 채점 · 비교 · gate와 `tools/evals/results` 아래 모든 파일은 Go(`pnpm eval`)의 몫이다. lab 밖으로 나가는 것은 원시 예측 파일 하나뿐이고, 그 뜻은 Go가 정한다. 명령을 포함한 전체 흐름은 [`../README.md`](../README.md).
 
@@ -16,14 +16,16 @@ pnpm eval:lab:test    # pytest: loader · 예측 writer · 가짜 공급자로 �
 
 ## Notebook 순서
 
-| notebook                                             | 답하는 질문                                           | key 필요            |
-| ---------------------------------------------------- | ----------------------------------------------------- | ------------------- |
-| `notebooks/00_dataset_overview.ipynb`                | 이 dataset split에 무엇이 있나                        | 아니오              |
-| `notebooks/classification/01_eda.ipynb`              | 분류 데이터가 이미지별로 어떻게 생겼나                | 아니오              |
-| `notebooks/classification/02_prompt_model_lab.ipynb` | 이 지시문이나 모델이 DEV case 몇 개에서 더 잘 답하나  | `RUN = True`일 때만 |
-| `notebooks/classification/03_gate_lab.ipynb`         | Go가 채점한 run에서 어떤 confidence 임계값이 유망한가 | 아니오              |
+| notebook                                             | 답하는 질문                                           | key 필요                   |
+| ---------------------------------------------------- | ----------------------------------------------------- | -------------------------- |
+| `notebooks/00_dataset_overview.ipynb`                | 이 dataset split에 무엇이 있나                        | 아니오                     |
+| `notebooks/classification/01_eda.ipynb`              | 분류 데이터가 이미지별로 어떻게 생겼나                | 아니오                     |
+| `notebooks/classification/02_prompt_model_lab.ipynb` | 이 지시문이나 모델이 DEV case 몇 개에서 더 잘 답하나  | `RUN = True`일 때만        |
+| `notebooks/classification/03_gate_lab.ipynb`         | Go가 채점한 run에서 어떤 confidence 임계값이 유망한가 | 아니오                     |
+| `notebooks/text/01_ocr_translation_lab.ipynb`        | 통합 동작을 OCR · 번역 · 연쇄로 나누면 어디서 틀리나  | `MODE = "provider"`일 때만 |
+| `notebooks/typing/01_image_typing_lab.ipynb`         | 제품 유형 판단이 네 유형의 경계를 가르나              | `MODE = "provider"`일 때만 |
 
-모든 notebook은 key 없이 처음부터 끝까지 돈다. `02`에서 `RUN = False`면 case마다 "미호출"로 기록하고 notebook 나머지는 그대로 돈다.
+모든 notebook은 key 없이 처음부터 끝까지 돈다. `02`에서 `RUN = False`면 case마다 "미호출"로 기록하고 replay 기록을 쓰지 않는다(실패로 내보내지 않는다). `text` · `typing` notebook은 기본이 `MODE = "fixture"`(`fixtures/smoke`의 고정 답 재생, smoke 자료)이고, 실제 호출 조건은 [text-experiments.md](text-experiments.md#실행-조건).
 
 ## 환경변수
 
@@ -36,11 +38,13 @@ key는 호출할 때 환경에서 읽는다. notebook · 예측 파일 · manife
 
 ## 출력 위치
 
-| 무엇                      | 어디                                               | git                               |
-| ------------------------- | -------------------------------------------------- | --------------------------------- |
-| 버려도 되는 notebook 출력 | `tools/evals/lab/out/<experiment>.jsonl`과 `.json` | 제외                              |
-| 남길 만한 예측 파일       | `tools/evals/predictions/<experiment>.jsonl`       | 커밋                              |
-| 정본 run 산출물           | `tools/evals/results/<runId>/`                     | Go가 쓴다. lab은 절대 쓰지 않는다 |
+| 무엇                       | 어디                                                       | git                               |
+| -------------------------- | ---------------------------------------------------------- | --------------------------------- |
+| 버려도 되는 notebook 출력  | `tools/evals/lab/out/<experiment>.jsonl`과 `.json`         | 제외                              |
+| run 메타데이터 · 연구 기록 | `tools/evals/lab/out/<runId>.run.json` · `.research.jsonl` | 제외                              |
+| 연구 fixture · smoke 답    | `tools/evals/lab/fixtures/` · 지시문 복사본 `prompts/`     | 커밋                              |
+| 남길 만한 예측 파일        | `tools/evals/predictions/<experiment>.jsonl`               | 커밋                              |
+| 정본 run 산출물            | `tools/evals/results/<runId>/`                             | Go가 쓴다. lab은 절대 쓰지 않는다 |
 
 ## Replay로 넘기기
 
@@ -60,15 +64,19 @@ pnpm eval replay --dataset sample-classification --split dev \
 
 ## 모듈
 
-| 모듈             | 역할                                                                                                                                                           |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `datasets.py`    | `load_dataset(name, split)` → pandas frame과 원본 case. `held-out`은 `allow_held_out=True`가 필요하다(UX 장치이고, 강제하는 규칙은 Go의 `--allow-held-out`)    |
-| `predictions.py` | `classified` · `failed` · `write_jsonl` · `read_jsonl`: replay 파일. 올바른 모양의 줄을 쓰는 최소 검사만 한다                                                  |
-| `providers.py`   | 연구 전용 호출: Claude는 공식 `anthropic` SDK, OpenAI 호환 서버는 `urllib`. 요청 의미는 production과 같지만 production adapter가 아니다                        |
-| `experiments.py` | `choose_cases` · `run_classification_experiment`(`max_calls` 절대 상한 · `dry_run`) · `export_predictions` · `export_replay_variant` · `replay_command`        |
-| `analysis.py`    | RESEARCH-ONLY DIAGNOSTICS(연구 전용 진단): 분포 · 혼동표 · `research_category_match_rate` · `confidence_buckets` · `threshold_sweep` · `high_confidence_wrong` |
-| `artifacts.py`   | 정본 run 읽기 전용 접근(`load_run` · `variant_costs`)                                                                                                          |
-| `plots.py`       | 막대 차트 · 이미지 미리보기 · sweep 그래프                                                                                                                     |
+| 모듈             | 역할                                                                                                                                                                                                |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `datasets.py`    | `load_dataset(name, split)` · `load_research_fixture`(lab/fixtures) → pandas frame과 원본 case. `held-out`은 `allow_held_out=True`가 필요하다(UX 장치이고, 강제하는 규칙은 Go의 `--allow-held-out`) |
+| `predictions.py` | `classified` · `failed` · `write_jsonl` · `read_jsonl`: replay 파일. 올바른 모양의 줄을 쓰는 최소 검사만 한다                                                                                       |
+| `providers.py`   | 연구 전용 호출: Claude는 공식 `anthropic` SDK, OpenAI 호환 서버는 `urllib`. 요청 의미는 production과 같지만 production adapter가 아니다                                                             |
+| `experiments.py` | `choose_cases` · `run_classification_experiment`(`max_calls` 절대 상한 · `dry_run`) · `export_predictions` · `export_replay_variant` · `replay_command`                                             |
+| `tasks.py`       | OCR · 번역 · 제품 유형 판단 · 제품 통합 과제(`TaskSpec`) · 후보(`Candidate`) · 답 얻는 방법(공급자 · smoke · 규칙 · 함수) · `run_task` · 연쇄 입력 · replay 내보내기                                |
+| `research.py`    | 연구 기록(`CaseRecord`: answered · contract-error · call-failed · not-run) · run 메타데이터 · 외부 전송 검사 · `unique_run_id`. replay 파일과 분리                                                  |
+| `analysis.py`    | RESEARCH-ONLY DIAGNOSTICS(연구 전용 진단): 분포 · 혼동표 · `research_category_match_rate` · `confidence_buckets` · `threshold_sweep` · `high_confidence_wrong`                                      |
+| `artifacts.py`   | 정본 run 읽기 전용 접근(`load_run` · `variant_costs`)                                                                                                                                               |
+| `plots.py`       | 막대 차트 · 이미지 미리보기 · sweep 그래프                                                                                                                                                          |
+
+`max_calls`는 case(호출) 수 상한이다. anthropic SDK는 호출 하나에서 최대 2번 더 보낸다(`providers.MAX_RETRIES`).
 
 `experiments.py`의 `VOCABULARY`는 production label 목록의 연구용 복사본이다. 그 밖의 답은 계약 실패로 내보내고, 복사본이 어긋나면 Go가 replay를 거절한다.
 
@@ -76,4 +84,4 @@ pnpm eval replay --dataset sample-classification --split dev \
 
 - notebook은 출력을 지운 채 커밋한다(Kernel → Restart Kernel and Clear Outputs). 아니면 `pnpm eval:lab:test`가 실패한다.
 - 모든 notebook은 오프라인으로 돌아야 한다. `RUN = True`가 아니면 아무것도 공급자를 부르지 않는다.
-- 의존성은 notebook에 필요하고 표준 라이브러리나 pandas로 안 될 때만 더한다. 지금: `jupyterlab` · `ipykernel` · `pandas` · `matplotlib` · `anthropic`, dev: `pytest` · `nbformat` · `nbclient`.
+- 의존성은 notebook에 필요하고 표준 라이브러리나 pandas로 안 될 때만 더한다. 지금: `jupyterlab` · `ipykernel` · `pandas` · `matplotlib` · `anthropic`, dev: `pytest` · `nbformat` · `nbclient`. `scripts/render_fixtures.py`는 matplotlib이 함께 설치하는 Pillow를 쓴다(직접 의존성을 더하지 않음).

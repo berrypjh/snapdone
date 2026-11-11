@@ -5,10 +5,11 @@ from types import SimpleNamespace
 
 import anthropic
 import httpx
+import httpx2
 import pytest
 
 from snapdone_eval_lab.experiments import VOCABULARY
-from snapdone_eval_lab.providers import call_anthropic, call_openai_compatible, result_schema
+from snapdone_eval_lab.providers import MAX_RETRIES, anthropic_client, call_anthropic, call_openai_compatible, result_schema
 
 ANSWER = {"category": "event", "facts": [{"label": "날짜", "value": "2026-10-03"}], "suggestedAction": "add_to_calendar", "confidence": "high"}
 SECRET = "sk-test-never-print"
@@ -83,3 +84,34 @@ def test_openai_compatible_call_and_envelope(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delenv("OPENAI_API_KEY")
     call_openai_compatible("m", "p", "r", b"x", "image/png", {}, post=post)
     assert "Authorization" not in seen["headers"], "no key means no header, as for a local server"
+
+
+def test_one_anthropic_call_can_send_up_to_three_http_requests(monkeypatch: pytest.MonkeyPatch):
+    """max_calls는 호출(case) 수다. SDK 재시도는 그 안에서 일어나고 세지 않는다 — 이 테스트가 그 사실을 고정한다."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", SECRET)
+    requests = []
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        requests.append(request)
+        return httpx2.Response(500, headers={"retry-after-ms": "1"}, json={"type": "error", "error": {"type": "api_error", "message": "x"}})
+
+    client = anthropic_client(SECRET, http_client=httpx2.Client(transport=httpx2.MockTransport(handler)))
+    raw = call_anthropic("m", "p", "r", b"x", "image/png", {}, client=client)
+    assert raw.error == "provider returned HTTP 500"
+    assert len(requests) == 1 + MAX_RETRIES == 3
+
+
+def test_text_only_calls_send_no_image(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", SECRET)
+    messages = FakeMessages(anthropic_message('{"translation": "안녕"}'))
+    call_anthropic("m", "p", "Translate.", None, None, {}, client=SimpleNamespace(messages=messages))
+    assert messages.calls[0]["messages"][0]["content"] == [{"type": "text", "text": "Translate."}]
+    seen = {}
+
+    def post(url, headers, body):
+        seen["body"] = json.loads(body)
+        return 500, b""
+
+    call_openai_compatible("m", "p", "Translate.", None, None, {}, schema_name="translation", post=post)
+    assert seen["body"]["messages"][1]["content"] == [{"type": "text", "text": "Translate."}]
+    assert seen["body"]["response_format"]["json_schema"]["name"] == "translation"

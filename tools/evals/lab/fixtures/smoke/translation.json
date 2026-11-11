@@ -1,0 +1,12 @@
+{
+  "note": "smoke: 사람이 직접 쓴 고정 답. 모델 출력이 아니고 품질 근거가 아니다. 파이프라인(해석 · 상태 · replay)을 확인하는 데만 쓴다.",
+  "answers": {
+    "tr-amount": "{\"translationNeeded\": true, \"translation\": \"결제할 금액: 12.50달러(세금 포함).\"}",
+    "tr-date": "{\"translationNeeded\": true, \"translation\": \"2026년 3월 2일 월요일 휴무.\"}",
+    "tr-name": "{\"translationNeeded\": true, \"translation\": \"사쿠라 서점은 오후 8시까지 영업합니다.\"}",
+    "tr-negation": "{\"translationNeeded\": true, \"translation\": \"7일 후에 환불됩니다. 태그를 떼지 마십시오.\"}",
+    "tr-korean-source": "{\"translationNeeded\": false, \"translation\": null}",
+    "tr-hours-en": "{\"translationNeeded\": true, ",
+    "tr-menu-ja": "{\"translationNeeded\": true, \"translation\": \"오늘의 추천\\n미소 라멘 950엔\\n교자 450엔\"}"
+  }
+}

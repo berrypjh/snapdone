@@ -1,0 +1,8 @@
+{
+  "note": "smoke: 사람이 직접 쓴 고정 답. 모델 출력이 아니고 품질 근거가 아니다. 파이프라인(해석 · 상태 · replay)을 확인하는 데만 쓴다.",
+  "answers": {
+    "en-hours": "{\"readable\": true, \"original\": \"STORE HOURS\\nMon-Fri 10:00-21:00\\nSat 11:00-18:00\\nClosed on Sundays\", \"translationNeeded\": true, \"translation\": \"영업시간\\n월~금 10:00~21:00\\n토 11:00~18:00\\n일요일 휴무\"}",
+    "ja-menu": "{\"readable\": true, \"original\": \"本日のおすすめ\\n味噌ラーメン 950円\\n餃子 450円\", \"translationNeeded\": true, \"translation\": \"오늘의 추천\\n미소 라멘 950엔\\n교자 450엔\"}",
+    "no-text": "{\"readable\": false, \"original\": null, \"translationNeeded\": null, \"translation\": null}"
+  }
+}

@@ -6,7 +6,8 @@ import nbformat
 import pytest
 from nbclient import NotebookClient
 
-NOTEBOOKS = sorted((Path(__file__).resolve().parents[1] / "notebooks").rglob("*.ipynb"))
+# JupyterLab 자동 저장본(.ipynb_checkpoints, git 제외)은 커밋 대상이 아니다.
+NOTEBOOKS = sorted(p for p in (Path(__file__).resolve().parents[1] / "notebooks").rglob("*.ipynb") if ".ipynb_checkpoints" not in p.parts)
 
 
 @pytest.mark.parametrize("path", NOTEBOOKS, ids=lambda p: p.name)

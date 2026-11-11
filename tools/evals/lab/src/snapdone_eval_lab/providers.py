@@ -1,4 +1,4 @@
-"""분류 실험용 연구 전용 모델 호출.
+"""연구 전용 모델 호출(분류 · 유형 판단 · OCR · 번역).
 
 production adapter가 아니다. production은 Go(apps/api/internal/processing)에 있고 앱이 돌리는 것은 그쪽이다.
 이 모듈은 notebook이 지시문이나 모델을 시험하고 원시 답을 기록하려고 있다. 비교에 중요한 부분은 production과
@@ -30,6 +30,8 @@ OPENAI_DEFAULT_BASE_URL = "https://api.openai.com/v1"
 # production은 답을 작게 유지한다. 16000이면 facts가 잘리지 않을 여유가 있다.
 MAX_TOKENS = 16000
 TIMEOUT_SECONDS = 90.0
+# anthropic SDK 재시도 횟수. 호출 한 번이 HTTP 요청 최대 1 + MAX_RETRIES번이다. OpenAI 호환 호출은 재시도하지 않는다.
+MAX_RETRIES = 2
 
 
 @dataclass(frozen=True)
@@ -43,7 +45,8 @@ class RawResponse:
     text: str | None
     input_tokens: int | None
     output_tokens: int | None
-    elapsed_ms: int
+    # 관측한 소요 시간. 부르지 않았으면 None이다(0은 측정한 값).
+    elapsed_ms: int | None
     # 답이 없을 때의 짧은 고정 문구. 응답 본문이나 key가 아니다.
     error: str | None = None
     # 알 수 있을 때의 HTTP status.
@@ -87,25 +90,35 @@ def redact(value: str | None, secret: str) -> str | None:
     return value.replace(secret, "[redacted]")
 
 
+def anthropic_client(key: str, http_client: Any = None) -> Any:
+    """연구 호출이 쓰는 SDK client. `http_client`는 테스트에서 가짜 transport를 넣을 때만 준다."""
+    import anthropic
+
+    return anthropic.Anthropic(api_key=key, timeout=TIMEOUT_SECONDS, max_retries=MAX_RETRIES, http_client=http_client)
+
+
 def call_anthropic(
     model: str,
     prompt: str,
     request: str,
-    image: bytes,
-    media_type: str,
+    image: bytes | None,
+    media_type: str | None,
     schema: dict[str, Any],
     *,
     temperature: float | None = None,
     client: Any = None,
 ) -> RawResponse:
-    """공식 SDK로 Messages API를 한 번 부른다. `client`는 테스트용으로 주입할 수 있다."""
+    """공식 SDK로 Messages API를 한 번 부른다. `image`가 None이면 텍스트만 보낸다(번역). `client`는 테스트용으로 주입할 수 있다.
+
+    SDK는 실패한 요청을 `max_retries=2`만큼 다시 보낸다. 이 함수 한 번이 HTTP 요청 최대 3번이다.
+    """
     import anthropic
 
     key = api_key(ANTHROPIC)
     if client is None:
         if not key:
             return RawResponse(ANTHROPIC, model, None, None, None, None, None, 0, error=f"{KEY_ENV[ANTHROPIC]} is not set")
-        client = anthropic.Anthropic(api_key=key, timeout=TIMEOUT_SECONDS, max_retries=2)
+        client = anthropic_client(key)
     params: dict[str, Any] = {
         "model": model,
         "max_tokens": MAX_TOKENS,
@@ -114,10 +127,7 @@ def call_anthropic(
         "messages": [
             {
                 "role": "user",
-                "content": [
-                    {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": base64.standard_b64encode(image).decode("ascii")}},
-                    {"type": "text", "text": request},
-                ],
+                "content": _image_blocks(image, media_type) + [{"type": "text", "text": request}],
             }
         ],
     }
@@ -146,15 +156,16 @@ def call_openai_compatible(
     model: str,
     prompt: str,
     request: str,
-    image: bytes,
-    media_type: str,
+    image: bytes | None,
+    media_type: str | None,
     schema: dict[str, Any],
     *,
     base_url: str = OPENAI_DEFAULT_BASE_URL,
     temperature: float | None = None,
+    schema_name: str = "image_result",
     post: Callable[[str, dict[str, str], bytes], tuple[int, bytes]] | None = None,
 ) -> RawResponse:
-    """Chat Completions를 한 번 부른다(OpenAI · Ollama · vLLM). `post`는 테스트용으로 주입할 수 있다."""
+    """Chat Completions를 한 번 부른다(OpenAI · Ollama · vLLM). 재시도하지 않는다. `post`는 테스트용으로 주입할 수 있다."""
     key = api_key(OPENAI)
     body: dict[str, Any] = {
         "model": model,
@@ -162,13 +173,10 @@ def call_openai_compatible(
             {"role": "system", "content": prompt},
             {
                 "role": "user",
-                "content": [
-                    {"type": "image_url", "image_url": {"url": f"data:{media_type};base64,{base64.standard_b64encode(image).decode('ascii')}"}},
-                    {"type": "text", "text": request},
-                ],
+                "content": _image_urls(image, media_type) + [{"type": "text", "text": request}],
             },
         ],
-        "response_format": {"type": "json_schema", "json_schema": {"name": "image_result", "strict": True, "schema": schema}},
+        "response_format": {"type": "json_schema", "json_schema": {"name": schema_name, "strict": True, "schema": schema}},
     }
     if temperature is not None:
         body["temperature"] = temperature
@@ -202,6 +210,18 @@ def call_openai_compatible(
         usage.get("prompt_tokens"), usage.get("completion_tokens"), elapsed,
         error=error, status=status, envelope=_redact_envelope(envelope, key),
     )
+
+
+def _image_blocks(image: bytes | None, media_type: str | None) -> list[dict[str, Any]]:
+    if image is None:
+        return []
+    return [{"type": "image", "source": {"type": "base64", "media_type": media_type, "data": base64.standard_b64encode(image).decode("ascii")}}]
+
+
+def _image_urls(image: bytes | None, media_type: str | None) -> list[dict[str, Any]]:
+    if image is None:
+        return []
+    return [{"type": "image_url", "image_url": {"url": f"data:{media_type};base64,{base64.standard_b64encode(image).decode('ascii')}"}}]
 
 
 def _post(url: str, headers: dict[str, str], body: bytes) -> tuple[int, bytes]:
